@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-height: 100%;
+    background: #020915;
+  }
+
+  body {
+    min-height: 100%;
+    margin: 0;
+    background: #020915;
+    color: #f8fbff;
+    font-family: Inter, ui-sans-serif, system-ui, Segoe UI, Arial, sans-serif;
+    letter-spacing: 0;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  button {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection {
+    background: rgba(5, 217, 255, 0.32);
+  }
+}
+
+@layer components {
+  .safe-screen {
+    min-height: 100svh;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .glass-panel {
+    border: 1px solid rgba(147, 176, 210, 0.16);
+    background:
+      linear-gradient(135deg, rgba(9, 28, 46, 0.92), rgba(4, 15, 28, 0.78)),
+      radial-gradient(circle at 15% 0%, rgba(5, 217, 255, 0.1), transparent 34%);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(18px);
+  }
+
+  .hairline {
+    border-color: rgba(147, 176, 210, 0.14);
+  }
+
+  .thin-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(5, 217, 255, 0.55) transparent;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(5, 217, 255, 0.55);
+    border-radius: 999px;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .tap-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

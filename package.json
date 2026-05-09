@@ -1,0 +1,35 @@
+{
+  "name": "telgo-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Telgo Power Projects internal operations platform.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "smoke": "node scripts/smoke.mjs",
+    "visual": "node scripts/visual-check.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.8",
+    "framer-motion": "^12.23.12",
+    "lucide-react": "^0.468.0",
+    "maplibre-gl": "^5.6.1",
+    "next": "^15.3.5",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "autoprefixer": "^10.4.20",
+    "playwright-core": "^1.59.1",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "playwright-core": "^1.57.0",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Telgo Hub",
+  "short_name": "Telgo Hub",
+  "description": "Internal operations platform for Telgo Power Projects",
+  "start_url": "/app/engineer",
+  "display": "standalone",
+  "background_color": "#020915",
+  "theme_color": "#020915",
+  "icons": [
+    {
+      "src": "/assets/telgo-logo-cropped.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
