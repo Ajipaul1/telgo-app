@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   * {
@@ -13,14 +13,14 @@
 
   html {
     min-height: 100%;
-    background: #020915;
+    background: #f8fbff;
   }
 
   body {
     min-height: 100%;
     margin: 0;
-    background: #020915;
-    color: #f8fbff;
+    background: #f8fbff;
+    color: #07122f;
     font-family: Inter, ui-sans-serif, system-ui, Segoe UI, Arial, sans-serif;
     letter-spacing: 0;
   }
@@ -37,7 +37,7 @@
   }
 
   ::selection {
-    background: rgba(5, 217, 255, 0.32);
+    background: rgba(17, 92, 255, 0.18);
   }
 }
 

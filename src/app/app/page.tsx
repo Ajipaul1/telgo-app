@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { TelgoMvpApp } from "@/components/telgo-mvp-app";
 
 export default function AppIndexPage() {
-  redirect("/app/engineer");
+  return <TelgoMvpApp startOnDashboard />;
 }
