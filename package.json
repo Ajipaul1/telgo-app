@@ -8,6 +8,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "android:package": "node scripts/build-android-apk.mjs",
+    "android:check": "node scripts/check-android-download.mjs",
     "smoke": "node scripts/smoke.mjs",
     "visual": "node scripts/visual-check.mjs"
   },

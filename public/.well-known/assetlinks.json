@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.telgopower.telgohub",
+        "sha256_cert_fingerprints": ["94:B2:0F:50:C3:A5:92:78:32:6E:A9:74:0D:93:8F:6C:F5:43:50:54:EA:BF:82:E4:13:67:4B:70:11:FE:9D:28"]
+      }
+    }]
