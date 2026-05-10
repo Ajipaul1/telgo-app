@@ -6,6 +6,7 @@ import {
   AlertsList,
   QuickActions
 } from "@/components/dashboard-blocks";
+import { RoleNotificationsPanel } from "@/components/interactive";
 import { MetricCard, TextLink } from "@/components/ui";
 
 export default function AdminDashboardPage() {
@@ -22,6 +23,7 @@ export default function AdminDashboardPage() {
         <MetricCard label="Active Alerts" value="7" sub="▲ 3 new alerts" icon="AlertTriangle" tone="amber" />
         <MetricCard label="Pending Approvals" value="23" sub="▼ 5% vs last week" icon="CheckCircle2" tone="green" />
       </div>
+      <RoleNotificationsPanel title="Admin Alerts & Escalations" />
       <AdminMapSummary />
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="space-y-3">

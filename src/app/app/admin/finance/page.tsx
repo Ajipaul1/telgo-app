@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { FinanceCharts } from "@/components/dashboard-blocks";
+import { FinanceRequestsBoard } from "@/components/interactive";
 import { MetricCard, GlassCard, SectionHeader, Badge } from "@/components/ui";
 import { formatInr } from "@/lib/utils";
 
@@ -12,6 +13,7 @@ export default function FinancePage() {
         <MetricCard label="Budget Utilization" value="70.2%" sub="▲ 8.2% vs last month" icon="Gauge" tone="violet" />
         <MetricCard label="Pending Approvals" value={formatInr(1876450)} sub="▲ 15.3% vs last month" icon="FileText" tone="amber" />
       </div>
+      <FinanceRequestsBoard />
       <FinanceCharts />
       <GlassCard className="p-4">
         <SectionHeader title="Recent Transactions" action={<span className="text-sm text-telgo-cyan">View All</span>} />

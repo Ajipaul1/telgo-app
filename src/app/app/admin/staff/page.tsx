@@ -18,7 +18,7 @@ export default function StaffTrackerPage() {
         <button className="min-h-12 rounded-xl border border-white/10 px-5 text-white" type="button">All Sites</button>
       </div>
       <GlassCard className="overflow-hidden p-0">
-        <div className="grid grid-cols-[1.2fr_1.1fr_.8fr_.7fr_auto] gap-3 border-b border-white/10 p-4 text-sm text-slate-300">
+        <div className="hidden grid-cols-[1.2fr_1.1fr_.8fr_.7fr_auto] gap-3 border-b border-white/10 p-4 text-sm text-slate-300 sm:grid">
           <span>Engineer</span>
           <span>Site & Project</span>
           <span>Status</span>

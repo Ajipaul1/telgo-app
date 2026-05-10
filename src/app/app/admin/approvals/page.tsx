@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/app-shell";
-import { ApprovalQueue } from "@/components/interactive";
+import { AccessApprovalConsole, ApprovalQueue } from "@/components/interactive";
 import { MetricCard } from "@/components/ui";
 
 export default function ApprovalsPage() {
@@ -23,6 +23,7 @@ export default function ApprovalsPage() {
           </button>
         ))}
       </div>
+      <AccessApprovalConsole />
       <ApprovalQueue />
     </AppShell>
   );

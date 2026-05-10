@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
+import { useShallow } from "zustand/react/shallow";
 import {
   Avatar,
+  Badge,
+  GlassCard,
   Icon,
   IconButton,
   Logo,
@@ -11,6 +15,7 @@ import {
 } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/types";
+import { getCurrentUser, useOpsStore } from "@/store/ops-store";
 
 type NavItem = {
   label: string;
@@ -29,11 +34,11 @@ const navByRole: Record<Role, NavItem[]> = {
     { label: "More", href: "/app/admin/finance", icon: "MoreHorizontal" }
   ],
   finance: [
-    { label: "Dashboard", href: "/app/admin", icon: "LayoutDashboard" },
+    { label: "Dashboard", href: "/app/admin/finance", icon: "LayoutDashboard" },
     { label: "Approvals", href: "/app/admin/approvals", icon: "ClipboardCheck" },
     { label: "Finance", href: "/app/admin/finance", icon: "IndianRupee" },
     { label: "Projects", href: "/app/admin/projects", icon: "Building2" },
-    { label: "Alerts", href: "/app/admin/alerts", icon: "Bell", badge: 6 }
+    { label: "Chat", href: "/app/chat", icon: "MessageCircle", badge: 6 }
   ],
   supervisor: [
     { label: "Dashboard", href: "/app/admin", icon: "LayoutDashboard" },
@@ -51,10 +56,10 @@ const navByRole: Record<Role, NavItem[]> = {
   ],
   client: [
     { label: "Portal", href: "/app/client", icon: "Home" },
-    { label: "Projects", href: "/app/admin/projects", icon: "Building2" },
-    { label: "Photos", href: "/app/engineer/logs", icon: "ImageIcon" },
+    { label: "Projects", href: "/app/client/projects", icon: "Building2" },
+    { label: "Photos", href: "/app/client/photos", icon: "ImageIcon" },
     { label: "Chat", href: "/app/chat", icon: "MessageCircle" },
-    { label: "More", href: "/request-access", icon: "MoreHorizontal" }
+    { label: "Review", href: "/app/client/review", icon: "MoreHorizontal" }
   ]
 };
 
@@ -77,7 +82,38 @@ export function AppShell({
   rightAction?: React.ReactNode;
   className?: string;
 }) {
-  const nav = navByRole[role];
+  const pathname = usePathname();
+  const state = useOpsStore(useShallow((store) => ({
+    users: store.users,
+    currentUserId: store.currentUserId,
+    notifications: store.notifications,
+    shiftReports: store.shiftReports,
+    signOut: store.signOut
+  })));
+  const currentUser = getCurrentUser(state);
+  const effectiveRole = currentUser.role ?? role;
+  const nav = navByRole[effectiveRole];
+  const unread = state.notifications.filter(
+    (item) => !item.read && (item.targetRole === effectiveRole || item.targetRole === "all")
+  ).length;
+  const today = new Date().toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+  const hasShiftReportToday = state.shiftReports.some(
+    (report) => report.userId === currentUser.id && report.createdAt.includes(today)
+  );
+  const allowed = isPathAllowed(pathname ?? activeHref, effectiveRole);
+
+  function handleSignOut() {
+    if (effectiveRole === "engineer" && !hasShiftReportToday) {
+      window.location.href = "/app/engineer/shift-report?required=1";
+      return;
+    }
+    state.signOut();
+    window.location.href = "/";
+  }
 
   return (
     <div className="safe-screen bg-industrial-radial text-white">
@@ -92,8 +128,16 @@ export function AppShell({
             <div className="flex items-center gap-2">
               {rightAction}
               <IconButton icon="Search" label="Search" className="hidden min-[390px]:grid" />
-              <IconButton icon="Bell" label="Notifications" badge={role === "engineer" ? 6 : 9} />
-              <Avatar label="Arjun Nair" />
+              <IconButton icon="Bell" label="Notifications" badge={unread || undefined} />
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="tap-target relative grid place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-slate-100 transition hover:border-telgo-cyan/50 hover:text-telgo-cyan"
+                aria-label="Sign out"
+              >
+                <Icon name="LogOut" className="h-5 w-5" />
+              </button>
+              <Avatar label={currentUser.fullName} />
             </div>
           </div>
         </header>
@@ -112,7 +156,7 @@ export function AppShell({
               {subtitle ? <p className="mt-1 text-base text-slate-300">{subtitle}</p> : null}
             </div>
           </div>
-          {children}
+          {allowed ? children : <AccessRestricted role={effectiveRole} />}
         </motion.main>
 
         <BottomNav items={nav} activeHref={activeHref} />
@@ -166,11 +210,50 @@ function BottomNav({ items, activeHref }: { items: NavItem[]; activeHref: string
                   </span>
                 ) : null}
               </span>
-              <span>{item.label}</span>
+              <span className="max-w-[64px] truncate text-[11px] leading-none">{item.label}</span>
             </Link>
           );
         })}
       </div>
     </nav>
+  );
+}
+
+function isPathAllowed(path: string, role: Role) {
+  if (path === "/app" || path === "/app/chat") return true;
+  if (role === "admin") return path.startsWith("/app/admin") || path.startsWith("/app/client");
+  if (role === "finance") {
+    return ["/app/admin/finance", "/app/admin/approvals", "/app/admin/projects", "/app/admin/alerts"].some(
+      (prefix) => path.startsWith(prefix)
+    );
+  }
+  if (role === "supervisor") {
+    return ["/app/admin", "/app/admin/map", "/app/admin/staff", "/app/admin/approvals", "/app/admin/alerts", "/app/admin/projects"].some(
+      (prefix) => path.startsWith(prefix)
+    );
+  }
+  if (role === "client") return path.startsWith("/app/client");
+  return path.startsWith("/app/engineer");
+}
+
+function AccessRestricted({ role }: { role: Role }) {
+  return (
+    <GlassCard className="p-5">
+      <div className="flex items-start gap-3">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-red-400/30 bg-red-500/10 text-telgo-red">
+          <Icon name="ShieldCheck" />
+        </span>
+        <div>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <h2 className="text-xl font-semibold">Access Restricted</h2>
+            <Badge tone="red">{role}</Badge>
+          </div>
+          <p className="text-slate-300">
+            This workspace is outside the signed-in role permissions. Use the bottom navigation for
+            allowed pages, or sign in with an admin account for operations access.
+          </p>
+        </div>
+      </div>
+    </GlassCard>
   );
 }

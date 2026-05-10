@@ -5,6 +5,7 @@ import {
   EngineerTaskList,
   QuickActions
 } from "@/components/dashboard-blocks";
+import { ProjectAssignmentPicker } from "@/components/interactive";
 import { LiveMap } from "@/components/live-map";
 import { projects } from "@/lib/demo-data";
 import { Badge, GlassCard, MetricCard, ProjectImage, SectionHeader } from "@/components/ui";
@@ -26,6 +27,7 @@ export default function EngineerHomePage() {
           </Link>
         </div>
       </GlassCard>
+      <ProjectAssignmentPicker />
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <MetricCard label="Today's Tasks" value="5/8" sub="Completed" icon="CheckCircle2" tone="green" />
         <MetricCard label="Work Hours" value="04:32" sub="Hours" icon="Timer" tone="blue" />

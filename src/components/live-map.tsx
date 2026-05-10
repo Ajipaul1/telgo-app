@@ -19,6 +19,7 @@ export function LiveMap({
   const ref = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [ready, setReady] = useState(false);
+  const [mapError, setMapError] = useState(false);
 
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
@@ -33,6 +34,10 @@ export function LiveMap({
     });
 
     mapRef.current = map;
+    map.on("error", () => {
+      setMapError(true);
+      setReady(true);
+    });
     map.on("load", () => {
       setReady(true);
 
@@ -83,6 +88,27 @@ export function LiveMap({
     >
       <div ref={ref} className="absolute inset-0" />
       <div className="pointer-events-none absolute inset-0 bg-ink-950/20" />
+      {mapError ? (
+        <div className="absolute inset-0 bg-ink-950/82 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <Badge tone="amber">Map Fallback</Badge>
+            <span className="text-xs text-slate-300">Kerala sites</span>
+          </div>
+          <div className="grid h-full place-items-center">
+            <div className="w-full max-w-sm space-y-2">
+              {projects.slice(0, compact ? 3 : projects.length).map((project) => (
+                <div key={project.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                  <span className="flex items-center gap-2 text-sm">
+                    <span className="h-2.5 w-2.5 rounded-full bg-telgo-green" />
+                    {project.name}
+                  </span>
+                  <span className="text-xs text-telgo-cyan">{project.progress}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
       {!ready ? (
         <div className="absolute inset-0 grid place-items-center bg-ink-950/64 text-sm text-slate-300">
           Loading live map

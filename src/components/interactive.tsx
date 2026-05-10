@@ -1,16 +1,19 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Image from "next/image";
+import { useShallow } from "zustand/react/shallow";
 import { supabase } from "@/lib/supabase/client";
 import { approvals as approvalSeed, chatMessages, projects, sitePhotos } from "@/lib/demo-data";
 import { formatInr } from "@/lib/utils";
 import { useOfflineStore } from "@/store/offline-store";
+import { getCurrentUser, useOpsStore } from "@/store/ops-store";
 import { Badge, GlassCard, Icon, SectionHeader, toneClasses } from "@/components/ui";
-import type { Approval, ChatMessage, StatusTone } from "@/lib/types";
+import type { Approval, ChatMessage, Role, StatusTone } from "@/lib/types";
 
 function useOnlineStatus() {
   const [online, setOnline] = useState(true);
+  const forceOffline = useOpsStore((state) => state.forceOffline);
 
   useEffect(() => {
     setOnline(navigator.onLine);
@@ -24,33 +27,63 @@ function useOnlineStatus() {
     };
   }, []);
 
-  return online;
+  return forceOffline ? false : online;
 }
 
 export function LoginPanel() {
-  const [role, setRole] = useState<"engineer" | "admin" | "finance" | "client">("engineer");
-  const [identifier, setIdentifier] = useState("arjun@telgopower.com");
-  const [password, setPassword] = useState("");
-  const [status, setStatus] = useState("Demo credentials route you to the selected workspace.");
+  const login = useOpsStore((state) => state.login);
+  const [role, setRole] = useState<Role>("engineer");
+  const [identifier, setIdentifier] = useState("engineer@telgo.test");
+  const [password, setPassword] = useState("TelgoEng#2026");
+  const [status, setStatus] = useState("Demo credentials route by signed-in role.");
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  function chooseRole(nextRole: Role) {
+    setRole(nextRole);
+    const defaults: Record<Role, [string, string]> = {
+      admin: ["admin@telgo.test", "TelgoAdmin#2026"],
+      engineer: ["engineer@telgo.test", "TelgoEng#2026"],
+      finance: ["finance@telgo.test", "TelgoFin#2026"],
+      client: ["client@telgo.test", "TelgoClient#2026"],
+      supervisor: ["admin@telgo.test", "TelgoAdmin#2026"]
+    };
+    setIdentifier(defaults[nextRole][0]);
+    setPassword(defaults[nextRole][1]);
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("Checking secure session...");
-    const { error } = await supabase.auth.signInWithPassword({
-      email: identifier.includes("@") ? identifier : "demo@telgopower.com",
-      password: password || "demo-password"
-    });
+    let authError: unknown = null;
+    if (!identifier.endsWith("@telgo.test")) {
+      try {
+        const result = await guardedSupabaseWrite(
+          supabase.auth.signInWithPassword({
+            email: identifier.includes("@") ? identifier : "demo@telgopower.com",
+            password: password || "demo-password"
+          })
+        );
+        authError = result.error;
+      } catch (error) {
+        authError = error;
+      }
+    }
 
-    if (error) {
-      setStatus("Demo mode active. Supabase auth is wired for real users.");
+    const user = login(identifier, password, role);
+    if (authError) {
+      setStatus("Supabase auth checked. Demo session active for local workflow testing.");
     }
 
     const target =
-      role === "admin"
+      user.role === "admin"
         ? "/app/admin"
-        : role === "finance"
+        : user.role === "finance"
           ? "/app/admin/finance"
-          : role === "client"
+          : user.role === "client"
             ? "/app/client"
             : "/app/engineer";
     window.location.href = target;
@@ -67,7 +100,7 @@ export function LoginPanel() {
           <button
             key={item}
             type="button"
-            onClick={() => setRole(item)}
+            onClick={() => chooseRole(item)}
             className={`rounded-xl px-2 py-3 text-xs capitalize transition ${
               role === item ? "bg-telgo-cyan/15 text-telgo-cyan" : "text-slate-300"
             }`}
@@ -107,9 +140,10 @@ export function LoginPanel() {
         </div>
         <button
           type="submit"
-          className="flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-telgo-cyan via-telgo-blue to-telgo-violet text-lg font-semibold text-white shadow-glow"
+          disabled={!hydrated}
+          className="flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-telgo-cyan via-telgo-blue to-telgo-violet text-lg font-semibold text-white shadow-glow disabled:opacity-60"
         >
-          Sign In
+          {hydrated ? "Sign In" : "Loading..."}
           <Icon name="ChevronRight" />
         </button>
       </form>
@@ -125,14 +159,27 @@ export function LoginPanel() {
         <Icon name="ShieldCheck" />
         Request Access
       </a>
+      <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.025] p-3 text-xs text-slate-300">
+        <p className="font-semibold text-white">Test IDs</p>
+        <p>Admin: admin@telgo.test</p>
+        <p>Engineer: engineer@telgo.test</p>
+        <p>Finance: finance@telgo.test</p>
+        <p>Client: client@telgo.test</p>
+      </div>
       <p className="mt-4 text-sm text-slate-400">{status}</p>
     </GlassCard>
   );
 }
 
 export function RequestAccessForm() {
+  const requestAccess = useOpsStore((state) => state.requestAccess);
   const [status, setStatus] = useState("ready");
   const [file, setFile] = useState<File | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -142,24 +189,42 @@ export function RequestAccessForm() {
     let documentPath: string | null = null;
     if (file) {
       const path = `public/${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
-      const { error } = await supabase.storage.from("access-documents").upload(path, file, {
+      const { error } = await guardedSupabaseWrite(supabase.storage.from("access-documents").upload(path, file, {
         upsert: false
-      });
+      }));
       if (!error) documentPath = path;
     }
 
-    const { error } = await supabase.from("access_requests").insert({
-      full_name: String(form.get("full_name") ?? ""),
-      phone: String(form.get("phone") ?? ""),
-      email: String(form.get("email") ?? ""),
-      company_name: String(form.get("company_name") ?? ""),
+    const fullName = String(form.get("full_name") ?? "");
+    const phone = String(form.get("phone") ?? "");
+    const email = String(form.get("email") ?? "");
+    const companyName = String(form.get("company_name") ?? "");
+    const site = String(form.get("site") ?? "Panangad HDD Crossing");
+    const requestedRole = normalizeRole(String(form.get("requested_role") ?? "client"));
+    requestAccess({
+      fullName,
+      phone,
+      email,
+      companyName,
+      site,
+      requestedRole,
+      accessPurpose: String(form.get("access_purpose") ?? "project portal"),
+      documentPath
+    });
+
+    const { error } = await guardedSupabaseWrite(supabase.from("access_requests").insert({
+      full_name: fullName,
+      phone,
+      email,
+      company_name: companyName,
       gst_number: String(form.get("gst_number") ?? ""),
       company_address: String(form.get("company_address") ?? ""),
-      requested_role: String(form.get("requested_role") ?? "client"),
+      site,
+      requested_role: requestedRole,
       access_purpose: String(form.get("access_purpose") ?? "project_portal"),
       document_path: documentPath,
       status: "pending"
-    });
+    }));
 
     setStatus(error ? "saved-locally" : "submitted");
   }
@@ -184,11 +249,11 @@ export function RequestAccessForm() {
         <div className="grid gap-3 sm:grid-cols-2">
           <Field name="company_name" label="Company Name" placeholder="Enter company name" required />
           <Field name="gst_number" label="GST Number" placeholder="Enter GST number" />
+          <Field name="site" label="Preferred Site / Project" placeholder="Panangad HDD Crossing" required />
           <Field
             name="company_address"
             label="Company Address"
             placeholder="Enter company address"
-            className="sm:col-span-2"
           />
         </div>
       </FormBlock>
@@ -227,9 +292,10 @@ export function RequestAccessForm() {
       </label>
       <button
         type="submit"
-        className="flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-telgo-cyan via-telgo-blue to-telgo-violet text-lg font-semibold text-white shadow-glow"
+        disabled={!hydrated}
+        className="flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-telgo-cyan via-telgo-blue to-telgo-violet text-lg font-semibold text-white shadow-glow disabled:opacity-60"
       >
-        Submit Request
+        {hydrated ? "Submit Request" : "Loading..."}
         <Icon name="Send" />
       </button>
       <p className="text-center text-sm text-slate-300">
@@ -248,34 +314,57 @@ export function RequestAccessForm() {
 export function AttendanceAction() {
   const online = useOnlineStatus();
   const addItem = useOfflineStore((state) => state.addItem);
+  const ops = useOpsStore(useShallow((state) => ({
+    users: state.users,
+    currentUserId: state.currentUserId,
+    activeAssignments: state.activeAssignments,
+    markAttendance: state.markAttendance
+  })));
+  const currentUser = getCurrentUser(ops);
+  const project =
+    projects.find((item) => item.id === ops.activeAssignments[currentUser.id]) ?? projects[1];
   const [status, setStatus] = useState("Ready to Check-In");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   async function checkIn() {
     setStatus("Verifying GPS...");
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCoords({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        () => setCoords({ lat: 11.2588, lng: 75.7873 }),
-        { enableHighAccuracy: true, timeout: 5000 }
-      );
-    }
+    const fallback = { lat: project.coordinates[1], lng: project.coordinates[0] };
+    const location = await getCurrentPosition(fallback);
+    setCoords(location);
+    const distanceFromSiteM = Math.round(
+      distanceMeters(location.lat, location.lng, project.coordinates[1], project.coordinates[0])
+    );
+    const withinGeofence = distanceFromSiteM <= 120;
 
     const payload = {
-      project_id: projects[0].id,
+      user_id: currentUser.id,
+      project_id: project.id,
       check_in_at: new Date().toISOString(),
-      latitude: coords?.lat ?? 11.2588,
-      longitude: coords?.lng ?? 75.7873,
+      latitude: location.lat,
+      longitude: location.lng,
       gps_accuracy_m: 7,
+      distance_from_site_m: distanceFromSiteM,
+      within_geofence: withinGeofence,
       status: "pending_approval"
     };
 
     if (!online) {
+      ops.markAttendance({
+        userId: currentUser.id,
+        projectId: project.id,
+        checkInAt: payload.check_in_at,
+        latitude: location.lat,
+        longitude: location.lng,
+        accuracyM: 7,
+        distanceFromSiteM,
+        withinGeofence,
+        status: "queued"
+      });
       addItem({
         type: "attendance",
         title: "GPS Attendance",
@@ -286,7 +375,18 @@ export function AttendanceAction() {
       return;
     }
 
-    const { error } = await supabase.from("attendance").insert(payload);
+    const { error } = await guardedSupabaseWrite(supabase.from("attendance").insert(payload));
+    ops.markAttendance({
+      userId: currentUser.id,
+      projectId: project.id,
+      checkInAt: payload.check_in_at,
+      latitude: location.lat,
+      longitude: location.lng,
+      accuracyM: 7,
+      distanceFromSiteM,
+      withinGeofence,
+      status: error ? "queued" : "pending_approval"
+    });
     if (error) {
       addItem({
         type: "attendance",
@@ -294,9 +394,9 @@ export function AttendanceAction() {
         size: "0.2 MB",
         payload
       });
-      setStatus("Queued for Sync");
+      setStatus(withinGeofence ? "Checked In (Queued)" : "Queued for Approval");
     } else {
-      setStatus("Checked In");
+      setStatus(withinGeofence ? "Checked In" : "Needs Approval");
     }
   }
 
@@ -305,23 +405,27 @@ export function AttendanceAction() {
       <div className="grid gap-5 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
         <div>
           <p className="text-sm text-slate-300">Check-In Time</p>
-          <p className="mt-2 text-3xl font-semibold">08:01 AM</p>
+          <p className="mt-2 text-3xl font-semibold">
+            {new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+          </p>
           <p className="mt-2 flex items-center gap-2 text-sm text-telgo-green">
             <Icon name="CheckCircle2" className="h-4 w-4" />
-            GPS Verified
+            {coords ? `${Math.round(distanceMeters(coords.lat, coords.lng, project.coordinates[1], project.coordinates[0]))} m from site` : "GPS Ready"}
           </p>
         </div>
         <button
           onClick={checkIn}
           type="button"
-          className="mx-auto grid h-40 w-40 place-items-center rounded-full border border-green-300/40 bg-gradient-to-br from-green-300 to-green-700 shadow-[0_0_46px_rgba(34,224,82,0.35)]"
+          aria-label="Mark attendance"
+          disabled={!hydrated}
+          className="mx-auto grid h-40 w-40 place-items-center rounded-full border border-green-300/40 bg-gradient-to-br from-green-300 to-green-700 shadow-[0_0_46px_rgba(34,224,82,0.35)] disabled:opacity-60"
         >
           <Icon name="UserCheck" className="h-16 w-16 text-white" />
         </button>
         <div className="sm:text-right">
           <p className="text-sm text-slate-300">Status</p>
           <p className="mt-2 text-3xl font-semibold text-telgo-green">{status}</p>
-          <p className="mt-2 text-sm text-slate-300">{online ? "Online sync enabled" : "Offline mode"}</p>
+          <p className="mt-2 text-sm text-slate-300">{online ? "Online sync enabled" : "Offline mode"} · {project.name}</p>
         </div>
       </div>
     </GlassCard>
@@ -407,22 +511,113 @@ export function WorkLogForm() {
   );
 }
 
+export function ProjectAssignmentPicker() {
+  const ops = useOpsStore(useShallow((state) => ({
+    users: state.users,
+    currentUserId: state.currentUserId,
+    activeAssignments: state.activeAssignments,
+    setActiveAssignment: state.setActiveAssignment
+  })));
+  const currentUser = getCurrentUser(ops);
+  const assignedProjects = projects.filter((project) => currentUser.projectIds.includes(project.id));
+  const defaultProjectId =
+    ops.activeAssignments[currentUser.id] ?? assignedProjects[0]?.id ?? projects[0].id;
+  const [projectId, setProjectId] = useState(defaultProjectId);
+  const activeProject = projects.find((project) => project.id === projectId) ?? projects[0];
+  const [status, setStatus] = useState(`${activeProject.name} saved as current working site.`);
+
+  function saveAssignment() {
+    ops.setActiveAssignment(currentUser.id, projectId);
+    setStatus(`${activeProject.name} saved as current working site.`);
+  }
+
+  return (
+    <GlassCard className="p-4">
+      <SectionHeader title="Current Working Site" action={<Badge tone="cyan">Live Assignment</Badge>} />
+      <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+        <label>
+          <span className="mb-2 block text-sm text-slate-300">Project / Site</span>
+          <select
+            value={projectId}
+            onChange={(event) => setProjectId(event.target.value)}
+            className="min-h-13 w-full rounded-xl border border-white/14 bg-ink-950/70 px-4 py-3 text-white outline-none transition focus:border-telgo-cyan"
+          >
+            {(assignedProjects.length ? assignedProjects : projects).map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name} - {project.location}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          onClick={saveAssignment}
+          className="min-h-13 rounded-xl bg-telgo-blue px-5 font-semibold text-white"
+        >
+          Save Site
+        </button>
+      </div>
+      <div className="mt-3 grid gap-2 text-sm text-slate-300 sm:grid-cols-3">
+        <p>Site: {activeProject.location}</p>
+        <p>Client: {activeProject.client}</p>
+        <p>Progress: {activeProject.progress}%</p>
+      </div>
+      <p className="mt-3 text-sm text-telgo-cyan">{status}</p>
+    </GlassCard>
+  );
+}
+
 export function FinanceRequestForm() {
   const addItem = useOfflineStore((state) => state.addItem);
+  const ops = useOpsStore(useShallow((state) => ({
+    users: state.users,
+    currentUserId: state.currentUserId,
+    activeAssignments: state.activeAssignments,
+    addFinanceRequest: state.addFinanceRequest
+  })));
+  const currentUser = getCurrentUser(ops);
+  const project =
+    projects.find((item) => item.id === ops.activeAssignments[currentUser.id]) ?? projects[1];
   const [status, setStatus] = useState("ready");
+  const [file, setFile] = useState<File | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    let attachmentPath: string | undefined;
+    if (file) {
+      const path = `finance/${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
+      const { error } = await guardedSupabaseWrite(supabase.storage.from("project-documents").upload(path, file, {
+        upsert: false
+      }));
+      if (!error) attachmentPath = path;
+    }
     const payload = {
-      project_id: projects[0].id,
+      project_id: project.id,
+      requester_id: currentUser.id,
       title: String(form.get("title") ?? ""),
       description: String(form.get("description") ?? ""),
       amount: Number(String(form.get("amount") ?? "0").replace(/,/g, "")),
-      category: "fuel",
+      category: String(form.get("category") ?? "equipment"),
+      urgency: String(form.get("urgency") ?? "urgent"),
+      attachment_path: attachmentPath ?? file?.name ?? "fake-invoice-hdd-bearing.jpg",
       status: "pending"
     };
-    const { error } = await supabase.from("expenses").insert(payload);
+    ops.addFinanceRequest({
+      requesterId: currentUser.id,
+      projectId: project.id,
+      title: payload.title,
+      description: payload.description,
+      amount: payload.amount,
+      urgency: payload.urgency === "urgent" ? "urgent" : "normal",
+      attachmentName: file?.name ?? attachmentPath ?? "fake-invoice-hdd-bearing.jpg"
+    });
+    const { error } = await guardedSupabaseWrite(supabase.from("expenses").insert(payload));
     if (error) {
       addItem({ type: "expense", title: "Finance Request", size: "0.8 MB", payload });
       setStatus("queued");
@@ -465,6 +660,10 @@ export function FinanceRequestForm() {
           max={250}
         />
         <Field name="amount" label="Amount (₹)" defaultValue="5,000" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <SelectField name="category" label="Category" options={["equipment", "fuel", "materials", "travel"]} />
+          <SelectField name="urgency" label="Priority" options={["urgent", "normal"]} />
+        </div>
         <Field name="expected_date" label="Expected Date" defaultValue="May 13, 2025" />
       </GlassCard>
       <GlassCard className="p-5">
@@ -475,18 +674,24 @@ export function FinanceRequestForm() {
           <label className="grid min-h-20 cursor-pointer place-items-center rounded-xl border border-dashed border-white/20 text-center text-slate-300">
             <span>
               <Icon name="Plus" className="mx-auto mb-1" />
-              Add More
+              {file ? file.name : "Add Invoice / Photo"}
             </span>
-            <input type="file" multiple className="sr-only" />
+            <input
+              type="file"
+              className="sr-only"
+              accept=".pdf,.jpg,.jpeg,.png,.webp"
+              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            />
           </label>
         </div>
       </GlassCard>
       <button
         type="submit"
-        className="flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-telgo-cyan to-telgo-blue text-lg font-semibold text-white shadow-glow"
+        disabled={!hydrated}
+        className="flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-telgo-cyan to-telgo-blue text-lg font-semibold text-white shadow-glow disabled:opacity-60"
       >
         <Icon name="Send" />
-        Submit Request
+        {hydrated ? "Submit Request" : "Loading..."}
       </button>
       <button
         type="button"
@@ -511,16 +716,64 @@ export function FinanceRequestForm() {
 
 export function ShiftReportForm() {
   const addItem = useOfflineStore((state) => state.addItem);
+  const ops = useOpsStore(useShallow((state) => ({
+    users: state.users,
+    currentUserId: state.currentUserId,
+    activeAssignments: state.activeAssignments,
+    addShiftReport: state.addShiftReport
+  })));
+  const currentUser = getCurrentUser(ops);
+  const project =
+    projects.find((item) => item.id === ops.activeAssignments[currentUser.id]) ?? projects[1];
   const [status, setStatus] = useState("ready");
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const metersDrilled = Number(form.get("meters_drilled") ?? 0);
+    const fuelUsedL = Number(form.get("fuel_used_l") ?? 0);
+    const notes = String(form.get("notes") ?? "");
+    const safetyIssue = String(form.get("safety_issue") ?? "No safety issue");
+    if (metersDrilled <= 0 || fuelUsedL <= 0 || !notes.trim()) {
+      setStatus("validation");
+      return;
+    }
+    ops.addShiftReport({
+      userId: currentUser.id,
+      projectId: project.id,
+      metersDrilled,
+      fuelUsedL,
+      notes,
+      safetyIssue,
+      photoName: photo?.name ?? "shift-photo-panangad.jpg"
+    });
     addItem({
       type: "site_log",
       title: "End Shift Report",
       size: "1.6 MB",
-      payload: { submittedAt: new Date().toISOString() }
+      payload: {
+        project_id: project.id,
+        metersDrilled,
+        fuelUsedL,
+        safetyIssue,
+        submittedAt: new Date().toISOString()
+      }
     });
+    await guardedSupabaseWrite(supabase.from("shift_reports").insert({
+      project_id: project.id,
+      user_id: currentUser.id,
+      meters_drilled: metersDrilled,
+      fuel_used_l: fuelUsedL,
+      notes,
+      safety_issue: safetyIssue,
+      photo_path: photo?.name
+    }));
     setStatus("submitted");
   }
 
@@ -549,6 +802,10 @@ export function ShiftReportForm() {
           max={300}
           className="mt-4"
         />
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <Field name="meters_drilled" label="Meters Drilled Today" defaultValue="245" required />
+          <Field name="fuel_used_l" label="Fuel Used (L)" defaultValue="72" required />
+        </div>
       </GlassCard>
       <GlassCard className="p-5">
         <SectionHeader title="2. Site Photos" action={<span className="text-sm text-telgo-cyan">View All</span>} />
@@ -561,9 +818,14 @@ export function ShiftReportForm() {
           <label className="grid h-28 min-w-36 cursor-pointer place-items-center rounded-xl border border-dashed border-white/20 text-slate-300">
             <span className="text-center">
               <Icon name="Plus" className="mx-auto" />
-              Add Photo
+              {photo ? photo.name : "Add Photo"}
             </span>
-            <input type="file" className="sr-only" />
+            <input
+              type="file"
+              className="sr-only"
+              accept=".jpg,.jpeg,.png,.webp"
+              onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
+            />
           </label>
         </div>
       </GlassCard>
@@ -576,9 +838,15 @@ export function ShiftReportForm() {
             ["Sand", "Cum", "3.2", "Backfilling"],
             ["Warning Tiles", "Nos", "20", "Installed"]
           ].map((row) => (
-            <div key={row[0]} className="grid grid-cols-4 gap-2 border-b border-white/10 px-3 py-3 text-sm last:border-b-0">
-              {row.map((cell) => (
-                <span key={cell} className="text-slate-200">
+            <div
+              key={row[0]}
+              className="grid gap-1 border-b border-white/10 px-3 py-3 text-sm last:border-b-0 md:grid-cols-[1.4fr_0.7fr_0.5fr_1fr] md:gap-2"
+            >
+              {row.map((cell, index) => (
+                <span
+                  key={cell}
+                  className={index === 0 ? "font-medium text-white" : "text-xs text-slate-300 md:text-sm"}
+                >
                   {cell}
                 </span>
               ))}
@@ -587,6 +855,11 @@ export function ShiftReportForm() {
         </div>
       </GlassCard>
       <GlassCard className="p-5">
+        <SelectField
+          name="safety_issue"
+          label="Safety Issue"
+          options={["No safety issue", "Barricade reinforcement needed", "Rain risk at entry pit", "PPE replacement needed"]}
+        />
         <TextArea
           name="notes"
           label="4. Challenges / Notes"
@@ -594,18 +867,285 @@ export function ShiftReportForm() {
           max={250}
         />
       </GlassCard>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="sticky bottom-24 z-50 grid gap-3 rounded-2xl border border-white/10 bg-ink-950/95 p-2 shadow-2xl backdrop-blur md:static md:grid-cols-2 md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-0">
         <button type="button" className="min-h-14 rounded-xl border border-white/20 text-white">
           Save as Draft
         </button>
-        <button type="submit" className="min-h-14 rounded-xl bg-telgo-blue font-semibold text-white">
-          Submit Report
+        <button
+          type="submit"
+          disabled={!hydrated}
+          className="min-h-14 rounded-xl bg-telgo-blue font-semibold text-white disabled:opacity-60"
+        >
+          {hydrated ? "Submit Report" : "Loading..."}
         </button>
       </div>
       <p className="text-center text-sm text-slate-300">
-        {status === "submitted" ? "Report saved to offline queue and ready for sync." : "End shift report is ready."}
+        {status === "submitted"
+          ? "End shift report submitted. Logout is now unlocked."
+          : status === "validation"
+            ? "Meters, fuel and notes are mandatory before logout."
+            : "End shift report is required before logout."}
       </p>
     </form>
+  );
+}
+
+export function AccessApprovalConsole() {
+  const ops = useOpsStore(useShallow((state) => ({
+    accessRequests: state.accessRequests,
+    approveAccessRequest: state.approveAccessRequest,
+    rejectAccessRequest: state.rejectAccessRequest
+  })));
+  const [projectByRequest, setProjectByRequest] = useState<Record<string, string>>({});
+  const [lastCredential, setLastCredential] = useState<string | null>(null);
+  const pending = ops.accessRequests.filter((request) => request.status === "pending");
+  const approved = ops.accessRequests.filter((request) => request.status === "approved");
+
+  async function approve(requestId: string) {
+    const projectId = projectByRequest[requestId] ?? projects[1].id;
+    const result = ops.approveAccessRequest(requestId, projectId);
+    if (!result) return;
+    setLastCredential(`${result.loginId} / ${result.password}`);
+    await guardedSupabaseWrite(supabase.from("activity_logs").insert({
+      entity_type: "access_request",
+      entity_id: requestId,
+      action: "approved",
+      metadata: {
+        project_id: projectId,
+        login_id: result.loginId
+      }
+    }));
+  }
+
+  return (
+    <GlassCard className="p-4">
+      <SectionHeader
+        title="Access Requests"
+        action={<Badge tone={pending.length ? "amber" : "green"}>{pending.length} Pending</Badge>}
+      />
+      {lastCredential ? (
+        <div className="mb-3 rounded-xl border border-green-400/25 bg-green-500/10 p-3 text-sm text-slate-200">
+          Generated credentials: <span className="font-semibold text-white">{lastCredential}</span>
+        </div>
+      ) : null}
+      <div className="space-y-3">
+        {[...pending, ...approved].map((request) => (
+          <div key={request.id} className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-semibold">{request.fullName}</h3>
+                  <Badge tone={request.status === "approved" ? "green" : "amber"}>
+                    {request.status}
+                  </Badge>
+                  <Badge tone="cyan">{request.requestedRole}</Badge>
+                </div>
+                <p className="mt-1 text-sm text-slate-300">
+                  {request.companyName} · {request.site}
+                </p>
+                <p className="text-sm text-slate-400">
+                  {request.email} · {request.phone}
+                </p>
+              </div>
+              {request.status === "pending" ? (
+                <div className="grid gap-2 sm:min-w-[240px]">
+                  <select
+                    value={projectByRequest[request.id] ?? projects[1].id}
+                    onChange={(event) =>
+                      setProjectByRequest((current) => ({
+                        ...current,
+                        [request.id]: event.target.value
+                      }))
+                    }
+                    className="min-h-11 rounded-xl border border-white/14 bg-ink-950/70 px-3 text-sm text-white outline-none"
+                  >
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => approve(request.id)}
+                      className="min-h-11 rounded-xl border border-green-400/45 text-telgo-green"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => ops.rejectAccessRequest(request.id)}
+                      className="min-h-11 rounded-xl border border-red-400/45 text-telgo-red"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-white/10 bg-ink-950/50 p-3 text-sm text-slate-300">
+                  <p className="text-white">{request.loginId}</p>
+                  <p>{request.password}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </GlassCard>
+  );
+}
+
+export function FinanceRequestsBoard() {
+  const ops = useOpsStore(useShallow((state) => ({
+    users: state.users,
+    currentUserId: state.currentUserId,
+    financeRequests: state.financeRequests,
+    decideFinanceRequest: state.decideFinanceRequest,
+    addChatMessage: state.addChatMessage,
+    addNotification: state.addNotification
+  })));
+  const currentUser = getCurrentUser(ops);
+
+  function requesterName(id: string) {
+    return ops.users.find((user) => user.id === id)?.fullName ?? "Field Engineer";
+  }
+
+  function approve(id: string) {
+    ops.decideFinanceRequest(id, "approved");
+    ops.addChatMessage({
+      author: currentUser.fullName,
+      role: "Finance",
+      body: "Approved. Funds ready.",
+      tone: "violet"
+    });
+  }
+
+  function escalate(id: string) {
+    const request = ops.financeRequests.find((item) => item.id === id);
+    ops.addNotification({
+      targetRole: "admin",
+      title: "Finance escalation",
+      body: `${request?.title ?? "Finance request"} needs admin confirmation.`,
+      type: "finance"
+    });
+  }
+
+  return (
+    <GlassCard className="p-4">
+      <SectionHeader
+        title="Engineer Finance Requests"
+        action={<Badge tone="amber">{ops.financeRequests.filter((item) => item.status === "pending").length} Pending</Badge>}
+      />
+      <div className="space-y-3">
+        {ops.financeRequests.map((request) => {
+          const project = projects.find((item) => item.id === request.projectId) ?? projects[0];
+          return (
+            <div key={request.id} className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
+              <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold">{request.title}</h3>
+                    <Badge tone={request.status === "approved" || request.status === "paid" ? "green" : "amber"}>
+                      {request.status}
+                    </Badge>
+                    {request.urgency === "urgent" ? <Badge tone="red">Urgent</Badge> : null}
+                  </div>
+                  <p className="mt-1 text-sm text-slate-300">
+                    {requesterName(request.requesterId)} · {project.name}
+                  </p>
+                  <p className="text-sm text-slate-400">{request.description}</p>
+                  {request.attachmentName ? (
+                    <p className="mt-2 text-sm text-telgo-cyan">Attachment: {request.attachmentName}</p>
+                  ) : null}
+                </div>
+                <div className="grid gap-2 text-right">
+                  <p className="text-xl font-semibold">{formatInr(request.amount)}</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => approve(request.id)}
+                      className="min-h-11 rounded-xl border border-green-400/45 px-3 text-sm text-telgo-green"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => escalate(request.id)}
+                      className="min-h-11 rounded-xl border border-telgo-cyan/45 px-3 text-sm text-telgo-cyan"
+                    >
+                      Admin
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </GlassCard>
+  );
+}
+
+export function RoleNotificationsPanel({ title = "Live Notifications" }: { title?: string }) {
+  const users = useOpsStore((state) => state.users);
+  const currentUserId = useOpsStore((state) => state.currentUserId);
+  const notifications = useOpsStore((state) => state.notifications);
+  const currentUser = getCurrentUser({ users, currentUserId });
+  const visible = notifications
+    .filter((item) => item.targetRole === currentUser.role || item.targetRole === "all")
+    .slice(0, 5);
+
+  return (
+    <GlassCard className="p-4">
+      <SectionHeader title={title} action={<Badge tone="cyan">{visible.length} Live</Badge>} />
+      <div className="space-y-3">
+        {visible.map((notification) => (
+          <div key={notification.id} className="flex gap-3 rounded-xl border border-white/10 bg-white/[0.025] p-3">
+            <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl border ${toneClasses[notification.type === "finance" ? "violet" : notification.type === "client" ? "amber" : "cyan"]}`}>
+              <Icon name={notification.type === "finance" ? "ReceiptIndianRupee" : notification.type === "client" ? "Siren" : "Bell"} />
+            </span>
+            <div className="min-w-0">
+              <p className="font-semibold">{notification.title}</p>
+              <p className="text-sm text-slate-300">{notification.body}</p>
+              <p className="mt-1 text-xs text-slate-500">{notification.createdAt}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </GlassCard>
+  );
+}
+
+export function ClientReviewRequest() {
+  const users = useOpsStore((state) => state.users);
+  const currentUserId = useOpsStore((state) => state.currentUserId);
+  const requestClientReview = useOpsStore((state) => state.requestClientReview);
+  const currentUser = getCurrentUser({ users, currentUserId });
+  const project = projects.find((item) => currentUser.projectIds.includes(item.id)) ?? projects[0];
+  const [status, setStatus] = useState("Ready for client review request.");
+
+  function submitReviewRequest() {
+    requestClientReview(project.id);
+    setStatus("Review request sent to Admin with project context.");
+  }
+
+  return (
+    <GlassCard className="p-4">
+      <SectionHeader title="Client Action" action={<Badge tone="amber">Escalation</Badge>} />
+      <p className="text-sm text-slate-300">
+        {project.name} is the only project visible for this client account.
+      </p>
+      <button
+        type="button"
+        onClick={submitReviewRequest}
+        className="mt-4 flex min-h-13 w-full items-center justify-center gap-2 rounded-xl bg-telgo-blue font-semibold text-white"
+      >
+        <Icon name="Siren" />
+        Request Review
+      </button>
+      <p className="mt-3 text-sm text-telgo-cyan">{status}</p>
+    </GlassCard>
   );
 }
 
@@ -676,36 +1216,50 @@ export function ApprovalQueue({ category }: { category?: Approval["category"] })
 }
 
 export function ChatRoom() {
-  const [messages, setMessages] = useState(chatMessages);
+  const users = useOpsStore((state) => state.users);
+  const currentUserId = useOpsStore((state) => state.currentUserId);
+  const messages = useOpsStore((state) => state.chatMessages);
+  const addChatMessage = useOpsStore((state) => state.addChatMessage);
+  const currentUser = getCurrentUser({ users, currentUserId });
   const [body, setBody] = useState("");
   const [connected, setConnected] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    setHydrated(true);
     const channel = supabase.channel("project-chat-cial");
     channel
       .on("broadcast", { event: "message" }, ({ payload }) => {
-        setMessages((current) => [...current, payload as ChatMessage]);
+        const message = payload as ChatMessage;
+        addChatMessage({
+          author: message.author,
+          role: message.role,
+          body: message.body,
+          tone: message.tone
+        });
       })
       .subscribe((status) => setConnected(status === "SUBSCRIBED"));
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [addChatMessage]);
 
   async function sendMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!body.trim()) return;
-    const message: ChatMessage = {
-      id: `local-${Date.now()}`,
-      author: "You",
-      role: "Site Engineer",
+    const message = addChatMessage({
+      author: currentUser.fullName,
+      role: currentUser.role === "finance" ? "Finance" : currentUser.role === "admin" ? "Admin" : "Site Engineer",
       body,
-      time: new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
-      tone: "cyan",
+      tone: currentUser.role === "finance" ? "violet" : currentUser.role === "admin" ? "amber" : "cyan",
       reactions: 0
-    };
-    setMessages((current) => [...current, message]);
+    });
     setBody("");
+    await guardedSupabaseWrite(supabase.from("messages").insert({
+      project_id: "cial-33kv",
+      sender_id: currentUser.id,
+      body: message.body
+    }));
     await supabase.channel("project-chat-cial").send({
       type: "broadcast",
       event: "message",
@@ -752,7 +1306,7 @@ export function ChatRoom() {
         ))}
       </div>
       <form onSubmit={sendMessage} className="sticky bottom-24 mt-4 flex gap-2 rounded-2xl border border-white/10 bg-ink-950/90 p-2 backdrop-blur">
-        <button className="grid h-12 w-12 place-items-center rounded-xl border border-white/10" type="button">
+        <button className="grid h-12 w-12 place-items-center rounded-xl border border-white/10" type="button" aria-label="Add attachment">
           <Icon name="Plus" />
         </button>
         <input
@@ -761,7 +1315,12 @@ export function ChatRoom() {
           placeholder="Type a message..."
           className="min-w-0 flex-1 bg-transparent px-2 text-white outline-none placeholder:text-slate-500"
         />
-        <button className="grid h-12 w-12 place-items-center rounded-xl bg-telgo-blue" type="submit">
+        <button
+          className="grid h-12 w-12 place-items-center rounded-xl bg-telgo-blue disabled:opacity-60"
+          type="submit"
+          aria-label="Send message"
+          disabled={!hydrated}
+        >
           <Icon name="Send" />
         </button>
       </form>
@@ -771,12 +1330,19 @@ export function ChatRoom() {
 
 export function OfflineSyncManager() {
   const online = useOnlineStatus();
+  const forceOffline = useOpsStore((state) => state.forceOffline);
+  const setForceOffline = useOpsStore((state) => state.setForceOffline);
   const items = useOfflineStore((state) => state.items);
   const markSynced = useOfflineStore((state) => state.markSynced);
   const clearAll = useOfflineStore((state) => state.clearAll);
+  const [hydrated, setHydrated] = useState(false);
   const pending = items.filter((item) => item.status !== "synced");
   const synced = items.filter((item) => item.status === "synced");
   const percent = Math.round((synced.length / Math.max(items.length, 1)) * 100);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   function syncNow() {
     pending.forEach((item, index) => {
@@ -802,13 +1368,23 @@ export function OfflineSyncManager() {
               <div className="h-full rounded-full bg-telgo-blue" style={{ width: `${Math.max(percent, 50)}%` }} />
             </div>
           </div>
-          <button
-            type="button"
-            onClick={syncNow}
-            className="min-h-12 rounded-xl border border-telgo-cyan/40 px-5 font-semibold text-telgo-cyan"
-          >
-            Sync Now
-          </button>
+          <div className="grid gap-2">
+            <button
+              type="button"
+              disabled={!hydrated}
+              onClick={() => setForceOffline(!forceOffline)}
+              className="min-h-12 rounded-xl border border-amber-400/40 px-5 font-semibold text-telgo-amber disabled:opacity-60"
+            >
+              {!hydrated ? "Loading..." : forceOffline ? "Restore Signal" : "Simulate No Signal"}
+            </button>
+            <button
+              type="button"
+              onClick={syncNow}
+              className="min-h-12 rounded-xl border border-telgo-cyan/40 px-5 font-semibold text-telgo-cyan"
+            >
+              Sync Now
+            </button>
+          </div>
         </div>
       </GlassCard>
       {!online ? (
@@ -922,6 +1498,63 @@ function FormBlock({
       {children}
     </GlassCard>
   );
+}
+
+function normalizeRole(value: string): Role {
+  const lower = value.toLowerCase();
+  if (lower.includes("finance")) return "finance";
+  if (lower.includes("engineer") || lower.includes("site")) return "engineer";
+  if (lower.includes("supervisor")) return "supervisor";
+  if (lower.includes("admin")) return "admin";
+  return "client";
+}
+
+function getCurrentPosition(fallback: { lat: number; lng: number }) {
+  if (!("geolocation" in navigator)) return Promise.resolve(fallback);
+  return new Promise<{ lat: number; lng: number }>((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) =>
+        resolve({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        }),
+      () => resolve(fallback),
+      { enableHighAccuracy: true, timeout: 5000 }
+    );
+  });
+}
+
+function distanceMeters(latA: number, lngA: number, latB: number, lngB: number) {
+  const earthRadiusM = 6371000;
+  const toRad = (value: number) => (value * Math.PI) / 180;
+  const dLat = toRad(latB - latA);
+  const dLng = toRad(lngB - lngA);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(latA)) *
+      Math.cos(toRad(latB)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  return earthRadiusM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+async function guardedSupabaseWrite<T extends { error: unknown }>(
+  operation: PromiseLike<T>,
+  timeoutMs = 8000
+): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const timeoutResult = new Promise<T>((resolve) => {
+    timeout = setTimeout(
+      () => resolve({ error: new Error("Supabase request timed out") } as T),
+      timeoutMs
+    );
+  });
+  const result = await Promise.race([
+    Promise.resolve(operation).catch((error) => ({ error }) as T),
+    timeoutResult
+  ]);
+  if (timeout) clearTimeout(timeout);
+  return result;
 }
 
 function Field({
