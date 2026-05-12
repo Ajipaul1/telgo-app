@@ -1,7 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { telgoConfig } from "@/lib/config";
+import {
+  getMobileAccessClient,
+  toMobileAccessUser
+} from "@/lib/server/mobile-access";
 
 const allowedRoles = new Set(["engineer", "supervisor", "finance", "client", "admin"]);
 
@@ -81,17 +83,39 @@ export async function POST(request: NextRequest) {
   const loginId = makeTelgoId();
   const password = makePassword();
   const passwordHash = hashSecret(loginId, password);
-  const supabase = createClient(telgoConfig.supabaseUrl, telgoConfig.supabasePublishableKey, {
-    auth: { persistSession: false }
-  });
+  let supabase: ReturnType<typeof getMobileAccessClient>;
+  try {
+    supabase = getMobileAccessClient();
+  } catch (error) {
+    return NextResponse.json(
+      { ok: false, message: getErrorMessage(error) },
+      { status: 500 }
+    );
+  }
 
-  const { data, error } = await supabase.rpc("request_email_mobile_access", {
-    p_full_name: fullName,
-    p_email: email,
-    p_requested_role: role,
-    p_login_id: loginId,
-    p_password_hash: passwordHash
-  });
+  const userId = `email-${createHash("md5").update(email).digest("hex")}`;
+  const folderPath = `mobile-users/${loginId}`;
+  const { data, error } = await supabase
+    .from("mobile_app_users")
+    .upsert(
+      {
+        id: userId,
+        email,
+        login_id: loginId,
+        temp_password_hash: passwordHash,
+        full_name: fullName,
+        role,
+        access_status: "active",
+        blocked_at: null,
+        blocked_reason: null,
+        activated_at: new Date().toISOString(),
+        user_folder_path: folderPath,
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: "id" }
+    )
+    .select("id,email,full_name,role,login_id,user_folder_path,created_at")
+    .single();
 
   if (error) {
     return NextResponse.json(
@@ -100,8 +124,23 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const savedUser = Array.isArray(data) ? data[0] : data;
-  const savedLoginId = String(savedUser?.login_id ?? loginId);
+  const savedUser = toMobileAccessUser(data);
+  const savedLoginId = savedUser.login_id;
+  await supabase.from("mobile_user_files").upsert(
+    {
+      mobile_user_id: savedUser.id,
+      folder_path: folderPath,
+      profile: {
+        fullName: savedUser.full_name,
+        email: savedUser.email,
+        role: savedUser.role,
+        loginId: savedLoginId
+      },
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: "folder_path" }
+  );
+
   const appUrl = new URL("/", request.url).toString();
   const from = process.env.RESEND_FROM_EMAIL ?? "Telgo Hub <onboarding@resend.dev>";
   const emailResponse = await fetch("https://api.resend.com/emails", {
@@ -140,4 +179,9 @@ export async function POST(request: NextRequest) {
     role,
     message: "Access approved and email sent."
   });
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  return "Server configuration is missing.";
 }

@@ -53,7 +53,6 @@ import {
   Wrench
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 type MvpView = "request" | "credentials" | "pin" | "signin" | "dashboard" | "module";
@@ -299,18 +298,16 @@ export function TelgoMvpApp() {
     setLoading(true);
     setNotice("Verifying emailed access...");
     const passwordHash = await hashSecret(normalizedLoginId, password.trim());
-    const rpcResult = await withTimeout(
-      supabase.rpc("verify_email_access", {
-        p_login_id: normalizedLoginId,
-        p_password_hash: passwordHash
-      })
-    );
-    const remoteUser = Array.isArray(rpcResult.data) ? rpcResult.data[0] : rpcResult.data;
+    const result = await postMobileAccess("/api/mobile/verify-email", {
+      loginId: normalizedLoginId,
+      passwordHash
+    });
+    const remoteUser = result.user;
     const signedInUser = remoteUser ? toAppUser(remoteUser, normalizedLoginId) : null;
 
     setLoading(false);
-    if (rpcResult.error) {
-      setNotice(`Verification failed: ${getErrorMessage(rpcResult.error)}`);
+    if (!result.ok) {
+      setNotice(`Verification failed: ${result.message ?? "Server rejected the credentials."}`);
       return;
     }
     if (!signedInUser) {
@@ -338,21 +335,19 @@ export function TelgoMvpApp() {
     setLoading(true);
     setNotice("Saving secure PIN...");
     const pinHash = await hashSecret(pendingUser.loginId, pin);
-    const rpcResult = await withTimeout(
-      supabase.rpc("set_mobile_login_pin", {
-        p_user_id: pendingUser.id,
-        p_password_hash: pendingPasswordHash,
-        p_pin_hash: pinHash
-      })
-    );
+    const result = await postMobileAccess("/api/mobile/set-pin", {
+      userId: pendingUser.id,
+      passwordHash: pendingPasswordHash,
+      pinHash
+    });
 
-    if (rpcResult.error) {
+    if (!result.ok) {
       setLoading(false);
-      setNotice(`PIN could not be saved: ${getErrorMessage(rpcResult.error)}`);
+      setNotice(`PIN could not be saved: ${result.message ?? "Server rejected the PIN."}`);
       return;
     }
 
-    const remoteUser = Array.isArray(rpcResult.data) ? rpcResult.data[0] : rpcResult.data;
+    const remoteUser = result.user;
     const activatedUser = remoteUser ? toAppUser(remoteUser, pendingUser.loginId) : pendingUser;
     saveSession(activatedUser);
     setUser(activatedUser);
@@ -374,19 +369,17 @@ export function TelgoMvpApp() {
     setLoading(true);
     setNotice("Signing in...");
     const pinHash = await hashSecret(normalizedLoginId, signinPin);
-    const rpcResult = await withTimeout(
-      supabase.rpc("verify_mobile_pin_by_login", {
-        p_login_id: normalizedLoginId,
-        p_pin_hash: pinHash
-      })
-    );
+    const result = await postMobileAccess("/api/mobile/sign-in", {
+      loginId: normalizedLoginId,
+      pinHash
+    });
 
-    const remoteUser = Array.isArray(rpcResult.data) ? rpcResult.data[0] : rpcResult.data;
+    const remoteUser = result.user;
     const signedInUser = remoteUser ? toAppUser(remoteUser, normalizedLoginId) : null;
 
     setLoading(false);
-    if (rpcResult.error) {
-      setNotice(`Sign in failed: ${getErrorMessage(rpcResult.error)}`);
+    if (!result.ok) {
+      setNotice(`Sign in failed: ${result.message ?? "Server rejected the login."}`);
       return;
     }
     if (!signedInUser) {
@@ -1309,18 +1302,26 @@ function getErrorMessage(error: unknown) {
   return "Server rejected the request.";
 }
 
-async function withTimeout<T extends { error?: unknown; data?: unknown }>(
-  operation: PromiseLike<T>,
-  timeoutMs = 5500
-): Promise<T> {
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  const fallback = new Promise<T>((resolve) => {
-    timeout = setTimeout(() => resolve({ error: new Error("Request timed out") } as T), timeoutMs);
-  });
-  const result = await Promise.race([
-    Promise.resolve(operation).catch((error) => ({ error }) as T),
-    fallback
-  ]);
-  if (timeout) clearTimeout(timeout);
-  return result;
+async function postMobileAccess(path: string, payload: Record<string, unknown>) {
+  try {
+    const response = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = (await response.json().catch(() => null)) as
+      | { ok?: boolean; message?: string; user?: unknown }
+      | null;
+    return {
+      ok: response.ok && data?.ok === true,
+      message: data?.message,
+      user: data?.user
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: getErrorMessage(error),
+      user: null
+    };
+  }
 }
