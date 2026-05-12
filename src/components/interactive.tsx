@@ -302,7 +302,7 @@ export function RequestAccessForm() {
         {status === "submitted"
           ? "Request submitted to Supabase for admin review."
           : status === "saved-locally"
-            ? "Supabase rejected the write, so the form stayed safe in demo mode."
+            ? "Supabase rejected the write. Please reconnect and submit again for admin review."
             : status === "submitting"
               ? "Submitting request..."
               : "Need help? Contact Support +91 95443 65758"}

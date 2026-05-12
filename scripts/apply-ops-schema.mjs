@@ -3,19 +3,18 @@ import path from "node:path";
 
 const accessToken = process.env.SUPABASE_ACCESS_TOKEN;
 const projectRef = process.env.SUPABASE_PROJECT_REF ?? "qujinbsslmyaltfgsjzb";
-const migrationPath = path.join(
-  process.cwd(),
-  "supabase",
-  "migrations",
-  "20260510134500_operational_workflow_extensions.sql"
-);
+const migrations = [
+  "20260510134500_operational_workflow_extensions.sql",
+  "20260512103000_mobile_access_gate.sql"
+].map((fileName) => path.join(process.cwd(), "supabase", "migrations", fileName));
 
 if (!accessToken) {
   console.error("SUPABASE_ACCESS_TOKEN is required.");
   process.exit(1);
 }
 
-const query = await fs.readFile(migrationPath, "utf8");
+const query = (await Promise.all(migrations.map((migrationPath) => fs.readFile(migrationPath, "utf8"))))
+  .join("\n\n");
 const response = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/database/query`, {
   method: "POST",
   headers: {

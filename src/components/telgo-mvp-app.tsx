@@ -18,6 +18,7 @@ import {
   CloudUpload,
   ClipboardCheck,
   CreditCard,
+  Download,
   FileText,
   Folder,
   FolderOpen,
@@ -40,6 +41,7 @@ import {
   Settings,
   Shield,
   ShieldCheck,
+  Smartphone,
   Sparkles,
   TriangleAlert,
   Truck,
@@ -74,7 +76,7 @@ type ModuleItem = {
 };
 
 const SESSION_KEY = "telgo-mobile-session";
-const USER_KEY_PREFIX = "telgo-mobile-user:";
+const APK_DOWNLOAD_PATH = "/downloads/telgo-hub.apk";
 
 const toneStyles: Record<Tone, { icon: string; box: string; text: string }> = {
   blue: {
@@ -196,8 +198,8 @@ const activities = [
   ["Finance request #FR-125 submitted", "Yesterday, 06:15 PM", ReceiptIndianRupee, "orange"]
 ] as const;
 
-export function TelgoMvpApp({ startOnDashboard = false }: { startOnDashboard?: boolean }) {
-  const [view, setView] = useState<MvpView>(startOnDashboard ? "dashboard" : "signup");
+export function TelgoMvpApp() {
+  const [view, setView] = useState<MvpView>("signin");
   const [phone, setPhone] = useState("");
   const [signinPhone, setSigninPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -251,11 +253,11 @@ export function TelgoMvpApp({ startOnDashboard = false }: { startOnDashboard?: b
     );
     setPhone(normalizedPhone);
     setLoading(false);
-    setNotice(
-      error
-        ? "SMS provider is not active here, so demo OTP mode is ready."
-        : `OTP sent to ${maskPhone(normalizedPhone)}.`
-    );
+    if (error) {
+      setNotice(`SMS could not be sent: ${getErrorMessage(error)}`);
+      return;
+    }
+    setNotice(`OTP sent to ${maskPhone(normalizedPhone)}.`);
     setView("otp");
   }
 
@@ -275,7 +277,11 @@ export function TelgoMvpApp({ startOnDashboard = false }: { startOnDashboard?: b
       })
     );
     setLoading(false);
-    setNotice(error ? "OTP accepted in demo mode." : "OTP verified.");
+    if (error) {
+      setNotice(`OTP verification failed: ${getErrorMessage(error)}`);
+      return;
+    }
+    setNotice("OTP verified.");
     setView("pin");
   }
 
@@ -291,56 +297,33 @@ export function TelgoMvpApp({ startOnDashboard = false }: { startOnDashboard?: b
       return;
     }
     setLoading(true);
-    setNotice("Creating account...");
+    setNotice("Activating approved access...");
     const pinHash = await hashPin(normalizedPhone, pin);
-    const createdUser: AppUser = {
-      id: `mobile-${normalizedPhone.replace(/\D/g, "")}`,
-      phone: normalizedPhone,
-      name: "Ajith",
-      role: "employee",
-      pinHash,
-      createdAt: new Date().toISOString()
-    };
 
     const rpcResult = await withTimeout(
-      supabase.rpc("register_mobile_user", {
+      supabase.rpc("activate_approved_mobile_user", {
         p_phone: normalizedPhone,
         p_pin_hash: pinHash,
-        p_full_name: createdUser.name
+        p_full_name: "Telgo Mobile User"
       })
     );
 
     if (rpcResult.error) {
-      await withTimeout(
-        supabase.from("mobile_app_users").upsert(
-          {
-            id: createdUser.id,
-            phone: normalizedPhone,
-            pin_hash: pinHash,
-            full_name: createdUser.name,
-            role: createdUser.role
-          },
-          { onConflict: "phone" }
-        )
+      setLoading(false);
+      setNotice(
+        "Access is not active for this mobile number yet. Submit an access request or ask an admin to approve it."
       );
-      await withTimeout(
-        supabase.from("access_requests").insert({
-          full_name: createdUser.name,
-          phone: normalizedPhone,
-          company_name: "Telgo Power Projects",
-          requested_role: "engineer",
-          access_purpose: "mobile_signup",
-          status: "pending"
-        })
-      );
+      return;
     }
 
-    saveUser(createdUser);
-    setUser(createdUser);
+    const remoteUser = Array.isArray(rpcResult.data) ? rpcResult.data[0] : rpcResult.data;
+    const activatedUser = toAppUser(remoteUser, normalizedPhone);
+    saveSession(activatedUser);
+    setUser(activatedUser);
     setPin("");
     setConfirmPin("");
     setLoading(false);
-    setNotice("Account created successfully.");
+    setNotice("Access activated successfully.");
     setView("dashboard");
   }
 
@@ -361,31 +344,15 @@ export function TelgoMvpApp({ startOnDashboard = false }: { startOnDashboard?: b
     );
 
     const remoteUser = Array.isArray(rpcResult.data) ? rpcResult.data[0] : rpcResult.data;
-    const localUser = readUser(normalizedPhone);
-    const demoAccepted = signinPin === "1234" || signinPin === "2026";
-    const signedInUser: AppUser | null = remoteUser
-      ? {
-          id: String(remoteUser.id ?? `mobile-${normalizedPhone.replace(/\D/g, "")}`),
-          phone: normalizedPhone,
-          name: String(remoteUser.full_name ?? "Ajith"),
-          role: String(remoteUser.role ?? "employee"),
-          createdAt: String(remoteUser.created_at ?? new Date().toISOString())
-        }
-      : localUser?.pinHash === pinHash
-        ? localUser
-        : demoAccepted
-          ? {
-              id: `mobile-${normalizedPhone.replace(/\D/g, "")}`,
-              phone: normalizedPhone,
-              name: "Ajith",
-              role: "employee",
-              createdAt: new Date().toISOString()
-            }
-          : null;
+    const signedInUser = remoteUser ? toAppUser(remoteUser, normalizedPhone) : null;
 
     setLoading(false);
+    if (rpcResult.error) {
+      setNotice(`Sign in failed: ${getErrorMessage(rpcResult.error)}`);
+      return;
+    }
     if (!signedInUser) {
-      setNotice("PIN not found. Create an account first.");
+      setNotice("Access not found for this mobile number and PIN.");
       return;
     }
 
@@ -503,6 +470,7 @@ export function TelgoMvpApp({ startOnDashboard = false }: { startOnDashboard?: b
             />
           ) : null}
         </section>
+        <AndroidDownloadCard />
       </div>
     </main>
   );
@@ -518,11 +486,10 @@ function AuthIntro() {
         Mobile-first operations for every project team.
       </h1>
       <p className="mt-5 max-w-[460px] text-lg leading-8 text-slate-600">
-        Sign up with mobile OTP, protect the account with a 4-digit PIN, and land directly on the
-        full module dashboard.
+        Company access is approved first, then mobile OTP and PIN unlock the operations dashboard.
       </p>
       <div className="mt-8 grid grid-cols-3 gap-3">
-        {["OTP ready", "PIN secure", "All modules"].map((item) => (
+        {["Approved access", "SMS OTP", "APK ready"].map((item) => (
           <div key={item} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <Check className="mb-3 h-5 w-5 text-[#14b866]" />
             <p className="text-sm font-semibold text-slate-800">{item}</p>
@@ -552,8 +519,8 @@ function SignupPhone({
     <div className="pt-7">
       <BrandMark />
       <div className="mt-9 text-center">
-        <h1 className="text-2xl font-bold tracking-normal">Create Your Account</h1>
-        <p className="mt-2 text-sm text-slate-500">Enter your mobile number to get started</p>
+        <h1 className="text-2xl font-bold tracking-normal">Activate Mobile Access</h1>
+        <p className="mt-2 text-sm text-slate-500">Use the approved company mobile number</p>
       </div>
       <label className="mt-8 block">
         <span className="mb-2 block text-sm font-semibold text-slate-700">Mobile Number</span>
@@ -575,17 +542,17 @@ function SignupPhone({
         {loading ? "Sending..." : "Send OTP"}
       </PrimaryButton>
       <p className="mt-5 text-center text-xs leading-5 text-slate-500">
-        By continuing, you agree to our{" "}
-        <span className="font-semibold text-[#115cff]">Terms & Conditions</span> and{" "}
-        <span className="font-semibold text-[#115cff]">Privacy Policy</span>
+        OTP is sent by SMS. Access opens only after admin approval is active for this number.
       </p>
       {notice ? <Notice>{notice}</Notice> : null}
-      <p className="mt-6 text-center text-sm text-slate-500">
-        Already have an account?{" "}
+      <div className="mt-6 grid gap-2 text-center text-sm text-slate-500">
+        <a href="/request-access" className="font-semibold text-[#115cff]">
+          Request company access
+        </a>
         <button type="button" onClick={onSignin} className="font-semibold text-[#115cff]">
-          Sign In
+          Already active? Sign in
         </button>
-      </p>
+      </div>
     </div>
   );
 }
@@ -656,14 +623,14 @@ function PinStep({
       </button>
       <div className="mt-8 text-center">
         <h1 className="text-2xl font-bold tracking-normal">Create PIN</h1>
-        <p className="mt-3 text-sm text-slate-500">Set a 4-digit PIN for quick sign in</p>
+        <p className="mt-3 text-sm text-slate-500">Set a 4-digit PIN for this approved account</p>
       </div>
       <div className="mt-8 space-y-4">
         <PinInput label="4-digit PIN" value={pin} onChange={onPin} />
         <PinInput label="Confirm PIN" value={confirmPin} onChange={onConfirmPin} />
       </div>
       <PrimaryButton disabled={loading} onClick={onCreate} className="mt-7">
-        {loading ? "Creating..." : "Create Account"}
+        {loading ? "Activating..." : "Activate Access"}
       </PrimaryButton>
       {notice ? <Notice>{notice}</Notice> : null}
     </div>
@@ -694,7 +661,7 @@ function SigninStep({
       <BrandMark />
       <div className="mt-9 text-center">
         <h1 className="text-2xl font-bold tracking-normal">Welcome Back</h1>
-        <p className="mt-2 text-sm text-slate-500">Sign in with mobile number and PIN</p>
+        <p className="mt-2 text-sm text-slate-500">Approved Telgo accounts only</p>
       </div>
       <label className="mt-8 block">
         <span className="mb-2 block text-sm font-semibold text-slate-700">Phone Number</span>
@@ -716,14 +683,55 @@ function SigninStep({
         {loading ? "Signing In..." : "Sign In"}
       </PrimaryButton>
       {notice ? <Notice>{notice}</Notice> : null}
-      <p className="mt-6 text-center text-sm text-slate-500">
-        New to Telgo?{" "}
+      <div className="mt-6 grid gap-2 text-center text-sm text-slate-500">
         <button type="button" onClick={onSignup} className="font-semibold text-[#115cff]">
-          Create Account
+          Activate approved mobile access
         </button>
-      </p>
+        <a href="/request-access" className="font-semibold text-[#115cff]">
+          Request company access
+        </a>
+      </div>
     </div>
   );
+}
+
+function AndroidDownloadCard() {
+  return (
+    <section
+      id="download-android"
+      className="w-full max-w-[430px] rounded-[24px] border border-blue-100 bg-white px-5 py-5 shadow-[0_16px_54px_rgba(15,35,80,0.10)] sm:px-6 lg:col-start-2"
+    >
+      <div className="flex items-start gap-3">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-50 text-[#115cff]">
+          <Smartphone className="h-6 w-6" />
+        </span>
+        <div>
+          <h2 className="text-base font-bold text-[#07122f]">Install Telgo Hub on Android</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-500">
+            Download the company APK, install it on the approved phone, then sign in with your
+            active mobile PIN.
+          </p>
+        </div>
+      </div>
+      <a
+        href={APK_DOWNLOAD_PATH}
+        download
+        className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#07122f] px-4 text-sm font-bold text-white"
+        aria-label="Download Android App"
+      >
+        <Download className="h-5 w-5" />
+        Download Android App
+      </a>
+      <p className="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-500">
+        <LockKeyholeIcon />
+        Company asset. Login remains blocked until access is approved.
+      </p>
+    </section>
+  );
+}
+
+function LockKeyholeIcon() {
+  return <ShieldCheck className="h-4 w-4 shrink-0 text-[#14b866]" />;
 }
 
 function DashboardView({
@@ -1203,22 +1211,27 @@ async function hashPin(phone: string, pin: string) {
     .join("");
 }
 
-function saveUser(user: AppUser) {
-  localStorage.setItem(`${USER_KEY_PREFIX}${user.phone}`, JSON.stringify(user));
-  saveSession(user);
-}
-
-function readUser(phone: string) {
-  try {
-    const raw = localStorage.getItem(`${USER_KEY_PREFIX}${phone}`);
-    return raw ? (JSON.parse(raw) as AppUser) : null;
-  } catch {
-    return null;
-  }
-}
-
 function saveSession(user: AppUser) {
   localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+}
+
+function toAppUser(remoteUser: unknown, phone: string): AppUser {
+  const row = (remoteUser ?? {}) as Record<string, unknown>;
+  return {
+    id: String(row.id ?? `mobile-${phone.replace(/\D/g, "")}`),
+    phone: String(row.phone ?? phone),
+    name: String(row.full_name ?? row.name ?? "Telgo Mobile User"),
+    role: String(row.role ?? "employee"),
+    createdAt: String(row.created_at ?? new Date().toISOString())
+  };
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error && "message" in error) {
+    return String((error as { message?: unknown }).message ?? "Server rejected the request.");
+  }
+  return "Server rejected the request.";
 }
 
 async function withTimeout<T extends { error?: unknown; data?: unknown }>(
