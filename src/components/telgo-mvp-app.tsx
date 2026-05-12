@@ -56,13 +56,14 @@ import type { LucideIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
-type MvpView = "signup" | "otp" | "pin" | "signin" | "dashboard" | "module";
+type MvpView = "request" | "credentials" | "pin" | "signin" | "dashboard" | "module";
+type AccessRole = "engineer" | "supervisor" | "finance" | "client" | "admin";
 type AppUser = {
   id: string;
-  phone: string;
+  email: string;
+  loginId: string;
   name: string;
   role: string;
-  pinHash?: string;
   createdAt: string;
 };
 
@@ -77,6 +78,13 @@ type ModuleItem = {
 
 const SESSION_KEY = "telgo-mobile-session";
 const APK_DOWNLOAD_PATH = "/downloads/telgo-hub.apk";
+const accessRoles: { value: AccessRole; label: string; description: string }[] = [
+  { value: "engineer", label: "Engineer", description: "Site updates and reports" },
+  { value: "supervisor", label: "Supervisor", description: "Team and site review" },
+  { value: "finance", label: "Finance", description: "Approvals and payments" },
+  { value: "client", label: "Client", description: "Project visibility" },
+  { value: "admin", label: "Admin", description: "Operations control" }
+];
 
 const toneStyles: Record<Tone, { icon: string; box: string; text: string }> = {
   blue: {
@@ -200,12 +208,16 @@ const activities = [
 
 export function TelgoMvpApp() {
   const [view, setView] = useState<MvpView>("signin");
-  const [phone, setPhone] = useState("");
-  const [signinPhone, setSigninPhone] = useState("");
-  const [otp, setOtp] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [requestedRole, setRequestedRole] = useState<AccessRole>("engineer");
+  const [loginId, setLoginId] = useState("");
+  const [password, setPassword] = useState("");
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [signinPin, setSigninPin] = useState("");
+  const [pendingPasswordHash, setPendingPasswordHash] = useState("");
+  const [pendingUser, setPendingUser] = useState<AppUser | null>(null);
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<AppUser | null>(null);
@@ -237,59 +249,86 @@ export function TelgoMvpApp() {
     return () => window.clearInterval(timer);
   }, []);
 
-  async function sendOtp() {
-    const normalizedPhone = normalizePhone(phone);
-    if (!normalizedPhone) {
-      setNotice("Enter a valid mobile number.");
+  async function requestEmailAccess() {
+    const normalizedEmail = normalizeEmail(email);
+    if (fullName.trim().length < 2 || !normalizedEmail) {
+      setNotice("Enter your name and a valid email address.");
       return;
     }
     setLoading(true);
-    setNotice("Sending OTP...");
-    const { error } = await withTimeout(
-      supabase.auth.signInWithOtp({
-        phone: normalizedPhone,
-        options: { shouldCreateUser: true }
+    setNotice("Creating approved access and sending email...");
+
+    const response = await fetch("/api/mobile/request-access", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fullName: fullName.trim(),
+        email: normalizedEmail,
+        role: requestedRole
       })
-    );
-    setPhone(normalizedPhone);
-    setLoading(false);
-    if (error) {
-      setNotice(`SMS could not be sent: ${getErrorMessage(error)}`);
+    }).catch((error: unknown) => ({ error }));
+
+    if ("error" in response) {
+      setLoading(false);
+      setNotice(`Request failed: ${getErrorMessage(response.error)}`);
       return;
     }
-    setNotice(`OTP sent to ${maskPhone(normalizedPhone)}.`);
-    setView("otp");
+
+    const data = (await response.json().catch(() => null)) as
+      | { ok?: boolean; loginId?: string; message?: string }
+      | null;
+    setLoading(false);
+    if (!response.ok || !data?.ok || !data.loginId) {
+      setNotice(data?.message ?? "Access request could not be completed.");
+      return;
+    }
+
+    setEmail(normalizedEmail);
+    setLoginId(data.loginId);
+    setPassword("");
+    setNotice(`Access approved. Credentials were emailed to ${normalizedEmail}.`);
+    setView("credentials");
   }
 
-  async function verifyOtp() {
-    const normalizedPhone = normalizePhone(phone);
-    if (otp.length !== 6 || !normalizedPhone) {
-      setNotice("Enter the 6-digit OTP.");
+  async function verifyCredentials() {
+    const normalizedLoginId = normalizeLoginId(loginId);
+    if (!normalizedLoginId || password.trim().length < 6) {
+      setNotice("Enter the Telgo ID and one-time password from email.");
       return;
     }
     setLoading(true);
-    setNotice("Verifying OTP...");
-    const { error } = await withTimeout(
-      supabase.auth.verifyOtp({
-        phone: normalizedPhone,
-        token: otp,
-        type: "sms"
+    setNotice("Verifying emailed access...");
+    const passwordHash = await hashSecret(normalizedLoginId, password.trim());
+    const rpcResult = await withTimeout(
+      supabase.rpc("verify_email_access", {
+        p_login_id: normalizedLoginId,
+        p_password_hash: passwordHash
       })
     );
+    const remoteUser = Array.isArray(rpcResult.data) ? rpcResult.data[0] : rpcResult.data;
+    const signedInUser = remoteUser ? toAppUser(remoteUser, normalizedLoginId) : null;
+
     setLoading(false);
-    if (error) {
-      setNotice(`OTP verification failed: ${getErrorMessage(error)}`);
+    if (rpcResult.error) {
+      setNotice(`Verification failed: ${getErrorMessage(rpcResult.error)}`);
       return;
     }
-    setNotice("OTP verified.");
+    if (!signedInUser) {
+      setNotice("The Telgo ID or one-time password is incorrect.");
+      return;
+    }
+
+    setPendingUser(signedInUser);
+    setPendingPasswordHash(passwordHash);
+    setPassword("");
+    setNotice("Access verified. Create your 4-digit PIN.");
     setView("pin");
   }
 
   async function createPin() {
-    const normalizedPhone = normalizePhone(phone);
-    if (!normalizedPhone) {
-      setNotice("Mobile number is missing.");
-      setView("signup");
+    if (!pendingUser || !pendingPasswordHash) {
+      setNotice("Verify your emailed credentials first.");
+      setView("credentials");
       return;
     }
     if (!/^\d{4}$/.test(pin) || pin !== confirmPin) {
@@ -297,54 +336,53 @@ export function TelgoMvpApp() {
       return;
     }
     setLoading(true);
-    setNotice("Activating approved access...");
-    const pinHash = await hashPin(normalizedPhone, pin);
-
+    setNotice("Saving secure PIN...");
+    const pinHash = await hashSecret(pendingUser.loginId, pin);
     const rpcResult = await withTimeout(
-      supabase.rpc("activate_approved_mobile_user", {
-        p_phone: normalizedPhone,
-        p_pin_hash: pinHash,
-        p_full_name: "Telgo Mobile User"
+      supabase.rpc("set_mobile_login_pin", {
+        p_user_id: pendingUser.id,
+        p_password_hash: pendingPasswordHash,
+        p_pin_hash: pinHash
       })
     );
 
     if (rpcResult.error) {
       setLoading(false);
-      setNotice(
-        "Access is not active for this mobile number yet. Submit an access request or ask an admin to approve it."
-      );
+      setNotice(`PIN could not be saved: ${getErrorMessage(rpcResult.error)}`);
       return;
     }
 
     const remoteUser = Array.isArray(rpcResult.data) ? rpcResult.data[0] : rpcResult.data;
-    const activatedUser = toAppUser(remoteUser, normalizedPhone);
+    const activatedUser = remoteUser ? toAppUser(remoteUser, pendingUser.loginId) : pendingUser;
     saveSession(activatedUser);
     setUser(activatedUser);
+    setPendingUser(null);
+    setPendingPasswordHash("");
     setPin("");
     setConfirmPin("");
     setLoading(false);
-    setNotice("Access activated successfully.");
+    setNotice("PIN created successfully.");
     setView("dashboard");
   }
 
   async function signIn() {
-    const normalizedPhone = normalizePhone(signinPhone);
-    if (!normalizedPhone || !/^\d{4}$/.test(signinPin)) {
-      setNotice("Enter mobile number and 4-digit PIN.");
+    const normalizedLoginId = normalizeLoginId(loginId);
+    if (!normalizedLoginId || !/^\d{4}$/.test(signinPin)) {
+      setNotice("Enter your Telgo ID and 4-digit PIN.");
       return;
     }
     setLoading(true);
     setNotice("Signing in...");
-    const pinHash = await hashPin(normalizedPhone, signinPin);
+    const pinHash = await hashSecret(normalizedLoginId, signinPin);
     const rpcResult = await withTimeout(
-      supabase.rpc("verify_mobile_pin", {
-        p_phone: normalizedPhone,
+      supabase.rpc("verify_mobile_pin_by_login", {
+        p_login_id: normalizedLoginId,
         p_pin_hash: pinHash
       })
     );
 
     const remoteUser = Array.isArray(rpcResult.data) ? rpcResult.data[0] : rpcResult.data;
-    const signedInUser = remoteUser ? toAppUser(remoteUser, normalizedPhone) : null;
+    const signedInUser = remoteUser ? toAppUser(remoteUser, normalizedLoginId) : null;
 
     setLoading(false);
     if (rpcResult.error) {
@@ -352,7 +390,7 @@ export function TelgoMvpApp() {
       return;
     }
     if (!signedInUser) {
-      setNotice("Access not found for this mobile number and PIN.");
+      setNotice("Telgo ID or PIN is incorrect, inactive, or blocked.");
       return;
     }
 
@@ -388,6 +426,7 @@ export function TelgoMvpApp() {
       >
         <DashboardView
           clock={clock}
+          userName={user?.name ?? "Team"}
           modules={filteredModules}
           search={search}
           onSearch={setSearch}
@@ -418,32 +457,39 @@ export function TelgoMvpApp() {
         <AuthIntro />
         <section className="w-full max-w-[430px] rounded-[28px] border border-slate-200 bg-white px-5 pb-7 pt-4 shadow-[0_24px_80px_rgba(15,35,80,0.14)] sm:px-7">
           <StatusBar dark />
-          {view === "signup" ? (
-            <SignupPhone
-              phone={phone}
-              onPhone={setPhone}
+          {view === "request" ? (
+            <AccessRequestStep
+              fullName={fullName}
+              email={email}
+              role={requestedRole}
+              roles={accessRoles}
+              onFullName={setFullName}
+              onEmail={setEmail}
+              onRole={setRequestedRole}
               loading={loading}
               notice={notice}
-              onSendOtp={sendOtp}
+              onRequest={requestEmailAccess}
               onSignin={() => {
                 setNotice("");
                 setView("signin");
               }}
             />
           ) : null}
-          {view === "otp" ? (
-            <OtpStep
-              phone={phone}
-              otp={otp}
+          {view === "credentials" ? (
+            <CredentialStep
+              loginId={loginId}
+              password={password}
               loading={loading}
               notice={notice}
-              onOtp={setOtp}
-              onVerify={verifyOtp}
-              onBack={() => setView("signup")}
+              onLoginId={setLoginId}
+              onPassword={setPassword}
+              onVerify={verifyCredentials}
+              onBack={() => setView("request")}
             />
           ) : null}
           {view === "pin" ? (
             <PinStep
+              loginId={pendingUser?.loginId ?? loginId}
               pin={pin}
               confirmPin={confirmPin}
               loading={loading}
@@ -451,21 +497,25 @@ export function TelgoMvpApp() {
               onPin={setPin}
               onConfirmPin={setConfirmPin}
               onCreate={createPin}
-              onBack={() => setView("otp")}
+              onBack={() => setView("credentials")}
             />
           ) : null}
           {view === "signin" ? (
             <SigninStep
-              phone={signinPhone}
+              loginId={loginId}
               pin={signinPin}
               loading={loading}
               notice={notice}
-              onPhone={setSigninPhone}
+              onLoginId={setLoginId}
               onPin={setSigninPin}
               onSignin={signIn}
-              onSignup={() => {
+              onRequest={() => {
                 setNotice("");
-                setView("signup");
+                setView("request");
+              }}
+              onCredentials={() => {
+                setNotice("");
+                setView("credentials");
               }}
             />
           ) : null}
@@ -486,10 +536,10 @@ function AuthIntro() {
         Mobile-first operations for every project team.
       </h1>
       <p className="mt-5 max-w-[460px] text-lg leading-8 text-slate-600">
-        Company access is approved first, then mobile OTP and PIN unlock the operations dashboard.
+        Company access is approved by email first, then a one-time password unlocks PIN setup.
       </p>
       <div className="mt-8 grid grid-cols-3 gap-3">
-        {["Approved access", "SMS OTP", "APK ready"].map((item) => (
+        {["Email access", "Role approval", "PIN login"].map((item) => (
           <div key={item} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <Check className="mb-3 h-5 w-5 text-[#14b866]" />
             <p className="text-sm font-semibold text-slate-800">{item}</p>
@@ -500,77 +550,114 @@ function AuthIntro() {
   );
 }
 
-function SignupPhone({
-  phone,
-  onPhone,
+function AccessRequestStep({
+  fullName,
+  email,
+  role,
+  roles,
+  onFullName,
+  onEmail,
+  onRole,
   loading,
   notice,
-  onSendOtp,
+  onRequest,
   onSignin
 }: {
-  phone: string;
-  onPhone: (value: string) => void;
+  fullName: string;
+  email: string;
+  role: AccessRole;
+  roles: { value: AccessRole; label: string; description: string }[];
+  onFullName: (value: string) => void;
+  onEmail: (value: string) => void;
+  onRole: (value: AccessRole) => void;
   loading: boolean;
   notice: string;
-  onSendOtp: () => void;
+  onRequest: () => void;
   onSignin: () => void;
 }) {
   return (
     <div className="pt-7">
       <BrandMark />
       <div className="mt-9 text-center">
-        <h1 className="text-2xl font-bold tracking-normal">Activate Mobile Access</h1>
-        <p className="mt-2 text-sm text-slate-500">Use the approved company mobile number</p>
+        <h1 className="text-2xl font-bold tracking-normal">Request Company Access</h1>
+        <p className="mt-2 text-sm text-slate-500">Approval and login details are sent by email</p>
       </div>
-      <label className="mt-8 block">
-        <span className="mb-2 block text-sm font-semibold text-slate-700">Mobile Number</span>
-        <div className="flex min-h-14 overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-[#115cff] focus-within:ring-4 focus-within:ring-blue-50">
-          <span className="flex items-center gap-1 border-r border-slate-200 px-4 text-sm font-semibold text-slate-700">
-            +91
-            <ChevronDown className="h-4 w-4" />
-          </span>
+
+      <div className="mt-8 space-y-4">
+        <label className="block">
+          <span className="mb-2 block text-sm font-semibold text-slate-700">Full Name</span>
           <input
-            value={phone}
-            onChange={(event) => onPhone(event.target.value)}
-            inputMode="numeric"
-            placeholder="Enter mobile number"
-            className="min-w-0 flex-1 px-4 text-sm outline-none placeholder:text-slate-400"
+            value={fullName}
+            onChange={(event) => onFullName(event.target.value)}
+            placeholder="Enter your full name"
+            className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none placeholder:text-slate-400 focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
           />
+        </label>
+        <label className="block">
+          <span className="mb-2 block text-sm font-semibold text-slate-700">Email Address</span>
+          <input
+            value={email}
+            onChange={(event) => onEmail(event.target.value)}
+            type="email"
+            placeholder="name@company.com"
+            className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none placeholder:text-slate-400 focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
+          />
+        </label>
+        <div>
+          <span className="mb-2 block text-sm font-semibold text-slate-700">Access Role</span>
+          <div className="grid grid-cols-2 gap-2">
+            {roles.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => onRole(item.value)}
+                className={cn(
+                  "min-h-[76px] rounded-xl border px-3 py-2 text-left transition",
+                  role === item.value
+                    ? "border-[#115cff] bg-blue-50 text-[#07122f] ring-4 ring-blue-50"
+                    : "border-slate-200 bg-white text-slate-600"
+                )}
+              >
+                <span className="block text-sm font-bold">{item.label}</span>
+                <span className="mt-1 block text-xs leading-4 text-slate-500">{item.description}</span>
+              </button>
+            ))}
+          </div>
         </div>
-      </label>
-      <PrimaryButton disabled={loading} onClick={onSendOtp} className="mt-6">
-        {loading ? "Sending..." : "Send OTP"}
+      </div>
+
+      <PrimaryButton disabled={loading} onClick={onRequest} className="mt-6">
+        {loading ? "Sending Access Email..." : "Approve & Email Access"}
       </PrimaryButton>
       <p className="mt-5 text-center text-xs leading-5 text-slate-500">
-        OTP is sent by SMS. Access opens only after admin approval is active for this number.
+        A Telgo ID and one-time password will be created automatically for this request.
       </p>
       {notice ? <Notice>{notice}</Notice> : null}
-      <div className="mt-6 grid gap-2 text-center text-sm text-slate-500">
-        <a href="/request-access" className="font-semibold text-[#115cff]">
-          Request company access
-        </a>
+      <p className="mt-6 text-center text-sm text-slate-500">
         <button type="button" onClick={onSignin} className="font-semibold text-[#115cff]">
-          Already active? Sign in
+          Already have a Telgo ID? Sign in
         </button>
-      </div>
+      </p>
     </div>
   );
 }
 
-function OtpStep({
-  phone,
-  otp,
+function CredentialStep({
+  loginId,
+  password,
   loading,
   notice,
-  onOtp,
+  onLoginId,
+  onPassword,
   onVerify,
   onBack
 }: {
-  phone: string;
-  otp: string;
+  loginId: string;
+  password: string;
   loading: boolean;
   notice: string;
-  onOtp: (value: string) => void;
+  onLoginId: (value: string) => void;
+  onPassword: (value: string) => void;
   onVerify: () => void;
   onBack: () => void;
 }) {
@@ -580,17 +667,32 @@ function OtpStep({
         <ChevronLeft className="h-5 w-5" />
       </button>
       <div className="mt-10 text-center">
-        <h1 className="text-2xl font-bold tracking-normal">Verify OTP</h1>
-        <p className="mt-3 text-sm leading-6 text-slate-500">
-          Enter the 6-digit code sent to
-          <br />
-          {maskPhone(phone)}
-        </p>
+        <h1 className="text-2xl font-bold tracking-normal">Verify Email Access</h1>
+        <p className="mt-3 text-sm leading-6 text-slate-500">Use the Telgo ID and one-time password from your email</p>
       </div>
-      <OtpBoxes value={otp} onChange={onOtp} />
-      <p className="mt-7 text-center text-sm text-slate-500">Resend OTP in 00:25</p>
-      <PrimaryButton disabled={loading} onClick={onVerify} className="mt-8">
-        {loading ? "Verifying..." : "Verify OTP"}
+      <div className="mt-8 space-y-4">
+        <label className="block">
+          <span className="mb-2 block text-sm font-semibold text-slate-700">Telgo ID</span>
+          <input
+            value={loginId}
+            onChange={(event) => onLoginId(event.target.value.toUpperCase())}
+            placeholder="TLG-12345678"
+            className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-center text-base font-bold tracking-[0.08em] outline-none placeholder:font-medium placeholder:tracking-normal placeholder:text-slate-400 focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-2 block text-sm font-semibold text-slate-700">One-Time Password</span>
+          <input
+            value={password}
+            onChange={(event) => onPassword(event.target.value)}
+            type="password"
+            placeholder="Password from email"
+            className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none placeholder:text-slate-400 focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
+          />
+        </label>
+      </div>
+      <PrimaryButton disabled={loading} onClick={onVerify} className="mt-7">
+        {loading ? "Verifying..." : "Verify & Create PIN"}
       </PrimaryButton>
       {notice ? <Notice>{notice}</Notice> : null}
     </div>
@@ -598,6 +700,7 @@ function OtpStep({
 }
 
 function PinStep({
+  loginId,
   pin,
   confirmPin,
   loading,
@@ -607,6 +710,7 @@ function PinStep({
   onCreate,
   onBack
 }: {
+  loginId: string;
   pin: string;
   confirmPin: string;
   loading: boolean;
@@ -623,14 +727,14 @@ function PinStep({
       </button>
       <div className="mt-8 text-center">
         <h1 className="text-2xl font-bold tracking-normal">Create PIN</h1>
-        <p className="mt-3 text-sm text-slate-500">Set a 4-digit PIN for this approved account</p>
+        <p className="mt-3 text-sm text-slate-500">Set one 4-digit PIN for {loginId || "this Telgo ID"}</p>
       </div>
       <div className="mt-8 space-y-4">
         <PinInput label="4-digit PIN" value={pin} onChange={onPin} />
         <PinInput label="Confirm PIN" value={confirmPin} onChange={onConfirmPin} />
       </div>
       <PrimaryButton disabled={loading} onClick={onCreate} className="mt-7">
-        {loading ? "Activating..." : "Activate Access"}
+        {loading ? "Saving..." : "Save PIN & Open Dashboard"}
       </PrimaryButton>
       {notice ? <Notice>{notice}</Notice> : null}
     </div>
@@ -638,39 +742,40 @@ function PinStep({
 }
 
 function SigninStep({
-  phone,
+  loginId,
   pin,
   loading,
   notice,
-  onPhone,
+  onLoginId,
   onPin,
   onSignin,
-  onSignup
+  onRequest,
+  onCredentials
 }: {
-  phone: string;
+  loginId: string;
   pin: string;
   loading: boolean;
   notice: string;
-  onPhone: (value: string) => void;
+  onLoginId: (value: string) => void;
   onPin: (value: string) => void;
   onSignin: () => void;
-  onSignup: () => void;
+  onRequest: () => void;
+  onCredentials: () => void;
 }) {
   return (
     <div className="pt-7">
       <BrandMark />
       <div className="mt-9 text-center">
         <h1 className="text-2xl font-bold tracking-normal">Welcome Back</h1>
-        <p className="mt-2 text-sm text-slate-500">Approved Telgo accounts only</p>
+        <p className="mt-2 text-sm text-slate-500">Sign in with your Telgo ID and PIN</p>
       </div>
       <label className="mt-8 block">
-        <span className="mb-2 block text-sm font-semibold text-slate-700">Phone Number</span>
+        <span className="mb-2 block text-sm font-semibold text-slate-700">Telgo ID</span>
         <input
-          value={phone}
-          onChange={(event) => onPhone(event.target.value)}
-          inputMode="numeric"
-          placeholder="Enter mobile number"
-          className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none placeholder:text-slate-400 focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
+          value={loginId}
+          onChange={(event) => onLoginId(event.target.value.toUpperCase())}
+          placeholder="TLG-12345678"
+          className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-center text-base font-bold tracking-[0.08em] outline-none placeholder:font-medium placeholder:tracking-normal placeholder:text-slate-400 focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
         />
       </label>
       <div className="mt-4">
@@ -684,12 +789,12 @@ function SigninStep({
       </PrimaryButton>
       {notice ? <Notice>{notice}</Notice> : null}
       <div className="mt-6 grid gap-2 text-center text-sm text-slate-500">
-        <button type="button" onClick={onSignup} className="font-semibold text-[#115cff]">
-          Activate approved mobile access
+        <button type="button" onClick={onCredentials} className="font-semibold text-[#115cff]">
+          I have an email password
         </button>
-        <a href="/request-access" className="font-semibold text-[#115cff]">
+        <button type="button" onClick={onRequest} className="font-semibold text-[#115cff]">
           Request company access
-        </a>
+        </button>
       </div>
     </div>
   );
@@ -708,8 +813,8 @@ function AndroidDownloadCard() {
         <div>
           <h2 className="text-base font-bold text-[#07122f]">Install Telgo Hub on Android</h2>
           <p className="mt-1 text-sm leading-6 text-slate-500">
-            Download the company APK, install it on the approved phone, then sign in with your
-            active mobile PIN.
+            Download the company APK, install it on the approved Android device, then sign in with
+            your Telgo ID and PIN.
           </p>
         </div>
       </div>
@@ -736,12 +841,14 @@ function LockKeyholeIcon() {
 
 function DashboardView({
   clock,
+  userName,
   modules: visibleModules,
   search,
   onSearch,
   onModule
 }: {
   clock: Date | null;
+  userName: string;
   modules: ModuleItem[];
   search: string;
   onSearch: (value: string) => void;
@@ -758,9 +865,11 @@ function DashboardView({
       <section className="grid gap-5 border-t border-slate-100 px-4 pb-4 pt-8 sm:px-6 md:grid-cols-[1fr_auto] md:items-start">
         <div>
           <h1 className="text-3xl font-bold tracking-normal text-[#07122f] sm:text-4xl">
-            Good Morning, Ajith <span className="text-2xl">👋</span>
+            Good Morning, {userName}
           </h1>
-          <p className="mt-3 text-base text-slate-500">Let&apos;s make today productive and safe.</p>
+          <p className="mt-3 text-base text-slate-500">
+            Signed in as {userName}. Let&apos;s make today productive and safe.
+          </p>
         </div>
         <div className="grid min-w-[210px] gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-3 text-base font-semibold text-[#07122f]">
@@ -1124,37 +1233,6 @@ function PrimaryButton({
   );
 }
 
-function OtpBoxes({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  const chars = value.padEnd(6, " ").slice(0, 6).split("");
-  return (
-    <div className="mt-8 grid grid-cols-6 gap-3">
-      {chars.map((char, index) => (
-        <input
-          key={index}
-          value={char.trim()}
-          onChange={(event) => {
-            const next = `${value.slice(0, index)}${event.target.value.replace(/\D/g, "").slice(-1)}${value.slice(index + 1)}`
-              .replace(/\s/g, "")
-              .slice(0, 6);
-            onChange(next);
-            const sibling = event.currentTarget.parentElement?.children[index + 1] as HTMLInputElement | undefined;
-            if (event.target.value && sibling) sibling.focus();
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Backspace" && !char.trim()) {
-              const sibling = event.currentTarget.parentElement?.children[index - 1] as HTMLInputElement | undefined;
-              sibling?.focus();
-            }
-          }}
-          inputMode="numeric"
-          maxLength={1}
-          className="aspect-square rounded-lg border border-slate-200 text-center text-xl font-bold outline-none focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
-        />
-      ))}
-    </div>
-  );
-}
-
 function PinInput({
   label,
   value,
@@ -1188,22 +1266,17 @@ function Notice({ children }: { children: React.ReactNode }) {
   );
 }
 
-function normalizePhone(value: string) {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length === 10) return `+91${digits}`;
-  if (digits.length === 12 && digits.startsWith("91")) return `+${digits}`;
-  if (digits.length > 8 && value.trim().startsWith("+")) return `+${digits}`;
-  return "";
+function normalizeEmail(value: string) {
+  const email = value.trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
 }
 
-function maskPhone(value: string) {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length < 6) return value || "+91 98765 43210";
-  return `+${digits.slice(0, 2)} ${digits.slice(2, 7)} ${digits.slice(7)}`;
+function normalizeLoginId(value: string) {
+  return value.trim().toUpperCase().replace(/\s+/g, "");
 }
 
-async function hashPin(phone: string, pin: string) {
-  const input = `${phone}:${pin}`;
+async function hashSecret(identifier: string, secret: string) {
+  const input = `${normalizeLoginId(identifier)}:${secret}`;
   if (!globalThis.crypto?.subtle) return btoa(input);
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
   return Array.from(new Uint8Array(digest))
@@ -1215,11 +1288,13 @@ function saveSession(user: AppUser) {
   localStorage.setItem(SESSION_KEY, JSON.stringify(user));
 }
 
-function toAppUser(remoteUser: unknown, phone: string): AppUser {
+function toAppUser(remoteUser: unknown, fallbackLoginId: string): AppUser {
   const row = (remoteUser ?? {}) as Record<string, unknown>;
+  const loginId = normalizeLoginId(String(row.login_id ?? row.loginId ?? fallbackLoginId));
   return {
-    id: String(row.id ?? `mobile-${phone.replace(/\D/g, "")}`),
-    phone: String(row.phone ?? phone),
+    id: String(row.id ?? `mobile-${loginId}`),
+    email: String(row.email ?? ""),
+    loginId,
     name: String(row.full_name ?? row.name ?? "Telgo Mobile User"),
     role: String(row.role ?? "employee"),
     createdAt: String(row.created_at ?? new Date().toISOString())
