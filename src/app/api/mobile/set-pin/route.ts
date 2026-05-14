@@ -3,6 +3,7 @@ import {
   getMobileAccessClient,
   toMobileAccessUser
 } from "@/lib/server/mobile-access";
+import { setMobileSession } from "@/lib/server/mobile-session";
 
 export async function POST(request: NextRequest) {
   const accessToken = getBearerToken(request);
@@ -76,7 +77,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ ok: true, user: toMobileAccessUser(data) });
+  const response = NextResponse.json({ ok: true, user: toMobileAccessUser(data) });
+  setMobileSession(response, toMobileAccessUser(data));
+  return response;
 }
 
 function getBearerToken(request: NextRequest) {

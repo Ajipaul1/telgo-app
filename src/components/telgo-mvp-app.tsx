@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
   CalendarCheck,
@@ -29,6 +29,7 @@ import {
   ListChecks,
   MapPin,
   Megaphone,
+  Paperclip,
   MessageCircle,
   NotebookPen,
   Package,
@@ -41,6 +42,7 @@ import {
   ShieldCheck,
   Smartphone,
   Sparkles,
+  SendHorizontal,
   TriangleAlert,
   Truck,
   User,
@@ -48,13 +50,14 @@ import {
   Users,
   UsersRound,
   WalletCards,
-  Wrench
+  Wrench,
+  X
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
-type MvpView = "request" | "otp" | "pin" | "signin" | "dashboard" | "module";
+type MvpView = "request" | "otp" | "pin" | "signin" | "dashboard" | "module" | "chat";
 type OtpReturnView = "request" | "signin";
 type AccessRole = "engineer" | "supervisor" | "finance" | "client" | "admin";
 type AppUser = {
@@ -73,6 +76,35 @@ type ModuleItem = {
   subtitle: string;
   icon: LucideIcon;
   tone: Tone;
+};
+
+type ChatMessage = {
+  id: string;
+  body: string;
+  createdAt: string;
+  sender: {
+    name: string;
+    email: string | null;
+    role: string;
+    loginId: string;
+    userId: string;
+  };
+  images: Array<{
+    path: string;
+    url: string | null;
+    fileName: string;
+    width: number | null;
+    height: number | null;
+    sizeBytes: number | null;
+    mimeType: string | null;
+  }>;
+};
+
+type ChatDraftImage = {
+  id: string;
+  file: File;
+  previewUrl: string;
+  sizeLabel: string;
 };
 
 const SESSION_KEY = "telgo-mobile-session";
@@ -173,9 +205,15 @@ export function TelgoMvpApp() {
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<AppUser | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatComposer, setChatComposer] = useState("");
+  const [chatDraftImages, setChatDraftImages] = useState<ChatDraftImage[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatError, setChatError] = useState("");
   const [activeModule, setActiveModule] = useState<ModuleItem | null>(null);
   const [search, setSearch] = useState("");
   const [clock, setClock] = useState<Date | null>(null);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   const filteredModules = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -246,6 +284,55 @@ export function TelgoMvpApp() {
       window.clearInterval(timer);
     };
   }, []);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ block: "end" });
+  }, [chatMessages, view]);
+
+  useEffect(() => {
+    if (view !== "chat" || !user) return;
+
+    let cancelled = false;
+
+    async function refreshChat(showLoader = false) {
+      if (showLoader) setChatLoading(true);
+      const result = await fetch("/api/mobile/chat", {
+        method: "GET",
+        credentials: "include"
+      }).catch((error: unknown) => ({ error }));
+
+      if (cancelled) return;
+      if ("error" in result) {
+        setChatLoading(false);
+        setChatError(getErrorMessage(result.error));
+        return;
+      }
+
+      const data = (await result.json().catch(() => null)) as
+        | { ok?: boolean; message?: string; messages?: ChatMessage[] }
+        | null;
+
+      if (!result.ok || !data?.ok || !Array.isArray(data.messages)) {
+        setChatLoading(false);
+        setChatError(data?.message ?? "Chat could not be loaded.");
+        return;
+      }
+
+      setChatMessages(data.messages);
+      setChatError("");
+      setChatLoading(false);
+    }
+
+    void refreshChat(true);
+    const interval = window.setInterval(() => {
+      void refreshChat(false);
+    }, 3000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [user, view]);
 
   async function requestEmailAccess() {
     const normalizedEmail = normalizeEmail(email);
@@ -469,31 +556,56 @@ export function TelgoMvpApp() {
   }
 
   function openModule(item: ModuleItem) {
+    if (item.title === "Live Chat") {
+      setActiveModule(null);
+      setChatError("");
+      setView("chat");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     setActiveModule(item);
     setView("module");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function signOut() {
+    void fetch("/api/mobile/sign-out", {
+      method: "POST",
+      credentials: "include"
+    });
     localStorage.removeItem(SESSION_KEY);
     void supabase.auth.signOut();
+    clearChatDrafts(chatDraftImages);
     setNotice("");
     setUser(null);
     setPendingUser(null);
     setActiveModule(null);
+    setChatMessages([]);
+    setChatComposer("");
+    setChatDraftImages([]);
+    setChatError("");
     setSigninPin("");
     setLoginId(savedAccount?.loginId ?? "");
     setView("signin");
   }
 
   function forgetSavedAccount() {
+    void fetch("/api/mobile/sign-out", {
+      method: "POST",
+      credentials: "include"
+    });
     localStorage.removeItem(DEVICE_ACCOUNT_KEY);
     localStorage.removeItem(SESSION_KEY);
     void supabase.auth.signOut();
+    clearChatDrafts(chatDraftImages);
     setSavedAccount(null);
     setUser(null);
     setPendingUser(null);
     setActiveModule(null);
+    setChatMessages([]);
+    setChatComposer("");
+    setChatDraftImages([]);
+    setChatError("");
     setLoginId("");
     setSigninPin("");
     setNotice("");
@@ -515,6 +627,81 @@ export function TelgoMvpApp() {
     };
   }
 
+  async function chooseChatImages(fileList: FileList | null) {
+    if (!fileList?.length) return;
+
+    const files = Array.from(fileList).slice(0, 4 - chatDraftImages.length);
+    const nextDrafts = await Promise.all(
+      files.map(async (file) => {
+        const compressed = await compressChatImage(file);
+        return {
+          id: crypto.randomUUID(),
+          file: compressed,
+          previewUrl: URL.createObjectURL(compressed),
+          sizeLabel: formatBytes(compressed.size)
+        } satisfies ChatDraftImage;
+      })
+    );
+
+    setChatDraftImages((current) => [...current, ...nextDrafts]);
+  }
+
+  function removeChatDraft(id: string) {
+    setChatDraftImages((current) => {
+      const target = current.find((item) => item.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return current.filter((item) => item.id !== id);
+    });
+  }
+
+  async function sendChatMessage() {
+    if (!chatComposer.trim() && chatDraftImages.length === 0) {
+      setChatError("Type a message or attach at least one photo.");
+      return;
+    }
+
+    setChatLoading(true);
+    setChatError("");
+    const formData = new FormData();
+    formData.append("body", chatComposer);
+    chatDraftImages.forEach((image) => {
+      formData.append("images", image.file, image.file.name);
+    });
+
+    const response = await fetch("/api/mobile/chat", {
+      method: "POST",
+      credentials: "include",
+      body: formData
+    }).catch((error: unknown) => ({ error }));
+
+    if ("error" in response) {
+      setChatLoading(false);
+      setChatError(getErrorMessage(response.error));
+      return;
+    }
+
+    const data = (await response.json().catch(() => null)) as
+      | { ok?: boolean; message?: string; message?: ChatMessage }
+      | { ok?: boolean; error?: string }
+      | null;
+
+    if (!response.ok || !data || data.ok !== true || !("message" in data) || !data.message || typeof data.message !== "object") {
+      setChatLoading(false);
+      setChatError(
+        (data && "message" in data && typeof data.message === "string" ? data.message : "") ||
+          "Message could not be sent."
+      );
+      return;
+    }
+
+    const createdMessage = data.message as ChatMessage;
+    clearChatDrafts(chatDraftImages);
+    setChatDraftImages([]);
+    setChatComposer("");
+    setChatMessages((current) => [...current, createdMessage]);
+    setChatLoading(false);
+  }
+
   if (view === "dashboard") {
     return (
       <AppFrame
@@ -523,6 +710,7 @@ export function TelgoMvpApp() {
         active="Home"
         onSignOut={signOut}
         onHome={() => setView("dashboard")}
+        onChat={() => setView("chat")}
         onModule={() => openModule(modules[2])}
       >
         <DashboardView
@@ -546,9 +734,39 @@ export function TelgoMvpApp() {
         onSignOut={signOut}
         onHome={() => setView("dashboard")}
         onBack={() => setView("dashboard")}
+        onChat={() => setView("chat")}
         onModule={() => openModule(modules[2])}
       >
         <ModuleView module={activeModule} onBack={() => setView("dashboard")} />
+      </AppFrame>
+    );
+  }
+
+  if (view === "chat") {
+    return (
+      <AppFrame
+        user={user}
+        clock={clock}
+        active="Chat"
+        onSignOut={signOut}
+        onHome={() => setView("dashboard")}
+        onBack={() => setView("dashboard")}
+        onChat={() => setView("chat")}
+        onModule={() => openModule(modules[2])}
+      >
+        <ChatView
+          currentUser={user}
+          messages={chatMessages}
+          composer={chatComposer}
+          draftImages={chatDraftImages}
+          loading={chatLoading}
+          error={chatError}
+          chatEndRef={chatEndRef}
+          onComposer={setChatComposer}
+          onPickImages={chooseChatImages}
+          onRemoveDraft={removeChatDraft}
+          onSend={sendChatMessage}
+        />
       </AppFrame>
     );
   }
@@ -1125,6 +1343,7 @@ function AppFrame({
   onSignOut,
   onHome,
   onBack,
+  onChat,
   onModule
 }: {
   user: AppUser | null;
@@ -1134,6 +1353,7 @@ function AppFrame({
   onSignOut: () => void;
   onHome: () => void;
   onBack?: () => void;
+  onChat: () => void;
   onModule: () => void;
 }) {
   return (
@@ -1172,7 +1392,13 @@ function AppFrame({
           </div>
         </header>
         {children}
-        <BottomNav active={active} onHome={onHome} onModule={onModule} userName={user?.name ?? "Ajith"} />
+        <BottomNav
+          active={active}
+          onHome={onHome}
+          onModule={onModule}
+          onChat={onChat}
+          userName={user?.name ?? "Ajith"}
+        />
       </div>
     </main>
   );
@@ -1264,18 +1490,20 @@ function BottomNav({
   active,
   onHome,
   onModule,
+  onChat,
   userName
 }: {
   active: string;
   onHome: () => void;
   onModule: () => void;
+  onChat: () => void;
   userName: string;
 }) {
   const items = [
     { label: "Home", icon: Home, action: onHome },
     { label: "Projects", icon: Folder, action: onModule },
     { label: "Add", icon: Plus, action: () => undefined },
-    { label: "Chat", icon: MessageCircle, action: () => undefined },
+    { label: "Chat", icon: MessageCircle, action: onChat },
     { label: "Profile", icon: User, action: () => undefined }
   ];
 

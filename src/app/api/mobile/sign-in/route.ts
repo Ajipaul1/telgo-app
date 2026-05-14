@@ -5,6 +5,7 @@ import {
   normalizeLoginId,
   toMobileAccessUser
 } from "@/lib/server/mobile-access";
+import { setMobileSession } from "@/lib/server/mobile-session";
 
 export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => null)) as
@@ -63,7 +64,9 @@ export async function POST(request: NextRequest) {
     .update({ last_login_at: new Date().toISOString() })
     .eq("id", data.id);
 
-  return NextResponse.json({ ok: true, user: toMobileAccessUser(data) });
+  const response = NextResponse.json({ ok: true, user: toMobileAccessUser(data) });
+  setMobileSession(response, toMobileAccessUser(data));
+  return response;
 }
 
 function getErrorMessage(error: unknown) {
