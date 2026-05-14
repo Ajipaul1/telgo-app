@@ -46,11 +46,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const userId = `email-${createHash("md5").update(email).digest("hex")}`;
   const { data: existingUser, error: existingUserError } = await supabase
     .from("mobile_app_users")
     .select("id,email,full_name,role,login_id,user_folder_path,created_at,auth_user_id,pin_set_at,access_status,blocked_at")
-    .eq("id", userId)
+    .eq("email", email)
     .maybeSingle();
 
   if (existingUserError) {
@@ -73,27 +72,57 @@ export async function POST(request: NextRequest) {
       ? String(existingUser.user_folder_path)
       : `mobile-users/${loginId}`;
   const activatedAt = new Date().toISOString();
-  const { data, error } = await supabase
-    .from("mobile_app_users")
-    .upsert(
-      {
-        id: userId,
-        email,
-        login_id: loginId,
-        temp_password_hash: null,
-        full_name: fullName,
-        role,
-        access_status: "active",
-        blocked_at: null,
-        blocked_reason: null,
-        activated_at: activatedAt,
-        user_folder_path: folderPath,
-        updated_at: activatedAt
-      },
-      { onConflict: "id" }
-    )
-    .select("id,email,full_name,role,login_id,user_folder_path,created_at")
-    .single();
+  const payload = {
+    email,
+    login_id: loginId,
+    temp_password_hash: null,
+    full_name: fullName,
+    role,
+    access_status: "active",
+    blocked_at: null,
+    blocked_reason: null,
+    activated_at: activatedAt,
+    user_folder_path: folderPath,
+    updated_at: activatedAt
+  };
+  let data: Record<string, unknown> | null = null;
+  let error: { message: string } | null = null;
+
+  if (existingUser?.id != null) {
+    const response = await supabase
+      .from("mobile_app_users")
+      .update(payload)
+      .eq("id", existingUser.id)
+      .select("id,email,full_name,role,login_id,user_folder_path,created_at")
+      .single();
+    data = response.data;
+    error = response.error;
+  } else {
+    const insertResponse = await supabase
+      .from("mobile_app_users")
+      .insert(payload)
+      .select("id,email,full_name,role,login_id,user_folder_path,created_at")
+      .single();
+    data = insertResponse.data;
+    error = insertResponse.error;
+
+    if (
+      error &&
+      /null value in column "id"|violates not-null constraint/i.test(error.message)
+    ) {
+      const fallbackUserId = `email-${createHash("md5").update(email).digest("hex")}`;
+      const retryResponse = await supabase
+        .from("mobile_app_users")
+        .insert({
+          id: fallbackUserId,
+          ...payload
+        })
+        .select("id,email,full_name,role,login_id,user_folder_path,created_at")
+        .single();
+      data = retryResponse.data;
+      error = retryResponse.error;
+    }
+  }
 
   if (error) {
     return NextResponse.json(
