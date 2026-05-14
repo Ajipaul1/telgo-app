@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import {
   Bell,
   CalendarCheck,
@@ -11,12 +11,10 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronLeft,
-  ChevronRight,
   CircleCheck,
   Clock3,
   CloudUpload,
   ClipboardCheck,
-  CreditCard,
   Download,
   FileText,
   Folder,
@@ -681,20 +679,16 @@ export function TelgoMvpApp() {
     }
 
     const data = (await response.json().catch(() => null)) as
-      | { ok?: boolean; message?: string; message?: ChatMessage }
-      | { ok?: boolean; error?: string }
+      | { ok?: boolean; message?: string; chatMessage?: ChatMessage }
       | null;
 
-    if (!response.ok || !data || data.ok !== true || !("message" in data) || !data.message || typeof data.message !== "object") {
+    if (!response.ok || !data?.ok || !data.chatMessage) {
       setChatLoading(false);
-      setChatError(
-        (data && "message" in data && typeof data.message === "string" ? data.message : "") ||
-          "Message could not be sent."
-      );
+      setChatError(data?.message ?? "Message could not be sent.");
       return;
     }
 
-    const createdMessage = data.message as ChatMessage;
+    const createdMessage = data.chatMessage;
     clearChatDrafts(chatDraftImages);
     setChatDraftImages([]);
     setChatComposer("");
@@ -706,7 +700,6 @@ export function TelgoMvpApp() {
     return (
       <AppFrame
         user={user}
-        clock={clock}
         active="Home"
         onSignOut={signOut}
         onHome={() => setView("dashboard")}
@@ -729,7 +722,6 @@ export function TelgoMvpApp() {
     return (
       <AppFrame
         user={user}
-        clock={clock}
         active={activeModule.title}
         onSignOut={signOut}
         onHome={() => setView("dashboard")}
@@ -746,7 +738,6 @@ export function TelgoMvpApp() {
     return (
       <AppFrame
         user={user}
-        clock={clock}
         active="Chat"
         onSignOut={signOut}
         onHome={() => setView("dashboard")}
@@ -1337,7 +1328,6 @@ function DashboardView({
 
 function AppFrame({
   user,
-  clock,
   active,
   children,
   onSignOut,
@@ -1347,9 +1337,8 @@ function AppFrame({
   onModule
 }: {
   user: AppUser | null;
-  clock: Date | null;
   active: string;
-  children: React.ReactNode;
+  children: ReactNode;
   onSignOut: () => void;
   onHome: () => void;
   onBack?: () => void;
@@ -1401,6 +1390,198 @@ function AppFrame({
         />
       </div>
     </main>
+  );
+}
+
+function ChatView({
+  currentUser,
+  messages,
+  composer,
+  draftImages,
+  loading,
+  error,
+  chatEndRef,
+  onComposer,
+  onPickImages,
+  onRemoveDraft,
+  onSend
+}: {
+  currentUser: AppUser | null;
+  messages: ChatMessage[];
+  composer: string;
+  draftImages: ChatDraftImage[];
+  loading: boolean;
+  error: string;
+  chatEndRef: RefObject<HTMLDivElement | null>;
+  onComposer: (value: string) => void;
+  onPickImages: (files: FileList | null) => Promise<void>;
+  onRemoveDraft: (id: string) => void;
+  onSend: () => Promise<void>;
+}) {
+  return (
+    <section className="flex min-h-[calc(100dvh-9rem)] flex-col px-4 pb-6 pt-6 sm:px-6">
+      <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold tracking-normal text-[#07122f]">Telgo Team Chat</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Live team messaging for approved mobile users. Photos are compressed before upload.
+            </p>
+          </div>
+          <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-[#14b866]">
+            Live
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-4 flex-1 overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm">
+        <div className="h-full overflow-y-auto px-4 py-4 sm:px-5">
+          {messages.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-center">
+              <p className="text-sm font-semibold text-[#07122f]">No messages yet.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Start the first conversation here. All approved users will see the same live team chat.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map((message) => {
+                const mine = currentUser?.id === message.sender.userId;
+                const trimmedBody = message.body.trim();
+                return (
+                  <div
+                    key={message.id}
+                    className={cn("flex", mine ? "justify-end" : "justify-start")}
+                  >
+                    <div
+                      className={cn(
+                        "max-w-[85%] rounded-[22px] px-4 py-3 shadow-sm",
+                        mine
+                          ? "bg-[#115cff] text-white"
+                          : "border border-slate-200 bg-slate-50 text-[#07122f]"
+                      )}
+                    >
+                      <div className="mb-2 flex items-center gap-2">
+                        <p className={cn("text-sm font-semibold", mine ? "text-white" : "text-[#07122f]")}>
+                          {message.sender.name}
+                        </p>
+                        <span className={cn("text-xs", mine ? "text-blue-100" : "text-slate-400")}>
+                          {formatRoleLabel(message.sender.role)}
+                        </span>
+                      </div>
+                      {trimmedBody ? (
+                        <p className={cn("text-sm leading-6", mine ? "text-white" : "text-slate-700")}>
+                          {trimmedBody}
+                        </p>
+                      ) : null}
+                      {message.images.length ? (
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          {message.images.map((image) => (
+                            <a
+                              key={image.path}
+                              href={image.url ?? "#"}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block overflow-hidden rounded-2xl border border-black/5 bg-white/10"
+                            >
+                              {image.url ? (
+                                <div className="relative h-32 w-full">
+                                  <Image
+                                    src={image.url}
+                                    alt={image.fileName}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="grid h-32 place-items-center text-xs text-slate-500">
+                                  Uploading image...
+                                </div>
+                              )}
+                            </a>
+                          ))}
+                        </div>
+                      ) : null}
+                      <p className={cn("mt-2 text-right text-[11px]", mine ? "text-blue-100" : "text-slate-400")}>
+                        {formatChatTime(message.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={chatEndRef} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {draftImages.length ? (
+        <div className="mt-4 flex gap-3 overflow-x-auto rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm">
+          {draftImages.map((image) => (
+            <div key={image.id} className="relative w-[110px] shrink-0">
+              <div className="relative h-[110px] overflow-hidden rounded-2xl border border-slate-200">
+                <Image src={image.previewUrl} alt={image.file.name} fill className="object-cover" />
+              </div>
+              <button
+                type="button"
+                onClick={() => onRemoveDraft(image.id)}
+                className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-white/90 text-slate-700 shadow-sm"
+                aria-label="Remove photo"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <p className="mt-2 truncate text-xs font-medium text-slate-600">{image.sizeLabel}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          void onSend();
+        }}
+        className="mt-4 rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm"
+      >
+        <div className="flex items-end gap-3">
+          <label className="grid h-12 w-12 shrink-0 cursor-pointer place-items-center rounded-2xl border border-slate-200 text-slate-600">
+            <Paperclip className="h-5 w-5" />
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="sr-only"
+              onChange={(event) => {
+                void onPickImages(event.target.files);
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
+          <textarea
+            value={composer}
+            onChange={(event) => onComposer(event.target.value)}
+            placeholder="Type a message"
+            rows={1}
+            className="min-h-12 flex-1 resize-none rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#115cff] text-white shadow-[0_12px_28px_rgba(17,92,255,0.22)] disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label="Send message"
+          >
+            <SendHorizontal className="h-5 w-5" />
+          </button>
+        </div>
+        {error ? (
+          <p className="mt-3 text-sm font-medium text-[#ff3d57]">{error}</p>
+        ) : (
+          <p className="mt-3 text-xs leading-5 text-slate-500">
+            Photos are compressed on the device before upload for faster chat delivery.
+          </p>
+        )}
+      </form>
+    </section>
   );
 }
 
@@ -1577,7 +1758,7 @@ function PrimaryButton({
   disabled,
   className
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   onClick: () => void;
   disabled?: boolean;
   className?: string;
@@ -1622,7 +1803,7 @@ function PinInput({
   );
 }
 
-function Notice({ children }: { children: React.ReactNode }) {
+function Notice({ children }: { children: ReactNode }) {
   return (
     <p className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-center text-sm font-medium text-[#115cff]">
       {children}
@@ -1646,6 +1827,84 @@ async function hashSecret(identifier: string, secret: string) {
   return Array.from(new Uint8Array(digest))
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
+}
+
+async function compressChatImage(file: File) {
+  if (!file.type.startsWith("image/")) return file;
+
+  try {
+    const image = await loadImageElement(file);
+    const maxDimension = 1600;
+    const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+    const width = Math.max(1, Math.round(image.width * scale));
+    const height = Math.max(1, Math.round(image.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext("2d");
+    if (!context) return file;
+
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+
+    const outputType = file.type === "image/webp" ? "image/webp" : "image/jpeg";
+    const compressedBlob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, outputType, 0.82);
+    });
+
+    if (!compressedBlob || compressedBlob.size >= file.size) return file;
+
+    return new File([compressedBlob], replaceFileExtension(file.name, outputType), {
+      type: outputType,
+      lastModified: Date.now()
+    });
+  } catch {
+    return file;
+  }
+}
+
+async function loadImageElement(file: File) {
+  const objectUrl = URL.createObjectURL(file);
+
+  try {
+    return await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new window.Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("Image could not be loaded."));
+      image.src = objectUrl;
+    });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+function replaceFileExtension(fileName: string, mimeType: string) {
+  const extension = mimeType === "image/webp" ? ".webp" : ".jpg";
+  const baseName = fileName.replace(/\.[^.]+$/, "");
+  return `${baseName || "chat-photo"}${extension}`;
+}
+
+function formatBytes(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return "0 KB";
+  if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function clearChatDrafts(drafts: ChatDraftImage[]) {
+  drafts.forEach((draft) => {
+    URL.revokeObjectURL(draft.previewUrl);
+  });
+}
+
+function formatChatTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
 function saveSession(user: AppUser) {

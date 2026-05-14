@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     }
 
     const message = await createMobileChatMessage(supabase, session, body, files);
-    return NextResponse.json({ ok: true, message });
+    return NextResponse.json({ ok: true, chatMessage: message });
   } catch (error) {
     return NextResponse.json(
       { ok: false, message: getErrorMessage(error) },
