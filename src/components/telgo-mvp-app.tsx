@@ -332,7 +332,7 @@ export function TelgoMvpApp() {
     }
 
     setLoading(false);
-    setNotice(`Access approved. ${telgoIdLine} Check ${normalizedEmail} for the OTP or secure sign-in link.`);
+    setNotice(`Access approved. ${telgoIdLine} Check ${normalizedEmail} for the latest OTP code.`);
   }
 
   async function sendOtpAgain() {
@@ -350,7 +350,7 @@ export function TelgoMvpApp() {
       return;
     }
 
-    setNotice(`OTP sent to ${normalizedEmail}. Enter the code from the email or open the secure sign-in link.`);
+    setNotice(`OTP sent to ${normalizedEmail}. Enter the newest code from the email.`);
   }
 
   async function verifyOtpCode() {
@@ -506,15 +506,10 @@ export function TelgoMvpApp() {
 
   async function sendEmailOtp(targetEmail: string) {
     await supabase.auth.signOut();
-    const redirectTo =
-      typeof window === "undefined"
-        ? undefined
-        : `${window.location.origin}${window.location.pathname}`;
     const { error } = await supabase.auth.signInWithOtp({
       email: targetEmail,
       options: {
-        shouldCreateUser: false,
-        emailRedirectTo: redirectTo
+        shouldCreateUser: false
       }
     });
 
@@ -692,7 +687,7 @@ function AccessRequestStep({
       <BrandMark />
       <div className="mt-9 text-center">
         <h1 className="text-2xl font-bold tracking-normal">Request Company Access</h1>
-        <p className="mt-2 text-sm text-slate-500">Approved users receive an email OTP or secure sign-in link</p>
+        <p className="mt-2 text-sm text-slate-500">Approved users receive an email OTP</p>
       </div>
 
       <div className="mt-8 space-y-4">
@@ -785,7 +780,7 @@ function OtpStep({
       <div className="mt-10 text-center">
         <h1 className="text-2xl font-bold tracking-normal">Verify Email Access</h1>
         <p className="mt-3 text-sm leading-6 text-slate-500">
-          Request a one-time code, or open the secure sign-in link from the email on this device.
+          Request a one-time code from email, then verify it here to unlock PIN setup.
         </p>
       </div>
       <div className="mt-8 space-y-4">
@@ -809,9 +804,12 @@ function OtpStep({
           <span className="mb-2 block text-sm font-semibold text-slate-700">Email OTP</span>
           <input
             value={otpCode}
-            onChange={(event) => onOtpCode(event.target.value.replace(/\s+/g, "").slice(0, 6))}
-            inputMode="numeric"
-            placeholder="6-digit code"
+            onChange={(event) => onOtpCode(event.target.value.replace(/\s+/g, "").slice(0, 32))}
+            inputMode="text"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder="Code from email"
             className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-center text-lg font-bold tracking-[0.24em] outline-none placeholder:tracking-normal placeholder:text-slate-400 focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
           />
         </label>
@@ -830,7 +828,7 @@ function OtpStep({
         </button>
       </div>
       <p className="mt-4 text-center text-xs leading-5 text-slate-500">
-        If Gmail shows a secure sign-in button instead of a numeric code, open it on this device and the app will continue automatically.
+        Use the newest code from the latest email. Requesting a new OTP invalidates the previous one.
       </p>
       {notice ? <Notice>{notice}</Notice> : null}
     </div>
