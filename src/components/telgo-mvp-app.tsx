@@ -103,6 +103,20 @@ type RoleDashboardDefinition = {
   statusBody: string;
 };
 
+type ChatMention = {
+  userId: string;
+  name: string;
+  loginId: string;
+};
+
+type ChatMember = {
+  id: string;
+  name: string;
+  email: string | null;
+  role: string;
+  loginId: string;
+};
+
 type ChatMessage = {
   id: string;
   body: string;
@@ -114,6 +128,10 @@ type ChatMessage = {
     loginId: string;
     userId: string;
   };
+  mentions: ChatMention[];
+  isDeleted: boolean;
+  deletedAt: string | null;
+  deletedByName: string | null;
   images: Array<{
     path: string;
     url: string | null;
@@ -123,6 +141,16 @@ type ChatMessage = {
     sizeBytes: number | null;
     mimeType: string | null;
   }>;
+};
+
+type MobileNotificationItem = {
+  id: string;
+  title: string;
+  body: string | null;
+  type: string;
+  isRead: boolean;
+  createdAt: string;
+  metadata: Record<string, unknown>;
 };
 
 type ChatDraftImage = {
@@ -540,10 +568,14 @@ export function TelgoMvpApp() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<AppUser | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatMembers, setChatMembers] = useState<ChatMember[]>([]);
   const [chatComposer, setChatComposer] = useState("");
   const [chatDraftImages, setChatDraftImages] = useState<ChatDraftImage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState("");
+  const [notifications, setNotifications] = useState<MobileNotificationItem[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [activeModule, setActiveModule] = useState<ModuleItem | null>(null);
   const [search, setSearch] = useState("");
   const [clock, setClock] = useState<Date | null>(null);
@@ -559,6 +591,29 @@ export function TelgoMvpApp() {
       return `${item.title} ${item.subtitle}`.toLowerCase().includes(query);
     });
   }, [currentRole, search]);
+
+  const unreadNotifications = useMemo(
+    () => notifications.filter((item) => !item.isRead).length,
+    [notifications]
+  );
+
+  const mentionMatches = useMemo(() => {
+    const match = chatComposer.match(/(?:^|\s)@([A-Za-z0-9._-]*)$/);
+    if (!match) return [];
+
+    const query = String(match[1] ?? "").trim().toLowerCase();
+    return chatMembers
+      .filter((member) => member.id !== user?.id)
+      .filter((member) => {
+        if (!query) return true;
+        return (
+          member.loginId.toLowerCase().includes(query) ||
+          member.name.toLowerCase().includes(query) ||
+          (member.email ?? "").toLowerCase().includes(query)
+        );
+      })
+      .slice(0, 6);
+  }, [chatComposer, chatMembers, user?.id]);
 
   useEffect(() => {
     let alive = true;
@@ -646,7 +701,12 @@ export function TelgoMvpApp() {
       }
 
       const data = (await result.json().catch(() => null)) as
-        | { ok?: boolean; message?: string; messages?: ChatMessage[] }
+        | {
+            ok?: boolean;
+            message?: string;
+            messages?: ChatMessage[];
+            members?: ChatMember[];
+          }
         | null;
 
       if (!result.ok || !data?.ok || !Array.isArray(data.messages)) {
@@ -656,6 +716,7 @@ export function TelgoMvpApp() {
       }
 
       setChatMessages(data.messages);
+      setChatMembers(Array.isArray(data.members) ? data.members : []);
       setChatError("");
       setChatLoading(false);
     }
@@ -670,6 +731,75 @@ export function TelgoMvpApp() {
       window.clearInterval(interval);
     };
   }, [user, view]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+
+    async function refreshNotifications(showLoader = false) {
+      if (showLoader) setNotificationsLoading(true);
+      const response = await fetch("/api/mobile/notifications", {
+        method: "GET",
+        credentials: "include"
+      }).catch((error: unknown) => ({ error }));
+
+      if (cancelled) return;
+      if ("error" in response) {
+        setNotificationsLoading(false);
+        return;
+      }
+
+      const data = (await response.json().catch(() => null)) as
+        | {
+            ok?: boolean;
+            notifications?: MobileNotificationItem[];
+          }
+        | null;
+
+      if (!response.ok || !data?.ok || !Array.isArray(data.notifications)) {
+        setNotificationsLoading(false);
+        return;
+      }
+
+      setNotifications(data.notifications);
+      setNotificationsLoading(false);
+    }
+
+    void refreshNotifications(true);
+    const interval = window.setInterval(() => {
+      void refreshNotifications(false);
+    }, 10_000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [user]);
+
+  async function markAllNotificationsRead() {
+    if (!notifications.some((item) => !item.isRead)) return;
+
+    const response = await fetch("/api/mobile/notifications", {
+      method: "PATCH",
+      credentials: "include"
+    }).catch(() => null);
+
+    if (!response?.ok) return;
+    setNotifications((current) =>
+      current.map((item) => ({
+        ...item,
+        isRead: true
+      }))
+    );
+  }
+
+  async function toggleNotifications() {
+    setNotificationsOpen((current) => !current);
+    if (!notificationsOpen && unreadNotifications > 0) {
+      await markAllNotificationsRead();
+    }
+  }
 
   async function requestEmailAccess() {
     const normalizedEmail = normalizeEmail(email);
@@ -924,9 +1054,12 @@ export function TelgoMvpApp() {
     setPendingUser(null);
     setActiveModule(null);
     setChatMessages([]);
+    setChatMembers([]);
     setChatComposer("");
     setChatDraftImages([]);
     setChatError("");
+    setNotifications([]);
+    setNotificationsOpen(false);
     setSigninPin("");
     setLoginId(savedAccount?.loginId ?? "");
     setView("signin");
@@ -946,9 +1079,12 @@ export function TelgoMvpApp() {
     setPendingUser(null);
     setActiveModule(null);
     setChatMessages([]);
+    setChatMembers([]);
     setChatComposer("");
     setChatDraftImages([]);
     setChatError("");
+    setNotifications([]);
+    setNotificationsOpen(false);
     setLoginId("");
     setSigninPin("");
     setNotice("");
@@ -995,6 +1131,56 @@ export function TelgoMvpApp() {
       if (target) URL.revokeObjectURL(target.previewUrl);
       return current.filter((item) => item.id !== id);
     });
+  }
+
+  function insertMention(member: ChatMember) {
+    setChatComposer((current) => {
+      if (/(?:^|\s)@([A-Za-z0-9._-]*)$/.test(current)) {
+        return current.replace(/(?:^|\s)@([A-Za-z0-9._-]*)$/, (match) => {
+          const prefix = match.startsWith(" ") ? " " : "";
+          return `${prefix}@${member.loginId} `;
+        });
+      }
+
+      const spacer = current.trim().length ? " " : "";
+      return `${current}${spacer}@${member.loginId} `;
+    });
+  }
+
+  async function deleteChatMessage(messageId: string) {
+    const target = chatMessages.find((item) => item.id === messageId);
+    if (!target || target.isDeleted) return;
+
+    const messageOwner = target.sender.name || "this user";
+    const confirmationLabel =
+      user?.role === "admin" && target.sender.userId !== user.id
+        ? `Delete ${messageOwner}'s message for everyone?`
+        : "Delete this message for everyone?";
+
+    if (!window.confirm(confirmationLabel)) return;
+
+    const response = await fetch(`/api/mobile/chat/${messageId}`, {
+      method: "DELETE",
+      credentials: "include"
+    }).catch((error: unknown) => ({ error }));
+
+    if ("error" in response) {
+      setChatError(getErrorMessage(response.error));
+      return;
+    }
+
+    const data = (await response.json().catch(() => null)) as
+      | { ok?: boolean; message?: string; chatMessage?: ChatMessage }
+      | null;
+
+    if (!response.ok || !data?.ok || !data.chatMessage) {
+      setChatError(data?.message ?? "Message could not be deleted.");
+      return;
+    }
+
+    setChatMessages((current) =>
+      current.map((item) => (item.id === messageId ? data.chatMessage ?? item : item))
+    );
   }
 
   async function sendChatMessage() {
@@ -1050,6 +1236,23 @@ export function TelgoMvpApp() {
         onHome={() => setView("dashboard")}
         onChat={() => setView("chat")}
         onModule={() => openModuleByTitle("Projects")}
+        notifications={notifications}
+        notificationsLoading={notificationsLoading}
+        notificationsOpen={notificationsOpen}
+        unreadNotifications={unreadNotifications}
+        onToggleNotifications={() => {
+          void toggleNotifications();
+        }}
+        onMarkAllNotificationsRead={() => {
+          void markAllNotificationsRead();
+        }}
+        onOpenNotification={(notification) => {
+          setNotificationsOpen(false);
+          if (notification.type === "chat" || Boolean(notification.metadata.chatTitle)) {
+            setChatError("");
+            setView("chat");
+          }
+        }}
       >
         <DashboardView
           role={currentRole}
@@ -1057,9 +1260,12 @@ export function TelgoMvpApp() {
           user={user}
           modules={filteredModules}
           search={search}
+          notifications={notifications}
+          unreadNotifications={unreadNotifications}
           onSearch={setSearch}
           onModule={openModule}
           onModuleByTitle={openModuleByTitle}
+          onOpenChat={() => setView("chat")}
         />
       </AppFrame>
     );
@@ -1076,6 +1282,23 @@ export function TelgoMvpApp() {
         onBack={() => setView("dashboard")}
         onChat={() => setView("chat")}
         onModule={() => openModuleByTitle("Projects")}
+        notifications={notifications}
+        notificationsLoading={notificationsLoading}
+        notificationsOpen={notificationsOpen}
+        unreadNotifications={unreadNotifications}
+        onToggleNotifications={() => {
+          void toggleNotifications();
+        }}
+        onMarkAllNotificationsRead={() => {
+          void markAllNotificationsRead();
+        }}
+        onOpenNotification={(notification) => {
+          setNotificationsOpen(false);
+          if (notification.type === "chat" || Boolean(notification.metadata.chatTitle)) {
+            setChatError("");
+            setView("chat");
+          }
+        }}
       >
         {dashboardRole ? (
           <RoleWorkspaceView
@@ -1100,18 +1323,39 @@ export function TelgoMvpApp() {
         onBack={() => setView("dashboard")}
         onChat={() => setView("chat")}
         onModule={() => openModuleByTitle("Projects")}
+        notifications={notifications}
+        notificationsLoading={notificationsLoading}
+        notificationsOpen={notificationsOpen}
+        unreadNotifications={unreadNotifications}
+        onToggleNotifications={() => {
+          void toggleNotifications();
+        }}
+        onMarkAllNotificationsRead={() => {
+          void markAllNotificationsRead();
+        }}
+        onOpenNotification={(notification) => {
+          setNotificationsOpen(false);
+          if (notification.type === "chat" || Boolean(notification.metadata.chatTitle)) {
+            setChatError("");
+            setView("chat");
+          }
+        }}
       >
         <ChatView
           currentUser={user}
           messages={chatMessages}
+          members={chatMembers}
+          mentionMatches={mentionMatches}
           composer={chatComposer}
           draftImages={chatDraftImages}
           loading={chatLoading}
           error={chatError}
           chatEndRef={chatEndRef}
           onComposer={setChatComposer}
+          onInsertMention={insertMention}
           onPickImages={chooseChatImages}
           onRemoveDraft={removeChatDraft}
+          onDeleteMessage={deleteChatMessage}
           onSend={sendChatMessage}
         />
       </AppFrame>
@@ -1571,18 +1815,24 @@ function DashboardView({
   user,
   modules: visibleModules,
   search,
+  notifications,
+  unreadNotifications,
   onSearch,
   onModule,
-  onModuleByTitle
+  onModuleByTitle,
+  onOpenChat
 }: {
   role: AccessRole;
   clock: Date | null;
   user: AppUser | null;
   modules: ModuleItem[];
   search: string;
+  notifications: MobileNotificationItem[];
+  unreadNotifications: number;
   onSearch: (value: string) => void;
   onModule: (item: ModuleItem) => void;
   onModuleByTitle: (title: string) => void;
+  onOpenChat: () => void;
 }) {
   const userName = user?.name ?? "Team";
   const roleLabel = formatRoleLabel(role);
@@ -1652,6 +1902,66 @@ function DashboardView({
         ))}
       </section>
 
+      <section className="px-4 pt-5 sm:px-6">
+        <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">
+                Dashboard notifications
+              </p>
+              <h2 className="mt-2 text-2xl font-bold tracking-normal text-[#07122f]">
+                {unreadNotifications > 0
+                  ? `${unreadNotifications} unread update${unreadNotifications === 1 ? "" : "s"}`
+                  : "No unread notifications"}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Chat mentions, admin actions, and workflow alerts will appear here for this approved device account.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenChat}
+              className="inline-flex min-h-11 items-center justify-center rounded-full border border-blue-100 bg-blue-50 px-4 text-sm font-semibold text-[#115cff]"
+            >
+              Open team chat
+            </button>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {notifications.slice(0, 4).map((notification) => (
+              <article
+                key={notification.id}
+                className={cn(
+                  "rounded-2xl border px-4 py-4",
+                  notification.isRead ? "border-slate-200 bg-slate-50" : "border-blue-100 bg-blue-50"
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-[#07122f]">{notification.title}</p>
+                    {notification.body ? (
+                      <p className="mt-2 text-sm leading-6 text-slate-500">{notification.body}</p>
+                    ) : null}
+                  </div>
+                  <span className="shrink-0 text-xs font-semibold text-slate-400">
+                    {formatNotificationTime(notification.createdAt)}
+                  </span>
+                </div>
+              </article>
+            ))}
+
+            {notifications.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
+                <p className="text-sm font-semibold text-[#07122f]">No dashboard notifications yet.</p>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  New chat mentions and admin alerts will appear here automatically.
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </section>
+
       <RoleOverviewPanel role={role} onOpenModule={onModuleByTitle} />
 
       <section className="px-4 pt-8 sm:px-6">
@@ -1695,7 +2005,14 @@ function AppFrame({
   onHome,
   onBack,
   onChat,
-  onModule
+  onModule,
+  notifications,
+  notificationsLoading,
+  notificationsOpen,
+  unreadNotifications,
+  onToggleNotifications,
+  onMarkAllNotificationsRead,
+  onOpenNotification
 }: {
   user: AppUser | null;
   active: string;
@@ -1705,6 +2022,13 @@ function AppFrame({
   onBack?: () => void;
   onChat: () => void;
   onModule: () => void;
+  notifications: MobileNotificationItem[];
+  notificationsLoading: boolean;
+  notificationsOpen: boolean;
+  unreadNotifications: number;
+  onToggleNotifications: () => void;
+  onMarkAllNotificationsRead: () => void;
+  onOpenNotification: (notification: MobileNotificationItem) => void;
 }) {
   return (
     <main className="min-h-dvh bg-[#f8fbff] text-[#07122f]">
@@ -1722,9 +2046,19 @@ function AppFrame({
             </button>
             <BrandMark compact />
           </div>
-          <div className="flex items-center gap-3">
-            <button type="button" className="relative grid h-11 w-11 place-items-center rounded-xl text-[#07122f]">
+          <div className="relative flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onToggleNotifications}
+              className="relative grid h-11 w-11 place-items-center rounded-xl text-[#07122f]"
+              aria-label="Open notifications"
+            >
               <Bell className="h-6 w-6" />
+              {unreadNotifications > 0 ? (
+                <span className="absolute right-1 top-1 min-w-5 rounded-full bg-[#ff3d57] px-1.5 py-0.5 text-center text-[10px] font-bold leading-none text-white">
+                  {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                </span>
+              ) : null}
             </button>
             <button
               type="button"
@@ -1739,6 +2073,64 @@ function AppFrame({
               </div>
               <ChevronDown className="h-4 w-4 text-slate-500" />
             </div>
+
+            {notificationsOpen ? (
+              <div className="absolute right-0 top-[calc(100%+0.75rem)] z-40 w-[340px] max-w-[calc(100vw-2rem)] rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_24px_80px_rgba(15,35,80,0.16)]">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-[#07122f]">Notifications</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Mentions, chat moderation, and workflow updates.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onMarkAllNotificationsRead}
+                    className="text-xs font-semibold text-[#115cff]"
+                  >
+                    Mark all read
+                  </button>
+                </div>
+
+                <div className="mt-4 max-h-[360px] space-y-3 overflow-y-auto pr-1">
+                  {notificationsLoading && notifications.length === 0 ? (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                      Loading notifications...
+                    </div>
+                  ) : null}
+
+                  {!notificationsLoading && notifications.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                      No notifications yet.
+                    </div>
+                  ) : null}
+
+                  {notifications.map((notification) => (
+                    <button
+                      key={notification.id}
+                      type="button"
+                      onClick={() => onOpenNotification(notification)}
+                      className={cn(
+                        "w-full rounded-2xl border px-4 py-4 text-left transition",
+                        notification.isRead
+                          ? "border-slate-200 bg-slate-50"
+                          : "border-blue-100 bg-blue-50"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-sm font-bold text-[#07122f]">{notification.title}</p>
+                        <span className="shrink-0 text-[11px] font-semibold text-slate-400">
+                          {formatNotificationTime(notification.createdAt)}
+                        </span>
+                      </div>
+                      {notification.body ? (
+                        <p className="mt-2 text-sm leading-6 text-slate-500">{notification.body}</p>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         </header>
         {children}
@@ -1757,26 +2149,34 @@ function AppFrame({
 function ChatView({
   currentUser,
   messages,
+  members,
+  mentionMatches,
   composer,
   draftImages,
   loading,
   error,
   chatEndRef,
   onComposer,
+  onInsertMention,
   onPickImages,
   onRemoveDraft,
+  onDeleteMessage,
   onSend
 }: {
   currentUser: AppUser | null;
   messages: ChatMessage[];
+  members: ChatMember[];
+  mentionMatches: ChatMember[];
   composer: string;
   draftImages: ChatDraftImage[];
   loading: boolean;
   error: string;
   chatEndRef: RefObject<HTMLDivElement | null>;
   onComposer: (value: string) => void;
+  onInsertMention: (member: ChatMember) => void;
   onPickImages: (files: FileList | null) => Promise<void>;
   onRemoveDraft: (id: string) => void;
+  onDeleteMessage: (messageId: string) => Promise<void>;
   onSend: () => Promise<void>;
 }) {
   return (
@@ -1786,12 +2186,15 @@ function ChatView({
           <div>
             <h1 className="text-2xl font-bold tracking-normal text-[#07122f]">Telgo Team Chat</h1>
             <p className="mt-1 text-sm text-slate-500">
-              Live team messaging for approved mobile users. Photos are compressed before upload.
+              Live team messaging for approved mobile users. Type <span className="font-semibold text-[#07122f]">@</span> to tag a teammate and send a dashboard notification.
             </p>
           </div>
-          <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-[#14b866]">
-            Live
-          </span>
+          <div className="text-right">
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-[#14b866]">
+              Live
+            </span>
+            <p className="mt-2 text-xs font-medium text-slate-500">{members.length} approved users</p>
+          </div>
         </div>
       </div>
 
@@ -1808,7 +2211,11 @@ function ChatView({
             <div className="space-y-4">
               {messages.map((message) => {
                 const mine = currentUser?.id === message.sender.userId;
+                const canDelete = currentUser?.role === "admin" || mine;
                 const trimmedBody = message.body.trim();
+                const mentionedCurrentUser = message.mentions.some(
+                  (mention) => mention.userId === currentUser?.id
+                );
                 return (
                   <div
                     key={message.id}
@@ -1822,20 +2229,56 @@ function ChatView({
                           : "border border-slate-200 bg-slate-50 text-[#07122f]"
                       )}
                     >
-                      <div className="mb-2 flex items-center gap-2">
-                        <p className={cn("text-sm font-semibold", mine ? "text-white" : "text-[#07122f]")}>
-                          {message.sender.name}
-                        </p>
-                        <span className={cn("text-xs", mine ? "text-blue-100" : "text-slate-400")}>
-                          {formatRoleLabel(message.sender.role)}
-                        </span>
+                      <div className="mb-2 flex items-start justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className={cn("text-sm font-semibold", mine ? "text-white" : "text-[#07122f]")}>
+                            {message.sender.name}
+                          </p>
+                          <span className={cn("text-xs", mine ? "text-blue-100" : "text-slate-400")}>
+                            {formatRoleLabel(message.sender.role)}
+                          </span>
+                          {mentionedCurrentUser ? (
+                            <span
+                              className={cn(
+                                "rounded-full px-2 py-1 text-[11px] font-semibold",
+                                mine ? "bg-white/15 text-white" : "bg-blue-100 text-[#115cff]"
+                              )}
+                            >
+                              Mentioned you
+                            </span>
+                          ) : null}
+                        </div>
+                        {canDelete && !message.isDeleted ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void onDeleteMessage(message.id);
+                            }}
+                            className={cn(
+                              "text-[11px] font-semibold",
+                              mine ? "text-blue-100" : "text-[#115cff]"
+                            )}
+                          >
+                            Delete
+                          </button>
+                        ) : null}
                       </div>
-                      {trimmedBody ? (
-                        <p className={cn("text-sm leading-6", mine ? "text-white" : "text-slate-700")}>
-                          {trimmedBody}
-                        </p>
+                      {message.isDeleted ? (
+                        <div className={cn("rounded-2xl px-3 py-3 text-sm", mine ? "bg-white/10 text-white" : "bg-slate-100 text-slate-500")}>
+                          <p className="font-semibold">
+                            {message.deletedByName ? `Message removed by ${message.deletedByName}.` : "Message deleted."}
+                          </p>
+                          <p className={cn("mt-1 text-xs", mine ? "text-blue-100" : "text-slate-400")}>
+                            This chat entry was cleared for everyone.
+                          </p>
+                        </div>
                       ) : null}
-                      {message.images.length ? (
+                      {!message.isDeleted && trimmedBody ? (
+                        <div className={cn("text-sm leading-6", mine ? "text-white" : "text-slate-700")}>
+                          {renderChatBody(trimmedBody, message.mentions, mine)}
+                        </div>
+                      ) : null}
+                      {!message.isDeleted && message.images.length ? (
                         <div className="mt-3 grid grid-cols-2 gap-2">
                           {message.images.map((image) => (
                             <a
@@ -1904,6 +2347,33 @@ function ChatView({
         }}
         className="mt-4 rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm"
       >
+        {mentionMatches.length ? (
+          <div className="mb-3 rounded-2xl border border-slate-200 bg-slate-50 p-2">
+            <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+              Tag teammate
+            </p>
+            <div className="space-y-1">
+              {mentionMatches.map((member) => (
+                <button
+                  key={member.id}
+                  type="button"
+                  onClick={() => onInsertMention(member)}
+                  className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition hover:bg-white"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-[#07122f]">{member.name}</p>
+                    <p className="text-xs text-slate-500">
+                      @{member.loginId} - {formatRoleLabel(member.role)}
+                    </p>
+                  </div>
+                  {member.email ? (
+                    <span className="text-[11px] font-medium text-slate-400">{member.email}</span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <div className="flex items-end gap-3">
           <label className="grid h-12 w-12 shrink-0 cursor-pointer place-items-center rounded-2xl border border-slate-200 text-slate-600">
             <Paperclip className="h-5 w-5" />
@@ -1938,7 +2408,7 @@ function ChatView({
           <p className="mt-3 text-sm font-medium text-[#ff3d57]">{error}</p>
         ) : (
           <p className="mt-3 text-xs leading-5 text-slate-500">
-            Photos are compressed on the device before upload for faster chat delivery.
+            Photos are compressed before upload. Tag a teammate with @TelgoID to push a dashboard notification.
           </p>
         )}
       </form>
@@ -2410,6 +2880,46 @@ function formatChatTime(value: string) {
   return date.toLocaleTimeString("en-IN", {
     hour: "2-digit",
     minute: "2-digit"
+  });
+}
+
+function formatNotificationTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function renderChatBody(body: string, mentions: ChatMention[], mine: boolean) {
+  const mentionMap = new Map(mentions.map((mention) => [mention.loginId.toUpperCase(), mention]));
+  const parts = body.split(/(@[A-Za-z0-9._-]+)/g);
+
+  return parts.map((part, index) => {
+    if (!part.startsWith("@")) {
+      return <span key={`${part}-${index}`}>{part}</span>;
+    }
+
+    const token = part.slice(1).toUpperCase();
+    const mention = mentionMap.get(token);
+    if (!mention) {
+      return <span key={`${part}-${index}`}>{part}</span>;
+    }
+
+    return (
+      <span
+        key={`${part}-${index}`}
+        className={cn(
+          "rounded-full px-2 py-1 text-[13px] font-semibold",
+          mine ? "bg-white/15 text-white" : "bg-blue-100 text-[#115cff]"
+        )}
+      >
+        @{mention.loginId}
+      </span>
+    );
   });
 }
 

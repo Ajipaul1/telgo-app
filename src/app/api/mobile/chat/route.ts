@@ -1,5 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { ensureMobileChat, listMobileChatMessages, createMobileChatMessage } from "@/lib/server/mobile-chat";
+import {
+  ensureMobileChat,
+  listMobileChatMembers,
+  listMobileChatMessages,
+  createMobileChatMessage
+} from "@/lib/server/mobile-chat";
 import { getMobileAccessClient } from "@/lib/server/mobile-access";
 import { readMobileSession } from "@/lib/server/mobile-session";
 
@@ -24,6 +29,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const chat = await ensureMobileChat(supabase);
+    const members = await listMobileChatMembers(supabase);
     const messages = await listMobileChatMessages(supabase, chat.id);
     return NextResponse.json({
       ok: true,
@@ -31,7 +37,8 @@ export async function GET(request: NextRequest) {
         id: chat.id,
         title: chat.title
       },
-      messages
+      messages,
+      members
     });
   } catch (error) {
     return NextResponse.json(
