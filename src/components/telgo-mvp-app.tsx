@@ -77,6 +77,7 @@ type ModuleItem = {
 };
 
 const SESSION_KEY = "telgo-mobile-session";
+const DEVICE_ACCOUNT_KEY = "telgo-mobile-account";
 const APK_DOWNLOAD_PATH = "/downloads/telgo-hub.apk";
 const accessRoles: { value: AccessRole; label: string; description: string }[] = [
   { value: "engineer", label: "Engineer", description: "Site updates and reports" },
@@ -217,6 +218,7 @@ export function TelgoMvpApp() {
   const [confirmPin, setConfirmPin] = useState("");
   const [signinPin, setSigninPin] = useState("");
   const [pendingUser, setPendingUser] = useState<AppUser | null>(null);
+  const [savedAccount, setSavedAccount] = useState<AppUser | null>(null);
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<AppUser | null>(null);
@@ -243,12 +245,25 @@ export function TelgoMvpApp() {
         if (cachedSession) {
           const parsed = JSON.parse(cachedSession) as AppUser;
           if (!alive) return;
+          setSavedAccount(parsed);
           setUser(parsed);
           setView("dashboard");
           return;
         }
       } catch {
         localStorage.removeItem(SESSION_KEY);
+      }
+
+      try {
+        const cachedAccount = localStorage.getItem(DEVICE_ACCOUNT_KEY);
+        if (cachedAccount) {
+          const parsed = JSON.parse(cachedAccount) as AppUser;
+          if (!alive) return;
+          setSavedAccount(parsed);
+          setLoginId(parsed.loginId);
+        }
+      } catch {
+        localStorage.removeItem(DEVICE_ACCOUNT_KEY);
       }
 
       const {
@@ -443,6 +458,8 @@ export function TelgoMvpApp() {
     const remoteUser = result.user;
     const activatedUser = remoteUser ? toAppUser(remoteUser, pendingUser.loginId) : pendingUser;
     saveSession(activatedUser);
+    saveDeviceAccount(activatedUser);
+    setSavedAccount(activatedUser);
     await supabase.auth.signOut();
     setUser(activatedUser);
     setPendingUser(null);
@@ -455,9 +472,9 @@ export function TelgoMvpApp() {
   }
 
   async function signIn() {
-    const normalizedLoginId = normalizeLoginId(loginId);
+    const normalizedLoginId = normalizeLoginId(savedAccount?.loginId ?? loginId);
     if (!normalizedLoginId || !/^\d{4}$/.test(signinPin)) {
-      setNotice("Enter your Telgo ID and 4-digit PIN.");
+      setNotice("Enter your 4-digit PIN.");
       return;
     }
     setLoading(true);
@@ -482,6 +499,8 @@ export function TelgoMvpApp() {
     }
 
     saveSession(signedInUser);
+    saveDeviceAccount(signedInUser);
+    setSavedAccount(signedInUser);
     setUser(signedInUser);
     setNotice("");
     setSigninPin("");
@@ -501,6 +520,22 @@ export function TelgoMvpApp() {
     setUser(null);
     setPendingUser(null);
     setActiveModule(null);
+    setSigninPin("");
+    setLoginId(savedAccount?.loginId ?? "");
+    setView("signin");
+  }
+
+  function forgetSavedAccount() {
+    localStorage.removeItem(DEVICE_ACCOUNT_KEY);
+    localStorage.removeItem(SESSION_KEY);
+    void supabase.auth.signOut();
+    setSavedAccount(null);
+    setUser(null);
+    setPendingUser(null);
+    setActiveModule(null);
+    setLoginId("");
+    setSigninPin("");
+    setNotice("");
     setView("signin");
   }
 
@@ -609,6 +644,7 @@ export function TelgoMvpApp() {
           ) : null}
           {view === "signin" ? (
             <SigninStep
+              savedAccount={savedAccount}
               loginId={loginId}
               pin={signinPin}
               loading={loading}
@@ -616,6 +652,7 @@ export function TelgoMvpApp() {
               onLoginId={setLoginId}
               onPin={setSigninPin}
               onSignin={signIn}
+              onForgetSavedAccount={forgetSavedAccount}
               onRequest={() => {
                 setNotice("");
                 setView("request");
@@ -878,6 +915,7 @@ function PinStep({
 }
 
 function SigninStep({
+  savedAccount,
   loginId,
   pin,
   loading,
@@ -885,9 +923,11 @@ function SigninStep({
   onLoginId,
   onPin,
   onSignin,
+  onForgetSavedAccount,
   onRequest,
   onOtp
 }: {
+  savedAccount: AppUser | null;
   loginId: string;
   pin: string;
   loading: boolean;
@@ -895,6 +935,7 @@ function SigninStep({
   onLoginId: (value: string) => void;
   onPin: (value: string) => void;
   onSignin: () => void;
+  onForgetSavedAccount: () => void;
   onRequest: () => void;
   onOtp: () => void;
 }) {
@@ -903,17 +944,28 @@ function SigninStep({
       <BrandMark />
       <div className="mt-9 text-center">
         <h1 className="text-2xl font-bold tracking-normal">Welcome Back</h1>
-        <p className="mt-2 text-sm text-slate-500">Sign in with your Telgo ID and PIN</p>
+        <p className="mt-2 text-sm text-slate-500">
+          {savedAccount
+            ? `Enter the 4-digit PIN for ${savedAccount.name} on this device`
+            : "Sign in with your Telgo ID and PIN"}
+        </p>
       </div>
-      <label className="mt-8 block">
-        <span className="mb-2 block text-sm font-semibold text-slate-700">Telgo ID</span>
-        <input
-          value={loginId}
-          onChange={(event) => onLoginId(event.target.value.toUpperCase())}
-          placeholder="TLG-12345678"
-          className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-center text-base font-bold tracking-[0.08em] outline-none placeholder:font-medium placeholder:tracking-normal placeholder:text-slate-400 focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
-        />
-      </label>
+      {savedAccount ? (
+        <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-center">
+          <p className="text-sm font-semibold text-[#07122f]">{savedAccount.name}</p>
+          <p className="mt-1 text-xs text-slate-500">{savedAccount.email}</p>
+        </div>
+      ) : (
+        <label className="mt-8 block">
+          <span className="mb-2 block text-sm font-semibold text-slate-700">Telgo ID</span>
+          <input
+            value={loginId}
+            onChange={(event) => onLoginId(event.target.value.toUpperCase())}
+            placeholder="TLG-12345678"
+            className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-center text-base font-bold tracking-[0.08em] outline-none placeholder:font-medium placeholder:tracking-normal placeholder:text-slate-400 focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
+          />
+        </label>
+      )}
       <div className="mt-4">
         <PinInput label="4-digit PIN" value={pin} onChange={onPin} />
       </div>
@@ -925,6 +977,11 @@ function SigninStep({
       </PrimaryButton>
       {notice ? <Notice>{notice}</Notice> : null}
       <div className="mt-6 grid gap-2 text-center text-sm text-slate-500">
+        {savedAccount ? (
+          <button type="button" onClick={onForgetSavedAccount} className="font-semibold text-[#115cff]">
+            Use another account
+          </button>
+        ) : null}
         <button type="button" onClick={onOtp} className="font-semibold text-[#115cff]">
           Use email OTP / reset PIN
         </button>
@@ -1422,6 +1479,10 @@ async function hashSecret(identifier: string, secret: string) {
 
 function saveSession(user: AppUser) {
   localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+}
+
+function saveDeviceAccount(user: AppUser) {
+  localStorage.setItem(DEVICE_ACCOUNT_KEY, JSON.stringify(user));
 }
 
 function toAppUser(remoteUser: unknown, fallbackLoginId: string): AppUser {
