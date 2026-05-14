@@ -57,6 +57,7 @@ import { supabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 type MvpView = "request" | "otp" | "pin" | "signin" | "dashboard" | "module";
+type OtpReturnView = "request" | "signin";
 type AccessRole = "engineer" | "supervisor" | "finance" | "client" | "admin";
 type AppUser = {
   id: string;
@@ -219,6 +220,7 @@ export function TelgoMvpApp() {
   const [signinPin, setSigninPin] = useState("");
   const [pendingUser, setPendingUser] = useState<AppUser | null>(null);
   const [savedAccount, setSavedAccount] = useState<AppUser | null>(null);
+  const [otpReturnView, setOtpReturnView] = useState<OtpReturnView>("request");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<AppUser | null>(null);
@@ -335,6 +337,7 @@ export function TelgoMvpApp() {
     setOtpCode("");
     setPin("");
     setConfirmPin("");
+    setOtpReturnView("request");
     setView("otp");
     const otpResult = await sendEmailOtp(normalizedEmail);
     const telgoIdLine = `Your Telgo ID is ${data.loginId}.`;
@@ -472,18 +475,27 @@ export function TelgoMvpApp() {
   }
 
   async function signIn() {
-    const normalizedLoginId = normalizeLoginId(savedAccount?.loginId ?? loginId);
-    if (!normalizedLoginId || !/^\d{4}$/.test(signinPin)) {
-      setNotice("Enter your 4-digit PIN.");
+    const identifier = (savedAccount?.loginId ?? loginId).trim();
+    const normalizedEmail = normalizeEmail(identifier);
+    const normalizedLoginId = normalizedEmail ? "" : normalizeLoginId(identifier);
+    if ((!normalizedEmail && !normalizedLoginId) || !/^\d{4}$/.test(signinPin)) {
+      setNotice(savedAccount ? "Enter your 4-digit PIN." : "Enter your Telgo ID or email and 4-digit PIN.");
       return;
     }
     setLoading(true);
     setNotice("Signing in...");
-    const pinHash = await hashSecret(normalizedLoginId, signinPin);
-    const result = await postMobileAccess("/api/mobile/sign-in", {
-      loginId: normalizedLoginId,
-      pinHash
-    });
+    const result = await postMobileAccess(
+      "/api/mobile/sign-in",
+      normalizedEmail
+        ? {
+            identifier: normalizedEmail,
+            pin: signinPin
+          }
+        : {
+            identifier: normalizedLoginId,
+            pinHash: await hashSecret(normalizedLoginId, signinPin)
+          }
+    );
 
     const remoteUser = result.user;
     const signedInUser = remoteUser ? toAppUser(remoteUser, normalizedLoginId) : null;
@@ -626,7 +638,7 @@ export function TelgoMvpApp() {
               onOtpCode={setOtpCode}
               onSendOtp={sendOtpAgain}
               onVerifyOtp={verifyOtpCode}
-              onBack={() => setView("request")}
+              onBack={() => setView(otpReturnView)}
             />
           ) : null}
           {view === "pin" ? (
@@ -658,6 +670,9 @@ export function TelgoMvpApp() {
                 setView("request");
               }}
               onOtp={() => {
+                const resetEmail = savedAccount?.email ?? normalizeEmail(loginId);
+                if (resetEmail) setEmail(resetEmail);
+                setOtpReturnView("signin");
                 setNotice("");
                 setView("otp");
               }}
@@ -947,7 +962,7 @@ function SigninStep({
         <p className="mt-2 text-sm text-slate-500">
           {savedAccount
             ? `Enter the 4-digit PIN for ${savedAccount.name} on this device`
-            : "Sign in with your Telgo ID and PIN"}
+            : "Sign in with your Telgo ID or approved email address and PIN"}
         </p>
       </div>
       {savedAccount ? (
@@ -957,11 +972,14 @@ function SigninStep({
         </div>
       ) : (
         <label className="mt-8 block">
-          <span className="mb-2 block text-sm font-semibold text-slate-700">Telgo ID</span>
+          <span className="mb-2 block text-sm font-semibold text-slate-700">Telgo ID or Email</span>
           <input
             value={loginId}
-            onChange={(event) => onLoginId(event.target.value.toUpperCase())}
-            placeholder="TLG-12345678"
+            onChange={(event) => {
+              const value = event.target.value.trim();
+              onLoginId(value.includes("@") ? value.toLowerCase() : value.toUpperCase());
+            }}
+            placeholder="TLG-12345678 or name@company.com"
             className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-center text-base font-bold tracking-[0.08em] outline-none placeholder:font-medium placeholder:tracking-normal placeholder:text-slate-400 focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
           />
         </label>
@@ -1007,7 +1025,7 @@ function AndroidDownloadCard() {
           <h2 className="text-base font-bold text-[#07122f]">Install Telgo Hub on Android</h2>
           <p className="mt-1 text-sm leading-6 text-slate-500">
             Download the company APK, install it on the approved Android device, then sign in with
-            your Telgo ID and PIN.
+            your Telgo ID or approved email address and PIN.
           </p>
         </div>
       </div>
