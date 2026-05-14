@@ -76,6 +76,33 @@ type ModuleItem = {
   tone: Tone;
 };
 
+type RoleDashboardAction = {
+  title: string;
+  detail: string;
+  moduleTitle: string;
+};
+
+type RoleFeatureItem = {
+  title: string;
+  detail: string;
+};
+
+type RoleDashboardSection = {
+  title: string;
+  detail: string;
+  items: RoleFeatureItem[];
+};
+
+type RoleDashboardDefinition = {
+  intro: string;
+  focusTitle: string;
+  focusDetail: string;
+  quickActions: RoleDashboardAction[];
+  sections: RoleDashboardSection[];
+  statusTitle: string;
+  statusBody: string;
+};
+
 type ChatMessage = {
   id: string;
   body: string;
@@ -149,6 +176,14 @@ const toneStyles: Record<Tone, { icon: string; box: string; text: string }> = {
   }
 };
 
+const roleDashboardModuleTitleByRole: Record<AccessRole, string> = {
+  admin: "Admin Dashboard",
+  supervisor: "Supervisor Dashboard",
+  engineer: "Engineer Dashboard",
+  finance: "Finance Dashboard",
+  client: "Client Dashboard"
+};
+
 const modules: ModuleItem[] = [
   { title: "Mark Attendance", subtitle: "Daily check-in", icon: UserCheck, tone: "green" },
   { title: "Live Tracking", subtitle: "Workers & Assets", icon: MapPin, tone: "blue" },
@@ -157,6 +192,7 @@ const modules: ModuleItem[] = [
   { title: "Upload Report", subtitle: "Daily / site report", icon: CloudUpload, tone: "green" },
   { title: "Live Chat", subtitle: "Team communication", icon: MessageCircle, tone: "blue" },
   { title: "Admin Dashboard", subtitle: "System overview", icon: Shield, tone: "red" },
+  { title: "Supervisor Dashboard", subtitle: "Team & site control", icon: ClipboardCheck, tone: "orange" },
   { title: "Engineer Dashboard", subtitle: "Engineer workspace", icon: HardHat, tone: "purple" },
   { title: "Finance Dashboard", subtitle: "Finance overview", icon: IndianRupee, tone: "green" },
   { title: "Client Dashboard", subtitle: "Client view & updates", icon: UsersRound, tone: "orange" },
@@ -187,6 +223,306 @@ const modules: ModuleItem[] = [
   { title: "AI Assistant", subtitle: "Smart help", icon: Sparkles, tone: "purple" }
 ];
 
+const commonModuleTitles = [
+  "Projects",
+  "Live Chat",
+  "Document Center",
+  "Calendar",
+  "Announcements",
+  "Support",
+  "AI Assistant"
+];
+
+const roleModuleTitles: Record<AccessRole, string[]> = {
+  admin: modules.map((item) => item.title),
+  supervisor: [
+    "Supervisor Dashboard",
+    "Mark Attendance",
+    "Live Tracking",
+    ...commonModuleTitles,
+    "Update Project",
+    "Upload Report",
+    "All Workers",
+    "Leave Management",
+    "Materials Request",
+    "Equipment",
+    "Vehicle Tracking",
+    "Safety Reports",
+    "Approvals",
+    "Task Management",
+    "Timesheet",
+    "Site Inspection",
+    "Quality Control",
+    "Daily Diary",
+    "Reports & Analytics",
+    "Alerts"
+  ],
+  engineer: [
+    "Engineer Dashboard",
+    "Mark Attendance",
+    ...commonModuleTitles,
+    "Update Project",
+    "Upload Report",
+    "Materials Request",
+    "Equipment",
+    "Task Management",
+    "Timesheet",
+    "Site Inspection",
+    "Quality Control",
+    "Daily Diary",
+    "Alerts"
+  ],
+  finance: [
+    "Finance Dashboard",
+    ...commonModuleTitles,
+    "Expense Management",
+    "Invoices",
+    "Payroll Management",
+    "Approvals",
+    "Reports & Analytics",
+    "Fuel Management"
+  ],
+  client: [
+    "Client Dashboard",
+    "Projects",
+    "Live Chat",
+    "Document Center",
+    "Calendar",
+    "Announcements",
+    "Approvals",
+    "Reports & Analytics",
+    "Support"
+  ]
+};
+
+const roleDashboardContent: Record<AccessRole, RoleDashboardDefinition> = {
+  admin: {
+    intro: "You are signed in to the full operations command center.",
+    focusTitle: "Operations command center",
+    focusDetail: "Use this workspace to control sites, approvals, reporting, finance, and team-wide actions.",
+    quickActions: [
+      { title: "Review approvals", detail: "Clear pending requests and escalations.", moduleTitle: "Approvals" },
+      { title: "Track live sites", detail: "Watch workers, assets, and movement.", moduleTitle: "Live Tracking" },
+      { title: "View analytics", detail: "Open company-wide insights and exports.", moduleTitle: "Reports & Analytics" },
+      { title: "Send update", detail: "Publish notices to every active team.", moduleTitle: "Announcements" }
+    ],
+    sections: [
+      {
+        title: "Operations control",
+        detail: "Admin should be able to manage the entire delivery engine from one place.",
+        items: [
+          { title: "Project assignment", detail: "Assign sites, users, and delivery owners." },
+          { title: "Critical alert desk", detail: "Review unresolved field and safety escalations." },
+          { title: "Company attendance view", detail: "See all check-ins, late entries, and corrections." },
+          { title: "Multi-site monitoring", detail: "Switch between sites, teams, and vehicles instantly." }
+        ]
+      },
+      {
+        title: "Commercial control",
+        detail: "Finance and commercial controls should remain visible to admin without a second login.",
+        items: [
+          { title: "Expense approvals", detail: "Approve or reject submitted claims." },
+          { title: "Invoice oversight", detail: "Track billing status, dues, and milestone invoices." },
+          { title: "Payroll readiness", detail: "Monitor salary processing and attendance dependencies." },
+          { title: "Fuel and asset cost watch", detail: "Review recurring operational spend." }
+        ]
+      },
+      {
+        title: "Governance and reporting",
+        detail: "Admin dashboard should become the final audit and reporting surface.",
+        items: [
+          { title: "Audit trail", detail: "See who changed what and when." },
+          { title: "Data export", detail: "Export attendance, project, and finance summaries." },
+          { title: "Company policy center", detail: "Push SOPs, circulars, and updated rules." },
+          { title: "Client readiness view", detail: "Preview what external clients can see." }
+        ]
+      }
+    ],
+    statusTitle: "Admin workspace is ready for full-company oversight.",
+    statusBody: "Live metrics will replace these planning cards once the project, attendance, approvals, and finance modules are connected to real data."
+  },
+  supervisor: {
+    intro: "You are signed in to the team and site supervision workspace.",
+    focusTitle: "Site and team supervision",
+    focusDetail: "Use this dashboard to coordinate field teams, approve requests, and keep projects moving safely.",
+    quickActions: [
+      { title: "Check live team", detail: "Open worker and asset movement first.", moduleTitle: "Live Tracking" },
+      { title: "Approve requests", detail: "Clear leave, material, and field approvals.", moduleTitle: "Approvals" },
+      { title: "Review safety", detail: "Handle inspections, incidents, and closures.", moduleTitle: "Safety Reports" },
+      { title: "Assign today's work", detail: "Update tasks and responsibilities.", moduleTitle: "Task Management" }
+    ],
+    sections: [
+      {
+        title: "Team oversight",
+        detail: "Supervisor should manage people, attendance, and daily discipline.",
+        items: [
+          { title: "Attendance review", detail: "Check who is marked in, absent, or late." },
+          { title: "Leave approval", detail: "Approve field leave requests quickly." },
+          { title: "Worker assignment", detail: "Move teams between sites or shifts." },
+          { title: "Daily communication", detail: "Broadcast updates through team chat and announcements." }
+        ]
+      },
+      {
+        title: "Project delivery",
+        detail: "Supervisor should validate daily execution before admin review.",
+        items: [
+          { title: "Report review", detail: "Check field updates and uploaded site reports." },
+          { title: "Progress validation", detail: "Compare planned vs completed work." },
+          { title: "Material follow-up", detail: "Track requests, approvals, and dispatch." },
+          { title: "Delay escalation", detail: "Raise blockers before they affect the client." }
+        ]
+      },
+      {
+        title: "Safety and quality",
+        detail: "Site control must include inspections and closure follow-up.",
+        items: [
+          { title: "Inspection queue", detail: "Review pending inspections and audit notes." },
+          { title: "Safety issue tracker", detail: "Resolve observations with closure evidence." },
+          { title: "Vehicle coordination", detail: "Watch deliveries, fuel, and movement." },
+          { title: "Quality check register", detail: "Track QC failures and corrections." }
+        ]
+      }
+    ],
+    statusTitle: "Supervisor dashboard is ready for live site control.",
+    statusBody: "Once attendance, tasks, materials, and inspection flows go live, this screen will become the day-to-day control panel for each site lead."
+  },
+  engineer: {
+    intro: "You are signed in to the field execution workspace.",
+    focusTitle: "Engineer field workspace",
+    focusDetail: "This dashboard should keep the engineer focused on daily execution, reporting, and issue escalation.",
+    quickActions: [
+      { title: "Mark attendance", detail: "Start the day with site check-in.", moduleTitle: "Mark Attendance" },
+      { title: "Update project", detail: "Submit progress against today's work.", moduleTitle: "Update Project" },
+      { title: "Upload report", detail: "Send photo and text reports from site.", moduleTitle: "Upload Report" },
+      { title: "Open diary", detail: "Log the day's work and observations.", moduleTitle: "Daily Diary" }
+    ],
+    sections: [
+      {
+        title: "Daily field work",
+        detail: "Engineer dashboard should keep the daily work cycle simple and fast.",
+        items: [
+          { title: "Attendance and shift log", detail: "Mark in, mark out, and review this month's attendance." },
+          { title: "Assigned tasks", detail: "See today's tasks, blockers, and priorities." },
+          { title: "Project progress update", detail: "Post site progress with photos and notes." },
+          { title: "Timesheet entry", detail: "Submit work hours and activity allocation." }
+        ]
+      },
+      {
+        title: "Execution tools",
+        detail: "Engineer should be able to request what is needed without leaving the workflow.",
+        items: [
+          { title: "Materials request", detail: "Raise requests directly from site." },
+          { title: "Equipment access", detail: "Check assigned tools and issue needs." },
+          { title: "Document access", detail: "Open approved drawings and documents." },
+          { title: "Live team chat", detail: "Coordinate instantly with site teams." }
+        ]
+      },
+      {
+        title: "Quality and safety",
+        detail: "Engineer should report issues early and close them with evidence.",
+        items: [
+          { title: "Site inspection checklist", detail: "Complete checklist-based inspections." },
+          { title: "Quality observation log", detail: "Record snags and corrective actions." },
+          { title: "Safety report", detail: "Raise hazards with attached photos." },
+          { title: "Daily diary summary", detail: "Capture work done, risks, and next steps." }
+        ]
+      }
+    ],
+    statusTitle: "Engineer dashboard is ready for daily site execution.",
+    statusBody: "Real assignments, attendance history, report timelines, and inspection queues will appear here once the engineer workflows start writing live data."
+  },
+  finance: {
+    intro: "You are signed in to the finance and approvals workspace.",
+    focusTitle: "Finance operations workspace",
+    focusDetail: "Use this dashboard to control expenses, invoices, payroll, and project cost visibility.",
+    quickActions: [
+      { title: "Review expenses", detail: "Open claims and supporting documents.", moduleTitle: "Expense Management" },
+      { title: "Manage invoices", detail: "Create, track, and follow collection status.", moduleTitle: "Invoices" },
+      { title: "Run payroll", detail: "Review salary readiness and attendance dependency.", moduleTitle: "Payroll Management" },
+      { title: "Clear approvals", detail: "Handle finance-side decision queues.", moduleTitle: "Approvals" }
+    ],
+    sections: [
+      {
+        title: "Commercial workflow",
+        detail: "Finance should see all payment-facing actions in one place.",
+        items: [
+          { title: "Expense claim review", detail: "Approve claims with document proof." },
+          { title: "Invoice lifecycle", detail: "Track draft, sent, due, and paid invoices." },
+          { title: "Vendor payment view", detail: "See payable status and due dates." },
+          { title: "Advance request tracker", detail: "Control advances and adjustments." }
+        ]
+      },
+      {
+        title: "Payroll and costing",
+        detail: "Salary and project cost control should remain tightly connected.",
+        items: [
+          { title: "Payroll preparation", detail: "Review attendance-linked salary readiness." },
+          { title: "Fuel and running cost", detail: "Track recurring field transport cost." },
+          { title: "Project cost split", detail: "Map spend against projects and cost heads." },
+          { title: "Month-end summaries", detail: "Prepare closure-ready payroll and cost reports." }
+        ]
+      },
+      {
+        title: "Reporting and controls",
+        detail: "Finance dashboard should surface the numbers that matter every day.",
+        items: [
+          { title: "Cash flow snapshot", detail: "See near-term inflow and outflow pressure." },
+          { title: "Receivable aging", detail: "Track overdue collections by client." },
+          { title: "Approval backlog", detail: "Monitor pending finance decisions." },
+          { title: "Audit-ready exports", detail: "Download structured finance summaries." }
+        ]
+      }
+    ],
+    statusTitle: "Finance dashboard is ready for operational cost control.",
+    statusBody: "When expense, payroll, invoice, and approvals data starts flowing, this view becomes the finance control room for the company."
+  },
+  client: {
+    intro: "You are signed in to the client visibility workspace.",
+    focusTitle: "Client project visibility",
+    focusDetail: "This dashboard should expose progress, documents, approvals, and communication without showing internal company controls.",
+    quickActions: [
+      { title: "Open project view", detail: "Check current milestone and latest updates.", moduleTitle: "Projects" },
+      { title: "Review documents", detail: "Open approved reports, drawings, and files.", moduleTitle: "Document Center" },
+      { title: "Check approvals", detail: "See items waiting for client confirmation.", moduleTitle: "Approvals" },
+      { title: "Send message", detail: "Chat directly with the team for updates.", moduleTitle: "Live Chat" }
+    ],
+    sections: [
+      {
+        title: "Project visibility",
+        detail: "Client should see progress without internal operational clutter.",
+        items: [
+          { title: "Milestone tracker", detail: "See the current stage and expected completion." },
+          { title: "Progress updates", detail: "Review approved site updates and progress notes." },
+          { title: "Photo evidence", detail: "See recent visual updates from the team." },
+          { title: "Delivery calendar", detail: "Watch meetings, deadlines, and milestone dates." }
+        ]
+      },
+      {
+        title: "Client actions",
+        detail: "Client should be able to act without asking how to use the app.",
+        items: [
+          { title: "Approval requests", detail: "Approve variations, documents, or decisions." },
+          { title: "Issue raising", detail: "Report concerns or request clarification." },
+          { title: "Document download", detail: "Access approved files directly." },
+          { title: "Direct team chat", detail: "Talk with the assigned team in one place." }
+        ]
+      },
+      {
+        title: "Commercial transparency",
+        detail: "Client dashboard should show only the finance items relevant to the client.",
+        items: [
+          { title: "Milestone billing status", detail: "Track what has been billed and what is pending." },
+          { title: "Pending decisions", detail: "See blockers waiting on client action." },
+          { title: "Update history", detail: "Review the recent communication timeline." },
+          { title: "Support access", detail: "Reach the company for help or escalations." }
+        ]
+      }
+    ],
+    statusTitle: "Client dashboard is ready for transparent project communication.",
+    statusBody: "Once the project, documents, approvals, and report modules are connected to live records, the client will see a clean project-facing dashboard instead of internal operations tools."
+  }
+};
+
 export function TelgoMvpApp() {
   const [view, setView] = useState<MvpView>("signin");
   const [fullName, setFullName] = useState("");
@@ -212,14 +548,17 @@ export function TelgoMvpApp() {
   const [search, setSearch] = useState("");
   const [clock, setClock] = useState<Date | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const currentRole = resolveAccessRole(user?.role ?? requestedRole);
 
   const filteredModules = useMemo(() => {
+    const allowedTitles = new Set(roleModuleTitles[currentRole]);
     const query = search.trim().toLowerCase();
-    if (!query) return modules;
-    return modules.filter((item) =>
-      `${item.title} ${item.subtitle}`.toLowerCase().includes(query)
-    );
-  }, [search]);
+    return modules.filter((item) => {
+      if (!allowedTitles.has(item.title)) return false;
+      if (!query) return true;
+      return `${item.title} ${item.subtitle}`.toLowerCase().includes(query);
+    });
+  }, [currentRole, search]);
 
   useEffect(() => {
     let alive = true;
@@ -566,6 +905,12 @@ export function TelgoMvpApp() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  function openModuleByTitle(title: string) {
+    const target = getModuleByTitle(title);
+    if (!target) return;
+    openModule(target);
+  }
+
   function signOut() {
     void fetch("/api/mobile/sign-out", {
       method: "POST",
@@ -704,21 +1049,24 @@ export function TelgoMvpApp() {
         onSignOut={signOut}
         onHome={() => setView("dashboard")}
         onChat={() => setView("chat")}
-        onModule={() => openModule(modules[2])}
+        onModule={() => openModuleByTitle("Projects")}
       >
         <DashboardView
+          role={currentRole}
           clock={clock}
           user={user}
           modules={filteredModules}
           search={search}
           onSearch={setSearch}
           onModule={openModule}
+          onModuleByTitle={openModuleByTitle}
         />
       </AppFrame>
     );
   }
 
   if (view === "module" && activeModule) {
+    const dashboardRole = getDashboardRoleByModuleTitle(activeModule.title);
     return (
       <AppFrame
         user={user}
@@ -727,9 +1075,17 @@ export function TelgoMvpApp() {
         onHome={() => setView("dashboard")}
         onBack={() => setView("dashboard")}
         onChat={() => setView("chat")}
-        onModule={() => openModule(modules[2])}
+        onModule={() => openModuleByTitle("Projects")}
       >
-        <ModuleView module={activeModule} onBack={() => setView("dashboard")} />
+        {dashboardRole ? (
+          <RoleWorkspaceView
+            role={dashboardRole}
+            onBack={() => setView("dashboard")}
+            onOpenModule={openModuleByTitle}
+          />
+        ) : (
+          <ModuleView module={activeModule} onBack={() => setView("dashboard")} />
+        )}
       </AppFrame>
     );
   }
@@ -743,7 +1099,7 @@ export function TelgoMvpApp() {
         onHome={() => setView("dashboard")}
         onBack={() => setView("dashboard")}
         onChat={() => setView("chat")}
-        onModule={() => openModule(modules[2])}
+        onModule={() => openModuleByTitle("Projects")}
       >
         <ChatView
           currentUser={user}
@@ -1210,22 +1566,27 @@ function LockKeyholeIcon() {
 }
 
 function DashboardView({
+  role,
   clock,
   user,
   modules: visibleModules,
   search,
   onSearch,
-  onModule
+  onModule,
+  onModuleByTitle
 }: {
+  role: AccessRole;
   clock: Date | null;
   user: AppUser | null;
   modules: ModuleItem[];
   search: string;
   onSearch: (value: string) => void;
   onModule: (item: ModuleItem) => void;
+  onModuleByTitle: (title: string) => void;
 }) {
   const userName = user?.name ?? "Team";
-  const roleLabel = formatRoleLabel(user?.role ?? "engineer");
+  const roleLabel = formatRoleLabel(role);
+  const roleConfig = roleDashboardContent[role];
   const dateLabel =
     clock?.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) ??
     "23 May 2025";
@@ -1270,7 +1631,7 @@ function DashboardView({
             Good Morning, {userName}
           </h1>
           <p className="mt-3 text-base text-slate-500">
-            Signed in as {userName}. Let&apos;s make today productive and safe.
+            Signed in as {userName}. {roleConfig.intro}
           </p>
         </div>
         <div className="grid min-w-[210px] gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -1291,9 +1652,11 @@ function DashboardView({
         ))}
       </section>
 
+      <RoleOverviewPanel role={role} onOpenModule={onModuleByTitle} />
+
       <section className="px-4 pt-8 sm:px-6">
         <div className="mb-5 grid gap-4 sm:grid-cols-[1fr_340px] sm:items-center">
-          <h2 className="text-2xl font-bold tracking-normal text-[#07122f]">All Modules</h2>
+          <h2 className="text-2xl font-bold tracking-normal text-[#07122f]">Your Modules</h2>
           <label className="relative block">
             <Search className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
             <input
@@ -1312,13 +1675,11 @@ function DashboardView({
       </section>
 
       <section className="mx-4 mt-5 rounded-[20px] bg-white px-3 pb-5 sm:mx-6 sm:px-4">
-        <SectionTitle title="Workspace Status" />
+        <SectionTitle title={`${roleLabel} Workspace Status`} />
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
-          <p className="text-sm font-semibold text-[#07122f]">No live operational data yet.</p>
+          <p className="text-sm font-semibold text-[#07122f]">{roleConfig.statusTitle}</p>
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            Demo counts, sample notifications, and fake activity have been removed. Real attendance,
-            projects, tasks, reports, and alerts will appear here only after your team starts using
-            the connected modules.
+            {roleConfig.statusBody}
           </p>
         </div>
       </section>
@@ -1582,6 +1943,151 @@ function ChatView({
         )}
       </form>
     </section>
+  );
+}
+
+function RoleOverviewPanel({
+  role,
+  onOpenModule
+}: {
+  role: AccessRole;
+  onOpenModule: (title: string) => void;
+}) {
+  const config = roleDashboardContent[role];
+  const roleLabel = formatRoleLabel(role);
+  const dashboardTitle = roleDashboardModuleTitleByRole[role];
+
+  return (
+    <section className="px-4 pt-6 sm:px-6">
+      <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-[620px]">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">
+              {roleLabel} Dashboard
+            </p>
+            <h2 className="mt-2 text-2xl font-bold tracking-normal text-[#07122f]">
+              {config.focusTitle}
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-500">{config.focusDetail}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onOpenModule(dashboardTitle)}
+            className="inline-flex min-h-11 items-center justify-center rounded-full border border-blue-100 bg-blue-50 px-4 text-sm font-semibold text-[#115cff]"
+          >
+            Open {dashboardTitle}
+          </button>
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {config.quickActions.map((action) => (
+            <button
+              key={action.title}
+              type="button"
+              onClick={() => onOpenModule(action.moduleTitle)}
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left transition hover:border-blue-200 hover:bg-white"
+            >
+              <p className="text-sm font-bold text-[#07122f]">{action.title}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">{action.detail}</p>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-5 grid gap-3 lg:grid-cols-3">
+          {config.sections.map((section) => (
+            <RoleSectionCard key={section.title} section={section} compact />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function RoleWorkspaceView({
+  role,
+  onBack,
+  onOpenModule
+}: {
+  role: AccessRole;
+  onBack: () => void;
+  onOpenModule: (title: string) => void;
+}) {
+  const config = roleDashboardContent[role];
+  const roleLabel = formatRoleLabel(role);
+
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <button
+        type="button"
+        onClick={onBack}
+        className="mb-6 inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 px-4 text-sm font-semibold text-slate-700"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Dashboard
+      </button>
+
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">
+          {roleLabel} Workspace
+        </p>
+        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">
+          {config.focusTitle}
+        </h1>
+        <p className="mt-3 max-w-[760px] text-sm leading-7 text-slate-500">
+          {config.focusDetail}
+        </p>
+
+        <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {config.quickActions.map((action) => (
+            <button
+              key={action.title}
+              type="button"
+              onClick={() => onOpenModule(action.moduleTitle)}
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left transition hover:border-blue-200 hover:bg-white"
+            >
+              <p className="text-sm font-bold text-[#07122f]">{action.title}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">{action.detail}</p>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-8 grid gap-4 xl:grid-cols-3">
+          {config.sections.map((section) => (
+            <RoleSectionCard key={section.title} section={section} />
+          ))}
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
+          <p className="text-sm font-semibold text-[#07122f]">{config.statusTitle}</p>
+          <p className="mt-2 text-sm leading-6 text-slate-500">{config.statusBody}</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function RoleSectionCard({
+  section,
+  compact = false
+}: {
+  section: RoleDashboardSection;
+  compact?: boolean;
+}) {
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+      <h3 className="text-base font-bold text-[#07122f]">{section.title}</h3>
+      <p className="mt-2 text-sm leading-6 text-slate-500">{section.detail}</p>
+      <div className="mt-4 space-y-3">
+        {section.items.map((item) => (
+          <div key={item.title} className="rounded-xl border border-white bg-white px-3 py-3">
+            <p className="text-sm font-semibold text-[#07122f]">{item.title}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              {compact ? item.detail : item.detail}
+            </p>
+          </div>
+        ))}
+      </div>
+    </article>
   );
 }
 
@@ -1942,6 +2448,24 @@ function formatRoleLabel(value: string) {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function resolveAccessRole(value: string): AccessRole {
+  const normalized = String(value).trim().toLowerCase();
+  if (normalized === "admin") return "admin";
+  if (normalized === "supervisor") return "supervisor";
+  if (normalized === "finance") return "finance";
+  if (normalized === "client") return "client";
+  return "engineer";
+}
+
+function getModuleByTitle(title: string) {
+  return modules.find((item) => item.title === title) ?? null;
+}
+
+function getDashboardRoleByModuleTitle(title: string): AccessRole | null {
+  const entry = Object.entries(roleDashboardModuleTitleByRole).find(([, value]) => value === title);
+  return entry ? (entry[0] as AccessRole) : null;
 }
 
 async function postMobileAccess(
