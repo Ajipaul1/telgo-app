@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
-  Building2,
   CalendarCheck,
   CalendarDays,
   ChartNoAxesColumnIncreasing,
@@ -30,7 +29,6 @@ import {
   ListChecks,
   MapPin,
   Megaphone,
-  Menu,
   MessageCircle,
   NotebookPen,
   Package,
@@ -158,55 +156,6 @@ const modules: ModuleItem[] = [
   { title: "Support", subtitle: "Help & support", icon: Headphones, tone: "blue" },
   { title: "AI Assistant", subtitle: "Smart help", icon: Sparkles, tone: "purple" }
 ];
-
-const quickStats = [
-  {
-    label: "Attendance",
-    value: "09:15 AM",
-    kicker: "Marked In",
-    action: "View Details",
-    icon: UserCheck,
-    tone: "green" as const
-  },
-  {
-    label: "Active Projects",
-    value: "12",
-    kicker: "",
-    action: "View Projects",
-    icon: Folder,
-    tone: "blue" as const
-  },
-  {
-    label: "Pending Tasks",
-    value: "18",
-    kicker: "",
-    action: "View Tasks",
-    icon: ClipboardCheck,
-    tone: "purple" as const
-  },
-  {
-    label: "Notifications",
-    value: "24",
-    kicker: "",
-    action: "View All",
-    icon: Bell,
-    tone: "orange" as const
-  }
-];
-
-const overviewStats = [
-  { label: "Total Projects", value: "24", icon: Folder, tone: "blue" as const },
-  { label: "Total Workers", value: "156", icon: UsersRound, tone: "green" as const },
-  { label: "Total Vehicles", value: "32", icon: Truck, tone: "orange" as const },
-  { label: "Active Sites", value: "08", icon: Building2, tone: "purple" as const }
-];
-
-const activities = [
-  ["Attendance marked in by Ajith", "Today, 09:15 AM", UserCheck, "green"],
-  ["Project update submitted in Project Alpha", "Today, 08:45 AM", Folder, "blue"],
-  ["New message in Project Alpha group", "Today, 08:30 AM", MessageCircle, "purple"],
-  ["Finance request #FR-125 submitted", "Yesterday, 06:15 PM", ReceiptIndianRupee, "orange"]
-] as const;
 
 export function TelgoMvpApp() {
   const [view, setView] = useState<MvpView>("signin");
@@ -578,7 +527,7 @@ export function TelgoMvpApp() {
       >
         <DashboardView
           clock={clock}
-          userName={user?.name ?? "Team"}
+          user={user}
           modules={filteredModules}
           search={search}
           onSearch={setSearch}
@@ -596,6 +545,7 @@ export function TelgoMvpApp() {
         active={activeModule.title}
         onSignOut={signOut}
         onHome={() => setView("dashboard")}
+        onBack={() => setView("dashboard")}
         onModule={() => openModule(modules[2])}
       >
         <ModuleView module={activeModule} onBack={() => setView("dashboard")} />
@@ -1052,24 +1002,56 @@ function LockKeyholeIcon() {
 
 function DashboardView({
   clock,
-  userName,
+  user,
   modules: visibleModules,
   search,
   onSearch,
   onModule
 }: {
   clock: Date | null;
-  userName: string;
+  user: AppUser | null;
   modules: ModuleItem[];
   search: string;
   onSearch: (value: string) => void;
   onModule: (item: ModuleItem) => void;
 }) {
+  const userName = user?.name ?? "Team";
+  const roleLabel = formatRoleLabel(user?.role ?? "engineer");
   const dateLabel =
     clock?.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) ??
     "23 May 2025";
   const timeLabel =
     clock?.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) ?? "09:41 AM";
+  const summaryCards = [
+    {
+      label: "Access Status",
+      value: "Approved",
+      detail: "This device is ready for secure sign-in.",
+      icon: ShieldCheck,
+      tone: "green" as const
+    },
+    {
+      label: "Current Role",
+      value: roleLabel,
+      detail: "Role is assigned from the approved access request.",
+      icon: UserCheck,
+      tone: "blue" as const
+    },
+    {
+      label: "Login Method",
+      value: "PIN Ready",
+      detail: "Use the 4-digit PIN on this device or reset it by email.",
+      icon: Smartphone,
+      tone: "purple" as const
+    },
+    {
+      label: "Approved Email",
+      value: user?.email ?? "Not available",
+      detail: "This email receives OTP codes for PIN reset and device recovery.",
+      icon: MessageCircle,
+      tone: "orange" as const
+    }
+  ];
 
   return (
     <>
@@ -1095,8 +1077,8 @@ function DashboardView({
       </section>
 
       <section className="grid grid-cols-2 gap-3 px-4 sm:px-6 lg:grid-cols-4">
-        {quickStats.map((item) => (
-          <QuickStat key={item.label} {...item} />
+        {summaryCards.map((item) => (
+          <SummaryCard key={item.label} {...item} />
         ))}
       </section>
 
@@ -1120,30 +1102,15 @@ function DashboardView({
         </div>
       </section>
 
-      <section className="mx-4 mt-7 rounded-[20px] bg-gradient-to-b from-slate-50 to-white px-3 py-4 sm:mx-6 sm:px-4">
-        <SectionTitle title="Overview" action="See All" />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {overviewStats.map((item) => (
-            <OverviewCard key={item.label} {...item} />
-          ))}
-        </div>
-      </section>
-
       <section className="mx-4 mt-5 rounded-[20px] bg-white px-3 pb-5 sm:mx-6 sm:px-4">
-        <SectionTitle title="Recent Activity" action="View All" />
-        <div className="overflow-hidden rounded-2xl border border-slate-100">
-          {activities.map(([title, meta, IconComponent, tone]) => (
-            <div
-              key={title}
-              className="grid gap-3 border-b border-slate-100 px-3 py-3 last:border-b-0 sm:grid-cols-[auto_1fr_auto] sm:items-center"
-            >
-              <span className={cn("grid h-8 w-8 place-items-center rounded-lg", toneStyles[tone as Tone].box)}>
-                <IconComponent className={cn("h-4 w-4", toneStyles[tone as Tone].icon)} />
-              </span>
-              <p className="text-sm font-semibold text-[#07122f]">{title}</p>
-              <p className="text-sm text-slate-500 sm:text-right">{meta}</p>
-            </div>
-          ))}
+        <SectionTitle title="Workspace Status" />
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
+          <p className="text-sm font-semibold text-[#07122f]">No live operational data yet.</p>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            Demo counts, sample notifications, and fake activity have been removed. Real attendance,
+            projects, tasks, reports, and alerts will appear here only after your team starts using
+            the connected modules.
+          </p>
         </div>
       </section>
     </>
@@ -1157,6 +1124,7 @@ function AppFrame({
   children,
   onSignOut,
   onHome,
+  onBack,
   onModule
 }: {
   user: AppUser | null;
@@ -1165,6 +1133,7 @@ function AppFrame({
   children: React.ReactNode;
   onSignOut: () => void;
   onHome: () => void;
+  onBack?: () => void;
   onModule: () => void;
 }) {
   return (
@@ -1173,17 +1142,19 @@ function AppFrame({
         <StatusBar dark />
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-slate-100 bg-white/92 px-4 py-5 backdrop-blur sm:px-6">
           <div className="flex min-w-0 items-center gap-4">
-            <button type="button" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[#07122f]">
-              <Menu className="h-7 w-7" />
+            <button
+              type="button"
+              onClick={onBack ?? onHome}
+              aria-label={onBack ? "Go back" : "Go to dashboard"}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[#07122f]"
+            >
+              {onBack ? <ChevronLeft className="h-6 w-6" /> : <Home className="h-6 w-6" />}
             </button>
             <BrandMark compact />
           </div>
           <div className="flex items-center gap-3">
             <button type="button" className="relative grid h-11 w-11 place-items-center rounded-xl text-[#07122f]">
               <Bell className="h-6 w-6" />
-              <span className="absolute right-1.5 top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-[#ff243d] px-1 text-[11px] font-bold text-white">
-                7
-              </span>
             </button>
             <button
               type="button"
@@ -1225,34 +1196,28 @@ function ModuleView({ module, onBack }: { module: ModuleItem; onBack: () => void
         </span>
         <h1 className="text-3xl font-bold tracking-normal text-[#07122f]">{module.title}</h1>
         <p className="mt-2 text-slate-500">{module.subtitle}</p>
-        <div className="mt-8 grid gap-3 sm:grid-cols-3">
-          {["Open", "Create", "History"].map((action) => (
-            <button
-              key={action}
-              type="button"
-              className="min-h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700"
-            >
-              {action}
-            </button>
-          ))}
+        <div className="mt-8 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
+          <p className="text-sm font-semibold text-[#07122f]">No live records in this module yet.</p>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            Placeholder actions and demo records have been removed. Connect this module to your real
+            project workflows before handing the app to the client.
+          </p>
         </div>
       </div>
     </section>
   );
 }
 
-function QuickStat({
+function SummaryCard({
   label,
   value,
-  kicker,
-  action,
+  detail,
   icon: IconComponent,
   tone
 }: {
   label: string;
   value: string;
-  kicker: string;
-  action: string;
+  detail: string;
   icon: LucideIcon;
   tone: Tone;
 }) {
@@ -1264,14 +1229,8 @@ function QuickStat({
         </span>
         <p className="pt-2 text-sm font-bold leading-5 text-[#07122f]">{label}</p>
       </div>
-      {kicker ? <p className="mt-3 text-sm text-slate-500">{kicker}</p> : <div className="mt-3 h-5" />}
-      <p className={cn("mt-1 text-2xl font-bold tracking-normal sm:text-3xl", label === "Attendance" ? "text-[#14b866]" : "text-[#07122f]")}>
-        {value}
-      </p>
-      <button type="button" className="mt-3 inline-flex min-h-9 items-center gap-2 text-xs font-semibold text-[#115cff] sm:text-sm">
-        {action}
-        <ChevronRight className="h-4 w-4" />
-      </button>
+      <p className="mt-4 text-lg font-bold tracking-normal text-[#07122f] sm:text-xl">{value}</p>
+      <p className="mt-2 text-sm leading-5 text-slate-500">{detail}</p>
     </article>
   );
 }
@@ -1293,44 +1252,10 @@ function ModuleCard({ item, onClick }: { item: ModuleItem; onClick: () => void }
   );
 }
 
-function OverviewCard({
-  label,
-  value,
-  icon: IconComponent,
-  tone
-}: {
-  label: string;
-  value: string;
-  icon: LucideIcon;
-  tone: Tone;
-}) {
-  return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center gap-4">
-        <span className={cn("grid h-14 w-14 place-items-center rounded-full", toneStyles[tone].box)}>
-          <IconComponent className={cn("h-7 w-7", toneStyles[tone].icon)} />
-        </span>
-        <div>
-          <p className="text-sm font-semibold text-[#07122f]">{label}</p>
-          <p className="mt-1 text-3xl font-bold tracking-normal text-[#07122f]">{value}</p>
-          <button type="button" className="mt-2 inline-flex min-h-9 items-center gap-3 text-xs font-bold text-[#115cff]">
-            View Details
-            <ChevronRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function SectionTitle({ title, action }: { title: string; action: string }) {
+function SectionTitle({ title }: { title: string }) {
   return (
     <div className="mb-4 flex items-center justify-between gap-3">
       <h2 className="text-lg font-bold tracking-normal text-[#07122f]">{title}</h2>
-      <button type="button" className="inline-flex min-h-9 items-center gap-3 text-sm font-bold text-[#115cff]">
-        {action}
-        <ChevronRight className="h-4 w-4" />
-      </button>
     </div>
   );
 }
@@ -1522,6 +1447,14 @@ function getErrorMessage(error: unknown) {
     return String((error as { message?: unknown }).message ?? "Server rejected the request.");
   }
   return "Server rejected the request.";
+}
+
+function formatRoleLabel(value: string) {
+  return value
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 async function postMobileAccess(
