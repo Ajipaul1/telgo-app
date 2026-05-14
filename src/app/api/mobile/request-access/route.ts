@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import {
   getMobileAccessClient,
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       error &&
       /null value in column "id"|violates not-null constraint/i.test(error.message)
     ) {
-      const fallbackUserId = `email-${createHash("md5").update(email).digest("hex")}`;
+      const fallbackUserId = randomUUID();
       const retryResponse = await supabase
         .from("mobile_app_users")
         .insert({
@@ -127,6 +127,12 @@ export async function POST(request: NextRequest) {
   if (error) {
     return NextResponse.json(
       { ok: false, message: `Access could not be created: ${error.message}` },
+      { status: 500 }
+    );
+  }
+  if (!data) {
+    return NextResponse.json(
+      { ok: false, message: "Access could not be created: no user record was returned." },
       { status: 500 }
     );
   }
