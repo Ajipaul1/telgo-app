@@ -200,38 +200,38 @@ function formatMessageRow(row: MessageRow, signedUrlMap: Map<string, string | nu
 function parseAttachments(value: unknown): ChatAttachment[] {
   if (!Array.isArray(value)) return [];
 
-  return value.flatMap((item) => {
-    if (!item || typeof item !== "object") return [];
+  const attachments: ChatAttachment[] = [];
+
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
     const record = item as Record<string, unknown>;
+
     if (record.type === "meta") {
-      return [
-        {
-          type: "meta",
-          senderName: String(record.senderName ?? "Telgo User"),
-          senderEmail: record.senderEmail == null ? null : String(record.senderEmail),
-          senderRole: String(record.senderRole ?? "engineer"),
-          senderLoginId: String(record.senderLoginId ?? ""),
-          senderUserId: String(record.senderUserId ?? "")
-        } satisfies ChatMetaAttachment
-      ];
+      attachments.push({
+        type: "meta",
+        senderName: String(record.senderName ?? "Telgo User"),
+        senderEmail: record.senderEmail == null ? null : String(record.senderEmail),
+        senderRole: String(record.senderRole ?? "engineer"),
+        senderLoginId: String(record.senderLoginId ?? ""),
+        senderUserId: String(record.senderUserId ?? "")
+      });
+      continue;
     }
 
     if (record.type === "image" && typeof record.path === "string") {
-      return [
-        {
-          type: "image",
-          path: record.path,
-          fileName: String(record.fileName ?? path.posix.basename(record.path)),
-          width: toNullableNumber(record.width),
-          height: toNullableNumber(record.height),
-          sizeBytes: toNullableNumber(record.sizeBytes),
-          mimeType: record.mimeType == null ? null : String(record.mimeType)
-        } satisfies ChatImageAttachment
-      ];
+      attachments.push({
+        type: "image",
+        path: record.path,
+        fileName: String(record.fileName ?? path.posix.basename(record.path)),
+        width: toNullableNumber(record.width),
+        height: toNullableNumber(record.height),
+        sizeBytes: toNullableNumber(record.sizeBytes),
+        mimeType: record.mimeType == null ? null : String(record.mimeType)
+      });
     }
+  }
 
-    return [];
-  });
+  return attachments;
 }
 
 function getImageAttachments(value: unknown) {
