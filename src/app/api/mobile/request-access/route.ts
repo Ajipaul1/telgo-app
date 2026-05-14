@@ -21,42 +21,6 @@ function makeTelgoId() {
   return `TLG-${randomBytes(4).toString("hex").toUpperCase()}`;
 }
 
-function makePassword() {
-  return `Telgo-${randomBytes(3).toString("hex").toUpperCase()}`;
-}
-
-function hashSecret(identifier: string, secret: string) {
-  return createHash("sha256").update(`${identifier.toUpperCase()}:${secret}`).digest("hex");
-}
-
-function accessEmailHtml({
-  fullName,
-  role,
-  loginId,
-  password,
-  appUrl
-}: {
-  fullName: string;
-  role: string;
-  loginId: string;
-  password: string;
-  appUrl: string;
-}) {
-  return `
-    <div style="font-family:Arial,sans-serif;color:#07122f;line-height:1.6">
-      <h2>Telgo Hub access approved</h2>
-      <p>Hello ${fullName},</p>
-      <p>Your ${role} access for Telgo Hub has been approved. Use these details once, then create your 4-digit PIN in the app.</p>
-      <div style="border:1px solid #dbeafe;border-radius:12px;padding:16px;background:#f8fbff;margin:18px 0">
-        <p style="margin:0 0 8px"><strong>Telgo ID:</strong> ${loginId}</p>
-        <p style="margin:0"><strong>One-time password:</strong> ${password}</p>
-      </div>
-      <p><a href="${appUrl}" style="display:inline-block;background:#115cff;color:white;text-decoration:none;border-radius:10px;padding:12px 18px;font-weight:700">Open Telgo Hub</a></p>
-      <p style="font-size:13px;color:#64748b">If this request was not made by you, contact Telgo operations immediately so the access can be blocked.</p>
-    </div>
-  `;
-}
-
 export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => null)) as
     | { fullName?: unknown; email?: unknown; role?: unknown }
@@ -72,17 +36,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const resendApiKey = process.env.RESEND_API_KEY;
-  if (!resendApiKey) {
-    return NextResponse.json(
-      { ok: false, message: "Email service is not configured on the server." },
-      { status: 500 }
-    );
-  }
-
-  const loginId = makeTelgoId();
-  const password = makePassword();
-  const passwordHash = hashSecret(loginId, password);
   let supabase: ReturnType<typeof getMobileAccessClient>;
   try {
     supabase = getMobileAccessClient();
@@ -94,7 +47,32 @@ export async function POST(request: NextRequest) {
   }
 
   const userId = `email-${createHash("md5").update(email).digest("hex")}`;
-  const folderPath = `mobile-users/${loginId}`;
+  const { data: existingUser, error: existingUserError } = await supabase
+    .from("mobile_app_users")
+    .select("id,email,full_name,role,login_id,user_folder_path,created_at,auth_user_id,pin_set_at,access_status,blocked_at")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (existingUserError) {
+    return NextResponse.json(
+      { ok: false, message: `Access lookup failed: ${existingUserError.message}` },
+      { status: 500 }
+    );
+  }
+
+  if (existingUser?.blocked_at || existingUser?.access_status === "blocked") {
+    return NextResponse.json(
+      { ok: false, message: "This account is blocked. Contact Telgo operations." },
+      { status: 403 }
+    );
+  }
+
+  const loginId = existingUser?.login_id ? String(existingUser.login_id) : makeTelgoId();
+  const folderPath =
+    existingUser?.user_folder_path && String(existingUser.user_folder_path).trim()
+      ? String(existingUser.user_folder_path)
+      : `mobile-users/${loginId}`;
+  const activatedAt = new Date().toISOString();
   const { data, error } = await supabase
     .from("mobile_app_users")
     .upsert(
@@ -102,15 +80,15 @@ export async function POST(request: NextRequest) {
         id: userId,
         email,
         login_id: loginId,
-        temp_password_hash: passwordHash,
+        temp_password_hash: null,
         full_name: fullName,
         role,
         access_status: "active",
         blocked_at: null,
         blocked_reason: null,
-        activated_at: new Date().toISOString(),
+        activated_at: activatedAt,
         user_folder_path: folderPath,
-        updated_at: new Date().toISOString()
+        updated_at: activatedAt
       },
       { onConflict: "id" }
     )
@@ -126,7 +104,8 @@ export async function POST(request: NextRequest) {
 
   const savedUser = toMobileAccessUser(data);
   const savedLoginId = savedUser.login_id;
-  await supabase.from("mobile_user_files").upsert(
+
+  const { error: profileError } = await supabase.from("mobile_user_files").upsert(
     {
       mobile_user_id: savedUser.id,
       folder_path: folderPath,
@@ -136,39 +115,49 @@ export async function POST(request: NextRequest) {
         role: savedUser.role,
         loginId: savedLoginId
       },
-      updated_at: new Date().toISOString()
+      updated_at: activatedAt
     },
     { onConflict: "folder_path" }
   );
 
-  const appUrl = new URL("/", request.url).toString();
-  const from = process.env.RESEND_FROM_EMAIL ?? "Telgo Hub <onboarding@resend.dev>";
-  const emailResponse = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      from,
-      to: email,
-      subject: "Your Telgo Hub access is ready",
-      html: accessEmailHtml({
-        fullName,
-        role,
-        loginId: savedLoginId,
-        password,
-        appUrl
-      })
-    })
-  });
+  if (profileError) {
+    console.error("Mobile user file sync failed after access activation", {
+      email,
+      loginId: savedLoginId,
+      message: profileError.message
+    });
+  }
 
-  if (!emailResponse.ok) {
-    const message = await emailResponse.text();
-    return NextResponse.json(
-      { ok: false, message: `Access was created, but email failed: ${message}` },
-      { status: 502 }
-    );
+  if (!existingUser?.auth_user_id) {
+    const { error: authUserError } = await supabase.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      user_metadata: {
+        full_name: fullName,
+        role,
+        login_id: savedLoginId,
+        mobile_access_id: savedUser.id
+      }
+    });
+
+    if (
+      authUserError &&
+      !/already registered|already exists|duplicate/i.test(authUserError.message)
+    ) {
+      console.error("Supabase Auth user provisioning failed", {
+        email,
+        loginId: savedLoginId,
+        message: authUserError.message
+      });
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "Access was saved, but the email login account could not be prepared. Check the Supabase Auth email settings and retry."
+        },
+        { status: 500 }
+      );
+    }
   }
 
   return NextResponse.json({
@@ -177,7 +166,7 @@ export async function POST(request: NextRequest) {
     email,
     fullName,
     role,
-    message: "Access approved and email sent."
+    message: "Access approved. Request an email OTP to continue."
   });
 }
 

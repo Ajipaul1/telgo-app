@@ -6,23 +6,10 @@ import {
 
 export async function POST(request: NextRequest) {
   const accessToken = getBearerToken(request);
-  const body = (await request.json().catch(() => null)) as
-    | { userId?: unknown; pinHash?: unknown }
-    | null;
-  const userId = String(body?.userId ?? "");
-  const pinHash = String(body?.pinHash ?? "");
-
   if (!accessToken) {
     return NextResponse.json(
       { ok: false, message: "A verified email session is required." },
       { status: 401 }
-    );
-  }
-
-  if (!userId || pinHash.length < 32) {
-    return NextResponse.json(
-      { ok: false, message: "Verified access and PIN are required." },
-      { status: 400 }
     );
   }
 
@@ -47,22 +34,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const now = new Date().toISOString();
   const { data, error } = await supabase
     .from("mobile_app_users")
-    .update({
-      pin_hash: pinHash,
-      temp_password_hash: null,
-      auth_user_id: authUser.id,
-      pin_set_at: now,
-      last_login_at: now,
-      updated_at: now
-    })
-    .eq("id", userId)
+    .select("id,email,full_name,role,login_id,user_folder_path,created_at,auth_user_id")
     .eq("email", email)
     .eq("access_status", "active")
     .is("blocked_at", null)
-    .select("id,email,full_name,role,login_id,user_folder_path,created_at")
     .maybeSingle();
 
   if (error) {
@@ -71,9 +48,39 @@ export async function POST(request: NextRequest) {
 
   if (!data) {
     return NextResponse.json(
-      { ok: false, message: "PIN could not be saved for this access." },
-      { status: 401 }
+      {
+        ok: false,
+        message: "No active Telgo mobile access is linked to this email address."
+      },
+      { status: 403 }
     );
+  }
+
+  const existingAuthUserId =
+    data.auth_user_id == null ? null : String(data.auth_user_id).trim();
+
+  if (existingAuthUserId && existingAuthUserId !== authUser.id) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "This email is already linked to another Telgo mobile session."
+      },
+      { status: 409 }
+    );
+  }
+
+  const now = new Date().toISOString();
+  const { error: updateError } = await supabase
+    .from("mobile_app_users")
+    .update({
+      auth_user_id: authUser.id,
+      activated_at: now,
+      updated_at: now
+    })
+    .eq("id", data.id);
+
+  if (updateError) {
+    return NextResponse.json({ ok: false, message: updateError.message }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, user: toMobileAccessUser(data) });

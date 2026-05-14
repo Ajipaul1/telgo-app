@@ -53,9 +53,10 @@ import {
   Wrench
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
-type MvpView = "request" | "credentials" | "pin" | "signin" | "dashboard" | "module";
+type MvpView = "request" | "otp" | "pin" | "signin" | "dashboard" | "module";
 type AccessRole = "engineer" | "supervisor" | "finance" | "client" | "admin";
 type AppUser = {
   id: string;
@@ -211,11 +212,10 @@ export function TelgoMvpApp() {
   const [email, setEmail] = useState("");
   const [requestedRole, setRequestedRole] = useState<AccessRole>("engineer");
   const [loginId, setLoginId] = useState("");
-  const [password, setPassword] = useState("");
+  const [otpCode, setOtpCode] = useState("");
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [signinPin, setSigninPin] = useState("");
-  const [pendingPasswordHash, setPendingPasswordHash] = useState("");
   const [pendingUser, setPendingUser] = useState<AppUser | null>(null);
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
@@ -233,19 +233,52 @@ export function TelgoMvpApp() {
   }, [search]);
 
   useEffect(() => {
+    let alive = true;
     setClock(new Date());
     const timer = window.setInterval(() => setClock(new Date()), 30_000);
-    try {
-      const session = localStorage.getItem(SESSION_KEY);
-      if (session) {
-        const parsed = JSON.parse(session) as AppUser;
-        setUser(parsed);
-        setView("dashboard");
+
+    async function resumePendingOtpSession() {
+      try {
+        const cachedSession = localStorage.getItem(SESSION_KEY);
+        if (cachedSession) {
+          const parsed = JSON.parse(cachedSession) as AppUser;
+          if (!alive) return;
+          setUser(parsed);
+          setView("dashboard");
+          return;
+        }
+      } catch {
+        localStorage.removeItem(SESSION_KEY);
       }
-    } catch {
-      localStorage.removeItem(SESSION_KEY);
+
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+      const accessToken = session?.access_token ?? "";
+      if (!alive || !accessToken) return;
+
+      const result = await postMobileAccess(
+        "/api/mobile/verify-otp",
+        {},
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      if (!alive || !result.ok || !result.user) return;
+
+      const verifiedUser = toAppUser(result.user, "");
+      setPendingUser(verifiedUser);
+      setEmail(verifiedUser.email);
+      setLoginId(verifiedUser.loginId);
+      setNotice("Email verified. Create or reset your 4-digit PIN.");
+      setView("pin");
     }
-    return () => window.clearInterval(timer);
+
+    void resumePendingOtpSession();
+
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
   }, []);
 
   async function requestEmailAccess() {
@@ -255,7 +288,7 @@ export function TelgoMvpApp() {
       return;
     }
     setLoading(true);
-    setNotice("Creating approved access and sending email...");
+    setNotice("Preparing approved access...");
 
     const response = await fetch("/api/mobile/request-access", {
       method: "POST",
@@ -276,70 +309,130 @@ export function TelgoMvpApp() {
     const data = (await response.json().catch(() => null)) as
       | { ok?: boolean; loginId?: string; message?: string }
       | null;
-    setLoading(false);
     if (!response.ok || !data?.ok || !data.loginId) {
+      setLoading(false);
       setNotice(data?.message ?? "Access request could not be completed.");
       return;
     }
 
     setEmail(normalizedEmail);
     setLoginId(data.loginId);
-    setPassword("");
-    setNotice(`Access approved. Credentials were emailed to ${normalizedEmail}.`);
-    setView("credentials");
-  }
-
-  async function verifyCredentials() {
-    const normalizedLoginId = normalizeLoginId(loginId);
-    if (!normalizedLoginId || password.trim().length < 6) {
-      setNotice("Enter the Telgo ID and one-time password from email.");
+    setOtpCode("");
+    setPin("");
+    setConfirmPin("");
+    setView("otp");
+    const otpResult = await sendEmailOtp(normalizedEmail);
+    const telgoIdLine = `Your Telgo ID is ${data.loginId}.`;
+    if (!otpResult.ok) {
+      setLoading(false);
+      setNotice(
+        `${data.message ?? "Access approved."} ${telgoIdLine} ${otpResult.message ?? "Email OTP could not be sent."}`
+      );
       return;
     }
+
+    setLoading(false);
+    setNotice(`Access approved. ${telgoIdLine} Check ${normalizedEmail} for the OTP or secure sign-in link.`);
+  }
+
+  async function sendOtpAgain() {
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedEmail) {
+      setNotice("Enter a valid email address first.");
+      return;
+    }
+
     setLoading(true);
-    setNotice("Verifying emailed access...");
-    const passwordHash = await hashSecret(normalizedLoginId, password.trim());
-    const result = await postMobileAccess("/api/mobile/verify-email", {
-      loginId: normalizedLoginId,
-      passwordHash
+    const result = await sendEmailOtp(normalizedEmail);
+    setLoading(false);
+    if (!result.ok) {
+      setNotice(result.message ?? "OTP could not be sent.");
+      return;
+    }
+
+    setNotice(`OTP sent to ${normalizedEmail}. Enter the code from the email or open the secure sign-in link.`);
+  }
+
+  async function verifyOtpCode() {
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedOtp = otpCode.trim().replace(/\s+/g, "");
+    if (!normalizedEmail || normalizedOtp.length < 6) {
+      setNotice("Enter the email address and the OTP from your email.");
+      return;
+    }
+
+    setLoading(true);
+    setNotice("Verifying email OTP...");
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: normalizedEmail,
+      token: normalizedOtp,
+      type: "email"
     });
+
+    if (error || !data.session?.access_token) {
+      setLoading(false);
+      setNotice(`Verification failed: ${error?.message ?? "The OTP is not valid."}`);
+      return;
+    }
+
+    const result = await postMobileAccess(
+      "/api/mobile/verify-otp",
+      {},
+      { headers: { Authorization: `Bearer ${data.session.access_token}` } }
+    );
     const remoteUser = result.user;
-    const signedInUser = remoteUser ? toAppUser(remoteUser, normalizedLoginId) : null;
+    const signedInUser = remoteUser ? toAppUser(remoteUser, "") : null;
 
     setLoading(false);
     if (!result.ok) {
-      setNotice(`Verification failed: ${result.message ?? "Server rejected the credentials."}`);
+      setNotice(`Verification failed: ${result.message ?? "Server rejected the email session."}`);
       return;
     }
     if (!signedInUser) {
-      setNotice("The Telgo ID or one-time password is incorrect.");
+      setNotice("No approved Telgo access was found for this email.");
       return;
     }
 
     setPendingUser(signedInUser);
-    setPendingPasswordHash(passwordHash);
-    setPassword("");
-    setNotice("Access verified. Create your 4-digit PIN.");
+    setEmail(signedInUser.email);
+    setLoginId(signedInUser.loginId);
+    setOtpCode("");
+    setNotice("Email verified. Create or reset your 4-digit PIN.");
     setView("pin");
   }
 
   async function createPin() {
-    if (!pendingUser || !pendingPasswordHash) {
-      setNotice("Verify your emailed credentials first.");
-      setView("credentials");
+    if (!pendingUser) {
+      setNotice("Verify your email OTP first.");
+      setView("otp");
       return;
     }
     if (!/^\d{4}$/.test(pin) || pin !== confirmPin) {
       setNotice("Create and confirm a matching 4-digit PIN.");
       return;
     }
+
+    const {
+      data: { session }
+    } = await supabase.auth.getSession();
+    const accessToken = session?.access_token ?? "";
+    if (!accessToken) {
+      setNotice("Email verification expired. Request a fresh OTP.");
+      setView("otp");
+      return;
+    }
+
     setLoading(true);
     setNotice("Saving secure PIN...");
     const pinHash = await hashSecret(pendingUser.loginId, pin);
-    const result = await postMobileAccess("/api/mobile/set-pin", {
-      userId: pendingUser.id,
-      passwordHash: pendingPasswordHash,
-      pinHash
-    });
+    const result = await postMobileAccess(
+      "/api/mobile/set-pin",
+      {
+        userId: pendingUser.id,
+        pinHash
+      },
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
 
     if (!result.ok) {
       setLoading(false);
@@ -350,11 +443,12 @@ export function TelgoMvpApp() {
     const remoteUser = result.user;
     const activatedUser = remoteUser ? toAppUser(remoteUser, pendingUser.loginId) : pendingUser;
     saveSession(activatedUser);
+    await supabase.auth.signOut();
     setUser(activatedUser);
     setPendingUser(null);
-    setPendingPasswordHash("");
     setPin("");
     setConfirmPin("");
+    setOtpCode("");
     setLoading(false);
     setNotice("PIN created successfully.");
     setView("dashboard");
@@ -402,9 +496,32 @@ export function TelgoMvpApp() {
 
   function signOut() {
     localStorage.removeItem(SESSION_KEY);
+    void supabase.auth.signOut();
+    setNotice("");
     setUser(null);
+    setPendingUser(null);
     setActiveModule(null);
     setView("signin");
+  }
+
+  async function sendEmailOtp(targetEmail: string) {
+    await supabase.auth.signOut();
+    const redirectTo =
+      typeof window === "undefined"
+        ? undefined
+        : `${window.location.origin}${window.location.pathname}`;
+    const { error } = await supabase.auth.signInWithOtp({
+      email: targetEmail,
+      options: {
+        shouldCreateUser: false,
+        emailRedirectTo: redirectTo
+      }
+    });
+
+    return {
+      ok: !error,
+      message: error ? getErrorMessage(error) : ""
+    };
   }
 
   if (view === "dashboard") {
@@ -468,15 +585,17 @@ export function TelgoMvpApp() {
               }}
             />
           ) : null}
-          {view === "credentials" ? (
-            <CredentialStep
+          {view === "otp" ? (
+            <OtpStep
+              email={email}
               loginId={loginId}
-              password={password}
+              otpCode={otpCode}
               loading={loading}
               notice={notice}
-              onLoginId={setLoginId}
-              onPassword={setPassword}
-              onVerify={verifyCredentials}
+              onEmail={setEmail}
+              onOtpCode={setOtpCode}
+              onSendOtp={sendOtpAgain}
+              onVerifyOtp={verifyOtpCode}
               onBack={() => setView("request")}
             />
           ) : null}
@@ -490,7 +609,7 @@ export function TelgoMvpApp() {
               onPin={setPin}
               onConfirmPin={setConfirmPin}
               onCreate={createPin}
-              onBack={() => setView("credentials")}
+              onBack={() => setView("otp")}
             />
           ) : null}
           {view === "signin" ? (
@@ -506,9 +625,9 @@ export function TelgoMvpApp() {
                 setNotice("");
                 setView("request");
               }}
-              onCredentials={() => {
+              onOtp={() => {
                 setNotice("");
-                setView("credentials");
+                setView("otp");
               }}
             />
           ) : null}
@@ -529,10 +648,10 @@ function AuthIntro() {
         Mobile-first operations for every project team.
       </h1>
       <p className="mt-5 max-w-[460px] text-lg leading-8 text-slate-600">
-        Company access is approved by email first, then a one-time password unlocks PIN setup.
+        Company access is approved by email first, then a one-time email verification unlocks PIN setup.
       </p>
       <div className="mt-8 grid grid-cols-3 gap-3">
-        {["Email access", "Role approval", "PIN login"].map((item) => (
+        {["Email OTP", "Role approval", "PIN login"].map((item) => (
           <div key={item} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <Check className="mb-3 h-5 w-5 text-[#14b866]" />
             <p className="text-sm font-semibold text-slate-800">{item}</p>
@@ -573,7 +692,7 @@ function AccessRequestStep({
       <BrandMark />
       <div className="mt-9 text-center">
         <h1 className="text-2xl font-bold tracking-normal">Request Company Access</h1>
-        <p className="mt-2 text-sm text-slate-500">Approval and login details are sent by email</p>
+        <p className="mt-2 text-sm text-slate-500">Approved users receive an email OTP or secure sign-in link</p>
       </div>
 
       <div className="mt-8 space-y-4">
@@ -620,10 +739,10 @@ function AccessRequestStep({
       </div>
 
       <PrimaryButton disabled={loading} onClick={onRequest} className="mt-6">
-        {loading ? "Sending Access Email..." : "Approve & Email Access"}
+        {loading ? "Preparing Access..." : "Approve & Send OTP"}
       </PrimaryButton>
       <p className="mt-5 text-center text-xs leading-5 text-slate-500">
-        A Telgo ID and one-time password will be created automatically for this request.
+        A Telgo ID is created automatically, then the verified email owner sets the 4-digit PIN.
       </p>
       {notice ? <Notice>{notice}</Notice> : null}
       <p className="mt-6 text-center text-sm text-slate-500">
@@ -635,23 +754,27 @@ function AccessRequestStep({
   );
 }
 
-function CredentialStep({
+function OtpStep({
+  email,
   loginId,
-  password,
+  otpCode,
   loading,
   notice,
-  onLoginId,
-  onPassword,
-  onVerify,
+  onEmail,
+  onOtpCode,
+  onSendOtp,
+  onVerifyOtp,
   onBack
 }: {
+  email: string;
   loginId: string;
-  password: string;
+  otpCode: string;
   loading: boolean;
   notice: string;
-  onLoginId: (value: string) => void;
-  onPassword: (value: string) => void;
-  onVerify: () => void;
+  onEmail: (value: string) => void;
+  onOtpCode: (value: string) => void;
+  onSendOtp: () => void;
+  onVerifyOtp: () => void;
   onBack: () => void;
 }) {
   return (
@@ -661,32 +784,54 @@ function CredentialStep({
       </button>
       <div className="mt-10 text-center">
         <h1 className="text-2xl font-bold tracking-normal">Verify Email Access</h1>
-        <p className="mt-3 text-sm leading-6 text-slate-500">Use the Telgo ID and one-time password from your email</p>
+        <p className="mt-3 text-sm leading-6 text-slate-500">
+          Request a one-time code, or open the secure sign-in link from the email on this device.
+        </p>
       </div>
       <div className="mt-8 space-y-4">
         <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-slate-700">Telgo ID</span>
+          <span className="mb-2 block text-sm font-semibold text-slate-700">Email Address</span>
           <input
-            value={loginId}
-            onChange={(event) => onLoginId(event.target.value.toUpperCase())}
-            placeholder="TLG-12345678"
-            className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-center text-base font-bold tracking-[0.08em] outline-none placeholder:font-medium placeholder:tracking-normal placeholder:text-slate-400 focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
-          />
-        </label>
-        <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-slate-700">One-Time Password</span>
-          <input
-            value={password}
-            onChange={(event) => onPassword(event.target.value)}
-            type="password"
-            placeholder="Password from email"
+            value={email}
+            onChange={(event) => onEmail(event.target.value)}
+            type="email"
+            placeholder="name@company.com"
             className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none placeholder:text-slate-400 focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
           />
         </label>
+        {loginId ? (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Telgo ID</p>
+            <p className="mt-1 text-base font-bold tracking-[0.08em] text-[#07122f]">{loginId}</p>
+          </div>
+        ) : null}
+        <label className="block">
+          <span className="mb-2 block text-sm font-semibold text-slate-700">Email OTP</span>
+          <input
+            value={otpCode}
+            onChange={(event) => onOtpCode(event.target.value.replace(/\s+/g, "").slice(0, 6))}
+            inputMode="numeric"
+            placeholder="6-digit code"
+            className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-center text-lg font-bold tracking-[0.24em] outline-none placeholder:tracking-normal placeholder:text-slate-400 focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
+          />
+        </label>
       </div>
-      <PrimaryButton disabled={loading} onClick={onVerify} className="mt-7">
-        {loading ? "Verifying..." : "Verify & Create PIN"}
-      </PrimaryButton>
+      <div className="mt-7 grid gap-3">
+        <PrimaryButton disabled={loading} onClick={onVerifyOtp}>
+          {loading ? "Verifying..." : "Verify & Create PIN"}
+        </PrimaryButton>
+        <button
+          type="button"
+          disabled={loading}
+          onClick={onSendOtp}
+          className="min-h-12 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? "Please wait..." : "Send New OTP"}
+        </button>
+      </div>
+      <p className="mt-4 text-center text-xs leading-5 text-slate-500">
+        If Gmail shows a secure sign-in button instead of a numeric code, open it on this device and the app will continue automatically.
+      </p>
       {notice ? <Notice>{notice}</Notice> : null}
     </div>
   );
@@ -743,7 +888,7 @@ function SigninStep({
   onPin,
   onSignin,
   onRequest,
-  onCredentials
+  onOtp
 }: {
   loginId: string;
   pin: string;
@@ -753,7 +898,7 @@ function SigninStep({
   onPin: (value: string) => void;
   onSignin: () => void;
   onRequest: () => void;
-  onCredentials: () => void;
+  onOtp: () => void;
 }) {
   return (
     <div className="pt-7">
@@ -774,7 +919,7 @@ function SigninStep({
       <div className="mt-4">
         <PinInput label="4-digit PIN" value={pin} onChange={onPin} />
       </div>
-      <button type="button" className="mt-4 text-sm font-semibold text-[#115cff]">
+      <button type="button" onClick={onOtp} className="mt-4 text-sm font-semibold text-[#115cff]">
         Forgot PIN?
       </button>
       <PrimaryButton disabled={loading} onClick={onSignin} className="mt-6">
@@ -782,8 +927,8 @@ function SigninStep({
       </PrimaryButton>
       {notice ? <Notice>{notice}</Notice> : null}
       <div className="mt-6 grid gap-2 text-center text-sm text-slate-500">
-        <button type="button" onClick={onCredentials} className="font-semibold text-[#115cff]">
-          I have an email password
+        <button type="button" onClick={onOtp} className="font-semibold text-[#115cff]">
+          Use email OTP / reset PIN
         </button>
         <button type="button" onClick={onRequest} className="font-semibold text-[#115cff]">
           Request company access
@@ -1302,11 +1447,18 @@ function getErrorMessage(error: unknown) {
   return "Server rejected the request.";
 }
 
-async function postMobileAccess(path: string, payload: Record<string, unknown>) {
+async function postMobileAccess(
+  path: string,
+  payload: Record<string, unknown>,
+  options?: { headers?: Record<string, string> }
+) {
   try {
     const response = await fetch(path, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(options?.headers ?? {})
+      },
       body: JSON.stringify(payload)
     });
     const data = (await response.json().catch(() => null)) as
