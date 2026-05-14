@@ -184,14 +184,6 @@ export async function POST(request: NextRequest) {
         loginId: savedLoginId,
         message: authUserError.message
       });
-      return NextResponse.json(
-        {
-          ok: false,
-          message:
-            "Access was saved, but the email login account could not be prepared. Check the Supabase Auth email settings and retry."
-        },
-        { status: 500 }
-      );
     }
   }
 
