@@ -141,7 +141,8 @@ export function LiveMap({
   const focus = safeProjects.find((project) => project.id === focusProjectId) ?? safeProjects[0];
   const corridor = focus.corridor;
   const latestUpdate = corridor?.progressUpdates[0];
-  const googleMapsLinked = Boolean(telgoConfig.googleMapsApiKey);
+  const interactiveMapReady = Boolean(telgoConfig.mapTilerKey);
+  const googleRouteReady = Boolean(telgoConfig.googleMapsApiKey);
 
   return (
     <div
@@ -190,14 +191,17 @@ export function LiveMap({
         <>
           <GlassCard className="absolute left-4 top-4 w-[240px] space-y-3 p-3">
             <div className="flex items-center justify-between">
-              <Badge tone={googleMapsLinked ? "green" : "amber"}>
-                {googleMapsLinked ? "Google Maps Linked" : "Google Maps Missing"}
+              <Badge tone={interactiveMapReady ? "green" : "amber"}>
+                {interactiveMapReady ? "Live Map Ready" : "Map Key Missing"}
               </Badge>
               <span className="text-xs text-slate-300">
                 {satellite ? "Satellite live view" : "Map canvas"}
               </span>
             </div>
             <div className="space-y-2 text-sm text-slate-200">
+              <p className="text-xs text-slate-300">
+                {googleRouteReady ? "Google route link enabled" : "Google route link unavailable"}
+              </p>
               <p className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full bg-telgo-cyan" />
                 Planned corridor

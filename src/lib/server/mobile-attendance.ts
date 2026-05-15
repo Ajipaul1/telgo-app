@@ -6,6 +6,8 @@ import type { MobileSession } from "@/lib/server/mobile-session";
 import { createMobileNotification } from "@/lib/server/mobile-notifications";
 
 const PRIMARY_PROJECT = projects[0];
+const TRACKING_TABLE_SETUP_MESSAGE =
+  "Live attendance tracking tables are not installed in Supabase yet. Run the mobile attendance tracking SQL migration to enable real location marks.";
 
 export type MobileAttendanceRecord = {
   id: string;
@@ -91,7 +93,12 @@ export async function markMobileAttendance(
     .select("*")
     .single();
 
-  if (attendanceError) throw attendanceError;
+  if (attendanceError) {
+    if (isMissingTrackingTableError(attendanceError)) {
+      throw new Error(TRACKING_TABLE_SETUP_MESSAGE);
+    }
+    throw attendanceError;
+  }
 
   const { data: locationRow, error: locationError } = await supabase
     .from("mobile_live_locations")
@@ -114,7 +121,12 @@ export async function markMobileAttendance(
     .select("*")
     .single();
 
-  if (locationError) throw locationError;
+  if (locationError) {
+    if (isMissingTrackingTableError(locationError)) {
+      throw new Error(TRACKING_TABLE_SETUP_MESSAGE);
+    }
+    throw locationError;
+  }
 
   await notifyOperationsOnAttendance(supabase, session, {
     projectId: project.id,
@@ -147,7 +159,12 @@ export async function listMobileTrackingSnapshot(
   }
 
   const { data: locationRows, error: locationError } = await locationQuery;
-  if (locationError) throw locationError;
+  if (locationError) {
+    if (isMissingTrackingTableError(locationError)) {
+      return buildFallbackTrackingSnapshot(canViewAll);
+    }
+    throw locationError;
+  }
 
   let attendanceQuery = supabase
     .from("mobile_attendance")
@@ -160,7 +177,12 @@ export async function listMobileTrackingSnapshot(
   }
 
   const { data: attendanceRows, error: attendanceError } = await attendanceQuery;
-  if (attendanceError) throw attendanceError;
+  if (attendanceError) {
+    if (isMissingTrackingTableError(attendanceError)) {
+      return buildFallbackTrackingSnapshot(canViewAll);
+    }
+    throw attendanceError;
+  }
 
   const formattedLocations = (locationRows ?? []).map((row) =>
     formatLocationRow(row as Record<string, unknown>)
@@ -176,6 +198,15 @@ export async function listMobileTrackingSnapshot(
     project: resolveProject(currentProjectId),
     locations: dedupedLocations,
     attendance: formattedAttendance,
+    canViewAll
+  };
+}
+
+function buildFallbackTrackingSnapshot(canViewAll: boolean): MobileTrackingSnapshot {
+  return {
+    project: PRIMARY_PROJECT,
+    locations: [],
+    attendance: [],
     canViewAll
   };
 }
@@ -209,7 +240,7 @@ async function notifyOperationsOnAttendance(
             recipientUserId,
             actorUserId: session.userId,
             title: "Engineer attendance marked",
-              body: `${session.fullName} marked attendance for ${context.projectName} at ${context.distanceFromSiteM} m from the site start${context.withinGeofence ? "" : " outside the geofence"}.`,
+            body: `${session.fullName} marked attendance for ${context.projectName} at ${context.distanceFromSiteM} m from the site start${context.withinGeofence ? "" : " outside the geofence"}.`,
             notificationType: "attendance",
             entityType: "mobile_attendance",
             metadata: {
@@ -228,6 +259,26 @@ async function notifyOperationsOnAttendance(
 
 function resolveProject(projectId?: string | null) {
   return projects.find((project) => project.id === projectId) ?? PRIMARY_PROJECT;
+}
+
+function isMissingTrackingTableError(error: unknown) {
+  const message = getErrorMessage(error).toLowerCase();
+  return [
+    "could not find the table 'public.mobile_live_locations' in the schema cache",
+    "could not find the table 'public.mobile_attendance' in the schema cache",
+    'relation "public.mobile_live_locations" does not exist',
+    'relation "public.mobile_attendance" does not exist',
+    'relation "mobile_live_locations" does not exist',
+    'relation "mobile_attendance" does not exist'
+  ].some((fragment) => message.includes(fragment));
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error && "message" in error) {
+    return String((error as { message?: unknown }).message ?? "");
+  }
+  return "";
 }
 
 function dedupeLatestLocations(locations: MobileTrackedLocation[], canViewAll: boolean) {
