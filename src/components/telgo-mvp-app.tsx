@@ -4251,14 +4251,14 @@ function ProjectDetailsModuleView({
     const progress =
       totalLengthKm > 0 ? Math.min(100, Math.round((completedKm / totalLengthKm) * 100)) : 0;
     const existingProject = projectPortfolio.find((item) => item.id === projectEditor.id) ?? null;
+    const projectSlug = `${projectEditor.code || projectEditor.name || "project"}`
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
     const nextProjectId =
       existingProject?.id ??
-      `${projectEditor.code || projectEditor.name || "project"}`
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "") ||
-      crypto.randomUUID();
+      (projectSlug ? projectSlug : crypto.randomUUID());
 
     onProjectPortfolioChange((current) => {
       const anchorBase = existingProject?.coordinates ?? [
