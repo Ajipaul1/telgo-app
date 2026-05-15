@@ -139,6 +139,7 @@ export function LiveMap({
   }, [compact, focusProjectId, safeProjects, satellite, safeTrackedPoints]);
 
   const focus = safeProjects.find((project) => project.id === focusProjectId) ?? safeProjects[0];
+  const visibleProjects = compact ? [focus] : safeProjects;
   const corridor = focus.corridor;
   const latestUpdate = corridor?.progressUpdates[0];
   const interactiveMapReady = Boolean(telgoConfig.mapTilerKey);
@@ -155,30 +156,32 @@ export function LiveMap({
       <div ref={ref} className="absolute inset-0" />
       <div className="pointer-events-none absolute inset-0 bg-ink-950/20" />
       {mapError ? (
-        <div className="absolute inset-0 bg-ink-950/82 p-4">
-          <div className="mb-3 flex items-center justify-between">
+        <div className="absolute inset-0 bg-[#07122f]">
+          <FallbackProjectMap
+            projects={visibleProjects}
+            trackedPoints={safeTrackedPoints}
+            focusProjectId={focus.id}
+            compact={compact}
+          />
+          <div className="absolute left-4 top-4 flex items-center gap-3">
             <Badge tone="amber">Map Fallback</Badge>
-            <span className="text-xs text-slate-300">Route summary only</span>
+            <span className="text-xs text-slate-300">
+              Interactive tiles unavailable, seeded works map shown
+            </span>
           </div>
-          <div className="grid h-full place-items-center">
-            <div className="w-full max-w-md space-y-3">
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-                <p className="text-sm text-slate-400">{focus.name}</p>
-                <p className="mt-2 text-lg font-semibold text-white">{corridor ? `${corridor.startLabel} to ${corridor.endLabel}` : focus.location}</p>
-                {corridor ? (
-                  <p className="mt-2 text-sm text-telgo-cyan">
-                    {formatMeters(corridor.completedMeters)} completed of {formatMeters(corridor.totalMeters)}
-                  </p>
-                ) : null}
-              </div>
-              {latestUpdate ? (
-                <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 text-sm text-slate-300">
-                  <p className="font-medium text-white">{latestUpdate.label}</p>
-                  <p className="mt-2">{latestUpdate.detail}</p>
-                  <p className="mt-2 text-telgo-cyan">{latestUpdate.recordedAt}</p>
-                </div>
-              ) : null}
-            </div>
+          <div className="absolute bottom-4 right-4 max-w-[360px] rounded-2xl border border-white/10 bg-ink-950/70 px-4 py-3 text-sm text-slate-200 backdrop-blur">
+            <p className="font-semibold text-white">{focus.name}</p>
+            <p className="mt-1 text-slate-300">
+              {corridor ? `${corridor.startLabel} to ${corridor.endLabel}` : focus.location}
+            </p>
+            {corridor ? (
+              <p className="mt-2 text-telgo-cyan">
+                {formatMeters(corridor.completedMeters)} completed of {formatMeters(corridor.totalMeters)}
+              </p>
+            ) : null}
+            {latestUpdate ? (
+              <p className="mt-2 text-xs leading-5 text-slate-300">{latestUpdate.label} · {latestUpdate.recordedAt}</p>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -187,7 +190,7 @@ export function LiveMap({
           Loading live map
         </div>
       ) : null}
-      {!compact ? (
+      {!compact && !mapError ? (
         <>
           <GlassCard className="absolute left-4 top-4 w-[240px] space-y-3 p-3">
             <div className="flex items-center justify-between">
@@ -268,6 +271,228 @@ export function LiveMap({
       ) : null}
     </div>
   );
+}
+
+function FallbackProjectMap({
+  projects,
+  trackedPoints,
+  focusProjectId,
+  compact
+}: {
+  projects: Project[];
+  trackedPoints: LiveMapTrackedPoint[];
+  focusProjectId: string;
+  compact: boolean;
+}) {
+  const viewport = getFallbackViewport(projects, trackedPoints);
+
+  return (
+    <svg
+      viewBox={`0 0 ${FALLBACK_WIDTH} ${FALLBACK_HEIGHT}`}
+      className="absolute inset-0 h-full w-full"
+      preserveAspectRatio="xMidYMid slice"
+      role="img"
+      aria-label="Fallback works location map"
+    >
+      <defs>
+        <linearGradient id="telgoFallbackBg" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stopColor="#07122f" />
+          <stop offset="52%" stopColor="#0d1c45" />
+          <stop offset="100%" stopColor="#132b63" />
+        </linearGradient>
+        <pattern id="telgoFallbackGrid" width="56" height="56" patternUnits="userSpaceOnUse">
+          <path d="M 56 0 L 0 0 0 56" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+        </pattern>
+        <filter id="telgoGlow">
+          <feGaussianBlur stdDeviation="7" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      <rect width={FALLBACK_WIDTH} height={FALLBACK_HEIGHT} fill="url(#telgoFallbackBg)" />
+      <rect width={FALLBACK_WIDTH} height={FALLBACK_HEIGHT} fill="url(#telgoFallbackGrid)" opacity="0.35" />
+      <circle cx="180" cy="90" r="220" fill="rgba(17,92,255,0.10)" />
+      <circle cx="860" cy="520" r="260" fill="rgba(34,211,238,0.12)" />
+
+      {projects.map((project) => (
+        <g key={project.id}>
+          {hasCorridor(project) ? (
+            <>
+              <line
+                x1={projectPoint(project.corridor.startCoordinates[0], project.corridor.startCoordinates[1], viewport).x}
+                y1={projectPoint(project.corridor.startCoordinates[0], project.corridor.startCoordinates[1], viewport).y}
+                x2={projectPoint(project.corridor.endCoordinates[0], project.corridor.endCoordinates[1], viewport).x}
+                y2={projectPoint(project.corridor.endCoordinates[0], project.corridor.endCoordinates[1], viewport).y}
+                stroke={projectAccentColor(project.accent, 0.4)}
+                strokeWidth={compact ? 8 : 10}
+                strokeLinecap="round"
+              />
+              <line
+                x1={projectPoint(project.corridor.startCoordinates[0], project.corridor.startCoordinates[1], viewport).x}
+                y1={projectPoint(project.corridor.startCoordinates[0], project.corridor.startCoordinates[1], viewport).y}
+                x2={projectPoint(
+                  getCorridorProgressPoint(project.corridor)[0],
+                  getCorridorProgressPoint(project.corridor)[1],
+                  viewport
+                ).x}
+                y2={projectPoint(
+                  getCorridorProgressPoint(project.corridor)[0],
+                  getCorridorProgressPoint(project.corridor)[1],
+                  viewport
+                ).y}
+                stroke="#22c55e"
+                strokeWidth={compact ? 9 : 12}
+                strokeLinecap="round"
+                filter="url(#telgoGlow)"
+              />
+            </>
+          ) : null}
+
+          {renderProjectMarker(project, viewport, focusProjectId === project.id)}
+        </g>
+      ))}
+
+      {trackedPoints.map((point) => {
+        const pos = projectPoint(point.longitude, point.latitude, viewport);
+        return (
+          <g key={point.id}>
+            <circle cx={pos.x} cy={pos.y} r="16" fill="rgba(17,92,255,0.25)" filter="url(#telgoGlow)" />
+            <circle
+              cx={pos.x}
+              cy={pos.y}
+              r="10"
+              fill={point.withinGeofence ? "#115cff" : "#f59e0b"}
+              stroke="#ffffff"
+              strokeWidth="2"
+            />
+            <text
+              x={pos.x}
+              y={pos.y + 4}
+              textAnchor="middle"
+              fontSize="10"
+              fontWeight="700"
+              fill="#ffffff"
+            >
+              {point.userLoginId.slice(-2) || "E"}
+            </text>
+            {!compact ? (
+              <text x={pos.x + 18} y={pos.y - 14} fontSize="11" fontWeight="600" fill="#ffffff">
+                {point.userName}
+              </text>
+            ) : null}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+const FALLBACK_WIDTH = 1000;
+const FALLBACK_HEIGHT = 620;
+const FALLBACK_PADDING = 90;
+
+type FallbackViewport = {
+  minLng: number;
+  maxLng: number;
+  minLat: number;
+  maxLat: number;
+};
+
+function renderProjectMarker(project: Project, viewport: FallbackViewport, focused: boolean) {
+  const anchor = getProjectAnchor(project);
+  const pos = projectPoint(anchor[0], anchor[1], viewport);
+  const accent = projectAccentColor(project.accent);
+  const labelY = pos.y - (focused ? 28 : 18);
+
+  return (
+    <g key={`${project.id}-marker`}>
+      <circle cx={pos.x} cy={pos.y} r={focused ? 18 : 14} fill={projectAccentColor(project.accent, 0.22)} />
+      <circle cx={pos.x} cy={pos.y} r={focused ? 10 : 8} fill={accent} stroke="#ffffff" strokeWidth="2" />
+      <text
+        x={pos.x}
+        y={labelY}
+        textAnchor="middle"
+        fontSize={focused ? "14" : "12"}
+        fontWeight="700"
+        fill="#ffffff"
+      >
+        {project.code}
+      </text>
+      <text
+        x={pos.x}
+        y={labelY + 18}
+        textAnchor="middle"
+        fontSize="11"
+        fill="rgba(255,255,255,0.8)"
+      >
+        {project.location}
+      </text>
+    </g>
+  );
+}
+
+function getFallbackViewport(projects: Project[], trackedPoints: LiveMapTrackedPoint[]): FallbackViewport {
+  const allPoints: Array<[number, number]> = [];
+
+  projects.forEach((project) => {
+    allPoints.push(project.coordinates);
+    const anchor = getProjectAnchor(project);
+    allPoints.push(anchor);
+    if (hasCorridor(project)) {
+      allPoints.push(project.corridor.startCoordinates);
+      allPoints.push(project.corridor.endCoordinates);
+      allPoints.push(getCorridorProgressPoint(project.corridor));
+    }
+  });
+
+  trackedPoints.forEach((point) => {
+    allPoints.push([point.longitude, point.latitude]);
+  });
+
+  const lngs = allPoints.map((point) => point[0]);
+  const lats = allPoints.map((point) => point[1]);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+
+  return {
+    minLng,
+    maxLng,
+    minLat,
+    maxLat
+  };
+}
+
+function projectPoint(lng: number, lat: number, viewport: FallbackViewport) {
+  const lngSpan = Math.max(viewport.maxLng - viewport.minLng, 0.001);
+  const latSpan = Math.max(viewport.maxLat - viewport.minLat, 0.001);
+  const x =
+    FALLBACK_PADDING +
+    ((lng - viewport.minLng) / lngSpan) * (FALLBACK_WIDTH - FALLBACK_PADDING * 2);
+  const y =
+    FALLBACK_HEIGHT -
+    FALLBACK_PADDING -
+    ((lat - viewport.minLat) / latSpan) * (FALLBACK_HEIGHT - FALLBACK_PADDING * 2);
+
+  return { x, y };
+}
+
+function projectAccentColor(accent: Project["accent"], alpha?: number) {
+  const palette: Record<Project["accent"], string> = {
+    cyan: alpha ? `rgba(34,211,238,${alpha})` : "#22d3ee",
+    blue: alpha ? `rgba(59,130,246,${alpha})` : "#3b82f6",
+    green: alpha ? `rgba(34,197,94,${alpha})` : "#22c55e",
+    amber: alpha ? `rgba(245,158,11,${alpha})` : "#f59e0b",
+    red: alpha ? `rgba(244,63,94,${alpha})` : "#f43f5e",
+    violet: alpha ? `rgba(139,92,246,${alpha})` : "#8b5cf6",
+    slate: alpha ? `rgba(100,116,139,${alpha})` : "#64748b"
+  };
+
+  return palette[accent];
 }
 
 function addProjectMarker(
