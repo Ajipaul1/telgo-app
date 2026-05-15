@@ -1181,7 +1181,8 @@ export function TelgoMvpApp() {
           project: baseProject,
           attendance: nextAttendance,
           locations: nextLocations,
-          canViewAll: current?.canViewAll ?? currentRole === "admin" || currentRole === "supervisor"
+          canViewAll:
+            current?.canViewAll ?? (currentRole === "admin" || currentRole === "supervisor")
         };
       });
 
