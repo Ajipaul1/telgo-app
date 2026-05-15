@@ -16,28 +16,61 @@ import type { Project } from "@/lib/types";
 import { Badge, GlassCard, Icon } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
+export type LiveMapTrackedPoint = {
+  id: string;
+  mobileUserId: string;
+  userName: string;
+  userLoginId: string;
+  userRole: string;
+  projectId: string;
+  projectName: string;
+  latitude: number;
+  longitude: number;
+  gpsAccuracyM: number | null;
+  distanceFromSiteM: number;
+  withinGeofence: boolean;
+  source: string;
+  recordedAt: string;
+};
+
+const EMPTY_TRACKED_POINTS: LiveMapTrackedPoint[] = [];
+
 export function LiveMap({
   className,
   compact = false,
-  focusProjectId
+  focusProjectId,
+  trackedPoints,
+  satellite = true
 }: {
   className?: string;
   compact?: boolean;
   focusProjectId?: string;
+  trackedPoints?: LiveMapTrackedPoint[];
+  satellite?: boolean;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRefs = useRef<maplibregl.Marker[]>([]);
   const [ready, setReady] = useState(false);
   const [mapError, setMapError] = useState(false);
+  const safeTrackedPoints = trackedPoints ?? EMPTY_TRACKED_POINTS;
 
   useEffect(() => {
-    if (!ref.current || mapRef.current) return;
+    if (!ref.current) return;
+
+    setReady(false);
+    setMapError(false);
+
+    if (mapRef.current) {
+      clearMarkers(markerRefs.current);
+      mapRef.current.remove();
+      mapRef.current = null;
+    }
 
     const focus = projects.find((project) => project.id === focusProjectId) ?? projects[0];
     const map = new maplibregl.Map({
       container: ref.current,
-      style: `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${telgoConfig.mapTilerKey}`,
+      style: `https://api.maptiler.com/maps/${satellite ? "hybrid" : "dataviz-dark"}/style.json?key=${telgoConfig.mapTilerKey}`,
       center: getProjectAnchor(focus),
       zoom: compact ? 13.6 : 12.4,
       attributionControl: false
@@ -63,30 +96,36 @@ export function LiveMap({
         }
       });
 
-      engineers.forEach((engineer, index) => {
-        const project = visibleProjects[index % visibleProjects.length] ?? focus;
-        const anchor = getProjectAnchor(project);
-        const marker = document.createElement("div");
-        const moving = engineer.status === "Moving" || engineer.status === "Active";
-        marker.className = `grid h-9 w-9 place-items-center rounded-full border ${
-          moving
-            ? "border-cyan-300/70 bg-cyan-500/25 shadow-[0_0_28px_rgba(5,217,255,0.45)]"
-            : "border-amber-300/70 bg-amber-500/25 shadow-[0_0_28px_rgba(255,159,10,0.35)]"
-        }`;
-        marker.innerHTML = moving ? "<span class='text-sm text-cyan-200'>E</span>" : "<span class='text-sm text-amber-200'>E</span>";
+      if (safeTrackedPoints.length) {
+        safeTrackedPoints.forEach((point) => {
+          addTrackedLocationMarker(map, point, markerRefs.current);
+        });
+      } else {
+        engineers.forEach((engineer, index) => {
+          const project = visibleProjects[index % visibleProjects.length] ?? focus;
+          const anchor = getProjectAnchor(project);
+          const marker = document.createElement("div");
+          const moving = engineer.status === "Moving" || engineer.status === "Active";
+          marker.className = `grid h-9 w-9 place-items-center rounded-full border ${
+            moving
+              ? "border-cyan-300/70 bg-cyan-500/25 shadow-[0_0_28px_rgba(5,217,255,0.45)]"
+              : "border-amber-300/70 bg-amber-500/25 shadow-[0_0_28px_rgba(255,159,10,0.35)]"
+          }`;
+          marker.innerHTML = moving ? "<span class='text-sm text-cyan-200'>E</span>" : "<span class='text-sm text-amber-200'>E</span>";
 
-        const engineerMarker = new maplibregl.Marker({ element: marker })
-          .setLngLat([anchor[0] + 0.0008, anchor[1] + 0.0005])
-          .setPopup(
-            new maplibregl.Popup({ closeButton: false }).setHTML(
-              `<strong>${engineer.name}</strong><br/>${engineer.site}<br/>${engineer.status}`
+          const engineerMarker = new maplibregl.Marker({ element: marker })
+            .setLngLat([anchor[0] + 0.0008, anchor[1] + 0.0005])
+            .setPopup(
+              new maplibregl.Popup({ closeButton: false }).setHTML(
+                `<strong>${engineer.name}</strong><br/>${engineer.site}<br/>${engineer.status}`
+              )
             )
-          )
-          .addTo(map);
-        markerRefs.current.push(engineerMarker);
-      });
+            .addTo(map);
+          markerRefs.current.push(engineerMarker);
+        });
+      }
 
-      fitMapToProject(map, focus, compact);
+      fitMapToProject(map, focus, compact, safeTrackedPoints);
     });
 
     return () => {
@@ -94,7 +133,7 @@ export function LiveMap({
       map.remove();
       mapRef.current = null;
     };
-  }, [compact, focusProjectId]);
+  }, [compact, focusProjectId, satellite, safeTrackedPoints]);
 
   const focus = projects.find((project) => project.id === focusProjectId) ?? projects[0];
   const corridor = focus.corridor;
@@ -151,7 +190,9 @@ export function LiveMap({
               <Badge tone={googleMapsLinked ? "green" : "amber"}>
                 {googleMapsLinked ? "Google Maps Linked" : "Google Maps Missing"}
               </Badge>
-              <span className="text-xs text-slate-300">MapTiler canvas</span>
+              <span className="text-xs text-slate-300">
+                {satellite ? "Satellite live view" : "Map canvas"}
+              </span>
             </div>
             <div className="space-y-2 text-sm text-slate-200">
               <p className="flex items-center gap-2">
@@ -165,6 +206,10 @@ export function LiveMap({
               <p className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full bg-telgo-amber" />
                 Daily update point
+              </p>
+              <p className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-white" />
+                Engineer attendance marker
               </p>
             </div>
           </GlassCard>
@@ -367,6 +412,31 @@ function addCorridorMarkers(
   });
 }
 
+function addTrackedLocationMarker(
+  map: maplibregl.Map,
+  point: LiveMapTrackedPoint,
+  markerRefs: maplibregl.Marker[]
+) {
+  const marker = document.createElement("div");
+  marker.className = `grid h-10 w-10 place-items-center rounded-full border text-xs font-bold shadow-[0_0_28px_rgba(17,92,255,0.32)] ${
+    point.withinGeofence
+      ? "border-white/90 bg-[#115cff]/80 text-white"
+      : "border-amber-200/90 bg-amber-500/80 text-white"
+  }`;
+  marker.textContent = point.userLoginId.slice(-2) || "E";
+
+  const trackedMarker = new maplibregl.Marker({ element: marker })
+    .setLngLat([point.longitude, point.latitude])
+    .setPopup(
+      new maplibregl.Popup({ closeButton: false }).setHTML(
+        `<strong>${point.userName}</strong><br/>@${point.userLoginId}<br/>${point.projectName}<br/>${point.distanceFromSiteM} m from site start<br/>${new Date(point.recordedAt).toLocaleString("en-IN")}`
+      )
+    )
+    .addTo(map);
+
+  markerRefs.push(trackedMarker);
+}
+
 function buildRouteMarker(label: string, classes: string) {
   const element = document.createElement("div");
   element.className = `grid h-9 w-9 place-items-center rounded-full border text-xs font-semibold shadow-[0_0_20px_rgba(15,23,42,0.35)] ${classes}`;
@@ -374,13 +444,21 @@ function buildRouteMarker(label: string, classes: string) {
   return element;
 }
 
-function fitMapToProject(map: maplibregl.Map, project: Project, compact: boolean) {
+function fitMapToProject(
+  map: maplibregl.Map,
+  project: Project,
+  compact: boolean,
+  trackedPoints: LiveMapTrackedPoint[]
+) {
   if (hasCorridor(project)) {
     const corridor = project.corridor;
     const bounds = new maplibregl.LngLatBounds();
     bounds.extend(corridor.startCoordinates);
     bounds.extend(corridor.endCoordinates);
     bounds.extend(getCorridorProgressPoint(corridor));
+    trackedPoints.forEach((point) => {
+      bounds.extend([point.longitude, point.latitude]);
+    });
     map.fitBounds(bounds, {
       padding: compact ? 48 : 96,
       maxZoom: compact ? 15.2 : 14.3,

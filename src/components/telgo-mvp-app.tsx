@@ -52,9 +52,16 @@ import {
   X
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { LiveMap, type LiveMapTrackedPoint } from "@/components/live-map";
 import { supabase } from "@/lib/supabase/client";
 import { projects } from "@/lib/demo-data";
-import { formatMeters, getProgressMeters, getRemainingMeters } from "@/lib/project-corridor";
+import {
+  formatMeters,
+  getGoogleMapsDirectionsUrl,
+  getProgressMeters,
+  getRemainingMeters
+} from "@/lib/project-corridor";
+import type { Project } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type MvpView = "request" | "otp" | "pin" | "signin" | "dashboard" | "module" | "chat";
@@ -153,6 +160,30 @@ type MobileNotificationItem = {
   isRead: boolean;
   createdAt: string;
   metadata: Record<string, unknown>;
+};
+
+type MobileAttendanceRecord = {
+  id: string;
+  mobileUserId: string;
+  userName: string;
+  userLoginId: string;
+  userRole: string;
+  projectId: string;
+  projectName: string;
+  checkInAt: string;
+  latitude: number;
+  longitude: number;
+  gpsAccuracyM: number | null;
+  distanceFromSiteM: number;
+  withinGeofence: boolean;
+  status: string;
+};
+
+type MobileTrackingSnapshot = {
+  project: Project;
+  locations: LiveMapTrackedPoint[];
+  attendance: MobileAttendanceRecord[];
+  canViewAll: boolean;
 };
 
 type ChatDraftImage = {
@@ -578,11 +609,16 @@ export function TelgoMvpApp() {
   const [notifications, setNotifications] = useState<MobileNotificationItem[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [trackingSnapshot, setTrackingSnapshot] = useState<MobileTrackingSnapshot | null>(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [trackingError, setTrackingError] = useState("");
+  const [attendanceSubmitting, setAttendanceSubmitting] = useState(false);
   const [activeModule, setActiveModule] = useState<ModuleItem | null>(null);
   const [search, setSearch] = useState("");
   const [clock, setClock] = useState<Date | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const currentRole = resolveAccessRole(user?.role ?? requestedRole);
+  const primaryProject = trackingSnapshot?.project ?? projects[0];
 
   const filteredModules = useMemo(() => {
     const allowedTitles = new Set(roleModuleTitles[currentRole]);
@@ -772,6 +808,67 @@ export function TelgoMvpApp() {
     const interval = window.setInterval(() => {
       void refreshNotifications(false);
     }, 10_000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setTrackingSnapshot(null);
+      setTrackingError("");
+      return;
+    }
+
+    let cancelled = false;
+
+    async function refreshTracking(showLoader = false) {
+      if (showLoader) setTrackingLoading(true);
+      const response = await fetch("/api/mobile/live-map", {
+        method: "GET",
+        credentials: "include"
+      }).catch((error: unknown) => ({ error }));
+
+      if (cancelled) return;
+      if ("error" in response) {
+        setTrackingLoading(false);
+        setTrackingError(getErrorMessage(response.error));
+        return;
+      }
+
+      const data = (await response.json().catch(() => null)) as
+        | {
+            ok?: boolean;
+            message?: string;
+            project?: Project;
+            locations?: LiveMapTrackedPoint[];
+            attendance?: MobileAttendanceRecord[];
+            canViewAll?: boolean;
+          }
+        | null;
+
+      if (!response.ok || !data?.ok || !data.project) {
+        setTrackingLoading(false);
+        setTrackingError(data?.message ?? "Live map tracking could not be loaded.");
+        return;
+      }
+
+      setTrackingSnapshot({
+        project: data.project,
+        locations: Array.isArray(data.locations) ? data.locations : [],
+        attendance: Array.isArray(data.attendance) ? data.attendance : [],
+        canViewAll: Boolean(data.canViewAll)
+      });
+      setTrackingError("");
+      setTrackingLoading(false);
+    }
+
+    void refreshTracking(true);
+    const interval = window.setInterval(() => {
+      void refreshTracking(false);
+    }, 15_000);
 
     return () => {
       cancelled = true;
@@ -1024,6 +1121,83 @@ export function TelgoMvpApp() {
     setView("dashboard");
   }
 
+  async function markAttendanceNow() {
+    if (!user) {
+      setNotice("Sign in again before marking attendance.");
+      return;
+    }
+
+    setAttendanceSubmitting(true);
+    setNotice("Requesting live location for attendance...");
+
+    try {
+      const position = await getLiveDevicePosition();
+      const response = await fetch("/api/mobile/attendance", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          latitude: position.lat,
+          longitude: position.lng,
+          gpsAccuracyM: position.accuracy
+        })
+      }).catch((error: unknown) => ({ error }));
+
+      if ("error" in response) {
+        throw response.error;
+      }
+
+      const data = (await response.json().catch(() => null)) as
+        | {
+            ok?: boolean;
+            message?: string;
+            attendance?: MobileAttendanceRecord;
+            location?: LiveMapTrackedPoint;
+          }
+        | null;
+
+      if (!response.ok || !data?.ok || !data.attendance) {
+        throw new Error(data?.message ?? "Attendance could not be saved.");
+      }
+
+      setTrackingSnapshot((current) => {
+        const baseProject = current?.project ?? projects[0];
+        const nextAttendance = [
+          data.attendance!,
+          ...(current?.attendance ?? []).filter((item) => item.id !== data.attendance!.id)
+        ].slice(0, 20);
+        const nextLocations = data.location
+          ? [
+              data.location,
+              ...(current?.locations ?? []).filter(
+                (item) => item.mobileUserId !== data.location!.mobileUserId
+              )
+            ].slice(0, 24)
+          : current?.locations ?? [];
+
+        return {
+          project: baseProject,
+          attendance: nextAttendance,
+          locations: nextLocations,
+          canViewAll: current?.canViewAll ?? currentRole === "admin" || currentRole === "supervisor"
+        };
+      });
+
+      setTrackingError("");
+      setNotice(
+        data.attendance.withinGeofence
+          ? `Attendance marked at ${data.attendance.distanceFromSiteM} m from the corridor start. Admin live map is updated.`
+          : `Attendance saved ${data.attendance.distanceFromSiteM} m from the corridor start. The mark is outside the geofence.`
+      );
+    } catch (error) {
+      setNotice(`Attendance could not be marked: ${getErrorMessage(error)}`);
+    } finally {
+      setAttendanceSubmitting(false);
+    }
+  }
+
   function openModule(item: ModuleItem) {
     if (item.title === "Live Chat") {
       setActiveModule(null);
@@ -1062,6 +1236,8 @@ export function TelgoMvpApp() {
     setChatError("");
     setNotifications([]);
     setNotificationsOpen(false);
+    setTrackingSnapshot(null);
+    setTrackingError("");
     setSigninPin("");
     setLoginId(savedAccount?.loginId ?? "");
     setView("signin");
@@ -1087,6 +1263,8 @@ export function TelgoMvpApp() {
     setChatError("");
     setNotifications([]);
     setNotificationsOpen(false);
+    setTrackingSnapshot(null);
+    setTrackingError("");
     setLoginId("");
     setSigninPin("");
     setNotice("");
@@ -1260,6 +1438,8 @@ export function TelgoMvpApp() {
           role={currentRole}
           clock={clock}
           user={user}
+          project={primaryProject}
+          latestLocation={trackingSnapshot?.locations[0] ?? null}
           modules={filteredModules}
           search={search}
           notifications={notifications}
@@ -1309,7 +1489,18 @@ export function TelgoMvpApp() {
             onOpenModule={openModuleByTitle}
           />
         ) : (
-          <ModuleView module={activeModule} onBack={() => setView("dashboard")} />
+          <ModuleView
+            module={activeModule}
+            currentUser={user}
+            trackingSnapshot={trackingSnapshot}
+            trackingLoading={trackingLoading}
+            trackingError={trackingError}
+            attendanceSubmitting={attendanceSubmitting}
+            onMarkAttendance={() => {
+              void markAttendanceNow();
+            }}
+            onBack={() => setView("dashboard")}
+          />
         )}
       </AppFrame>
     );
@@ -1815,6 +2006,8 @@ function DashboardView({
   role,
   clock,
   user,
+  project,
+  latestLocation,
   modules: visibleModules,
   search,
   notifications,
@@ -1827,6 +2020,8 @@ function DashboardView({
   role: AccessRole;
   clock: Date | null;
   user: AppUser | null;
+  project: Project;
+  latestLocation: LiveMapTrackedPoint | null;
   modules: ModuleItem[];
   search: string;
   notifications: MobileNotificationItem[];
@@ -1839,7 +2034,7 @@ function DashboardView({
   const userName = user?.name ?? "Team";
   const roleLabel = formatRoleLabel(role);
   const roleConfig = roleDashboardContent[role];
-  const primaryProject = projects[0];
+  const primaryProject = project;
   const primaryCorridor = primaryProject.corridor;
   const dateLabel =
     clock?.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) ??
@@ -1942,6 +2137,12 @@ function DashboardView({
                   ? `${primaryCorridor.startLabel} to ${primaryCorridor.endLabel} · ${primaryProject.location}`
                   : primaryProject.location}
               </p>
+              {latestLocation ? (
+                <p className="mt-3 text-sm font-medium text-[#115cff]">
+                  Latest field mark: {latestLocation.userName} @{latestLocation.userLoginId} ·{" "}
+                  {latestLocation.distanceFromSiteM} m from site start
+                </p>
+              ) : null}
             </div>
             <button
               type="button"
@@ -2637,7 +2838,63 @@ function RoleSectionCard({
   );
 }
 
-function ModuleView({ module, onBack }: { module: ModuleItem; onBack: () => void }) {
+function ModuleView({
+  module,
+  currentUser,
+  trackingSnapshot,
+  trackingLoading,
+  trackingError,
+  attendanceSubmitting,
+  onMarkAttendance,
+  onBack
+}: {
+  module: ModuleItem;
+  currentUser: AppUser | null;
+  trackingSnapshot: MobileTrackingSnapshot | null;
+  trackingLoading: boolean;
+  trackingError: string;
+  attendanceSubmitting: boolean;
+  onMarkAttendance: () => void;
+  onBack: () => void;
+}) {
+  if (module.title === "Mark Attendance") {
+    return (
+      <AttendanceModuleView
+        currentUser={currentUser}
+        trackingSnapshot={trackingSnapshot}
+        trackingLoading={trackingLoading}
+        trackingError={trackingError}
+        attendanceSubmitting={attendanceSubmitting}
+        onMarkAttendance={onMarkAttendance}
+        onBack={onBack}
+      />
+    );
+  }
+
+  if (module.title === "Live Tracking") {
+    return (
+      <LiveTrackingModuleView
+        currentUser={currentUser}
+        trackingSnapshot={trackingSnapshot}
+        trackingLoading={trackingLoading}
+        trackingError={trackingError}
+        onBack={onBack}
+      />
+    );
+  }
+
+  if (module.title === "Projects") {
+    return (
+      <ProjectDetailsModuleView
+        currentUser={currentUser}
+        trackingSnapshot={trackingSnapshot}
+        trackingLoading={trackingLoading}
+        trackingError={trackingError}
+        onBack={onBack}
+      />
+    );
+  }
+
   const IconComponent = module.icon;
   return (
     <section className="px-4 pb-10 pt-7 sm:px-6">
@@ -2664,6 +2921,373 @@ function ModuleView({ module, onBack }: { module: ModuleItem; onBack: () => void
         </div>
       </div>
     </section>
+  );
+}
+
+function AttendanceModuleView({
+  currentUser,
+  trackingSnapshot,
+  trackingLoading,
+  trackingError,
+  attendanceSubmitting,
+  onMarkAttendance,
+  onBack
+}: {
+  currentUser: AppUser | null;
+  trackingSnapshot: MobileTrackingSnapshot | null;
+  trackingLoading: boolean;
+  trackingError: string;
+  attendanceSubmitting: boolean;
+  onMarkAttendance: () => void;
+  onBack: () => void;
+}) {
+  const project = trackingSnapshot?.project ?? projects[0];
+  const corridor = project.corridor;
+  const lastAttendance =
+    trackingSnapshot?.attendance.find((item) => item.mobileUserId === currentUser?.id) ?? null;
+  const canMark = currentUser?.role !== "client" && currentUser?.role !== "finance";
+
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">
+          GPS Attendance
+        </p>
+        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">
+          Mark attendance with live location
+        </h1>
+        <p className="mt-3 text-sm leading-7 text-slate-500">
+          Location is requested only when you tap the attendance button. No continuous tracking
+          runs after logout. The saved mark will appear on the admin live map for this corridor.
+        </p>
+
+        <div className="mt-6 overflow-hidden rounded-[24px] border border-slate-200">
+          <LiveMap
+            compact
+            satellite
+            focusProjectId={project.id}
+            trackedPoints={trackingSnapshot?.locations ?? []}
+            className="h-[360px] rounded-none border-0"
+          />
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <MiniMetric
+            label="Project"
+            value={project.code}
+            detail={corridor ? `${corridor.startLabel} to ${corridor.endLabel}` : project.name}
+          />
+          <MiniMetric
+            label="Geofence"
+            value={corridor ? formatMeters(corridor.geofenceMeters) : "120 m"}
+            detail="Measured from the corridor start"
+          />
+          <MiniMetric
+            label="Last Mark"
+            value={lastAttendance ? formatNotificationTime(lastAttendance.checkInAt) : "Not marked"}
+            detail={lastAttendance ? `${lastAttendance.distanceFromSiteM} m from site start` : "No attendance saved yet"}
+          />
+          <MiniMetric
+            label="Role"
+            value={formatRoleLabel(currentUser?.role ?? "engineer")}
+            detail="Attendance is saved against this mobile account"
+          />
+        </div>
+
+        {trackingError ? (
+          <div className="mt-5 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-4 text-sm text-rose-600">
+            {trackingError}
+          </div>
+        ) : null}
+
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <button
+            type="button"
+            onClick={onMarkAttendance}
+            disabled={!canMark || attendanceSubmitting}
+            className="inline-flex min-h-14 items-center justify-center rounded-2xl bg-[#115cff] px-6 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(17,92,255,0.22)] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {attendanceSubmitting ? "Capturing live location..." : "Mark Attendance Now"}
+          </button>
+          <p className="text-sm leading-6 text-slate-500">
+            {canMark
+              ? "Use this on site from the engineer device to create a real location mark."
+              : "This role can review attendance but cannot create a field location mark."}
+          </p>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
+          <p className="text-sm font-semibold text-[#07122f]">
+            {trackingLoading ? "Loading live attendance history..." : "Recent attendance marks"}
+          </p>
+          <div className="mt-4 space-y-3">
+            {(trackingSnapshot?.attendance ?? []).slice(0, 6).map((item) => (
+              <div key={item.id} className="rounded-2xl border border-white bg-white px-4 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-[#07122f]">
+                      {item.userName} @{item.userLoginId}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {item.projectName} · {item.distanceFromSiteM} m from site start
+                    </p>
+                  </div>
+                  <span
+                    className={cn(
+                      "rounded-full px-3 py-1 text-xs font-semibold",
+                      item.withinGeofence
+                        ? "bg-emerald-50 text-[#14b866]"
+                        : "bg-amber-50 text-[#ff8a00]"
+                    )}
+                  >
+                    {item.withinGeofence ? "Within geofence" : "Outside geofence"}
+                  </span>
+                </div>
+              </div>
+            ))}
+
+            {!trackingLoading && !(trackingSnapshot?.attendance.length ?? 0) ? (
+              <p className="text-sm text-slate-500">
+                No attendance marks yet. Use the engineer role and tap the attendance button once on site.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LiveTrackingModuleView({
+  currentUser,
+  trackingSnapshot,
+  trackingLoading,
+  trackingError,
+  onBack
+}: {
+  currentUser: AppUser | null;
+  trackingSnapshot: MobileTrackingSnapshot | null;
+  trackingLoading: boolean;
+  trackingError: string;
+  onBack: () => void;
+}) {
+  const project = trackingSnapshot?.project ?? projects[0];
+  const locations = trackingSnapshot?.locations ?? [];
+
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">
+              Live Tracking
+            </p>
+            <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">
+              Real engineer location map
+            </h1>
+            <p className="mt-3 max-w-[760px] text-sm leading-7 text-slate-500">
+              Engineer attendance marks are shown here against the Vadakkekotta to SN Junction
+              corridor. Admin and supervisor roles can see all recent marks. Other roles see their
+              own location marks only.
+            </p>
+          </div>
+          <a
+            href={getGoogleMapsDirectionsUrl(project)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-11 items-center justify-center rounded-full border border-blue-100 bg-blue-50 px-4 text-sm font-semibold text-[#115cff]"
+          >
+            Open route in Google Maps
+          </a>
+        </div>
+
+        <div className="mt-6 overflow-hidden rounded-[24px] border border-slate-200">
+          <LiveMap
+            satellite
+            focusProjectId={project.id}
+            trackedPoints={locations}
+            className="h-[520px] rounded-none border-0"
+          />
+        </div>
+
+        {trackingError ? (
+          <div className="mt-5 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-4 text-sm text-rose-600">
+            {trackingError}
+          </div>
+        ) : null}
+
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <MiniMetric
+            label="Mode"
+            value={trackingSnapshot?.canViewAll ? "All crew" : "My device"}
+            detail={trackingSnapshot?.canViewAll ? "Admin / supervisor visibility" : "Engineer self-view"}
+          />
+          <MiniMetric
+            label="Tracked points"
+            value={String(locations.length)}
+            detail="Latest saved marks on this corridor"
+          />
+          <MiniMetric
+            label="Project"
+            value={project.code}
+            detail={project.name}
+          />
+          <MiniMetric
+            label="Viewer"
+            value={formatRoleLabel(currentUser?.role ?? "engineer")}
+            detail="Signed-in mobile account role"
+          />
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
+          <p className="text-sm font-semibold text-[#07122f]">
+            {trackingLoading ? "Refreshing engineer markers..." : "Latest engineer marks"}
+          </p>
+          <div className="mt-4 space-y-3">
+            {locations.map((location) => (
+              <div key={location.id} className="rounded-2xl border border-white bg-white px-4 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-[#07122f]">
+                      {location.userName} @{location.userLoginId}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {location.projectName} · {location.distanceFromSiteM} m from site start
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {new Date(location.recordedAt).toLocaleString("en-IN")}
+                    </p>
+                  </div>
+                  <span
+                    className={cn(
+                      "rounded-full px-3 py-1 text-xs font-semibold",
+                      location.withinGeofence
+                        ? "bg-emerald-50 text-[#14b866]"
+                        : "bg-amber-50 text-[#ff8a00]"
+                    )}
+                  >
+                    {location.withinGeofence ? "Within geofence" : "Outside geofence"}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {!trackingLoading && locations.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                No live engineer marks yet. Log into an engineer account and use Mark Attendance on site.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProjectDetailsModuleView({
+  currentUser,
+  trackingSnapshot,
+  trackingLoading,
+  trackingError,
+  onBack
+}: {
+  currentUser: AppUser | null;
+  trackingSnapshot: MobileTrackingSnapshot | null;
+  trackingLoading: boolean;
+  trackingError: string;
+  onBack: () => void;
+}) {
+  const project = trackingSnapshot?.project ?? projects[0];
+  const corridor = project.corridor;
+
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">
+          Project Details
+        </p>
+        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">{project.name}</h1>
+        <p className="mt-3 text-sm leading-7 text-slate-500">
+          {project.type} · {project.location} · {project.client}
+        </p>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <MiniMetric
+            label="Completed"
+            value={formatMeters(getProgressMeters(project))}
+            detail={`${project.progress}% corridor completion`}
+          />
+          <MiniMetric
+            label="Remaining"
+            value={formatMeters(getRemainingMeters(project))}
+            detail="Balance work still open"
+          />
+          <MiniMetric
+            label="Geofence"
+            value={corridor ? formatMeters(corridor.geofenceMeters) : "120 m"}
+            detail="Engineer attendance check radius"
+          />
+          <MiniMetric
+            label="Viewer"
+            value={formatRoleLabel(currentUser?.role ?? "engineer")}
+            detail="Current signed-in role"
+          />
+        </div>
+
+        <div className="mt-6 overflow-hidden rounded-[24px] border border-slate-200">
+          <LiveMap
+            satellite
+            compact
+            focusProjectId={project.id}
+            trackedPoints={trackingSnapshot?.locations ?? []}
+            className="h-[420px] rounded-none border-0"
+          />
+        </div>
+
+        {trackingError ? (
+          <div className="mt-5 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-4 text-sm text-rose-600">
+            {trackingError}
+          </div>
+        ) : null}
+
+        <div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
+          <p className="text-sm font-semibold text-[#07122f]">
+            {trackingLoading ? "Refreshing live project detail..." : "Corridor update"}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            {corridor?.progressUpdates[0]?.detail ??
+              "Project progress updates will appear here as engineers submit live field work."}
+          </p>
+          {corridor ? (
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <div className="rounded-2xl border border-white bg-white px-4 py-4">
+                <p className="text-sm font-semibold text-[#07122f]">{corridor.startLabel}</p>
+                <p className="mt-1 text-sm text-slate-500">Corridor start / attendance anchor</p>
+              </div>
+              <div className="rounded-2xl border border-white bg-white px-4 py-4">
+                <p className="text-sm font-semibold text-[#07122f]">{corridor.endLabel}</p>
+                <p className="mt-1 text-sm text-slate-500">Corridor end / planned destination</p>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BackToDashboard({ onBack }: { onBack: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onBack}
+      className="mb-6 inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 px-4 text-sm font-semibold text-slate-700"
+    >
+      <ChevronLeft className="h-4 w-4" />
+      Dashboard
+    </button>
   );
 }
 
@@ -3013,6 +3637,25 @@ function renderChatBody(body: string, mentions: ChatMention[], mine: boolean) {
       >
         @{mention.loginId}
       </span>
+    );
+  });
+}
+
+function getLiveDevicePosition() {
+  if (!("geolocation" in navigator)) {
+    return Promise.reject(new Error("Live location is not available on this device."));
+  }
+
+  return new Promise<{ lat: number; lng: number; accuracy: number | null }>((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) =>
+        resolve({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracy: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : null
+        }),
+      (error) => reject(new Error(error.message || "Location permission was denied.")),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   });
 }
