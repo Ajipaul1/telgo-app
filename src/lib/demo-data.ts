@@ -4,25 +4,43 @@ export const asset = (name: string) => `/assets/${name}`;
 
 export const projects: Project[] = [
   {
-    id: "cial-33kv",
-    code: "TLGO-PRJ-2025-0148",
-    name: "CIAL 33kV UG Cable Laying",
-    type: "UG Cable Laying",
-    location: "Kozhikode, Kerala",
-    client: "CIAL - Calicut International Airport Ltd.",
+    id: "vadakkekotta-sn-cable",
+    code: "TLGO-PRJ-2026-0201",
+    name: "Vadakkekotta to SN Junction UG Cable Laying",
+    type: "Underground Cable Laying",
+    location: "Tripunithura, Kochi, Kerala",
+    client: "Kochi Metro Utility Corridor",
     image: asset("cial-33kv-cable-laying.webp"),
-    status: "On Track",
-    progress: 72,
-    budget: 24500000,
-    spent: 16845780,
-    totalLengthKm: 8.65,
-    completedKm: 6.23,
-    startDate: "Mar 10, 2025",
-    endDate: "May 30, 2025",
-    manager: "Vishnu Prasad",
+    status: "Active",
+    progress: 25,
+    budget: 6800000,
+    spent: 1950000,
+    totalLengthKm: 0.4,
+    completedKm: 0.1,
+    startDate: "May 15, 2026",
+    endDate: "Jun 15, 2026",
+    manager: "Aji Paul",
     siteInCharge: "Arjun Nair",
-    coordinates: [75.7873, 11.2588],
-    accent: "violet"
+    coordinates: [76.34284445, 9.95378055],
+    accent: "cyan",
+    corridor: {
+      startLabel: "Vadakkekotta Metro Station",
+      endLabel: "SN Junction Metro Station",
+      startCoordinates: [76.3395, 9.9528],
+      endCoordinates: [76.3461889, 9.9547611],
+      totalMeters: 400,
+      completedMeters: 100,
+      geofenceMeters: 120,
+      progressUpdates: [
+        {
+          id: "vk-sn-progress-100m",
+          label: "Daily laying progress",
+          detail: "Underground cable laying completed for the first 100 meters from the Vadakkekotta side of the corridor.",
+          recordedAt: "15 May 2026 · 04:30 PM",
+          metersCompleted: 100
+        }
+      ]
+    }
   },
   {
     id: "panangad-hdd",
@@ -94,8 +112,8 @@ export const engineers: Engineer[] = [
     id: "arjun",
     name: "Arjun Nair",
     role: "Site Engineer",
-    site: "CIAL 33kV UG Cable Laying",
-    location: "Kozhikode, Kerala",
+    site: "Vadakkekotta to SN Junction UG Cable Laying",
+    location: "Vadakkekotta Metro Station, Tripunithura",
     status: "Active",
     lastUpdate: "2 min ago",
     distance: "Within Range",
@@ -148,56 +166,57 @@ export const activities: Activity[] = [
   {
     id: "a1",
     icon: "Camera",
-    title: "Arjun Nair uploaded 5 photos",
-    subtitle: "CIAL 33kV UG Cable Laying",
-    time: "08:35 AM",
+    title: "Arjun Nair uploaded corridor progress photos",
+    subtitle: "Vadakkekotta to SN Junction UG Cable Laying",
+    time: "04:35 PM",
     tone: "green"
   },
   {
     id: "a2",
-    icon: "ReceiptIndianRupee",
-    title: "Finance request #FR-125 approved",
-    subtitle: "By Anitha R. (Finance Manager)",
-    time: "08:29 AM",
-    tone: "violet",
-    amount: "₹12,500"
+    icon: "Activity",
+    title: "Daily laying update marked 100 m completed",
+    subtitle: "Vadakkekotta Metro Station to SN Junction corridor",
+    time: "04:30 PM",
+    tone: "cyan",
+    amount: "100 m ready"
   },
   {
     id: "a3",
     icon: "Users",
-    title: "Attendance marked at Panangad HDD",
-    subtitle: "8 members marked attendance",
-    time: "08:15 AM",
+    title: "Attendance marked at Vadakkekotta access point",
+    subtitle: "Crew reached start station geofence",
+    time: "09:15 AM",
     tone: "blue"
   },
   {
     id: "a4",
-    icon: "TriangleAlert",
-    title: "Low fuel alert for Machine HDD-02",
-    subtitle: "Panangad HDD",
-    time: "07:50 PM",
-    tone: "red"
+    icon: "ReceiptIndianRupee",
+    title: "Finance request #FR-201 raised",
+    subtitle: "Barricading and corridor safety signage",
+    time: "02:10 PM",
+    tone: "violet",
+    amount: "Rs 18,450"
   }
 ];
 
 export const alerts: Alert[] = [
   {
     id: "alert-1",
-    title: "Machine Breakdown",
-    project: "CIAL 33kV UG Cable Laying",
-    location: "Thrissur, Kerala",
-    severity: "Critical",
-    detail: "Cable laying machine is not operational. Work has been stopped.",
-    time: "10 min ago"
+    title: "Utility crossing review pending",
+    project: "Vadakkekotta to SN Junction UG Cable Laying",
+    location: "Tripunithura, Kochi, Kerala",
+    severity: "High",
+    detail: "Final underground utility crossing approval is pending before the next 150 m stretch can be opened.",
+    time: "18 min ago"
   },
   {
     id: "alert-2",
-    title: "Safety Incident Reported",
-    project: "Poonjar 110kV Line Upgrade",
-    location: "Kottayam, Kerala",
-    severity: "Critical",
-    detail: "Worker reported a minor injury. Medical assistance provided.",
-    time: "25 min ago"
+    title: "Night barricading checklist pending",
+    project: "Vadakkekotta to SN Junction UG Cable Laying",
+    location: "SN Junction approach, Tripunithura",
+    severity: "Warning",
+    detail: "Night shift barricading confirmation has not yet been uploaded for the station approach section.",
+    time: "42 min ago"
   },
   {
     id: "alert-3",
@@ -224,19 +243,19 @@ export const approvals: Approval[] = [
     id: "att-1",
     category: "Attendance",
     requester: "Arjun Nair",
-    project: "CIAL 33kV UG Cable Laying",
-    location: "Kozhikode, Kerala",
-    meta: "Today, 08:15 AM · Clock In",
+    project: "Vadakkekotta to SN Junction UG Cable Laying",
+    location: "Vadakkekotta Metro Station, Tripunithura",
+    meta: "Today, 09:15 AM - Clock In",
     status: "Pending",
-    range: "Out of Range +320m"
+    range: "Within Corridor Geofence"
   },
   {
     id: "fin-1",
     category: "Finance",
     requester: "Arjun Nair",
-    project: "CIAL 33kV UG Cable Laying",
+    project: "Vadakkekotta to SN Junction UG Cable Laying",
     amount: 18450,
-    meta: "Today, 11:30 AM · Travel & Food",
+    meta: "Today, 02:10 PM - Barricading and safety consumables",
     status: "Pending"
   },
   {

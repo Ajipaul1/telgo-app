@@ -11,6 +11,25 @@ export type StatusTone =
 
 export type ProjectStatus = "On Track" | "At Risk" | "Active" | "Completed" | "Delayed";
 
+export type ProjectProgressUpdate = {
+  id: string;
+  label: string;
+  detail: string;
+  recordedAt: string;
+  metersCompleted: number;
+};
+
+export type ProjectCorridor = {
+  startLabel: string;
+  endLabel: string;
+  startCoordinates: [number, number];
+  endCoordinates: [number, number];
+  totalMeters: number;
+  completedMeters: number;
+  geofenceMeters: number;
+  progressUpdates: ProjectProgressUpdate[];
+};
+
 export type Project = {
   id: string;
   code: string;
@@ -31,6 +50,7 @@ export type Project = {
   siteInCharge: string;
   coordinates: [number, number];
   accent: StatusTone;
+  corridor?: ProjectCorridor;
 };
 
 export type Engineer = {

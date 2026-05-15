@@ -199,7 +199,7 @@ export function RequestAccessForm() {
     const phone = String(form.get("phone") ?? "");
     const email = String(form.get("email") ?? "");
     const companyName = String(form.get("company_name") ?? "");
-    const site = String(form.get("site") ?? "Panangad HDD Crossing");
+    const site = String(form.get("site") ?? "Vadakkekotta to SN Junction UG Cable Laying");
     const requestedRole = normalizeRole(String(form.get("requested_role") ?? "client"));
     requestAccess({
       fullName,
@@ -249,7 +249,7 @@ export function RequestAccessForm() {
         <div className="grid gap-3 sm:grid-cols-2">
           <Field name="company_name" label="Company Name" placeholder="Enter company name" required />
           <Field name="gst_number" label="GST Number" placeholder="Enter GST number" />
-          <Field name="site" label="Preferred Site / Project" placeholder="Panangad HDD Crossing" required />
+          <Field name="site" label="Preferred Site / Project" placeholder="Vadakkekotta to SN Junction UG Cable Laying" required />
           <Field
             name="company_address"
             label="Company Address"
@@ -322,10 +322,17 @@ export function AttendanceAction() {
   })));
   const currentUser = getCurrentUser(ops);
   const project =
-    projects.find((item) => item.id === ops.activeAssignments[currentUser.id]) ?? projects[1];
+    projects.find((item) => item.id === ops.activeAssignments[currentUser.id]) ?? projects[0];
   const [status, setStatus] = useState("Ready to Check-In");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const targetCoordinates = project.corridor
+    ? {
+        lat: project.corridor.startCoordinates[1],
+        lng: project.corridor.startCoordinates[0]
+      }
+    : { lat: project.coordinates[1], lng: project.coordinates[0] };
+  const geofenceMeters = project.corridor?.geofenceMeters ?? 120;
 
   useEffect(() => {
     setHydrated(true);
@@ -333,13 +340,13 @@ export function AttendanceAction() {
 
   async function checkIn() {
     setStatus("Verifying GPS...");
-    const fallback = { lat: project.coordinates[1], lng: project.coordinates[0] };
+    const fallback = targetCoordinates;
     const location = await getCurrentPosition(fallback);
     setCoords(location);
     const distanceFromSiteM = Math.round(
-      distanceMeters(location.lat, location.lng, project.coordinates[1], project.coordinates[0])
+      distanceMeters(location.lat, location.lng, targetCoordinates.lat, targetCoordinates.lng)
     );
-    const withinGeofence = distanceFromSiteM <= 120;
+    const withinGeofence = distanceFromSiteM <= geofenceMeters;
 
     const payload = {
       user_id: currentUser.id,
@@ -410,7 +417,7 @@ export function AttendanceAction() {
           </p>
           <p className="mt-2 flex items-center gap-2 text-sm text-telgo-green">
             <Icon name="CheckCircle2" className="h-4 w-4" />
-            {coords ? `${Math.round(distanceMeters(coords.lat, coords.lng, project.coordinates[1], project.coordinates[0]))} m from site` : "GPS Ready"}
+            {coords ? `${Math.round(distanceMeters(coords.lat, coords.lng, targetCoordinates.lat, targetCoordinates.lng))} m from site start` : "GPS permission only when marking attendance"}
           </p>
         </div>
         <button
@@ -425,7 +432,7 @@ export function AttendanceAction() {
         <div className="sm:text-right">
           <p className="text-sm text-slate-300">Status</p>
           <p className="mt-2 text-3xl font-semibold text-telgo-green">{status}</p>
-          <p className="mt-2 text-sm text-slate-300">{online ? "Online sync enabled" : "Offline mode"} · {project.name}</p>
+          <p className="mt-2 text-sm text-slate-300">{online ? "Online sync enabled" : "Offline mode"} - Geofence {geofenceMeters} m - {project.name}</p>
         </div>
       </div>
     </GlassCard>
@@ -798,12 +805,12 @@ export function ShiftReportForm() {
         <TextArea
           name="work_performed"
           label="Work Performed"
-          defaultValue="Trenching and cable laying completed from Palayam to West Hill. 6 nos joints completed. Backfilling in progress."
+          defaultValue="Underground cable laying completed for the first 100 meters from Vadakkekotta Metro Station toward SN Junction. Barricading and backfilling are in progress."
           max={300}
           className="mt-4"
         />
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <Field name="meters_drilled" label="Meters Drilled Today" defaultValue="245" required />
+          <Field name="meters_drilled" label="Meters Drilled Today" defaultValue="100" required />
           <Field name="fuel_used_l" label="Fuel Used (L)" defaultValue="72" required />
         </div>
       </GlassCard>
@@ -833,7 +840,7 @@ export function ShiftReportForm() {
         <SectionHeader title="3. Materials Used" action={<span className="text-sm text-telgo-cyan">+ Add Material</span>} />
         <div className="overflow-hidden rounded-xl border border-white/10">
           {[
-            ["33kV XLPE Cable", "Meter", "85", "CIAL Approved"],
+            ["33kV XLPE Cable", "Meter", "100", "Corridor Approved"],
             ["Cable Joint Kit", "Nos", "6", "Heat Shrink"],
             ["Sand", "Cum", "3.2", "Backfilling"],
             ["Warning Tiles", "Nos", "20", "Installed"]
@@ -1271,8 +1278,8 @@ export function ChatRoom() {
     <GlassCard className="min-h-[70svh] p-4">
       <div className="mb-4 flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.025] p-4">
         <div>
-          <h2 className="text-xl font-semibold">CIAL 33kV UG Cable Laying</h2>
-          <p className="text-sm text-slate-300">Project Chat · 18 Members</p>
+          <h2 className="text-xl font-semibold">Vadakkekotta to SN Junction UG Cable Laying</h2>
+          <p className="text-sm text-slate-300">Project Chat - 18 Members</p>
         </div>
         <Badge tone={connected ? "green" : "amber"}>{connected ? "Realtime" : "Connecting"}</Badge>
       </div>

@@ -1,6 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { activities, alerts, engineers, projects, sitePhotos } from "@/lib/demo-data";
+import {
+  formatMeters,
+  getGoogleMapsDirectionsUrl,
+  getProgressMeters,
+  getRemainingMeters,
+  hasCorridor
+} from "@/lib/project-corridor";
 import { formatInr } from "@/lib/utils";
 import type { Project, StatusTone } from "@/lib/types";
 import {
@@ -111,6 +118,24 @@ export function ActivityList({ dense = false }: { dense?: boolean }) {
 
 export function ProjectOverviewGrid() {
   const project = projects[0];
+  const corridor = project.corridor;
+  const progressStages = hasCorridor(project)
+    ? [
+        ["Planning", 100, "green"],
+        ["Barricading", 100, "green"],
+        ["Excavation", 100, "green"],
+        ["Cable Laying", Math.round((project.corridor.completedMeters / project.corridor.totalMeters) * 100), "blue"],
+        ["Jointing", 0, "slate"],
+        ["Restoration", 0, "slate"]
+      ]
+    : [
+        ["Planning", 100, "green"],
+        ["Mobilization", 100, "green"],
+        ["Trenching", 100, "green"],
+        ["Cable Laying", 72, "blue"],
+        ["Jointing", 0, "slate"],
+        ["Backfilling", 0, "slate"]
+      ];
   return (
     <div className="space-y-4">
       <ProjectHero project={project} />
@@ -118,9 +143,9 @@ export function ProjectOverviewGrid() {
         <SectionHeader title="Project Summary" action={<span className="text-sm text-slate-300">Last updated: Today, 08:35 AM</span>} />
         <StatStrip
           items={[
-            { label: "Total Length", value: `${project.totalLengthKm} km`, icon: "Activity", tone: "cyan" },
-            { label: "Completed", value: `${project.completedKm} km`, icon: "CheckCircle2", tone: "green" },
-            { label: "Remaining", value: `${(project.totalLengthKm - project.completedKm).toFixed(2)} km`, icon: "Wrench", tone: "amber" },
+            { label: "Total Length", value: corridor ? formatMeters(corridor.totalMeters) : `${project.totalLengthKm} km`, icon: "Activity", tone: "cyan" },
+            { label: "Completed", value: formatMeters(getProgressMeters(project)), icon: "CheckCircle2", tone: "green" },
+            { label: "Remaining", value: formatMeters(getRemainingMeters(project)), icon: "Wrench", tone: "amber" },
             { label: "Start Date", value: project.startDate, icon: "CalendarDays", tone: "slate" }
           ]}
         />
@@ -128,14 +153,7 @@ export function ProjectOverviewGrid() {
       <GlassCard className="p-4">
         <SectionHeader title="Progress Overview" action={<TextLink href="/app/admin/projects">View Details</TextLink>} />
         <div className="grid grid-cols-3 gap-3 md:grid-cols-6">
-          {[
-            ["Planning", 100, "green"],
-            ["Mobilization", 100, "green"],
-            ["Trenching", 100, "green"],
-            ["Cable Laying", 72, "blue"],
-            ["Jointing", 0, "slate"],
-            ["Backfilling", 0, "slate"]
-          ].map(([label, value, tone]) => (
+          {progressStages.map(([label, value, tone]) => (
             <div key={label} className="text-center">
               <div className={`mx-auto mb-2 grid h-10 w-10 place-items-center rounded-full border ${toneClasses[tone as StatusTone]}`}>
                 <Icon name={Number(value) >= 100 ? "Check" : "Circle"} className="h-5 w-5" />
@@ -210,21 +228,53 @@ export function TeamRail() {
 }
 
 export function AdminMapSummary() {
+  const project = projects[0];
+  const corridor = project.corridor;
   return (
     <GlassCard className="p-4">
       <div className="mb-3 flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">Live Operations Map</h2>
           <div className="mt-2 flex gap-3 text-sm text-slate-300">
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-telgo-green" />Active</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-telgo-amber" />Idle</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-telgo-red" />Alert</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-telgo-green" />Completed segment</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-telgo-cyan" />Active corridor</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-telgo-amber" />Geofence ready</span>
           </div>
         </div>
-        <Link href="/app/admin/map" className="rounded-xl border border-white/10 px-4 py-2 text-sm text-white">
-          View Full Map
-        </Link>
+        <div className="flex gap-2">
+          <a
+            href={getGoogleMapsDirectionsUrl(project)}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-xl border border-white/10 px-4 py-2 text-sm text-white"
+          >
+            Open Route
+          </a>
+          <Link href="/app/admin/map" className="rounded-xl border border-white/10 px-4 py-2 text-sm text-white">
+            View Full Map
+          </Link>
+        </div>
       </div>
+      {corridor ? (
+        <div className="mb-4 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-4 md:grid-cols-4">
+          <div>
+            <p className="text-sm text-slate-400">Corridor</p>
+            <p className="font-medium text-white">{corridor.startLabel} to {corridor.endLabel}</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-400">Completed</p>
+            <p className="font-medium text-telgo-green">{formatMeters(corridor.completedMeters)} of {formatMeters(corridor.totalMeters)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-400">Remaining</p>
+            <p className="font-medium text-telgo-cyan">{formatMeters(corridor.totalMeters - corridor.completedMeters)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-400">Latest field update</p>
+            <p className="font-medium text-white">{corridor.progressUpdates[0]?.recordedAt ?? "No update yet"}</p>
+          </div>
+        </div>
+      ) : null}
       <LiveMap compact />
     </GlassCard>
   );
@@ -363,9 +413,9 @@ export function EngineerTaskList() {
       <SectionHeader title="Today's Tasks" action={<TextLink href="/app/engineer/logs">View All</TextLink>} />
       <div className="divide-y divide-white/10">
         {[
-          ["Cable Laying - Section 3", "Palayam to West Hill", "Completed", "08:30 AM", "green"],
-          ["Jointing & Termination", "West Hill - Kallai Road", "In Progress", "11:00 AM", "amber"],
-          ["Duct Testing", "Kallai Road - End Point", "Pending", "02:00 PM", "blue"]
+          ["Cable Laying - Stretch 1", "Vadakkekotta to 100 m corridor point", "Completed", "04:30 PM", "green"],
+          ["Barricading & Safety Signage", "Vadakkekotta station approach", "In Progress", "05:00 PM", "amber"],
+          ["Utility Crossing Review", "SN Junction side", "Pending", "06:15 PM", "blue"]
         ].map(([title, subtitle, status, time, tone]) => (
           <div key={title} className="grid gap-3 py-4 first:pt-0 last:pb-0 sm:grid-cols-[auto_1fr_auto_auto] sm:items-center">
             <span className={`grid h-12 w-12 place-items-center rounded-full border ${toneClasses[tone as StatusTone]}`}>
