@@ -20,10 +20,11 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json().catch(() => null)) as
-    | {
+      | {
         latitude?: unknown;
         longitude?: unknown;
         gpsAccuracyM?: unknown;
+        projectId?: unknown;
       }
     | null;
 
@@ -45,7 +46,8 @@ export async function POST(request: NextRequest) {
     const result = await markMobileAttendance(supabase, session, {
       latitude,
       longitude,
-      gpsAccuracyM: Number.isFinite(gpsAccuracyM ?? NaN) ? gpsAccuracyM : null
+      gpsAccuracyM: Number.isFinite(gpsAccuracyM ?? NaN) ? gpsAccuracyM : null,
+      projectId: typeof body?.projectId === "string" ? body.projectId : null
     });
 
     return NextResponse.json({

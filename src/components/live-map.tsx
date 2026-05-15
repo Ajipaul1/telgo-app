@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import { telgoConfig } from "@/lib/config";
 import { engineers, projects } from "@/lib/demo-data";
@@ -40,13 +40,15 @@ export function LiveMap({
   compact = false,
   focusProjectId,
   trackedPoints,
-  satellite = true
+  satellite = true,
+  projectsData
 }: {
   className?: string;
   compact?: boolean;
   focusProjectId?: string;
   trackedPoints?: LiveMapTrackedPoint[];
   satellite?: boolean;
+  projectsData?: Project[];
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -54,6 +56,7 @@ export function LiveMap({
   const [ready, setReady] = useState(false);
   const [mapError, setMapError] = useState(false);
   const safeTrackedPoints = trackedPoints ?? EMPTY_TRACKED_POINTS;
+  const safeProjects = useMemo(() => (projectsData?.length ? projectsData : projects), [projectsData]);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -67,7 +70,7 @@ export function LiveMap({
       mapRef.current = null;
     }
 
-    const focus = projects.find((project) => project.id === focusProjectId) ?? projects[0];
+    const focus = safeProjects.find((project) => project.id === focusProjectId) ?? safeProjects[0];
     const map = new maplibregl.Map({
       container: ref.current,
       style: `https://api.maptiler.com/maps/${satellite ? "hybrid" : "dataviz-dark"}/style.json?key=${telgoConfig.mapTilerKey}`,
@@ -86,7 +89,7 @@ export function LiveMap({
       clearMarkers(markerRefs.current);
       setReady(true);
 
-      const visibleProjects = compact ? [focus] : projects;
+      const visibleProjects = compact ? [focus] : safeProjects;
 
       visibleProjects.forEach((project) => {
         addProjectMarker(map, project, markerRefs.current, project.id === focus.id);
@@ -133,9 +136,9 @@ export function LiveMap({
       map.remove();
       mapRef.current = null;
     };
-  }, [compact, focusProjectId, satellite, safeTrackedPoints]);
+  }, [compact, focusProjectId, safeProjects, satellite, safeTrackedPoints]);
 
-  const focus = projects.find((project) => project.id === focusProjectId) ?? projects[0];
+  const focus = safeProjects.find((project) => project.id === focusProjectId) ?? safeProjects[0];
   const corridor = focus.corridor;
   const latestUpdate = corridor?.progressUpdates[0];
   const googleMapsLinked = Boolean(telgoConfig.googleMapsApiKey);

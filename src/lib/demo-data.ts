@@ -7,18 +7,18 @@ export const projects: Project[] = [
     id: "vadakkekotta-sn-cable",
     code: "TLGO-PRJ-2026-0201",
     name: "Vadakkekotta to SN Junction UG Cable Laying",
-    type: "Underground Cable Laying",
+    type: "Underground Cable Corridor",
     location: "Tripunithura, Kochi, Kerala",
     client: "Kochi Metro Utility Corridor",
     image: asset("cial-33kv-cable-laying.webp"),
     status: "Active",
-    progress: 25,
-    budget: 6800000,
-    spent: 1950000,
-    totalLengthKm: 0.4,
-    completedKm: 0.1,
-    startDate: "May 15, 2026",
-    endDate: "Jun 15, 2026",
+    progress: 30,
+    budget: 12800000,
+    spent: 4120000,
+    totalLengthKm: 6,
+    completedKm: 1.8,
+    startDate: "15 May 2026",
+    endDate: "30 Jul 2026",
     manager: "Aji Paul",
     siteInCharge: "Arjun Nair",
     coordinates: [76.34284445, 9.95378055],
@@ -28,286 +28,376 @@ export const projects: Project[] = [
       endLabel: "SN Junction Metro Station",
       startCoordinates: [76.3395, 9.9528],
       endCoordinates: [76.3461889, 9.9547611],
-      totalMeters: 400,
-      completedMeters: 100,
-      geofenceMeters: 120,
+      totalMeters: 6000,
+      completedMeters: 1800,
+      geofenceMeters: 150,
       progressUpdates: [
         {
-          id: "vk-sn-progress-100m",
-          label: "Daily laying progress",
-          detail: "Underground cable laying completed for the first 100 meters from the Vadakkekotta side of the corridor.",
-          recordedAt: "15 May 2026 · 04:30 PM",
-          metersCompleted: 100
+          id: "vk-sn-update-1800m",
+          label: "Cable laying live update",
+          detail:
+            "Underground cable laying has reached the first 1.8 km stretch between Vadakkekotta and SN Junction. Barricading and trench restoration continue alongside the corridor.",
+          recordedAt: "15 May 2026 - 04:30 PM",
+          metersCompleted: 1800
         }
       ]
     }
   },
   {
-    id: "panangad-hdd",
-    code: "TLGO-PRJ-2025-0112",
-    name: "Panangad HDD Crossing",
-    type: "HDD Drilling",
-    location: "Ernakulam, Kerala",
-    client: "Kerala Water Infra",
+    id: "kolenchery-ernakulam-link",
+    code: "TLGO-PRJ-2026-0202",
+    name: "Kolenchery to Ernakulam Utility Link",
+    type: "Power and Utility Ducting",
+    location: "Kolenchery to Ernakulam, Kerala",
+    client: "Urban Utility Distribution Wing",
     image: asset("xcmg-hdd-machine.webp"),
-    status: "On Track",
-    progress: 83,
-    budget: 16200000,
-    spent: 12560000,
-    totalLengthKm: 4.8,
-    completedKm: 4.0,
-    startDate: "Apr 02, 2025",
-    endDate: "May 18, 2025",
+    status: "Active",
+    progress: 40,
+    budget: 9400000,
+    spent: 3180000,
+    totalLengthKm: 5,
+    completedKm: 2,
+    startDate: "10 May 2026",
+    endDate: "18 Jul 2026",
     manager: "Sreejith P",
     siteInCharge: "Nikhil Raj",
-    coordinates: [76.2673, 9.9312],
-    accent: "cyan"
+    coordinates: [76.3893, 10.0027],
+    accent: "green",
+    corridor: {
+      startLabel: "Kolenchery Junction",
+      endLabel: "Ernakulam Utility Hub",
+      startCoordinates: [76.4841, 10.0237],
+      endCoordinates: [76.2982, 9.9819],
+      totalMeters: 5000,
+      completedMeters: 2000,
+      geofenceMeters: 180,
+      progressUpdates: [
+        {
+          id: "ke-link-2000m",
+          label: "Two kilometer section completed",
+          detail:
+            "The first 2 km of the Kolenchery to Ernakulam link has been completed and the next duct pull sequence is ready for approval.",
+          recordedAt: "15 May 2026 - 01:10 PM",
+          metersCompleted: 2000
+        }
+      ]
+    }
   },
   {
-    id: "rdss-imperial",
-    code: "TLGO-PRJ-2025-0094",
-    name: "RDSS Imperial Commissioning",
-    type: "Substation Work",
-    location: "Thrissur, Kerala",
-    client: "KSEB RDSS",
+    id: "kannur-pwd-corridor",
+    code: "TLGO-PRJ-2026-0203",
+    name: "Kannur PWD Roadside Duct Corridor",
+    type: "Roadside Utility Corridor",
+    location: "Kannur Town, Kerala",
+    client: "PWD Coordination Cell",
     image: asset("kseb-rdss-imperial-project.webp"),
-    status: "At Risk",
-    progress: 47,
-    budget: 19800000,
-    spent: 9632000,
-    totalLengthKm: 11.2,
-    completedKm: 5.3,
-    startDate: "Apr 18, 2025",
-    endDate: "Jun 25, 2025",
+    status: "Delayed",
+    progress: 0,
+    budget: 15600000,
+    spent: 420000,
+    totalLengthKm: 10,
+    completedKm: 0,
+    startDate: "12 May 2026",
+    endDate: "28 Aug 2026",
     manager: "Anitha R.",
-    siteInCharge: "Vishnu P.",
-    coordinates: [76.2144, 10.5276],
-    accent: "green"
+    siteInCharge: "Vishnu Prasad",
+    coordinates: [75.3912, 11.8775],
+    accent: "amber",
+    corridor: {
+      startLabel: "Kannur Bus Stand Junction",
+      endLabel: "PWD Service Yard",
+      startCoordinates: [75.3702, 11.8745],
+      endCoordinates: [75.412, 11.8805],
+      totalMeters: 10000,
+      completedMeters: 0,
+      geofenceMeters: 180,
+      progressUpdates: [
+        {
+          id: "kannur-pwd-hold",
+          label: "Permission hold",
+          detail:
+            "PWD permission is pending. Road opening, traffic diversion, and allied permission blockages are holding the corridor start until written clearance is received.",
+          recordedAt: "15 May 2026 - 09:40 AM",
+          metersCompleted: 0
+        }
+      ]
+    }
   },
   {
-    id: "poonjar-110kv",
-    code: "TLGO-PRJ-2025-0081",
-    name: "Poonjar 110kV Line Upgradation",
-    type: "Line Upgradation",
+    id: "kottayam-ring-main",
+    code: "TLGO-PRJ-2026-0204",
+    name: "Kottayam Ring Main Cable Upgrade",
+    type: "Ring Main Strengthening",
     location: "Kottayam, Kerala",
-    client: "KSEB Transmission",
+    client: "Town Distribution Circle",
     image: asset("vembanad-backwater-crossing.webp"),
-    status: "At Risk",
-    progress: 35,
-    budget: 15400000,
-    spent: 8750000,
-    totalLengthKm: 18.6,
-    completedKm: 6.4,
-    startDate: "Apr 28, 2025",
-    endDate: "Jul 20, 2025",
+    status: "Active",
+    progress: 21,
+    budget: 7100000,
+    spent: 1760000,
+    totalLengthKm: 4.2,
+    completedKm: 0.9,
+    startDate: "14 May 2026",
+    endDate: "05 Jul 2026",
     manager: "Sujith Kumar",
-    siteInCharge: "Anandhu S",
-    coordinates: [76.7784, 9.6727],
-    accent: "amber"
+    siteInCharge: "Anand S",
+    coordinates: [76.5318, 9.5907],
+    accent: "violet",
+    corridor: {
+      startLabel: "Collectorate Junction",
+      endLabel: "Nagampadam Sub Feeder",
+      startCoordinates: [76.5213, 9.5916],
+      endCoordinates: [76.5428, 9.5898],
+      totalMeters: 4200,
+      completedMeters: 900,
+      geofenceMeters: 150,
+      progressUpdates: [
+        {
+          id: "kottayam-progress-900m",
+          label: "Feeder route progress",
+          detail:
+            "Cable trenching and ring main upgrade work has crossed the first 900 m inside the Kottayam alignment with inspection records uploaded.",
+          recordedAt: "14 May 2026 - 06:15 PM",
+          metersCompleted: 900
+        }
+      ]
+    }
+  },
+  {
+    id: "ernakulam-mg-road-duct",
+    code: "TLGO-PRJ-2026-0205",
+    name: "Ernakulam MG Road Service Duct Modernisation",
+    type: "Service Duct Modernisation",
+    location: "Ernakulam MG Road, Kerala",
+    client: "Metro Commercial Utilities",
+    image: asset("mannam-substation-commissioning.webp"),
+    status: "Active",
+    progress: 19,
+    budget: 6200000,
+    spent: 1290000,
+    totalLengthKm: 3.2,
+    completedKm: 0.6,
+    startDate: "11 May 2026",
+    endDate: "24 Jun 2026",
+    manager: "Akhil Mathew",
+    siteInCharge: "Jithin Jose",
+    coordinates: [76.2877, 9.9743],
+    accent: "blue",
+    corridor: {
+      startLabel: "MG Road North Access",
+      endLabel: "South Commercial Stretch",
+      startCoordinates: [76.2816, 9.9735],
+      endCoordinates: [76.2939, 9.9748],
+      totalMeters: 3200,
+      completedMeters: 600,
+      geofenceMeters: 130,
+      progressUpdates: [
+        {
+          id: "mg-road-600m",
+          label: "Urban ducting update",
+          detail:
+            "Initial service duct modernisation has reached 600 m, with traffic marshaling and business-side restoration progressing in sequence.",
+          recordedAt: "15 May 2026 - 11:20 AM",
+          metersCompleted: 600
+        }
+      ]
+    }
   }
 ];
 
 export const engineers: Engineer[] = [
   {
-    id: "arjun",
+    id: "eng-arjun",
     name: "Arjun Nair",
     role: "Site Engineer",
     site: "Vadakkekotta to SN Junction UG Cable Laying",
     location: "Vadakkekotta Metro Station, Tripunithura",
     status: "Active",
     lastUpdate: "2 min ago",
-    distance: "Within Range",
-    speed: "4.2 km/h",
-    battery: 80,
+    distance: "Within geofence",
+    speed: "3.8 km/h",
+    battery: 82,
     avatar: asset("telgo-logo-cropped.png")
   },
   {
-    id: "sujith",
-    name: "Sujith Kumar",
-    role: "Line Engineer",
-    site: "Poonjar 110kV Upgrade",
-    location: "Kottayam, Kerala",
-    status: "Idle",
-    lastUpdate: "18 min ago",
-    distance: "Idle for 18m",
-    speed: "0 km/h",
-    battery: 65,
-    avatar: asset("telgo-logo-cropped.png")
-  },
-  {
-    id: "vishnu",
-    name: "Vishnu Prasad",
-    role: "Project Manager",
-    site: "RDSS Imperial Commissioning",
-    location: "Alappuzha, Kerala",
-    status: "Moving",
-    lastUpdate: "1 min ago",
-    distance: "Within Range",
-    speed: "6.1 km/h",
-    battery: 72,
-    avatar: asset("telgo-logo-cropped.png")
-  },
-  {
-    id: "nikhil",
+    id: "eng-nikhil",
     name: "Nikhil Raj",
     role: "Site Engineer",
-    site: "Panangad HDD Crossing",
-    location: "Ernakulam, Kerala",
-    status: "Stagnant",
-    lastUpdate: "52 min ago",
-    distance: "Stagnant for 52m",
+    site: "Kolenchery to Ernakulam Utility Link",
+    location: "Kolenchery Junction",
+    status: "Moving",
+    lastUpdate: "5 min ago",
+    distance: "2.1 km covered today",
+    speed: "5.2 km/h",
+    battery: 69,
+    avatar: asset("telgo-logo-cropped.png")
+  },
+  {
+    id: "eng-vishnu",
+    name: "Vishnu Prasad",
+    role: "Supervisor",
+    site: "Kannur PWD Roadside Duct Corridor",
+    location: "PWD Service Yard",
+    status: "Idle",
+    lastUpdate: "28 min ago",
+    distance: "Permission hold",
     speed: "0 km/h",
-    battery: 48,
+    battery: 74,
+    avatar: asset("telgo-logo-cropped.png")
+  },
+  {
+    id: "eng-anand",
+    name: "Anand S",
+    role: "Line Engineer",
+    site: "Kottayam Ring Main Cable Upgrade",
+    location: "Collectorate Junction",
+    status: "Active",
+    lastUpdate: "3 min ago",
+    distance: "900 m completed",
+    speed: "4.1 km/h",
+    battery: 77,
+    avatar: asset("telgo-logo-cropped.png")
+  },
+  {
+    id: "eng-jithin",
+    name: "Jithin Jose",
+    role: "Site Engineer",
+    site: "Ernakulam MG Road Service Duct Modernisation",
+    location: "MG Road North Access",
+    status: "Moving",
+    lastUpdate: "1 min ago",
+    distance: "600 m completed",
+    speed: "4.8 km/h",
+    battery: 71,
     avatar: asset("telgo-logo-cropped.png")
   }
 ];
 
 export const activities: Activity[] = [
   {
-    id: "a1",
-    icon: "Camera",
-    title: "Arjun Nair uploaded corridor progress photos",
-    subtitle: "Vadakkekotta to SN Junction UG Cable Laying",
-    time: "04:35 PM",
+    id: "activity-1",
+    icon: "Activity",
+    title: "Vadakkekotta to SN Junction crossed 1.8 km completion",
+    subtitle: "Daily corridor progress uploaded by site engineer",
+    time: "04:30 PM",
+    tone: "cyan",
+    amount: "1.8 km ready"
+  },
+  {
+    id: "activity-2",
+    icon: "Users",
+    title: "Kolenchery to Ernakulam marked 2 km complete",
+    subtitle: "Updated for admin and client visibility",
+    time: "01:10 PM",
     tone: "green"
   },
   {
-    id: "a2",
-    icon: "Activity",
-    title: "Daily laying update marked 100 m completed",
-    subtitle: "Vadakkekotta Metro Station to SN Junction corridor",
-    time: "04:30 PM",
-    tone: "cyan",
-    amount: "100 m ready"
+    id: "activity-3",
+    icon: "AlertTriangle",
+    title: "Kannur corridor blocked by PWD permission hold",
+    subtitle: "Permission note added to the project workspace",
+    time: "09:40 AM",
+    tone: "amber"
   },
   {
-    id: "a3",
-    icon: "Users",
-    title: "Attendance marked at Vadakkekotta access point",
-    subtitle: "Crew reached start station geofence",
-    time: "09:15 AM",
+    id: "activity-4",
+    icon: "Camera",
+    title: "Ernakulam MG Road field photos uploaded",
+    subtitle: "Restoration and service duct photo set synced to the project timeline",
+    time: "03:05 PM",
     tone: "blue"
-  },
-  {
-    id: "a4",
-    icon: "ReceiptIndianRupee",
-    title: "Finance request #FR-201 raised",
-    subtitle: "Barricading and corridor safety signage",
-    time: "02:10 PM",
-    tone: "violet",
-    amount: "Rs 18,450"
   }
 ];
 
 export const alerts: Alert[] = [
   {
     id: "alert-1",
-    title: "Utility crossing review pending",
-    project: "Vadakkekotta to SN Junction UG Cable Laying",
-    location: "Tripunithura, Kochi, Kerala",
+    title: "PWD permission pending",
+    project: "Kannur PWD Roadside Duct Corridor",
+    location: "Kannur Town, Kerala",
     severity: "High",
-    detail: "Final underground utility crossing approval is pending before the next 150 m stretch can be opened.",
-    time: "18 min ago"
+    detail:
+      "Road opening, traffic diversion, and allied PWD permissions are still pending. Corridor start remains blocked until the formal clearance is received.",
+    time: "25 min ago"
   },
   {
     id: "alert-2",
-    title: "Night barricading checklist pending",
+    title: "Live report follow-up pending",
     project: "Vadakkekotta to SN Junction UG Cable Laying",
-    location: "SN Junction approach, Tripunithura",
+    location: "Tripunithura, Kochi",
     severity: "Warning",
-    detail: "Night shift barricading confirmation has not yet been uploaded for the station approach section.",
+    detail:
+      "The next corridor progress update is due from the site engineer after the 1.8 km completion mark.",
     time: "42 min ago"
   },
   {
     id: "alert-3",
-    title: "Fuel Level Critical",
-    project: "RDSS Imperial Commissioning",
-    location: "Alappuzha, Kerala",
-    severity: "High",
-    detail: "Fuel level below 10% in generator. Refuel required immediately.",
-    time: "45 min ago"
-  },
-  {
-    id: "alert-4",
-    title: "Heavy Rain Alert",
-    project: "Multiple Sites",
-    location: "Kerala",
+    title: "Client document package due",
+    project: "Kottayam Ring Main Cable Upgrade",
+    location: "Kottayam, Kerala",
     severity: "Warning",
-    detail: "Heavy rainfall expected in several districts. Exercise caution.",
-    time: "3 hrs ago"
+    detail:
+      "Updated inspection and trench restoration package must be uploaded before tonight's client review.",
+    time: "1 hr ago"
   }
 ];
 
 export const approvals: Approval[] = [
   {
-    id: "att-1",
+    id: "approval-1",
     category: "Attendance",
     requester: "Arjun Nair",
     project: "Vadakkekotta to SN Junction UG Cable Laying",
-    location: "Vadakkekotta Metro Station, Tripunithura",
-    meta: "Today, 09:15 AM - Clock In",
+    location: "Vadakkekotta Metro Station",
+    meta: "Today, 09:15 AM - Live attendance mark",
     status: "Pending",
-    range: "Within Corridor Geofence"
+    range: "Within corridor geofence"
   },
   {
-    id: "fin-1",
-    category: "Finance",
-    requester: "Arjun Nair",
-    project: "Vadakkekotta to SN Junction UG Cable Laying",
-    amount: 18450,
-    meta: "Today, 02:10 PM - Barricading and safety consumables",
+    id: "approval-2",
+    category: "Leave",
+    requester: "Nikhil Raj",
+    project: "Kolenchery to Ernakulam Utility Link",
+    meta: "16 May 2026 - Personal leave request",
     status: "Pending"
   },
   {
-    id: "leave-1",
-    category: "Leave",
-    requester: "Nikhil Raj",
-    project: "Site Engineer",
-    meta: "May 15 - May 16, 2025 · Personal Work",
+    id: "approval-3",
+    category: "Report",
+    requester: "Jithin Jose",
+    project: "Ernakulam MG Road Service Duct Modernisation",
+    meta: "Daily restoration report package waiting for review",
     status: "Pending"
   }
 ];
 
 export const chatMessages: ChatMessage[] = [
   {
-    id: "m1",
+    id: "chat-seed-1",
     author: "Arjun Nair",
     role: "Site Engineer",
-    body: "Good morning team. Cable trenching completed from Palayam to West Hill.",
+    body: "Vadakkekotta trenching update is synced. First 1.8 km is ready for review.",
     time: "08:35 AM",
     tone: "blue",
-    images: [
-      asset("cial-33kv-cable-laying.webp"),
-      asset("hdd-cable-drum-transport.webp"),
-      asset("xcmg-hdd-machine.webp")
-    ],
-    reactions: 4
+    images: [asset("cial-33kv-cable-laying.webp")],
+    reactions: 3
   },
   {
-    id: "m2",
-    author: "Sujith Kumar",
-    role: "Line Engineer",
-    body: "Duct jointing at West Hill in progress. ETA for completion 11:30 AM.",
-    time: "08:42 AM",
+    id: "chat-seed-2",
+    author: "Nikhil Raj",
+    role: "Site Engineer",
+    body: "Kolenchery to Ernakulam segment reached 2 km today. Waiting for the next duct pull window.",
+    time: "10:15 AM",
     tone: "green",
     reactions: 2
   },
   {
-    id: "m3",
+    id: "chat-seed-3",
     author: "Vishnu Prasad",
-    role: "Project Manager",
-    body: "Please ensure backfilling quality and update the measurements in site log.",
-    time: "08:45 AM",
+    role: "Supervisor",
+    body: "Kannur project remains on permission hold until the PWD approval letter is cleared.",
+    time: "11:20 AM",
     tone: "amber",
-    reactions: 3
-  },
-  {
-    id: "m4",
-    author: "Anitha R.",
-    role: "Finance",
-    body: "@Arjun Nair Fuel advance request of ₹5,000 approved. Ref: FIN-2025-146.",
-    time: "09:02 AM",
-    tone: "violet",
     reactions: 1
   }
 ];

@@ -40,9 +40,11 @@ import {
   ShieldCheck,
   Smartphone,
   Sparkles,
+  SquarePen,
   SendHorizontal,
   TriangleAlert,
   Truck,
+  Trash2,
   User,
   UserCheck,
   Users,
@@ -53,6 +55,24 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { LiveMap, type LiveMapTrackedPoint } from "@/components/live-map";
+import {
+  accessDirectorySeed,
+  clientAccessSeed,
+  engineerTaskSeed,
+  leaveRequestSeed,
+  pendingApprovalSeed,
+  pwdDocumentSeed,
+  workerRosterSeed,
+  yesterdayReportSeed,
+  type AccessDirectoryEntry,
+  type ClientAccessEntry,
+  type EngineerTaskItem,
+  type LeaveRequestItem,
+  type PendingApprovalRequest,
+  type PwdDocumentItem,
+  type WorkerRosterItem,
+  type YesterdayReportItem
+} from "@/lib/mobile-seed";
 import { supabase } from "@/lib/supabase/client";
 import { projects } from "@/lib/demo-data";
 import {
@@ -64,7 +84,7 @@ import {
 import type { Project } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-type MvpView = "request" | "otp" | "pin" | "signin" | "dashboard" | "module" | "chat";
+type MvpView = "request" | "otp" | "pin" | "signin" | "dashboard" | "module" | "chat" | "profile";
 type OtpReturnView = "request" | "signin";
 type AccessRole = "engineer" | "supervisor" | "finance" | "client" | "admin";
 type AppUser = {
@@ -74,6 +94,7 @@ type AppUser = {
   name: string;
   role: string;
   createdAt: string;
+  avatarUrl?: string | null;
 };
 
 type Tone = "blue" | "green" | "purple" | "orange" | "red" | "slate";
@@ -193,6 +214,17 @@ type ChatDraftImage = {
   sizeLabel: string;
 };
 
+type ProjectEditorState = {
+  mode: "create" | "edit";
+  id?: string;
+  name: string;
+  code: string;
+  location: string;
+  status: Project["status"];
+  totalLengthKm: string;
+  completedKm: string;
+};
+
 const SESSION_KEY = "telgo-mobile-session";
 const DEVICE_ACCOUNT_KEY = "telgo-mobile-account";
 const APK_DOWNLOAD_PATH = "/downloads/telgo-hub.apk";
@@ -246,343 +278,344 @@ const roleDashboardModuleTitleByRole: Record<AccessRole, string> = {
 };
 
 const modules: ModuleItem[] = [
-  { title: "Mark Attendance", subtitle: "Daily check-in", icon: UserCheck, tone: "green" },
-  { title: "Live Tracking", subtitle: "Workers & Assets", icon: MapPin, tone: "blue" },
-  { title: "Projects", subtitle: "All Projects", icon: Folder, tone: "blue" },
-  { title: "Update Project", subtitle: "Progress update", icon: ChartNoAxesColumnIncreasing, tone: "purple" },
-  { title: "Upload Report", subtitle: "Daily / site report", icon: CloudUpload, tone: "green" },
-  { title: "Live Chat", subtitle: "Team communication", icon: MessageCircle, tone: "blue" },
-  { title: "Admin Dashboard", subtitle: "System overview", icon: Shield, tone: "red" },
-  { title: "Supervisor Dashboard", subtitle: "Team & site control", icon: ClipboardCheck, tone: "orange" },
-  { title: "Engineer Dashboard", subtitle: "Engineer workspace", icon: HardHat, tone: "purple" },
-  { title: "Finance Dashboard", subtitle: "Finance overview", icon: IndianRupee, tone: "green" },
-  { title: "Client Dashboard", subtitle: "Client view & updates", icon: UsersRound, tone: "orange" },
-  { title: "All Workers", subtitle: "Worker directory", icon: Users, tone: "blue" },
-  { title: "Leave Management", subtitle: "Apply & approve", icon: CalendarCheck, tone: "green" },
-  { title: "Payroll Management", subtitle: "Salaries & payroll", icon: WalletCards, tone: "orange" },
-  { title: "Expense Management", subtitle: "Track expenses", icon: ReceiptIndianRupee, tone: "blue" },
-  { title: "Invoices", subtitle: "Create & manage", icon: FileText, tone: "purple" },
-  { title: "Materials Request", subtitle: "Request materials", icon: Package, tone: "orange" },
-  { title: "Equipment", subtitle: "Tools & machinery", icon: Wrench, tone: "blue" },
-  { title: "Vehicle Tracking", subtitle: "All vehicles live", icon: Truck, tone: "green" },
-  { title: "Fuel Management", subtitle: "Fuel logs & usage", icon: Fuel, tone: "red" },
-  { title: "Maintenance", subtitle: "Maintenance logs", icon: Settings, tone: "blue" },
-  { title: "Safety Reports", subtitle: "Safety & compliance", icon: ShieldCheck, tone: "green" },
-  { title: "Document Center", subtitle: "Files & documents", icon: FolderOpen, tone: "purple" },
-  { title: "Calendar", subtitle: "Events & schedule", icon: CalendarDays, tone: "red" },
-  { title: "Announcements", subtitle: "Company updates", icon: Megaphone, tone: "orange" },
-  { title: "Approvals", subtitle: "Requests & approvals", icon: CircleCheck, tone: "green" },
-  { title: "Task Management", subtitle: "Create & assign tasks", icon: ListChecks, tone: "purple" },
-  { title: "Timesheet", subtitle: "Work hour tracking", icon: Clock3, tone: "green" },
-  { title: "Site Inspection", subtitle: "Inspection & audit", icon: ClipboardCheck, tone: "blue" },
-  { title: "Quality Control", subtitle: "Quality check", icon: CheckCircle2, tone: "purple" },
-  { title: "Daily Diary", subtitle: "Daily site diary", icon: NotebookPen, tone: "orange" },
-  { title: "Reports & Analytics", subtitle: "Business insights", icon: PieChart, tone: "blue" },
-  { title: "Alerts", subtitle: "System alerts", icon: TriangleAlert, tone: "red" },
-  { title: "Settings", subtitle: "App settings", icon: Settings, tone: "slate" },
-  { title: "Support", subtitle: "Help & support", icon: Headphones, tone: "blue" },
-  { title: "AI Assistant", subtitle: "Smart help", icon: Sparkles, tone: "purple" }
-];
-
-const commonModuleTitles = [
-  "Projects",
-  "Live Chat",
-  "Document Center",
-  "Calendar",
-  "Announcements",
-  "Support",
-  "AI Assistant"
+  { title: "Projects", subtitle: "All work packages", icon: Folder, tone: "blue" },
+  { title: "Live Tracking", subtitle: "Live workforce map", icon: MapPin, tone: "green" },
+  { title: "Company Access", subtitle: "Approved users & controls", icon: UsersRound, tone: "purple" },
+  { title: "Pending Approval", subtitle: "Approval and access queue", icon: CircleCheck, tone: "orange" },
+  { title: "Yesterday Reports", subtitle: "Latest submitted reports", icon: ClipboardCheck, tone: "blue" },
+  { title: "Admin Dashboard", subtitle: "Operations control center", icon: Shield, tone: "red" },
+  { title: "Supervisor Dashboard", subtitle: "Site leadership view", icon: ShieldCheck, tone: "orange" },
+  { title: "Engineer Dashboard", subtitle: "Field execution workspace", icon: HardHat, tone: "purple" },
+  { title: "Finance Dashboard", subtitle: "Finance workspace", icon: IndianRupee, tone: "green" },
+  { title: "Client Dashboard", subtitle: "Client access and sharing", icon: Users, tone: "orange" },
+  { title: "Mark Attendance", subtitle: "Live GPS check-in", icon: UserCheck, tone: "green" },
+  { title: "Monthly Attendance", subtitle: "Calendar and leave", icon: CalendarDays, tone: "blue" },
+  { title: "Leave Requests", subtitle: "Apply and review leave", icon: CalendarCheck, tone: "green" },
+  { title: "Assigned Tasks", subtitle: "Today's assigned work", icon: ListChecks, tone: "purple" },
+  { title: "Current Engineers", subtitle: "Live engineering staff", icon: Users, tone: "blue" },
+  { title: "Worker Register", subtitle: "All project workers", icon: UsersRound, tone: "slate" },
+  { title: "PWD Permission Reports", subtitle: "Permission and client files", icon: FileText, tone: "orange" },
+  { title: "Update Project", subtitle: "Progress and status update", icon: ChartNoAxesColumnIncreasing, tone: "purple" },
+  { title: "Upload Report", subtitle: "Photo and site report", icon: CloudUpload, tone: "green" },
+  { title: "Live Chat", subtitle: "Team communication", icon: MessageCircle, tone: "blue" }
 ];
 
 const roleModuleTitles: Record<AccessRole, string[]> = {
-  admin: modules.map((item) => item.title),
+  admin: [
+    "Admin Dashboard",
+    "Projects",
+    "Live Tracking",
+    "Company Access",
+    "Pending Approval",
+    "Yesterday Reports",
+    "Supervisor Dashboard",
+    "Engineer Dashboard",
+    "Client Dashboard",
+    "Finance Dashboard",
+    "Current Engineers",
+    "Worker Register",
+    "PWD Permission Reports",
+    "Live Chat"
+  ],
   supervisor: [
     "Supervisor Dashboard",
-    "Mark Attendance",
     "Live Tracking",
-    ...commonModuleTitles,
-    "Update Project",
+    "Projects",
+    "Current Engineers",
+    "Yesterday Reports",
+    "Mark Attendance",
+    "Monthly Attendance",
+    "Leave Requests",
+    "Assigned Tasks",
     "Upload Report",
-    "All Workers",
-    "Leave Management",
-    "Materials Request",
-    "Equipment",
-    "Vehicle Tracking",
-    "Safety Reports",
-    "Approvals",
-    "Task Management",
-    "Timesheet",
-    "Site Inspection",
-    "Quality Control",
-    "Daily Diary",
-    "Reports & Analytics",
-    "Alerts"
+    "PWD Permission Reports",
+    "Live Chat"
   ],
   engineer: [
     "Engineer Dashboard",
     "Mark Attendance",
-    ...commonModuleTitles,
+    "Monthly Attendance",
+    "Leave Requests",
+    "Assigned Tasks",
+    "Projects",
     "Update Project",
     "Upload Report",
-    "Materials Request",
-    "Equipment",
-    "Task Management",
-    "Timesheet",
-    "Site Inspection",
-    "Quality Control",
-    "Daily Diary",
-    "Alerts"
+    "Live Chat",
+    "PWD Permission Reports"
   ],
   finance: [
     "Finance Dashboard",
-    ...commonModuleTitles,
-    "Expense Management",
-    "Invoices",
-    "Payroll Management",
-    "Approvals",
-    "Reports & Analytics",
-    "Fuel Management"
+    "Projects",
+    "Yesterday Reports",
+    "Live Chat",
+    "PWD Permission Reports"
   ],
   client: [
     "Client Dashboard",
     "Projects",
     "Live Chat",
-    "Document Center",
-    "Calendar",
-    "Announcements",
-    "Approvals",
-    "Reports & Analytics",
-    "Support"
+    "PWD Permission Reports"
   ]
 };
 
 const roleDashboardContent: Record<AccessRole, RoleDashboardDefinition> = {
   admin: {
     intro: "You are signed in to the full operations command center.",
-    focusTitle: "Operations command center",
-    focusDetail: "Use this workspace to control sites, approvals, reporting, finance, and team-wide actions.",
+    focusTitle: "Admin operations dashboard",
+    focusDetail:
+      "Control all projects, project access, live field locations, pending approvals, yesterday reports, client sharing, and workforce actions from one mobile workspace.",
     quickActions: [
-      { title: "Review approvals", detail: "Clear pending requests and escalations.", moduleTitle: "Approvals" },
-      { title: "Track live sites", detail: "Watch workers, assets, and movement.", moduleTitle: "Live Tracking" },
-      { title: "View analytics", detail: "Open company-wide insights and exports.", moduleTitle: "Reports & Analytics" },
-      { title: "Send update", detail: "Publish notices to every active team.", moduleTitle: "Announcements" }
+      { title: "Open all projects", detail: "Add, edit, and track every work package.", moduleTitle: "Projects" },
+      { title: "See live field map", detail: "Open the live tracking map with logged people.", moduleTitle: "Live Tracking" },
+      { title: "Review approval queue", detail: "Approve access, leave, and report requests.", moduleTitle: "Pending Approval" },
+      { title: "Manage company access", detail: "Reset PINs, remove access, and control roles.", moduleTitle: "Company Access" }
     ],
     sections: [
       {
-        title: "Operations control",
-        detail: "Admin should be able to manage the entire delivery engine from one place.",
+        title: "Project control",
+        detail: "The admin dashboard should make every live and blocked project visible in one glance.",
         items: [
-          { title: "Project assignment", detail: "Assign sites, users, and delivery owners." },
-          { title: "Critical alert desk", detail: "Review unresolved field and safety escalations." },
-          { title: "Company attendance view", detail: "See all check-ins, late entries, and corrections." },
-          { title: "Multi-site monitoring", detail: "Switch between sites, teams, and vehicles instantly." }
+          { title: "All project map", detail: "Show all corridor works together with status chips." },
+          { title: "Project editor", detail: "Add new projects, update lengths, and revise progress." },
+          { title: "Blocked works", detail: "Surface PWD and permission hold items clearly." },
+          { title: "Live field updates", detail: "Connect yesterday reports and live attendance to each project." }
         ]
       },
       {
-        title: "Commercial control",
-        detail: "Finance and commercial controls should remain visible to admin without a second login.",
+        title: "People and access",
+        detail: "Admin should control every approved device account from one place.",
         items: [
-          { title: "Expense approvals", detail: "Approve or reject submitted claims." },
-          { title: "Invoice oversight", detail: "Track billing status, dues, and milestone invoices." },
-          { title: "Payroll readiness", detail: "Monitor salary processing and attendance dependencies." },
-          { title: "Fuel and asset cost watch", detail: "Review recurring operational spend." }
+          { title: "Company access directory", detail: "See role, email, PIN status, and active access." },
+          { title: "Pending approval queue", detail: "Approve or reject new access and workflow requests." },
+          { title: "Client access mapping", detail: "Assign clients only to their own project data." },
+          { title: "Worker register", detail: "View all engineers and workers with project assignment." }
         ]
       },
       {
-        title: "Governance and reporting",
-        detail: "Admin dashboard should become the final audit and reporting surface.",
+        title: "Control room outputs",
+        detail: "Notifications, reports, and documents should feel like a real operations center.",
         items: [
-          { title: "Audit trail", detail: "See who changed what and when." },
-          { title: "Data export", detail: "Export attendance, project, and finance summaries." },
-          { title: "Company policy center", detail: "Push SOPs, circulars, and updated rules." },
-          { title: "Client readiness view", detail: "Preview what external clients can see." }
+          { title: "Yesterday reports", detail: "Review the latest field reports and status uploads." },
+          { title: "Notification control", detail: "Receive app and top-bar alerts from live workflows." },
+          { title: "PWD file desk", detail: "Upload and download permission and client files." },
+          { title: "Live chat oversight", detail: "Keep current team chat and moderation controls active." }
         ]
       }
     ],
-    statusTitle: "Admin workspace is ready for full-company oversight.",
-    statusBody: "Live metrics will replace these planning cards once the project, attendance, approvals, and finance modules are connected to real data."
+    statusTitle: "Admin workspace is ready for a project-by-project control room.",
+    statusBody:
+      "This redesign keeps the current login, chat, notifications, map, and attendance pipelines intact while moving the UI toward a real client handover."
   },
   supervisor: {
-    intro: "You are signed in to the team and site supervision workspace.",
-    focusTitle: "Site and team supervision",
-    focusDetail: "Use this dashboard to coordinate field teams, approve requests, and keep projects moving safely.",
+    intro: "You are signed in to the site supervision workspace.",
+    focusTitle: "Supervisor site control",
+    focusDetail:
+      "Supervisor view should focus on live teams, attendance, leave, reports, and field blockers without exposing the full admin control room.",
     quickActions: [
-      { title: "Check live team", detail: "Open worker and asset movement first.", moduleTitle: "Live Tracking" },
-      { title: "Approve requests", detail: "Clear leave, material, and field approvals.", moduleTitle: "Approvals" },
-      { title: "Review safety", detail: "Handle inspections, incidents, and closures.", moduleTitle: "Safety Reports" },
-      { title: "Assign today's work", detail: "Update tasks and responsibilities.", moduleTitle: "Task Management" }
+      { title: "Open live map", detail: "See current engineer attendance marks.", moduleTitle: "Live Tracking" },
+      { title: "Review reports", detail: "Check yesterday and current report submissions.", moduleTitle: "Yesterday Reports" },
+      { title: "Handle leave", detail: "Review leave requests from the field.", moduleTitle: "Leave Requests" },
+      { title: "Follow tasks", detail: "Track today's site assignments.", moduleTitle: "Assigned Tasks" }
     ],
     sections: [
       {
-        title: "Team oversight",
-        detail: "Supervisor should manage people, attendance, and daily discipline.",
+        title: "Field discipline",
+        detail: "Attendance, leave, and report discipline should sit at the center of the supervisor view.",
         items: [
-          { title: "Attendance review", detail: "Check who is marked in, absent, or late." },
-          { title: "Leave approval", detail: "Approve field leave requests quickly." },
-          { title: "Worker assignment", detail: "Move teams between sites or shifts." },
-          { title: "Daily communication", detail: "Broadcast updates through team chat and announcements." }
+          { title: "Attendance watch", detail: "See who marked in and from where." },
+          { title: "Leave queue", detail: "Approve or reject site leave requests." },
+          { title: "Report follow-up", detail: "Push engineers for missing daily submissions." },
+          { title: "Chat coordination", detail: "Use live chat for same-day site communication." }
         ]
       },
       {
-        title: "Project delivery",
-        detail: "Supervisor should validate daily execution before admin review.",
+        title: "Project visibility",
+        detail: "Supervisor should see every project that matters to the field team.",
         items: [
-          { title: "Report review", detail: "Check field updates and uploaded site reports." },
-          { title: "Progress validation", detail: "Compare planned vs completed work." },
-          { title: "Material follow-up", detail: "Track requests, approvals, and dispatch." },
-          { title: "Delay escalation", detail: "Raise blockers before they affect the client." }
+          { title: "Assigned corridor tracking", detail: "Monitor completion against the assigned project route." },
+          { title: "Permission blockers", detail: "Surface PWD or road opening issues quickly." },
+          { title: "Worker status", detail: "Check which engineers are live, offline, or on leave." },
+          { title: "Photo upload status", detail: "Verify site photos and progress evidence." }
         ]
       },
       {
-        title: "Safety and quality",
-        detail: "Site control must include inspections and closure follow-up.",
+        title: "Supervisor notes",
+        detail: "This area is ready for the next stage of supervisor workflow design.",
         items: [
-          { title: "Inspection queue", detail: "Review pending inspections and audit notes." },
-          { title: "Safety issue tracker", detail: "Resolve observations with closure evidence." },
-          { title: "Vehicle coordination", detail: "Watch deliveries, fuel, and movement." },
-          { title: "Quality check register", detail: "Track QC failures and corrections." }
+          { title: "Expense capture", detail: "Supervisor expenditure flow can be added next." },
+          { title: "Inspection controls", detail: "Site inspection and quality closure can sit here." },
+          { title: "Shift snapshots", detail: "Daily team and corridor summaries can be added later." },
+          { title: "Escalation notes", detail: "Supervisor-specific remarks and escalations can land here." }
         ]
       }
     ],
-    statusTitle: "Supervisor dashboard is ready for live site control.",
-    statusBody: "Once attendance, tasks, materials, and inspection flows go live, this screen will become the day-to-day control panel for each site lead."
+    statusTitle: "Supervisor dashboard is ready for the next workflow layer.",
+    statusBody:
+      "The live map, reports, leave requests, and site coordination pieces are now aligned for supervisor-first design."
   },
   engineer: {
-    intro: "You are signed in to the field execution workspace.",
-    focusTitle: "Engineer field workspace",
-    focusDetail: "This dashboard should keep the engineer focused on daily execution, reporting, and issue escalation.",
+    intro: "You are signed in to the engineer field workspace.",
+    focusTitle: "Engineer daily execution dashboard",
+    focusDetail:
+      "This dashboard should keep the engineer focused on the assigned project, attendance, today's tasks, leave, updates, uploads, and live chat.",
     quickActions: [
-      { title: "Mark attendance", detail: "Start the day with site check-in.", moduleTitle: "Mark Attendance" },
-      { title: "Update project", detail: "Submit progress against today's work.", moduleTitle: "Update Project" },
-      { title: "Upload report", detail: "Send photo and text reports from site.", moduleTitle: "Upload Report" },
-      { title: "Open diary", detail: "Log the day's work and observations.", moduleTitle: "Daily Diary" }
+      { title: "Mark attendance", detail: "Take the live location attendance mark.", moduleTitle: "Mark Attendance" },
+      { title: "Open today's tasks", detail: "See assignments pushed from admin.", moduleTitle: "Assigned Tasks" },
+      { title: "Open attendance calendar", detail: "Review this month's work and leave days.", moduleTitle: "Monthly Attendance" },
+      { title: "Upload report", detail: "Push progress photos and live site updates.", moduleTitle: "Upload Report" }
     ],
     sections: [
       {
-        title: "Daily field work",
-        detail: "Engineer dashboard should keep the daily work cycle simple and fast.",
+        title: "Assigned work",
+        detail: "The assigned project should always stay at the top of the engineer dashboard.",
         items: [
-          { title: "Attendance and shift log", detail: "Mark in, mark out, and review this month's attendance." },
-          { title: "Assigned tasks", detail: "See today's tasks, blockers, and priorities." },
-          { title: "Project progress update", detail: "Post site progress with photos and notes." },
-          { title: "Timesheet entry", detail: "Submit work hours and activity allocation." }
+          { title: "Assigned project heading", detail: "Show the project selected from admin assignment." },
+          { title: "Today's tasks", detail: "List tasks pushed by admin or supervisor." },
+          { title: "Project update", detail: "Push percentage, text update, and field status." },
+          { title: "Live chat", detail: "Keep the project team channel available." }
         ]
       },
       {
-        title: "Execution tools",
-        detail: "Engineer should be able to request what is needed without leaving the workflow.",
+        title: "Attendance and leave",
+        detail: "Attendance and leave must feel immediate and location aware.",
         items: [
-          { title: "Materials request", detail: "Raise requests directly from site." },
-          { title: "Equipment access", detail: "Check assigned tools and issue needs." },
-          { title: "Document access", detail: "Open approved drawings and documents." },
-          { title: "Live team chat", detail: "Coordinate instantly with site teams." }
+          { title: "Mark attendance", detail: "Capture live GPS only when the engineer taps the button." },
+          { title: "Monthly attendance", detail: "Show worked days, approved leave, and pending leave." },
+          { title: "Leave request", detail: "Send a leave request from the calendar itself." },
+          { title: "Admin visibility", detail: "Each attendance mark should appear in admin live tracking." }
         ]
       },
       {
-        title: "Quality and safety",
-        detail: "Engineer should report issues early and close them with evidence.",
+        title: "Profile and documents",
+        detail: "Engineer profile and project document actions should stay inside the mobile shell.",
         items: [
-          { title: "Site inspection checklist", detail: "Complete checklist-based inspections." },
-          { title: "Quality observation log", detail: "Record snags and corrective actions." },
-          { title: "Safety report", detail: "Raise hazards with attached photos." },
-          { title: "Daily diary summary", detail: "Capture work done, risks, and next steps." }
+          { title: "Profile photo and name", detail: "Allow the engineer to upload a profile photo and edit display name." },
+          { title: "PWD reports", detail: "Upload project documents and client-facing files." },
+          { title: "Photo compression", detail: "Keep mobile uploads light and fast." },
+          { title: "Premium mobile UI", detail: "Make the APK feel like a polished field app, not a demo." }
         ]
       }
     ],
-    statusTitle: "Engineer dashboard is ready for daily site execution.",
-    statusBody: "Real assignments, attendance history, report timelines, and inspection queues will appear here once the engineer workflows start writing live data."
+    statusTitle: "Engineer dashboard is ready for assigned-project execution.",
+    statusBody:
+      "The attendance, chat, notifications, project, and upload pipelines remain active while the UI shifts to a real engineer-first mobile flow."
   },
   finance: {
-    intro: "You are signed in to the finance and approvals workspace.",
-    focusTitle: "Finance operations workspace",
-    focusDetail: "Use this dashboard to control expenses, invoices, payroll, and project cost visibility.",
+    intro: "You are signed in to the finance workspace.",
+    focusTitle: "Finance dashboard placeholder",
+    focusDetail:
+      "Finance modules will be integrated later, but the dashboard entry remains in place so the overall role architecture stays complete.",
     quickActions: [
-      { title: "Review expenses", detail: "Open claims and supporting documents.", moduleTitle: "Expense Management" },
-      { title: "Manage invoices", detail: "Create, track, and follow collection status.", moduleTitle: "Invoices" },
-      { title: "Run payroll", detail: "Review salary readiness and attendance dependency.", moduleTitle: "Payroll Management" },
-      { title: "Clear approvals", detail: "Handle finance-side decision queues.", moduleTitle: "Approvals" }
+      { title: "Open finance space", detail: "Finance role shell is reserved for later buildout.", moduleTitle: "Finance Dashboard" },
+      { title: "Open projects", detail: "Review project list and status context.", moduleTitle: "Projects" },
+      { title: "Open reports", detail: "Read the latest field report summaries.", moduleTitle: "Yesterday Reports" },
+      { title: "Open documents", detail: "Review available PWD and client files.", moduleTitle: "PWD Permission Reports" }
     ],
     sections: [
       {
-        title: "Commercial workflow",
-        detail: "Finance should see all payment-facing actions in one place.",
+        title: "Reserved finance controls",
+        detail: "Finance controls are intentionally light in this phase.",
         items: [
-          { title: "Expense claim review", detail: "Approve claims with document proof." },
-          { title: "Invoice lifecycle", detail: "Track draft, sent, due, and paid invoices." },
-          { title: "Vendor payment view", detail: "See payable status and due dates." },
-          { title: "Advance request tracker", detail: "Control advances and adjustments." }
+          { title: "Expense workflow", detail: "Expense submission and approval can be added next." },
+          { title: "Invoice control", detail: "Client billing panels can live in this role later." },
+          { title: "Payroll linkage", detail: "Attendance-to-payroll connection can be added later." },
+          { title: "Audit exports", detail: "Documented finance exports can slot into this dashboard." }
         ]
       },
       {
-        title: "Payroll and costing",
-        detail: "Salary and project cost control should remain tightly connected.",
+        title: "Project context",
+        detail: "Finance can already follow the project and report structure while role logic is staged.",
         items: [
-          { title: "Payroll preparation", detail: "Review attendance-linked salary readiness." },
-          { title: "Fuel and running cost", detail: "Track recurring field transport cost." },
-          { title: "Project cost split", detail: "Map spend against projects and cost heads." },
-          { title: "Month-end summaries", detail: "Prepare closure-ready payroll and cost reports." }
+          { title: "Projects", detail: "See current works and their status labels." },
+          { title: "Yesterday reports", detail: "Read latest site notes from the field." },
+          { title: "Permission files", detail: "Open supporting documents when needed." },
+          { title: "Live chat", detail: "Stay on the common communication channel." }
         ]
       },
       {
-        title: "Reporting and controls",
-        detail: "Finance dashboard should surface the numbers that matter every day.",
+        title: "Next stage",
+        detail: "This role remains intentionally minimal for the current phase.",
         items: [
-          { title: "Cash flow snapshot", detail: "See near-term inflow and outflow pressure." },
-          { title: "Receivable aging", detail: "Track overdue collections by client." },
-          { title: "Approval backlog", detail: "Monitor pending finance decisions." },
-          { title: "Audit-ready exports", detail: "Download structured finance summaries." }
+          { title: "No blind access", detail: "Finance role will still stay isolated from unrelated client data." },
+          { title: "Fast mobile shell", detail: "Keep the APK structure aligned before finance rollout." },
+          { title: "Future integrations", detail: "Expense, payroll, and approvals will follow later." },
+          { title: "Preserved pipelines", detail: "Chat, auth, and notifications remain usable in the meantime." }
         ]
       }
     ],
-    statusTitle: "Finance dashboard is ready for operational cost control.",
-    statusBody: "When expense, payroll, invoice, and approvals data starts flowing, this view becomes the finance control room for the company."
+    statusTitle: "Finance dashboard is staged for later integration.",
+    statusBody:
+      "The role entry remains visible now so the mobile app structure stays complete while finance-specific workflows are added later."
   },
   client: {
     intro: "You are signed in to the client visibility workspace.",
-    focusTitle: "Client project visibility",
-    focusDetail: "This dashboard should expose progress, documents, approvals, and communication without showing internal company controls.",
+    focusTitle: "Client project portal",
+    focusDetail:
+      "Client view should show only the assigned project, its map, reports, shared documents, and controlled communication without leaking company-wide data.",
     quickActions: [
-      { title: "Open project view", detail: "Check current milestone and latest updates.", moduleTitle: "Projects" },
-      { title: "Review documents", detail: "Open approved reports, drawings, and files.", moduleTitle: "Document Center" },
-      { title: "Check approvals", detail: "See items waiting for client confirmation.", moduleTitle: "Approvals" },
-      { title: "Send message", detail: "Chat directly with the team for updates.", moduleTitle: "Live Chat" }
+      { title: "Open assigned project", detail: "See the client's mapped project view.", moduleTitle: "Projects" },
+      { title: "Open client access", detail: "Review which clients are approved or not assigned.", moduleTitle: "Client Dashboard" },
+      { title: "Open documents", detail: "Download permission and client files.", moduleTitle: "PWD Permission Reports" },
+      { title: "Open chat", detail: "Use the controlled project chat channel.", moduleTitle: "Live Chat" }
     ],
     sections: [
       {
-        title: "Project visibility",
-        detail: "Client should see progress without internal operational clutter.",
+        title: "Client privacy",
+        detail: "Only the assigned project should be visible to a client account.",
         items: [
-          { title: "Milestone tracker", detail: "See the current stage and expected completion." },
-          { title: "Progress updates", detail: "Review approved site updates and progress notes." },
-          { title: "Photo evidence", detail: "See recent visual updates from the team." },
-          { title: "Delivery calendar", detail: "Watch meetings, deadlines, and milestone dates." }
+          { title: "Assigned project only", detail: "No cross-project data should leak into the client portal." },
+          { title: "Project map", detail: "Show the assigned corridor and progress visually." },
+          { title: "Shared documents", detail: "Allow document download at any time." },
+          { title: "Completion feedback", detail: "Add a feedback stage when the project is completed." }
         ]
       },
       {
-        title: "Client actions",
-        detail: "Client should be able to act without asking how to use the app.",
+        title: "Client controls",
+        detail: "Client access should stay easy to manage from the admin side.",
         items: [
-          { title: "Approval requests", detail: "Approve variations, documents, or decisions." },
-          { title: "Issue raising", detail: "Report concerns or request clarification." },
-          { title: "Document download", detail: "Access approved files directly." },
-          { title: "Direct team chat", detail: "Talk with the assigned team in one place." }
+          { title: "Approved clients", detail: "See client names already mapped to projects." },
+          { title: "Not assigned clients", detail: "Assign unlinked clients to a project from admin." },
+          { title: "Remove access", detail: "Admin can revoke client visibility when needed." },
+          { title: "Live chat link", detail: "Keep client communication in the controlled project thread." }
         ]
       },
       {
-        title: "Commercial transparency",
-        detail: "Client dashboard should show only the finance items relevant to the client.",
+        title: "Portal direction",
+        detail: "The full client visual system can be refined later, but the structure must already be isolated and premium.",
         items: [
-          { title: "Milestone billing status", detail: "Track what has been billed and what is pending." },
-          { title: "Pending decisions", detail: "See blockers waiting on client action." },
-          { title: "Update history", detail: "Review the recent communication timeline." },
-          { title: "Support access", detail: "Reach the company for help or escalations." }
+          { title: "Modern project view", detail: "The portal should feel clean, minimal, and premium." },
+          { title: "Fast document access", detail: "Project packages should download cleanly on mobile." },
+          { title: "Clear status updates", detail: "Progress, blockers, and milestone notes should stay visible." },
+          { title: "No data leakage", detail: "Client isolation remains a hard rule in the design." }
         ]
       }
     ],
-    statusTitle: "Client dashboard is ready for transparent project communication.",
-    statusBody: "Once the project, documents, approvals, and report modules are connected to live records, the client will see a clean project-facing dashboard instead of internal operations tools."
+    statusTitle: "Client dashboard is aligned for privacy-first project sharing.",
+    statusBody:
+      "The client portal remains intentionally narrower than the admin and engineer views so only project-specific information is shown."
   }
 };
+
+const projectStatusOptions: Project["status"][] = [
+  "Active",
+  "Completed",
+  "Delayed",
+  "On Track",
+  "At Risk"
+];
+
+function makeProjectEditor(project?: Project): ProjectEditorState {
+  return {
+    mode: project ? "edit" : "create",
+    id: project?.id,
+    name: project?.name ?? "",
+    code: project?.code ?? "",
+    location: project?.location ?? "",
+    status: project?.status ?? "Active",
+    totalLengthKm: String(project?.totalLengthKm ?? ""),
+    completedKm: String(project?.completedKm ?? "")
+  };
+}
 
 export function TelgoMvpApp() {
   const [view, setView] = useState<MvpView>("signin");
@@ -600,6 +633,19 @@ export function TelgoMvpApp() {
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<AppUser | null>(null);
+  const [projectPortfolio, setProjectPortfolio] = useState<Project[]>(projects);
+  const [accessDirectory, setAccessDirectory] = useState<AccessDirectoryEntry[]>(accessDirectorySeed);
+  const [pendingApprovals, setPendingApprovals] =
+    useState<PendingApprovalRequest[]>(pendingApprovalSeed);
+  const [yesterdayReports, setYesterdayReports] =
+    useState<YesterdayReportItem[]>(yesterdayReportSeed);
+  const [clientAccess, setClientAccess] = useState<ClientAccessEntry[]>(clientAccessSeed);
+  const [engineerTasks, setEngineerTasks] = useState<EngineerTaskItem[]>(engineerTaskSeed);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequestItem[]>(leaveRequestSeed);
+  const [workerRoster, setWorkerRoster] = useState<WorkerRosterItem[]>(workerRosterSeed);
+  const [pwdDocuments, setPwdDocuments] = useState<PwdDocumentItem[]>(pwdDocumentSeed);
+  const [projectEditor, setProjectEditor] = useState<ProjectEditorState | null>(null);
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatMembers, setChatMembers] = useState<ChatMember[]>([]);
   const [chatComposer, setChatComposer] = useState("");
@@ -618,7 +664,42 @@ export function TelgoMvpApp() {
   const [clock, setClock] = useState<Date | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const currentRole = resolveAccessRole(user?.role ?? requestedRole);
-  const primaryProject = trackingSnapshot?.project ?? projects[0];
+  const currentAccessEntry = useMemo(
+    () =>
+      accessDirectory.find((entry) =>
+        normalizeEmail(entry.email) === normalizeEmail(user?.email ?? "")
+      ) ?? null,
+    [accessDirectory, user?.email]
+  );
+  const assignedProjectId = currentAccessEntry?.assignedProjectIds[0] ?? null;
+  const primaryProject =
+    projectPortfolio.find((project) => project.id === assignedProjectId) ??
+    trackingSnapshot?.project ??
+    projectPortfolio[0];
+  const currentTasks = useMemo(
+    () =>
+      engineerTasks.filter(
+        (task) => normalizeEmail(task.assigneeEmail) === normalizeEmail(user?.email ?? "")
+      ),
+    [engineerTasks, user?.email]
+  );
+  const currentLeaveRequests = useMemo(
+    () =>
+      leaveRequests.filter(
+        (request) => normalizeEmail(request.email) === normalizeEmail(user?.email ?? "")
+      ),
+    [leaveRequests, user?.email]
+  );
+  const currentClientEntry = useMemo(
+    () =>
+      clientAccess.find((entry) => normalizeEmail(entry.email) === normalizeEmail(user?.email ?? "")) ??
+      null,
+    [clientAccess, user?.email]
+  );
+
+  useEffect(() => {
+    setProfileAvatarUrl(user?.avatarUrl ?? savedAccount?.avatarUrl ?? null);
+  }, [savedAccount?.avatarUrl, user?.avatarUrl]);
 
   const filteredModules = useMemo(() => {
     const allowedTitles = new Set(roleModuleTitles[currentRole]);
@@ -1100,7 +1181,15 @@ export function TelgoMvpApp() {
     );
 
     const remoteUser = result.user;
-    const signedInUser = remoteUser ? toAppUser(remoteUser, normalizedLoginId) : null;
+    const signedInUser = remoteUser
+      ? {
+          ...toAppUser(remoteUser, normalizedLoginId),
+          avatarUrl:
+            toAppUser(remoteUser, normalizedLoginId).avatarUrl ??
+            savedAccount?.avatarUrl ??
+            null
+        }
+      : null;
 
     setLoading(false);
     if (!result.ok) {
@@ -1119,6 +1208,41 @@ export function TelgoMvpApp() {
     setNotice("");
     setSigninPin("");
     setView("dashboard");
+  }
+
+  function updateCurrentProfile(nextName: string, nextAvatarUrl: string | null) {
+    if (!user) return;
+
+    const trimmedName = nextName.trim() || user.name;
+    const updatedUser: AppUser = {
+      ...user,
+      name: trimmedName,
+      avatarUrl: nextAvatarUrl ?? user.avatarUrl ?? null
+    };
+
+    setUser(updatedUser);
+    setSavedAccount(updatedUser);
+    setProfileAvatarUrl(updatedUser.avatarUrl ?? null);
+    saveSession(updatedUser);
+    saveDeviceAccount(updatedUser);
+
+    setAccessDirectory((current) =>
+      current.map((entry) =>
+        normalizeEmail(entry.email) === normalizeEmail(updatedUser.email)
+          ? { ...entry, name: trimmedName }
+          : entry
+      )
+    );
+    setClientAccess((current) =>
+      current.map((entry) =>
+        normalizeEmail(entry.email) === normalizeEmail(updatedUser.email)
+          ? { ...entry, clientName: trimmedName }
+          : entry
+      )
+    );
+    setWorkerRoster((current) =>
+      current.map((entry) => (entry.name === user.name ? { ...entry, name: trimmedName } : entry))
+    );
   }
 
   async function markAttendanceNow() {
@@ -1141,7 +1265,8 @@ export function TelgoMvpApp() {
         body: JSON.stringify({
           latitude: position.lat,
           longitude: position.lng,
-          gpsAccuracyM: position.accuracy
+          gpsAccuracyM: position.accuracy,
+          projectId: primaryProject.id
         })
       }).catch((error: unknown) => ({ error }));
 
@@ -1163,7 +1288,7 @@ export function TelgoMvpApp() {
       }
 
       setTrackingSnapshot((current) => {
-        const baseProject = current?.project ?? projects[0];
+        const baseProject = current?.project ?? primaryProject;
         const nextAttendance = [
           data.attendance!,
           ...(current?.attendance ?? []).filter((item) => item.id !== data.attendance!.id)
@@ -1417,6 +1542,7 @@ export function TelgoMvpApp() {
         onHome={() => setView("dashboard")}
         onChat={() => setView("chat")}
         onModule={() => openModuleByTitle("Projects")}
+        onProfile={() => setView("profile")}
         notifications={notifications}
         notificationsLoading={notificationsLoading}
         notificationsOpen={notificationsOpen}
@@ -1440,7 +1566,16 @@ export function TelgoMvpApp() {
           clock={clock}
           user={user}
           project={primaryProject}
+          projectPortfolio={projectPortfolio}
           latestLocation={trackingSnapshot?.locations[0] ?? null}
+          trackingSnapshot={trackingSnapshot}
+          trackingLoading={trackingLoading}
+          accessDirectory={accessDirectory}
+          pendingApprovals={pendingApprovals}
+          yesterdayReports={yesterdayReports}
+          currentTasks={currentTasks}
+          currentLeaveRequests={currentLeaveRequests}
+          clientAccess={clientAccess}
           modules={filteredModules}
           search={search}
           notifications={notifications}
@@ -1449,6 +1584,7 @@ export function TelgoMvpApp() {
           onModule={openModule}
           onModuleByTitle={openModuleByTitle}
           onOpenChat={() => setView("chat")}
+          onOpenProfile={() => setView("profile")}
         />
       </AppFrame>
     );
@@ -1465,6 +1601,7 @@ export function TelgoMvpApp() {
         onBack={() => setView("dashboard")}
         onChat={() => setView("chat")}
         onModule={() => openModuleByTitle("Projects")}
+        onProfile={() => setView("profile")}
         notifications={notifications}
         notificationsLoading={notificationsLoading}
         notificationsOpen={notificationsOpen}
@@ -1493,6 +1630,26 @@ export function TelgoMvpApp() {
           <ModuleView
             module={activeModule}
             currentUser={user}
+            primaryProject={primaryProject}
+            projectPortfolio={projectPortfolio}
+            onProjectPortfolioChange={setProjectPortfolio}
+            accessDirectory={accessDirectory}
+            onAccessDirectoryChange={setAccessDirectory}
+            pendingApprovals={pendingApprovals}
+            onPendingApprovalsChange={setPendingApprovals}
+            yesterdayReports={yesterdayReports}
+            clientAccess={clientAccess}
+            onClientAccessChange={setClientAccess}
+            engineerTasks={engineerTasks}
+            onEngineerTasksChange={setEngineerTasks}
+            leaveRequests={leaveRequests}
+            onLeaveRequestsChange={setLeaveRequests}
+            workerRoster={workerRoster}
+            onWorkerRosterChange={setWorkerRoster}
+            pwdDocuments={pwdDocuments}
+            onPwdDocumentsChange={setPwdDocuments}
+            projectEditor={projectEditor}
+            onProjectEditorChange={setProjectEditor}
             trackingSnapshot={trackingSnapshot}
             trackingLoading={trackingLoading}
             trackingError={trackingError}
@@ -1500,6 +1657,9 @@ export function TelgoMvpApp() {
             onMarkAttendance={() => {
               void markAttendanceNow();
             }}
+            onOpenProfile={() => setView("profile")}
+            onOpenChat={() => setView("chat")}
+            onOpenModuleByTitle={openModuleByTitle}
             onBack={() => setView("dashboard")}
           />
         )}
@@ -1517,6 +1677,7 @@ export function TelgoMvpApp() {
         onBack={() => setView("dashboard")}
         onChat={() => setView("chat")}
         onModule={() => openModuleByTitle("Projects")}
+        onProfile={() => setView("profile")}
         notifications={notifications}
         notificationsLoading={notificationsLoading}
         notificationsOpen={notificationsOpen}
@@ -1551,6 +1712,49 @@ export function TelgoMvpApp() {
           onRemoveDraft={removeChatDraft}
           onDeleteMessage={deleteChatMessage}
           onSend={sendChatMessage}
+        />
+      </AppFrame>
+    );
+  }
+
+  if (view === "profile") {
+    return (
+      <AppFrame
+        user={user}
+        active="Profile"
+        onSignOut={signOut}
+        onHome={() => setView("dashboard")}
+        onBack={() => setView("dashboard")}
+        onChat={() => setView("chat")}
+        onModule={() => openModuleByTitle("Projects")}
+        onProfile={() => setView("profile")}
+        notifications={notifications}
+        notificationsLoading={notificationsLoading}
+        notificationsOpen={notificationsOpen}
+        unreadNotifications={unreadNotifications}
+        onToggleNotifications={() => {
+          void toggleNotifications();
+        }}
+        onMarkAllNotificationsRead={() => {
+          void markAllNotificationsRead();
+        }}
+        onOpenNotification={(notification) => {
+          setNotificationsOpen(false);
+          if (notification.type === "chat" || Boolean(notification.metadata.chatTitle)) {
+            setChatError("");
+            setView("chat");
+          }
+        }}
+      >
+        <ProfileView
+          currentUser={user}
+          currentAccessEntry={currentAccessEntry}
+          currentClientEntry={currentClientEntry}
+          projectPortfolio={projectPortfolio}
+          avatarUrl={profileAvatarUrl ?? user?.avatarUrl ?? null}
+          onAvatarUrlChange={setProfileAvatarUrl}
+          onSaveProfile={updateCurrentProfile}
+          onBack={() => setView("dashboard")}
         />
       </AppFrame>
     );
@@ -2008,7 +2212,16 @@ function DashboardView({
   clock,
   user,
   project,
+  projectPortfolio,
   latestLocation,
+  trackingSnapshot,
+  trackingLoading,
+  accessDirectory,
+  pendingApprovals,
+  yesterdayReports,
+  currentTasks,
+  currentLeaveRequests,
+  clientAccess,
   modules: visibleModules,
   search,
   notifications,
@@ -2016,13 +2229,23 @@ function DashboardView({
   onSearch,
   onModule,
   onModuleByTitle,
-  onOpenChat
+  onOpenChat,
+  onOpenProfile
 }: {
   role: AccessRole;
   clock: Date | null;
   user: AppUser | null;
   project: Project;
+  projectPortfolio: Project[];
   latestLocation: LiveMapTrackedPoint | null;
+  trackingSnapshot: MobileTrackingSnapshot | null;
+  trackingLoading: boolean;
+  accessDirectory: AccessDirectoryEntry[];
+  pendingApprovals: PendingApprovalRequest[];
+  yesterdayReports: YesterdayReportItem[];
+  currentTasks: EngineerTaskItem[];
+  currentLeaveRequests: LeaveRequestItem[];
+  clientAccess: ClientAccessEntry[];
   modules: ModuleItem[];
   search: string;
   notifications: MobileNotificationItem[];
@@ -2031,12 +2254,12 @@ function DashboardView({
   onModule: (item: ModuleItem) => void;
   onModuleByTitle: (title: string) => void;
   onOpenChat: () => void;
+  onOpenProfile: () => void;
 }) {
   const userName = user?.name ?? "Team";
   const roleLabel = formatRoleLabel(role);
   const roleConfig = roleDashboardContent[role];
   const primaryProject = project;
-  const primaryCorridor = primaryProject.corridor;
   const dateLabel =
     clock?.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) ??
     "23 May 2025";
@@ -2123,61 +2346,24 @@ function DashboardView({
         ))}
       </section>
 
-      <section className="px-4 pt-5 sm:px-6">
-        <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">
-                Live Project
-              </p>
-              <h2 className="mt-2 text-2xl font-bold tracking-normal text-[#07122f]">
-                {primaryProject.name}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                {primaryCorridor
-                  ? `${primaryCorridor.startLabel} to ${primaryCorridor.endLabel} · ${primaryProject.location}`
-                  : primaryProject.location}
-              </p>
-              {latestLocation ? (
-                <p className="mt-3 text-sm font-medium text-[#115cff]">
-                  Latest field mark: {latestLocation.userName} @{latestLocation.userLoginId} ·{" "}
-                  {latestLocation.distanceFromSiteM} m from site start
-                </p>
-              ) : null}
-            </div>
-            <button
-              type="button"
-              onClick={() => onModuleByTitle("Projects")}
-              className="inline-flex min-h-11 items-center justify-center rounded-full border border-blue-100 bg-blue-50 px-4 text-sm font-semibold text-[#115cff]"
-            >
-              Open project details
-            </button>
-          </div>
-
-          <div className="mt-5 grid gap-3 md:grid-cols-4">
-            <MiniMetric
-              label="Completed"
-              value={formatMeters(getProgressMeters(primaryProject))}
-              detail={`${primaryProject.progress}% overall progress`}
-            />
-            <MiniMetric
-              label="Remaining"
-              value={formatMeters(getRemainingMeters(primaryProject))}
-              detail="Balance work on corridor"
-            />
-            <MiniMetric
-              label="Geofence"
-              value={primaryCorridor ? formatMeters(primaryCorridor.geofenceMeters) : "120 m"}
-              detail="Used during attendance"
-            />
-            <MiniMetric
-              label="Latest Update"
-              value={primaryCorridor?.progressUpdates[0]?.recordedAt ?? "No update"}
-              detail={primaryCorridor?.progressUpdates[0]?.label ?? "Waiting for field report"}
-            />
-          </div>
-        </div>
-      </section>
+      <RoleHomeSection
+        role={role}
+        user={user}
+        primaryProject={primaryProject}
+        projectPortfolio={projectPortfolio}
+        latestLocation={latestLocation}
+        trackingSnapshot={trackingSnapshot}
+        trackingLoading={trackingLoading}
+        accessDirectory={accessDirectory}
+        pendingApprovals={pendingApprovals}
+        yesterdayReports={yesterdayReports}
+        currentTasks={currentTasks}
+        currentLeaveRequests={currentLeaveRequests}
+        clientAccess={clientAccess}
+        onOpenModule={onModuleByTitle}
+        onOpenProfile={onOpenProfile}
+        onOpenChat={onOpenChat}
+      />
 
       <section className="px-4 pt-5 sm:px-6">
         <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
@@ -2192,7 +2378,7 @@ function DashboardView({
                   : "No unread notifications"}
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Chat mentions, admin actions, and workflow alerts will appear here for this approved device account.
+                Chat mentions, admin actions, leave outcomes, and live workflow alerts will appear here for this approved device account.
               </p>
             </div>
             <button
@@ -2229,9 +2415,9 @@ function DashboardView({
 
             {notifications.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
-                <p className="text-sm font-semibold text-[#07122f]">Live report reminder is seeded for now.</p>
+                <p className="text-sm font-semibold text-[#07122f]">Live workflow reminders are seeded for now.</p>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Chat mentions and real admin alerts will replace this reminder automatically once live report and workflow notifications start writing to the backend.
+                  Current chat mentions already work. Attendance, report, approval, and leave notifications will replace this reminder automatically as those flows become live.
                 </p>
               </div>
             ) : null}
@@ -2243,7 +2429,7 @@ function DashboardView({
 
       <section className="px-4 pt-8 sm:px-6">
         <div className="mb-5 grid gap-4 sm:grid-cols-[1fr_340px] sm:items-center">
-          <h2 className="text-2xl font-bold tracking-normal text-[#07122f]">Your Modules</h2>
+          <h2 className="text-2xl font-bold tracking-normal text-[#07122f]">Workspace Modules</h2>
           <label className="relative block">
             <Search className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
             <input
@@ -2274,6 +2460,335 @@ function DashboardView({
   );
 }
 
+function RoleHomeSection({
+  role,
+  user,
+  primaryProject,
+  projectPortfolio,
+  latestLocation,
+  trackingSnapshot,
+  trackingLoading,
+  accessDirectory,
+  pendingApprovals,
+  yesterdayReports,
+  currentTasks,
+  currentLeaveRequests,
+  clientAccess,
+  onOpenModule,
+  onOpenProfile,
+  onOpenChat
+}: {
+  role: AccessRole;
+  user: AppUser | null;
+  primaryProject: Project;
+  projectPortfolio: Project[];
+  latestLocation: LiveMapTrackedPoint | null;
+  trackingSnapshot: MobileTrackingSnapshot | null;
+  trackingLoading: boolean;
+  accessDirectory: AccessDirectoryEntry[];
+  pendingApprovals: PendingApprovalRequest[];
+  yesterdayReports: YesterdayReportItem[];
+  currentTasks: EngineerTaskItem[];
+  currentLeaveRequests: LeaveRequestItem[];
+  clientAccess: ClientAccessEntry[];
+  onOpenModule: (title: string) => void;
+  onOpenProfile: () => void;
+  onOpenChat: () => void;
+}) {
+  if (role === "admin") {
+    return (
+      <section className="px-4 pt-5 sm:px-6">
+        <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">
+                Admin project control map
+              </p>
+              <h2 className="mt-2 text-2xl font-bold tracking-normal text-[#07122f]">
+                All live and blocked Kerala works
+              </h2>
+              <p className="mt-2 max-w-[720px] text-sm leading-6 text-slate-500">
+                View every seeded work on one premium map, then jump into project control, live tracking, access control, approvals, reports, and client sharing.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => onOpenModule("Projects")}
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-blue-100 bg-blue-50 px-4 text-sm font-semibold text-[#115cff]"
+              >
+                Open Projects
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenModule("Live Tracking")}
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
+              >
+                Open Live Tracking
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-6 overflow-hidden rounded-[24px] border border-slate-200">
+            <LiveMap
+              satellite
+              trackedPoints={trackingSnapshot?.locations ?? []}
+              projectsData={projectPortfolio}
+              className="h-[420px] rounded-none border-0"
+            />
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-4">
+            <MiniMetric
+              label="Projects"
+              value={String(projectPortfolio.length)}
+              detail="Admin overview on one live map"
+            />
+            <MiniMetric
+              label="Pending approvals"
+              value={String(pendingApprovals.filter((item) => item.status === "pending").length)}
+              detail="Access, leave, and report requests"
+            />
+            <MiniMetric
+              label="Approved users"
+              value={String(accessDirectory.filter((entry) => entry.accessStatus === "active").length)}
+              detail="Company people with app access"
+            />
+            <MiniMetric
+              label="Yesterday reports"
+              value={String(yesterdayReports.length)}
+              detail="Latest synced field updates"
+            />
+          </div>
+
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {projectPortfolio.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onOpenModule("Projects")}
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left transition hover:border-blue-200 hover:bg-white"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-[#07122f]">{item.name}</p>
+                    <p className="mt-1 text-sm text-slate-500">{item.location}</p>
+                  </div>
+                  <span className={statusChipClass(item.status)}>{item.status}</span>
+                </div>
+                <div className="mt-3 grid grid-cols-3 gap-3 text-sm text-slate-600">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.1em] text-slate-400">Length</p>
+                    <p className="mt-1 font-semibold text-[#07122f]">{item.totalLengthKm} km</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.1em] text-slate-400">Completed</p>
+                    <p className="mt-1 font-semibold text-[#07122f]">{item.completedKm} km</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.1em] text-slate-400">Client</p>
+                    <p className="mt-1 font-semibold text-[#07122f]">{item.client}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (role === "engineer") {
+    const nextLeave = currentLeaveRequests[0] ?? null;
+    return (
+      <section className="px-4 pt-5 sm:px-6">
+        <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">
+                Assigned project
+              </p>
+              <h2 className="mt-2 text-2xl font-bold tracking-normal text-[#07122f]">
+                {primaryProject.name}
+              </h2>
+              <p className="mt-2 max-w-[720px] text-sm leading-6 text-slate-500">
+                Your daily field dashboard is centered on this assigned project. Attendance, tasks, leave, uploads, and live chat stay connected to this work.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={onOpenProfile}
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
+              >
+                Open profile
+              </button>
+              <button
+                type="button"
+                onClick={onOpenChat}
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-blue-100 bg-blue-50 px-4 text-sm font-semibold text-[#115cff]"
+              >
+                Open chat
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-6 overflow-hidden rounded-[24px] border border-slate-200">
+            <LiveMap
+              compact
+              satellite
+              focusProjectId={primaryProject.id}
+              trackedPoints={trackingSnapshot?.locations ?? []}
+              projectsData={projectPortfolio}
+              className="h-[340px] rounded-none border-0"
+            />
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-4">
+            <MiniMetric
+              label="Today's tasks"
+              value={String(currentTasks.length)}
+              detail={currentTasks[0]?.title ?? "No tasks assigned yet"}
+            />
+            <MiniMetric
+              label="Monthly attendance"
+              value={trackingLoading ? "..." : String((trackingSnapshot?.attendance ?? []).length)}
+              detail="Recent mobile attendance marks"
+            />
+            <MiniMetric
+              label="Next leave"
+              value={nextLeave ? nextLeave.status : "No leave"}
+              detail={nextLeave ? `${nextLeave.startDate} to ${nextLeave.endDate}` : "No active leave request"}
+            />
+            <MiniMetric
+              label="Latest live mark"
+              value={latestLocation ? `${latestLocation.distanceFromSiteM} m` : "Not marked"}
+              detail={latestLocation ? "Distance from corridor start" : "Use Mark Attendance"}
+            />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (role === "client") {
+    const assignedClient =
+      clientAccess.find((entry) => normalizeEmail(entry.email) === normalizeEmail(user?.email ?? "")) ??
+      clientAccess.find((entry) => entry.accessStatus === "approved") ??
+      null;
+    return (
+      <section className="px-4 pt-5 sm:px-6">
+        <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">
+                Client project portal
+              </p>
+              <h2 className="mt-2 text-2xl font-bold tracking-normal text-[#07122f]">
+                {assignedClient?.projectName ?? primaryProject.name}
+              </h2>
+              <p className="mt-2 max-w-[720px] text-sm leading-6 text-slate-500">
+                This portal is limited to the assigned project only. No other company or client data should be visible here.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onOpenModule("PWD Permission Reports")}
+              className="inline-flex min-h-11 items-center justify-center rounded-full border border-blue-100 bg-blue-50 px-4 text-sm font-semibold text-[#115cff]"
+            >
+              Open shared documents
+            </button>
+          </div>
+
+          <div className="mt-6 overflow-hidden rounded-[24px] border border-slate-200">
+            <LiveMap
+              compact
+              satellite
+              focusProjectId={primaryProject.id}
+              trackedPoints={trackingSnapshot?.locations ?? []}
+              projectsData={projectPortfolio}
+              className="h-[340px] rounded-none border-0"
+            />
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <MiniMetric
+              label="Project status"
+              value={primaryProject.status}
+              detail={`${primaryProject.completedKm} km completed of ${primaryProject.totalLengthKm} km`}
+            />
+            <MiniMetric
+              label="Client access"
+              value={assignedClient?.accessStatus === "approved" ? "Approved" : "Not assigned"}
+              detail={assignedClient?.email ?? "Awaiting client assignment"}
+            />
+            <MiniMetric
+              label="Live chat"
+              value="Available"
+              detail="Project-specific communication only"
+            />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="px-4 pt-5 sm:px-6">
+      <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">
+              Active project focus
+            </p>
+            <h2 className="mt-2 text-2xl font-bold tracking-normal text-[#07122f]">
+              {primaryProject.name}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              {primaryProject.location}
+            </p>
+            {latestLocation ? (
+              <p className="mt-3 text-sm font-medium text-[#115cff]">
+                Latest field mark: {latestLocation.userName} @{latestLocation.userLoginId} - {latestLocation.distanceFromSiteM} m from site start
+              </p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={() => onOpenModule("Projects")}
+            className="inline-flex min-h-11 items-center justify-center rounded-full border border-blue-100 bg-blue-50 px-4 text-sm font-semibold text-[#115cff]"
+          >
+            Open project details
+          </button>
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <MiniMetric
+            label="Completed"
+            value={formatMeters(getProgressMeters(primaryProject))}
+            detail={`${primaryProject.progress}% overall progress`}
+          />
+          <MiniMetric
+            label="Remaining"
+            value={formatMeters(getRemainingMeters(primaryProject))}
+            detail="Balance work on corridor"
+          />
+          <MiniMetric
+            label="Approvals"
+            value={String(pendingApprovals.filter((item) => item.status === "pending").length)}
+            detail="Pending actions in queue"
+          />
+          <MiniMetric
+            label="Yesterday reports"
+            value={String(yesterdayReports.length)}
+            detail="Latest synced field reports"
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function AppFrame({
   user,
   active,
@@ -2283,6 +2798,7 @@ function AppFrame({
   onBack,
   onChat,
   onModule,
+  onProfile,
   notifications,
   notificationsLoading,
   notificationsOpen,
@@ -2299,6 +2815,7 @@ function AppFrame({
   onBack?: () => void;
   onChat: () => void;
   onModule: () => void;
+  onProfile: () => void;
   notifications: MobileNotificationItem[];
   notificationsLoading: boolean;
   notificationsOpen: boolean;
@@ -2345,12 +2862,27 @@ function AppFrame({
             >
               Sign Out
             </button>
-            <div className="flex items-center gap-2">
-              <div className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-orange-100 to-emerald-100 text-[#07122f]">
-                <HardHat className="h-7 w-7" />
+            <button
+              type="button"
+              onClick={onProfile}
+              className="flex items-center gap-2"
+              aria-label="Open profile"
+            >
+              <div className="grid h-12 w-12 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-orange-100 to-emerald-100 text-[#07122f]">
+                {user?.avatarUrl ? (
+                  <Image
+                    src={user.avatarUrl}
+                    alt={user.name}
+                    width={48}
+                    height={48}
+                    className="h-12 w-12 object-cover"
+                  />
+                ) : (
+                  <HardHat className="h-7 w-7" />
+                )}
               </div>
               <ChevronDown className="h-4 w-4 text-slate-500" />
-            </div>
+            </button>
 
             {notificationsOpen ? (
               <div className="absolute right-0 top-[calc(100%+0.75rem)] z-40 w-[340px] max-w-[calc(100vw-2rem)] rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_24px_80px_rgba(15,35,80,0.16)]">
@@ -2417,6 +2949,7 @@ function AppFrame({
           onHome={onHome}
           onModule={onModule}
           onChat={onChat}
+          onProfile={onProfile}
           userName={user?.name ?? "Ajith"}
         />
       </div>
@@ -2694,6 +3227,180 @@ function ChatView({
   );
 }
 
+function ProfileView({
+  currentUser,
+  currentAccessEntry,
+  currentClientEntry,
+  projectPortfolio,
+  avatarUrl,
+  onAvatarUrlChange,
+  onSaveProfile,
+  onBack
+}: {
+  currentUser: AppUser | null;
+  currentAccessEntry: AccessDirectoryEntry | null;
+  currentClientEntry: ClientAccessEntry | null;
+  projectPortfolio: Project[];
+  avatarUrl: string | null;
+  onAvatarUrlChange: (value: string | null) => void;
+  onSaveProfile: (name: string, avatarUrl: string | null) => void;
+  onBack: () => void;
+}) {
+  const [displayName, setDisplayName] = useState(currentUser?.name ?? "");
+  const [status, setStatus] = useState("");
+  const assignedProjectNames = (currentAccessEntry?.assignedProjectIds ?? [])
+    .map((projectId) => projectPortfolio.find((item) => item.id === projectId)?.name ?? projectId)
+    .filter(Boolean);
+
+  useEffect(() => {
+    setDisplayName(currentUser?.name ?? "");
+  }, [currentUser?.name]);
+
+  async function uploadAvatar(fileList: FileList | null) {
+    const file = fileList?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setStatus("Choose an image file for the profile photo.");
+      return;
+    }
+
+    const dataUrl = await readFileAsDataUrl(file);
+    onAvatarUrlChange(dataUrl);
+    setStatus("Profile photo selected. Save profile to apply it.");
+  }
+
+  function saveProfile() {
+    if (!currentUser) return;
+    onSaveProfile(displayName, avatarUrl);
+    setStatus("Profile updated on this device.");
+  }
+
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">
+              Profile
+            </p>
+            <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">
+              Personal mobile profile
+            </h1>
+            <p className="mt-3 max-w-[720px] text-sm leading-7 text-slate-500">
+              Update the name and photo used on this device. Assigned role, approved email, and access controls stay protected under the current company approval flow.
+            </p>
+          </div>
+          <label className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border border-blue-100 bg-blue-50 px-4 text-sm font-semibold text-[#115cff]">
+            Upload photo
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(event) => {
+                void uploadAvatar(event.target.files);
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
+        </div>
+
+        <div className="mt-6 grid gap-5 lg:grid-cols-[220px_1fr]">
+          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5 text-center">
+            <div className="mx-auto grid h-28 w-28 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-orange-100 via-white to-emerald-100">
+              {avatarUrl ? (
+                <Image
+                  src={avatarUrl}
+                  alt={currentUser?.name ?? "Profile"}
+                  width={112}
+                  height={112}
+                  className="h-28 w-28 object-cover"
+                />
+              ) : (
+                <HardHat className="h-12 w-12 text-[#07122f]" />
+              )}
+            </div>
+            <p className="mt-4 text-base font-bold text-[#07122f]">{currentUser?.name ?? "Telgo User"}</p>
+            <p className="mt-1 text-sm text-slate-500">{formatRoleLabel(currentUser?.role ?? "engineer")}</p>
+          </div>
+
+          <div className="space-y-4">
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold text-slate-700">Display Name</span>
+              <input
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                placeholder="Enter display name"
+                className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none placeholder:text-slate-400 focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
+              />
+            </label>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <MiniMetric
+                label="Approved Email"
+                value={currentUser?.email ?? "Not available"}
+                detail="OTP recovery and protected login email"
+              />
+              <MiniMetric
+                label="Telgo ID"
+                value={currentUser?.loginId ?? "Not available"}
+                detail="Internal secure mobile identifier"
+              />
+              <MiniMetric
+                label="Assigned Role"
+                value={formatRoleLabel(currentUser?.role ?? "engineer")}
+                detail={currentAccessEntry?.designation ?? "Approved mobile role"}
+              />
+              <MiniMetric
+                label="Assigned Projects"
+                value={assignedProjectNames.length ? String(assignedProjectNames.length) : "0"}
+                detail={
+                  assignedProjectNames[0] ??
+                  currentClientEntry?.projectName ??
+                  "No project mapped yet"
+                }
+              />
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <p className="text-sm font-semibold text-[#07122f]">Current assignment summary</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                {assignedProjectNames.length
+                  ? assignedProjectNames.join(", ")
+                  : currentClientEntry?.projectName ?? "No assigned project yet."}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={saveProfile}
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#115cff] px-5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(17,92,255,0.22)]"
+              >
+                Save profile
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDisplayName(currentUser?.name ?? "");
+                  onAvatarUrlChange(currentUser?.avatarUrl ?? null);
+                  setStatus("Profile changes were reset.");
+                }}
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700"
+              >
+                Reset changes
+              </button>
+            </div>
+
+            {status ? <Notice>{status}</Notice> : null}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function RoleOverviewPanel({
   role,
   onOpenModule
@@ -2842,26 +3549,92 @@ function RoleSectionCard({
 function ModuleView({
   module,
   currentUser,
+  primaryProject,
+  projectPortfolio,
+  onProjectPortfolioChange,
+  accessDirectory,
+  onAccessDirectoryChange,
+  pendingApprovals,
+  onPendingApprovalsChange,
+  yesterdayReports,
+  clientAccess,
+  onClientAccessChange,
+  engineerTasks,
+  onEngineerTasksChange,
+  leaveRequests,
+  onLeaveRequestsChange,
+  workerRoster,
+  onWorkerRosterChange,
+  pwdDocuments,
+  onPwdDocumentsChange,
+  projectEditor,
+  onProjectEditorChange,
   trackingSnapshot,
   trackingLoading,
   trackingError,
   attendanceSubmitting,
   onMarkAttendance,
+  onOpenProfile,
+  onOpenChat,
+  onOpenModuleByTitle,
   onBack
 }: {
   module: ModuleItem;
   currentUser: AppUser | null;
+  primaryProject: Project;
+  projectPortfolio: Project[];
+  onProjectPortfolioChange: (updater: Project[] | ((current: Project[]) => Project[])) => void;
+  accessDirectory: AccessDirectoryEntry[];
+  onAccessDirectoryChange: (
+    updater: AccessDirectoryEntry[] | ((current: AccessDirectoryEntry[]) => AccessDirectoryEntry[])
+  ) => void;
+  pendingApprovals: PendingApprovalRequest[];
+  onPendingApprovalsChange: (
+    updater:
+      | PendingApprovalRequest[]
+      | ((current: PendingApprovalRequest[]) => PendingApprovalRequest[])
+  ) => void;
+  yesterdayReports: YesterdayReportItem[];
+  clientAccess: ClientAccessEntry[];
+  onClientAccessChange: (
+    updater: ClientAccessEntry[] | ((current: ClientAccessEntry[]) => ClientAccessEntry[])
+  ) => void;
+  engineerTasks: EngineerTaskItem[];
+  onEngineerTasksChange: (
+    updater: EngineerTaskItem[] | ((current: EngineerTaskItem[]) => EngineerTaskItem[])
+  ) => void;
+  leaveRequests: LeaveRequestItem[];
+  onLeaveRequestsChange: (
+    updater: LeaveRequestItem[] | ((current: LeaveRequestItem[]) => LeaveRequestItem[])
+  ) => void;
+  workerRoster: WorkerRosterItem[];
+  onWorkerRosterChange: (
+    updater: WorkerRosterItem[] | ((current: WorkerRosterItem[]) => WorkerRosterItem[])
+  ) => void;
+  pwdDocuments: PwdDocumentItem[];
+  onPwdDocumentsChange: (
+    updater: PwdDocumentItem[] | ((current: PwdDocumentItem[]) => PwdDocumentItem[])
+  ) => void;
+  projectEditor: ProjectEditorState | null;
+  onProjectEditorChange: (
+    updater: ProjectEditorState | null | ((current: ProjectEditorState | null) => ProjectEditorState | null)
+  ) => void;
   trackingSnapshot: MobileTrackingSnapshot | null;
   trackingLoading: boolean;
   trackingError: string;
   attendanceSubmitting: boolean;
   onMarkAttendance: () => void;
+  onOpenProfile: () => void;
+  onOpenChat: () => void;
+  onOpenModuleByTitle: (title: string) => void;
   onBack: () => void;
 }) {
   if (module.title === "Mark Attendance") {
     return (
       <AttendanceModuleView
         currentUser={currentUser}
+        primaryProject={primaryProject}
+        projectPortfolio={projectPortfolio}
         trackingSnapshot={trackingSnapshot}
         trackingLoading={trackingLoading}
         trackingError={trackingError}
@@ -2876,6 +3649,8 @@ function ModuleView({
     return (
       <LiveTrackingModuleView
         currentUser={currentUser}
+        primaryProject={primaryProject}
+        projectPortfolio={projectPortfolio}
         trackingSnapshot={trackingSnapshot}
         trackingLoading={trackingLoading}
         trackingError={trackingError}
@@ -2884,13 +3659,188 @@ function ModuleView({
     );
   }
 
-  if (module.title === "Projects") {
+  if (module.title === "Projects" || module.title === "Update Project") {
     return (
       <ProjectDetailsModuleView
         currentUser={currentUser}
+        primaryProject={primaryProject}
+        projectPortfolio={projectPortfolio}
+        projectEditor={projectEditor}
+        onProjectEditorChange={onProjectEditorChange}
+        onProjectPortfolioChange={onProjectPortfolioChange}
         trackingSnapshot={trackingSnapshot}
         trackingLoading={trackingLoading}
         trackingError={trackingError}
+        onBack={onBack}
+      />
+    );
+  }
+
+  if (module.title === "Admin Dashboard") {
+    return (
+      <AdminDashboardModuleView
+        projectPortfolio={projectPortfolio}
+        trackingSnapshot={trackingSnapshot}
+        pendingApprovals={pendingApprovals}
+        yesterdayReports={yesterdayReports}
+        accessDirectory={accessDirectory}
+        onOpenModule={onOpenModuleByTitle}
+        onBack={onBack}
+      />
+    );
+  }
+
+  if (module.title === "Company Access") {
+    return (
+      <CompanyAccessModuleView
+        accessDirectory={accessDirectory}
+        projectPortfolio={projectPortfolio}
+        onAccessDirectoryChange={onAccessDirectoryChange}
+        onBack={onBack}
+      />
+    );
+  }
+
+  if (module.title === "Pending Approval") {
+    return (
+      <PendingApprovalModuleView
+        pendingApprovals={pendingApprovals}
+        onPendingApprovalsChange={onPendingApprovalsChange}
+        onBack={onBack}
+      />
+    );
+  }
+
+  if (module.title === "Yesterday Reports") {
+    return <YesterdayReportsModuleView reports={yesterdayReports} onBack={onBack} />;
+  }
+
+  if (module.title === "Engineer Dashboard") {
+    return (
+      <EngineerDashboardModuleView
+        currentUser={currentUser}
+        primaryProject={primaryProject}
+        currentTasks={engineerTasks.filter(
+          (task) => normalizeEmail(task.assigneeEmail) === normalizeEmail(currentUser?.email ?? "")
+        )}
+        leaveRequests={leaveRequests.filter(
+          (request) => normalizeEmail(request.email) === normalizeEmail(currentUser?.email ?? "")
+        )}
+        trackingSnapshot={trackingSnapshot}
+        onOpenModule={onOpenModuleByTitle}
+        onOpenProfile={onOpenProfile}
+        onOpenChat={onOpenChat}
+        onBack={onBack}
+      />
+    );
+  }
+
+  if (module.title === "Supervisor Dashboard") {
+    return (
+      <SupervisorDashboardModuleView
+        currentUser={currentUser}
+        primaryProject={primaryProject}
+        trackingSnapshot={trackingSnapshot}
+        pendingApprovals={pendingApprovals}
+        yesterdayReports={yesterdayReports}
+        leaveRequests={leaveRequests}
+        engineerTasks={engineerTasks}
+        onOpenModule={onOpenModuleByTitle}
+        onBack={onBack}
+      />
+    );
+  }
+
+  if (module.title === "Client Dashboard") {
+    return (
+      <ClientDashboardModuleView
+        currentUser={currentUser}
+        primaryProject={primaryProject}
+        clientAccess={clientAccess}
+        onClientAccessChange={onClientAccessChange}
+        projectPortfolio={projectPortfolio}
+        pwdDocuments={pwdDocuments}
+        onBack={onBack}
+      />
+    );
+  }
+
+  if (module.title === "Finance Dashboard") {
+    return (
+      <FinanceDashboardModuleView
+        projectPortfolio={projectPortfolio}
+        yesterdayReports={yesterdayReports}
+        pwdDocuments={pwdDocuments}
+        onOpenModule={onOpenModuleByTitle}
+        onBack={onBack}
+      />
+    );
+  }
+
+  if (module.title === "Current Engineers") {
+    return (
+      <CurrentEngineersModuleView
+        projectPortfolio={projectPortfolio}
+        trackingSnapshot={trackingSnapshot}
+        accessDirectory={accessDirectory}
+        onBack={onBack}
+      />
+    );
+  }
+
+  if (module.title === "Worker Register") {
+    return (
+      <WorkerRegisterModuleView
+        workerRoster={workerRoster}
+        onWorkerRosterChange={onWorkerRosterChange}
+        onBack={onBack}
+      />
+    );
+  }
+
+  if (module.title === "PWD Permission Reports") {
+    return (
+      <PwdPermissionReportsModuleView
+        currentUser={currentUser}
+        primaryProject={primaryProject}
+        projectPortfolio={projectPortfolio}
+        pwdDocuments={pwdDocuments}
+        onPwdDocumentsChange={onPwdDocumentsChange}
+        onBack={onBack}
+      />
+    );
+  }
+
+  if (module.title === "Monthly Attendance") {
+    return (
+      <MonthlyAttendanceModuleView
+        currentUser={currentUser}
+        trackingSnapshot={trackingSnapshot}
+        leaveRequests={leaveRequests}
+        onLeaveRequestsChange={onLeaveRequestsChange}
+        onBack={onBack}
+      />
+    );
+  }
+
+  if (module.title === "Leave Requests") {
+    return (
+      <LeaveRequestModuleView
+        currentUser={currentUser}
+        leaveRequests={leaveRequests}
+        onLeaveRequestsChange={onLeaveRequestsChange}
+        onBack={onBack}
+      />
+    );
+  }
+
+  if (module.title === "Assigned Tasks") {
+    return (
+      <AssignedTasksModuleView
+        currentUser={currentUser}
+        projectPortfolio={projectPortfolio}
+        engineerTasks={engineerTasks}
+        onEngineerTasksChange={onEngineerTasksChange}
         onBack={onBack}
       />
     );
@@ -2927,6 +3877,8 @@ function ModuleView({
 
 function AttendanceModuleView({
   currentUser,
+  primaryProject,
+  projectPortfolio,
   trackingSnapshot,
   trackingLoading,
   trackingError,
@@ -2935,6 +3887,8 @@ function AttendanceModuleView({
   onBack
 }: {
   currentUser: AppUser | null;
+  primaryProject: Project;
+  projectPortfolio: Project[];
   trackingSnapshot: MobileTrackingSnapshot | null;
   trackingLoading: boolean;
   trackingError: string;
@@ -2942,7 +3896,7 @@ function AttendanceModuleView({
   onMarkAttendance: () => void;
   onBack: () => void;
 }) {
-  const project = trackingSnapshot?.project ?? projects[0];
+  const project = primaryProject;
   const corridor = project.corridor;
   const lastAttendance =
     trackingSnapshot?.attendance.find((item) => item.mobileUserId === currentUser?.id) ?? null;
@@ -2969,6 +3923,7 @@ function AttendanceModuleView({
             satellite
             focusProjectId={project.id}
             trackedPoints={trackingSnapshot?.locations ?? []}
+            projectsData={projectPortfolio}
             className="h-[360px] rounded-none border-0"
           />
         </div>
@@ -3062,19 +4017,35 @@ function AttendanceModuleView({
 
 function LiveTrackingModuleView({
   currentUser,
+  primaryProject,
+  projectPortfolio,
   trackingSnapshot,
   trackingLoading,
   trackingError,
   onBack
 }: {
   currentUser: AppUser | null;
+  primaryProject: Project;
+  projectPortfolio: Project[];
   trackingSnapshot: MobileTrackingSnapshot | null;
   trackingLoading: boolean;
   trackingError: string;
   onBack: () => void;
 }) {
-  const project = trackingSnapshot?.project ?? projects[0];
-  const locations = trackingSnapshot?.locations ?? [];
+  const project = primaryProject;
+  const allLocations = trackingSnapshot?.locations ?? [];
+  const [selectedUserId, setSelectedUserId] = useState<string>("all");
+  const trackedPeople = Array.from(
+    new Map(allLocations.map((item) => [item.mobileUserId, item])).values()
+  );
+  const locations =
+    selectedUserId === "all"
+      ? allLocations
+      : allLocations.filter((location) => location.mobileUserId === selectedUserId);
+  const selectedPerson =
+    selectedUserId === "all"
+      ? null
+      : trackedPeople.find((item) => item.mobileUserId === selectedUserId) ?? null;
 
   return (
     <section className="px-4 pb-10 pt-7 sm:px-6">
@@ -3086,12 +4057,10 @@ function LiveTrackingModuleView({
               Live Tracking
             </p>
             <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">
-              Real engineer location map
+              {selectedPerson ? `${selectedPerson.userName} live tracking` : "Real engineer location map"}
             </h1>
             <p className="mt-3 max-w-[760px] text-sm leading-7 text-slate-500">
-              Engineer attendance marks are shown here against the Vadakkekotta to SN Junction
-              corridor. Admin and supervisor roles can see all recent marks. Other roles see their
-              own location marks only.
+              Engineer attendance marks are shown here against the mapped work corridors. Admin and supervisor roles can see all recent marks, then isolate one logged person at a time from the live user strip below.
             </p>
           </div>
           <a
@@ -3109,9 +4078,43 @@ function LiveTrackingModuleView({
             satellite
             focusProjectId={project.id}
             trackedPoints={locations}
+            projectsData={projectPortfolio}
             className="h-[520px] rounded-none border-0"
           />
         </div>
+
+        {trackingSnapshot?.canViewAll ? (
+          <div className="mt-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+              Logged people
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedUserId("all")}
+                className={cn(
+                  actionChipClass("blue"),
+                  selectedUserId === "all" ? "ring-4 ring-blue-50" : ""
+                )}
+              >
+                All logged people
+              </button>
+              {trackedPeople.map((person) => (
+                <button
+                  key={person.mobileUserId}
+                  type="button"
+                  onClick={() => setSelectedUserId(person.mobileUserId)}
+                  className={cn(
+                    actionChipClass("green"),
+                    selectedUserId === person.mobileUserId ? "ring-4 ring-emerald-50" : ""
+                  )}
+                >
+                  {person.userName}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {trackingError ? (
           <div className="mt-5 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-4 text-sm text-rose-600">
@@ -3122,7 +4125,7 @@ function LiveTrackingModuleView({
         <div className="mt-5 grid gap-3 md:grid-cols-4">
           <MiniMetric
             label="Mode"
-            value={trackingSnapshot?.canViewAll ? "All crew" : "My device"}
+            value={selectedPerson ? "Single person" : trackingSnapshot?.canViewAll ? "All crew" : "My device"}
             detail={trackingSnapshot?.canViewAll ? "Admin / supervisor visibility" : "Engineer self-view"}
           />
           <MiniMetric
@@ -3131,9 +4134,9 @@ function LiveTrackingModuleView({
             detail="Latest saved marks on this corridor"
           />
           <MiniMetric
-            label="Project"
-            value={project.code}
-            detail={project.name}
+            label="Logged people"
+            value={String(trackedPeople.length)}
+            detail={selectedPerson ? `${selectedPerson.userName} isolated` : "Selectable below the map"}
           />
           <MiniMetric
             label="Viewer"
@@ -3188,52 +4191,206 @@ function LiveTrackingModuleView({
 
 function ProjectDetailsModuleView({
   currentUser,
+  primaryProject,
+  projectPortfolio,
   trackingSnapshot,
   trackingLoading,
   trackingError,
+  projectEditor,
+  onProjectEditorChange,
+  onProjectPortfolioChange,
   onBack
 }: {
   currentUser: AppUser | null;
+  primaryProject: Project;
+  projectPortfolio: Project[];
   trackingSnapshot: MobileTrackingSnapshot | null;
   trackingLoading: boolean;
   trackingError: string;
+  projectEditor: ProjectEditorState | null;
+  onProjectEditorChange: (
+    updater: ProjectEditorState | null | ((current: ProjectEditorState | null) => ProjectEditorState | null)
+  ) => void;
+  onProjectPortfolioChange: (updater: Project[] | ((current: Project[]) => Project[])) => void;
   onBack: () => void;
 }) {
-  const project = trackingSnapshot?.project ?? projects[0];
+  const canManageProjects = currentUser?.role === "admin";
+  const [selectedProjectId, setSelectedProjectId] = useState(primaryProject.id);
+  const project =
+    projectPortfolio.find((item) => item.id === selectedProjectId) ??
+    projectPortfolio[0] ??
+    primaryProject;
   const corridor = project.corridor;
+  const projectLocations =
+    trackingSnapshot?.locations.filter((location) => location.projectId === project.id) ?? [];
+
+  function openCreateProject() {
+    onProjectEditorChange(makeProjectEditor());
+  }
+
+  function openEditProject(item: Project) {
+    setSelectedProjectId(item.id);
+    onProjectEditorChange(makeProjectEditor(item));
+  }
+
+  function removeProject(projectId: string) {
+    onProjectPortfolioChange((current) => current.filter((item) => item.id !== projectId));
+    onProjectEditorChange((current) => (current?.id === projectId ? null : current));
+    if (selectedProjectId === projectId) {
+      const nextFocus =
+        projectPortfolio.find((item) => item.id !== projectId)?.id ?? primaryProject.id;
+      setSelectedProjectId(nextFocus);
+    }
+  }
+
+  function saveProject() {
+    if (!projectEditor) return;
+
+    const totalLengthKm = Math.max(0, Number(projectEditor.totalLengthKm || 0));
+    const completedKm = Math.max(0, Number(projectEditor.completedKm || 0));
+    const progress =
+      totalLengthKm > 0 ? Math.min(100, Math.round((completedKm / totalLengthKm) * 100)) : 0;
+    const existingProject = projectPortfolio.find((item) => item.id === projectEditor.id) ?? null;
+    const nextProjectId =
+      existingProject?.id ??
+      `${projectEditor.code || projectEditor.name || "project"}`
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "") ||
+      crypto.randomUUID();
+
+    onProjectPortfolioChange((current) => {
+      const anchorBase = existingProject?.coordinates ?? [
+        primaryProject.coordinates[0] + (current.length + 1) * 0.018,
+        primaryProject.coordinates[1] + (current.length + 1) * 0.01
+      ];
+
+      const nextProject: Project = {
+        id: nextProjectId,
+        code: projectEditor.code.trim() || `TLGO-PRJ-${Date.now().toString().slice(-6)}`,
+        name: projectEditor.name.trim() || "Untitled Project",
+        type: existingProject?.type ?? "Utility Corridor",
+        location: projectEditor.location.trim() || "Kerala",
+        client: existingProject?.client ?? "Client not assigned",
+        image: existingProject?.image ?? primaryProject.image,
+        status: projectEditor.status,
+        progress,
+        budget: existingProject?.budget ?? 0,
+        spent: existingProject?.spent ?? 0,
+        totalLengthKm,
+        completedKm,
+        startDate: existingProject?.startDate ?? new Date().toLocaleDateString("en-GB"),
+        endDate: existingProject?.endDate ?? "To be scheduled",
+        manager: existingProject?.manager ?? (currentUser?.name ?? "Admin"),
+        siteInCharge: existingProject?.siteInCharge ?? (currentUser?.name ?? "Site In Charge"),
+        coordinates: anchorBase as [number, number],
+        accent: existingProject?.accent ?? "blue",
+        corridor: existingProject?.corridor
+          ? {
+              ...existingProject.corridor,
+              totalMeters: Math.round(totalLengthKm * 1000),
+              completedMeters: Math.round(completedKm * 1000),
+              progressUpdates: [
+                {
+                  id: `${existingProject.id}-manual-update`,
+                  label: "Project record updated",
+                  detail: `${completedKm} km completed and status set to ${projectEditor.status}.`,
+                  recordedAt: new Date().toLocaleString("en-IN"),
+                  metersCompleted: Math.round(completedKm * 1000)
+                },
+                ...existingProject.corridor.progressUpdates.slice(0, 2)
+              ]
+            }
+          : {
+              startLabel: `${projectEditor.location.trim() || "Route"} start`,
+              endLabel: `${projectEditor.location.trim() || "Route"} end`,
+              startCoordinates: [anchorBase[0] - 0.008, anchorBase[1] - 0.004],
+              endCoordinates: [anchorBase[0] + 0.008, anchorBase[1] + 0.004],
+              totalMeters: Math.round(totalLengthKm * 1000),
+              completedMeters: Math.round(completedKm * 1000),
+              geofenceMeters: 150,
+              progressUpdates: [
+                {
+                  id: `${projectEditor.code || "project"}-seed-update`,
+                  label: "Initial project entry",
+                  detail: `${completedKm} km recorded under ${projectEditor.status} status.`,
+                  recordedAt: new Date().toLocaleString("en-IN"),
+                  metersCompleted: Math.round(completedKm * 1000)
+                }
+              ]
+            }
+      };
+
+      if (existingProject) {
+        return current.map((item) => (item.id === nextProject.id ? nextProject : item));
+      }
+
+      return [nextProject, ...current];
+    });
+
+    setSelectedProjectId(nextProjectId);
+    onProjectEditorChange(null);
+  }
 
   return (
     <section className="px-4 pb-10 pt-7 sm:px-6">
       <BackToDashboard onBack={onBack} />
       <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">
-          Project Details
+          Projects
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">{project.name}</h1>
-        <p className="mt-3 text-sm leading-7 text-slate-500">
-          {project.type} · {project.location} · {project.client}
-        </p>
+        <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-normal text-[#07122f]">
+              All live work packages
+            </h1>
+            <p className="mt-3 max-w-[760px] text-sm leading-7 text-slate-500">
+              See every seeded project, open the live corridor map, add or edit work packages, and
+              keep progress, permission blockers, and client-facing status in one controlled view.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {canManageProjects ? (
+              <button
+                type="button"
+                onClick={openCreateProject}
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#115cff] px-5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(17,92,255,0.22)]"
+              >
+                Add project
+              </button>
+            ) : null}
+            <a
+              href={getGoogleMapsDirectionsUrl(project)}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex min-h-11 items-center justify-center rounded-full border border-blue-100 bg-blue-50 px-4 text-sm font-semibold text-[#115cff]"
+            >
+              Open route in Google Maps
+            </a>
+          </div>
+        </div>
 
         <div className="mt-5 grid gap-3 md:grid-cols-4">
           <MiniMetric
+            label="Projects"
+            value={String(projectPortfolio.length)}
+            detail="Live seeded work packages"
+          />
+          <MiniMetric
             label="Completed"
-            value={formatMeters(getProgressMeters(project))}
-            detail={`${project.progress}% corridor completion`}
+            value={String(projectPortfolio.filter((item) => item.status === "Completed").length)}
+            detail="Projects closed out"
           />
           <MiniMetric
-            label="Remaining"
-            value={formatMeters(getRemainingMeters(project))}
-            detail="Balance work still open"
+            label="Permission holds"
+            value={String(projectPortfolio.filter((item) => item.status === "Delayed").length)}
+            detail="PWD or approval blockers"
           />
           <MiniMetric
-            label="Geofence"
-            value={corridor ? formatMeters(corridor.geofenceMeters) : "120 m"}
-            detail="Engineer attendance check radius"
-          />
-          <MiniMetric
-            label="Viewer"
-            value={formatRoleLabel(currentUser?.role ?? "engineer")}
-            detail="Current signed-in role"
+            label="Tracked crew"
+            value={String(projectLocations.length)}
+            detail={trackingLoading ? "Refreshing live marks" : "Recent marks on selected project"}
           />
         </div>
 
@@ -3242,7 +4399,8 @@ function ProjectDetailsModuleView({
             satellite
             compact
             focusProjectId={project.id}
-            trackedPoints={trackingSnapshot?.locations ?? []}
+            trackedPoints={projectLocations}
+            projectsData={projectPortfolio}
             className="h-[420px] rounded-none border-0"
           />
         </div>
@@ -3254,25 +4412,1454 @@ function ProjectDetailsModuleView({
         ) : null}
 
         <div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
-          <p className="text-sm font-semibold text-[#07122f]">
-            {trackingLoading ? "Refreshing live project detail..." : "Corridor update"}
-          </p>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            {corridor?.progressUpdates[0]?.detail ??
-              "Project progress updates will appear here as engineers submit live field work."}
-          </p>
-          {corridor ? (
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <div className="rounded-2xl border border-white bg-white px-4 py-4">
-                <p className="text-sm font-semibold text-[#07122f]">{corridor.startLabel}</p>
-                <p className="mt-1 text-sm text-slate-500">Corridor start / attendance anchor</p>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-[#07122f]">
+                {trackingLoading ? "Refreshing selected project..." : "Selected project focus"}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                {project.type} - {project.location} - {project.client}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                {corridor?.progressUpdates[0]?.detail ??
+                  "Project progress updates will appear here as engineers submit live field work."}
+              </p>
+            </div>
+            <span className={statusChipClass(project.status)}>{project.status}</span>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-4">
+            <MiniMetric
+              label="Completed"
+              value={formatMeters(getProgressMeters(project))}
+              detail={`${project.progress}% corridor completion`}
+            />
+            <MiniMetric
+              label="Remaining"
+              value={formatMeters(getRemainingMeters(project))}
+              detail="Balance corridor still open"
+            />
+            <MiniMetric
+              label="Geofence"
+              value={corridor ? formatMeters(corridor.geofenceMeters) : "120 m"}
+              detail="Attendance check radius"
+            />
+            <MiniMetric label="Project code" value={project.code} detail={project.manager} />
+          </div>
+        </div>
+
+        {canManageProjects && projectEditor ? (
+          <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">
+                  {projectEditor.mode === "create" ? "New project" : "Edit project"}
+                </p>
+                <h2 className="mt-2 text-2xl font-bold tracking-normal text-[#07122f]">
+                  {projectEditor.mode === "create"
+                    ? "Add a new live work package"
+                    : `Update ${projectEditor.name || "project"}`}
+                </h2>
               </div>
-              <div className="rounded-2xl border border-white bg-white px-4 py-4">
-                <p className="text-sm font-semibold text-[#07122f]">{corridor.endLabel}</p>
-                <p className="mt-1 text-sm text-slate-500">Corridor end / planned destination</p>
+              <button
+                type="button"
+                onClick={() => onProjectEditorChange(null)}
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">Project name</span>
+                <input
+                  value={projectEditor.name}
+                  onChange={(event) =>
+                    onProjectEditorChange((current) =>
+                      current ? { ...current, name: event.target.value } : current
+                    )
+                  }
+                  className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">Project code</span>
+                <input
+                  value={projectEditor.code}
+                  onChange={(event) =>
+                    onProjectEditorChange((current) =>
+                      current ? { ...current, code: event.target.value } : current
+                    )
+                  }
+                  className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">Location</span>
+                <input
+                  value={projectEditor.location}
+                  onChange={(event) =>
+                    onProjectEditorChange((current) =>
+                      current ? { ...current, location: event.target.value } : current
+                    )
+                  }
+                  className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">Status</span>
+                <select
+                  value={projectEditor.status}
+                  onChange={(event) =>
+                    onProjectEditorChange((current) =>
+                      current
+                        ? { ...current, status: event.target.value as ProjectEditorState["status"] }
+                        : current
+                    )
+                  }
+                  className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
+                >
+                  {projectStatusOptions.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">Total length (km)</span>
+                <input
+                  value={projectEditor.totalLengthKm}
+                  onChange={(event) =>
+                    onProjectEditorChange((current) =>
+                      current ? { ...current, totalLengthKm: event.target.value } : current
+                    )
+                  }
+                  inputMode="decimal"
+                  className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">Completed (km)</span>
+                <input
+                  value={projectEditor.completedKm}
+                  onChange={(event) =>
+                    onProjectEditorChange((current) =>
+                      current ? { ...current, completedKm: event.target.value } : current
+                    )
+                  }
+                  inputMode="decimal"
+                  className="min-h-14 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-[#115cff] focus:ring-4 focus:ring-blue-50"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={saveProject}
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#115cff] px-5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(17,92,255,0.22)]"
+              >
+                Save project
+              </button>
+              <button
+                type="button"
+                onClick={() => onProjectEditorChange(null)}
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700"
+              >
+                Close editor
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mt-6 space-y-4">
+          {projectPortfolio.map((item) => {
+            const itemCorridor = item.corridor;
+            const isSelected = item.id === project.id;
+            return (
+              <article
+                key={item.id}
+                className={cn(
+                  "rounded-[24px] border px-5 py-5 transition",
+                  isSelected ? "border-blue-200 bg-blue-50/40" : "border-slate-200 bg-white"
+                )}
+              >
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="max-w-[760px]">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-base font-bold text-[#07122f]">{item.name}</p>
+                      <span className={statusChipClass(item.status)}>{item.status}</span>
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      {item.location} - {item.client}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      {itemCorridor?.progressUpdates[0]?.detail ?? "No progress note yet."}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProjectId(item.id)}
+                      className={actionChipClass("blue")}
+                    >
+                      {isSelected ? "Focused on map" : "Show on map"}
+                    </button>
+                    {canManageProjects ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => openEditProject(item)}
+                          className={actionChipClass("green")}
+                        >
+                          Edit project
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeProject(item.id)}
+                          className={actionChipClass("red")}
+                        >
+                          Remove
+                        </button>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-4">
+                  <MiniMetric
+                    label="Length"
+                    value={`${item.totalLengthKm.toFixed(1)} km`}
+                    detail={item.code}
+                  />
+                  <MiniMetric
+                    label="Completed"
+                    value={`${item.completedKm.toFixed(1)} km`}
+                    detail={`${item.progress}% progress`}
+                  />
+                  <MiniMetric
+                    label="Manager"
+                    value={item.manager}
+                    detail={item.siteInCharge}
+                  />
+                  <MiniMetric
+                    label="Geofence"
+                    value={itemCorridor ? formatMeters(itemCorridor.geofenceMeters) : "150 m"}
+                    detail={itemCorridor?.endLabel ?? "Route end pending"}
+                  />
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function AdminDashboardModuleView({
+  projectPortfolio,
+  trackingSnapshot,
+  pendingApprovals,
+  yesterdayReports,
+  accessDirectory,
+  onOpenModule,
+  onBack
+}: {
+  projectPortfolio: Project[];
+  trackingSnapshot: MobileTrackingSnapshot | null;
+  pendingApprovals: PendingApprovalRequest[];
+  yesterdayReports: YesterdayReportItem[];
+  accessDirectory: AccessDirectoryEntry[];
+  onOpenModule: (title: string) => void;
+  onBack: () => void;
+}) {
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">
+          Admin Dashboard
+        </p>
+        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">
+          Premium operations control room
+        </h1>
+        <p className="mt-3 text-sm leading-7 text-slate-500">
+          This admin layer keeps all projects, approvals, live field presence, access control,
+          and client visibility inside one mobile-first command center.
+        </p>
+
+        <div className="mt-6 overflow-hidden rounded-[24px] border border-slate-200">
+          <LiveMap
+            satellite
+            trackedPoints={trackingSnapshot?.locations ?? []}
+            projectsData={projectPortfolio}
+            className="h-[520px] rounded-none border-0"
+          />
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <MiniMetric label="Projects" value={String(projectPortfolio.length)} detail="Seeded live portfolio" />
+          <MiniMetric
+            label="Active access"
+            value={String(accessDirectory.filter((entry) => entry.accessStatus === "active").length)}
+            detail="Approved mobile users"
+          />
+          <MiniMetric
+            label="Pending approvals"
+            value={String(pendingApprovals.filter((item) => item.status === "pending").length)}
+            detail="Access, leave, and report queue"
+          />
+          <MiniMetric
+            label="Yesterday reports"
+            value={String(yesterdayReports.length)}
+            detail="Latest field submissions"
+          />
+        </div>
+
+        <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          {[
+            {
+              title: "Projects",
+              detail: "See status, add work packages, and edit corridor progress.",
+              moduleTitle: "Projects"
+            },
+            {
+              title: "Live Tracking",
+              detail: "Open the common map and isolate one logged person.",
+              moduleTitle: "Live Tracking"
+            },
+            {
+              title: "Company Access",
+              detail: "Control email, role, PIN reset, and access removal.",
+              moduleTitle: "Company Access"
+            },
+            {
+              title: "Pending Approval",
+              detail: "Approve or reject access, leave, and report requests.",
+              moduleTitle: "Pending Approval"
+            },
+            {
+              title: "Yesterday Reports",
+              detail: "Review the last submitted field reports quickly.",
+              moduleTitle: "Yesterday Reports"
+            }
+          ].map((action) => (
+            <button
+              key={action.title}
+              type="button"
+              onClick={() => onOpenModule(action.moduleTitle)}
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left transition hover:border-blue-200 hover:bg-white"
+            >
+              <p className="text-sm font-bold text-[#07122f]">{action.title}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">{action.detail}</p>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-6 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-[#07122f]">All project status</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  The admin overview keeps every corridor and its current work condition visible.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onOpenModule("Projects")}
+                className="inline-flex min-h-10 items-center justify-center rounded-full border border-blue-100 bg-blue-50 px-4 text-sm font-semibold text-[#115cff]"
+              >
+                Open projects
+              </button>
+            </div>
+            <div className="mt-4 space-y-3">
+              {projectPortfolio.map((project) => (
+                <div key={project.id} className="rounded-2xl border border-white bg-white px-4 py-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-bold text-[#07122f]">{project.name}</p>
+                        <span className={statusChipClass(project.status)}>{project.status}</span>
+                      </div>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {project.location} - {project.completedKm.toFixed(1)} km / {project.totalLengthKm.toFixed(1)} km
+                      </p>
+                    </div>
+                    <p className="text-sm font-semibold text-[#115cff]">{project.progress}% complete</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5">
+            <p className="text-sm font-semibold text-[#07122f]">Logged people now</p>
+            <p className="mt-1 text-sm text-slate-500">
+              Selecting live tracking opens the common map, then you can isolate one person.
+            </p>
+            <div className="mt-4 space-y-3">
+              {(trackingSnapshot?.locations ?? []).slice(0, 6).map((location) => (
+                <div key={location.id} className="rounded-2xl border border-white bg-white px-4 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-[#07122f]">{location.userName}</p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {location.projectName} - {location.distanceFromSiteM} m from site start
+                      </p>
+                    </div>
+                    <span
+                      className={cn(
+                        "rounded-full px-3 py-1 text-xs font-semibold",
+                        location.withinGeofence
+                          ? "bg-emerald-50 text-[#14b866]"
+                          : "bg-amber-50 text-[#ff8a00]"
+                      )}
+                    >
+                      {location.withinGeofence ? "Live" : "Outside"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {(trackingSnapshot?.locations.length ?? 0) === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-5">
+                  <p className="text-sm font-semibold text-[#07122f]">No live attendance marks yet</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Once an engineer marks attendance from the field, the point will appear here and on the common map.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CompanyAccessModuleView({
+  accessDirectory,
+  projectPortfolio,
+  onAccessDirectoryChange,
+  onBack
+}: {
+  accessDirectory: AccessDirectoryEntry[];
+  projectPortfolio: Project[];
+  onAccessDirectoryChange: (
+    updater: AccessDirectoryEntry[] | ((current: AccessDirectoryEntry[]) => AccessDirectoryEntry[])
+  ) => void;
+  onBack: () => void;
+}) {
+  const [assignmentDrafts, setAssignmentDrafts] = useState<Record<string, string>>({});
+
+  function cycleRole(id: string) {
+    const roles: AccessRole[] = ["admin", "supervisor", "engineer", "client", "finance"];
+    onAccessDirectoryChange((current) =>
+      current.map((entry) => {
+        if (entry.id !== id) return entry;
+        const nextRole = roles[(roles.indexOf(resolveAccessRole(entry.role)) + 1) % roles.length];
+        return { ...entry, role: nextRole };
+      })
+    );
+  }
+
+  function resetPin(id: string) {
+    onAccessDirectoryChange((current) =>
+      current.map((entry) => (entry.id === id ? { ...entry, pinStatus: "reset_required" } : entry))
+    );
+  }
+
+  function removeAccess(id: string) {
+    onAccessDirectoryChange((current) =>
+      current.map((entry) =>
+        entry.id === id ? { ...entry, accessStatus: "blocked", pinStatus: "removed" } : entry
+      )
+    );
+  }
+
+  function assignProject(id: string) {
+    const selectedProjectId = assignmentDrafts[id];
+    if (!selectedProjectId) return;
+    onAccessDirectoryChange((current) =>
+      current.map((entry) =>
+        entry.id === id ? { ...entry, assignedProjectIds: [selectedProjectId] } : entry
+      )
+    );
+  }
+
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">Company Access</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">
+          Approved users and access control
+        </h1>
+        <div className="mt-6 space-y-4">
+          {accessDirectory.map((entry) => (
+            <div key={entry.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-bold text-[#07122f]">{entry.name}</p>
+                    <span className={statusChipClass(entry.accessStatus === "active" ? "Active" : "Delayed")}>
+                      {entry.accessStatus}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {entry.designation} - {entry.email}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {entry.phone} - PIN {entry.pinStatus.replace("_", " ")} - Last seen {entry.lastSeen}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Assigned project:{" "}
+                    {entry.assignedProjectIds
+                      .map(
+                        (projectId) =>
+                          projectPortfolio.find((item) => item.id === projectId)?.name ?? projectId
+                      )
+                      .join(", ") || "No project assigned"}
+                  </p>
+                </div>
+                <div className="flex max-w-[420px] flex-wrap gap-2">
+                  <button type="button" onClick={() => cycleRole(entry.id)} className={actionChipClass("blue")}>
+                    Change role
+                  </button>
+                  <button type="button" onClick={() => resetPin(entry.id)} className={actionChipClass("orange")}>
+                    Reset PIN
+                  </button>
+                  <button type="button" onClick={() => removeAccess(entry.id)} className={actionChipClass("red")}>
+                    Remove access
+                  </button>
+                  <select
+                    value={assignmentDrafts[entry.id] ?? entry.assignedProjectIds[0] ?? ""}
+                    onChange={(event) =>
+                      setAssignmentDrafts((current) => ({
+                        ...current,
+                        [entry.id]: event.target.value
+                      }))
+                    }
+                    className="min-h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none focus:border-[#115cff]"
+                  >
+                    <option value="">Select project</option>
+                    {projectPortfolio.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => assignProject(entry.id)}
+                    className={actionChipClass("green")}
+                  >
+                    Assign project
+                  </button>
+                </div>
               </div>
             </div>
-          ) : null}
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SupervisorDashboardModuleView({
+  currentUser,
+  primaryProject,
+  trackingSnapshot,
+  pendingApprovals,
+  yesterdayReports,
+  leaveRequests,
+  engineerTasks,
+  onOpenModule,
+  onBack
+}: {
+  currentUser: AppUser | null;
+  primaryProject: Project;
+  trackingSnapshot: MobileTrackingSnapshot | null;
+  pendingApprovals: PendingApprovalRequest[];
+  yesterdayReports: YesterdayReportItem[];
+  leaveRequests: LeaveRequestItem[];
+  engineerTasks: EngineerTaskItem[];
+  onOpenModule: (title: string) => void;
+  onBack: () => void;
+}) {
+  const liveCount = new Set((trackingSnapshot?.locations ?? []).map((entry) => entry.mobileUserId)).size;
+  const pendingLeaveCount = leaveRequests.filter((entry) => entry.status === "pending").length;
+  const pendingReportCount = yesterdayReports.filter((entry) => entry.status === "pending_review").length;
+
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">Supervisor Dashboard</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">Site supervision control board</h1>
+            <p className="mt-3 max-w-[760px] text-sm leading-7 text-slate-500">
+              Control field attendance, live engineers, leave requests, daily reports, and site blockers without exposing the full admin access layer.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => onOpenModule("Live Tracking")} className={actionChipClass("blue")}>
+              Open live map
+            </button>
+            <button type="button" onClick={() => onOpenModule("Yesterday Reports")} className={actionChipClass("green")}>
+              Open reports
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <MiniMetric label="Assigned project" value={primaryProject.code} detail={primaryProject.name} />
+          <MiniMetric label="Live engineers" value={String(liveCount)} detail="Attendance-based live count" />
+          <MiniMetric label="Pending leave" value={String(pendingLeaveCount)} detail="Awaiting supervisor review" />
+          <MiniMetric label="Pending reports" value={String(pendingReportCount)} detail="Field uploads waiting check" />
+        </div>
+
+        <div className="mt-6 grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5">
+            <p className="text-sm font-semibold text-[#07122f]">Supervisor quick board</p>
+            <div className="mt-4 space-y-3">
+              {[
+                {
+                  title: "Live Tracking",
+                  detail: "See all logged people and isolate one engineer on the common map."
+                },
+                {
+                  title: "Monthly Attendance",
+                  detail: "Review attendance marks and leave history for the field team."
+                },
+                {
+                  title: "Leave Requests",
+                  detail: "Approve or reject new leave requests from engineers."
+                },
+                {
+                  title: "Assigned Tasks",
+                  detail: "Follow the tasks that admin pushed for today's execution."
+                }
+              ].map((item) => (
+                <button
+                  key={item.title}
+                  type="button"
+                  onClick={() => onOpenModule(item.title)}
+                  className="w-full rounded-2xl border border-white bg-white px-4 py-4 text-left transition hover:border-blue-200"
+                >
+                  <p className="text-sm font-bold text-[#07122f]">{item.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">{item.detail}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5">
+            <p className="text-sm font-semibold text-[#07122f]">Supervisor workflow snapshot</p>
+            <div className="mt-4 space-y-3">
+              <div className="rounded-2xl border border-white bg-white px-4 py-4">
+                <p className="text-sm font-bold text-[#07122f]">Current viewer</p>
+                <p className="mt-2 text-sm text-slate-500">{currentUser?.name ?? "Supervisor"} - {primaryProject.location}</p>
+              </div>
+              <div className="rounded-2xl border border-white bg-white px-4 py-4">
+                <p className="text-sm font-bold text-[#07122f]">Approvals waiting</p>
+                <p className="mt-2 text-sm text-slate-500">
+                  {pendingApprovals.filter((entry) => entry.status === "pending").length} requests are still waiting in the shared queue.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white bg-white px-4 py-4">
+                <p className="text-sm font-bold text-[#07122f]">Task follow-up</p>
+                <p className="mt-2 text-sm text-slate-500">
+                  {engineerTasks.length} seeded tasks are available to supervise today.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PendingApprovalModuleView({
+  pendingApprovals,
+  onPendingApprovalsChange,
+  onBack
+}: {
+  pendingApprovals: PendingApprovalRequest[];
+  onPendingApprovalsChange: (
+    updater:
+      | PendingApprovalRequest[]
+      | ((current: PendingApprovalRequest[]) => PendingApprovalRequest[])
+  ) => void;
+  onBack: () => void;
+}) {
+  function updateApproval(id: string, status: PendingApprovalRequest["status"]) {
+    onPendingApprovalsChange((current) =>
+      current.map((item) => (item.id === id ? { ...item, status } : item))
+    );
+  }
+
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">Pending Approval</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">Approval queue</h1>
+        <div className="mt-6 space-y-4">
+          {pendingApprovals.map((item) => (
+            <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-bold text-[#07122f]">{item.requesterName}</p>
+                    <span className={statusChipClass(item.status === "pending" ? "Delayed" : item.status === "approved" ? "Completed" : "At Risk")}>
+                      {item.status}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {item.requestedRole} - {item.projectName} - {item.submittedAt}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">{item.reason}</p>
+                </div>
+                {item.status === "pending" ? (
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => updateApproval(item.id, "approved")} className={actionChipClass("green")}>
+                      Approve
+                    </button>
+                    <button type="button" onClick={() => updateApproval(item.id, "rejected")} className={actionChipClass("red")}>
+                      Reject
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function YesterdayReportsModuleView({
+  reports,
+  onBack
+}: {
+  reports: YesterdayReportItem[];
+  onBack: () => void;
+}) {
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">Yesterday Reports</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">Yesterday's field submissions</h1>
+        <div className="mt-6 space-y-4">
+          {reports.map((report) => (
+            <div key={report.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold text-[#07122f]">{report.projectName}</p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {report.submittedBy} - {report.role} - {report.submittedAt}
+                  </p>
+                </div>
+                <span className={statusChipClass(report.status === "approved" ? "Completed" : report.status === "synced" ? "On Track" : "Delayed")}>
+                  {report.status}
+                </span>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{report.summary}</p>
+              <div className="mt-3 grid grid-cols-2 gap-3 text-sm text-slate-500 md:grid-cols-4">
+                <div>Progress: {report.progressText}</div>
+                <div>Images: {report.imageCount}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function EngineerDashboardModuleView({
+  currentUser,
+  primaryProject,
+  currentTasks,
+  leaveRequests,
+  trackingSnapshot,
+  onOpenModule,
+  onOpenProfile,
+  onOpenChat,
+  onBack
+}: {
+  currentUser: AppUser | null;
+  primaryProject: Project;
+  currentTasks: EngineerTaskItem[];
+  leaveRequests: LeaveRequestItem[];
+  trackingSnapshot: MobileTrackingSnapshot | null;
+  onOpenModule: (title: string) => void;
+  onOpenProfile: () => void;
+  onOpenChat: () => void;
+  onBack: () => void;
+}) {
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">Engineer Dashboard</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">{primaryProject.name}</h1>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Assigned project heading for {currentUser?.name ?? "Engineer"} with attendance, tasks, live reports, and chat tied to the same corridor.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={onOpenProfile} className={actionChipClass("blue")}>
+              Edit profile
+            </button>
+            <button type="button" onClick={onOpenChat} className={actionChipClass("green")}>
+              Open chat
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <MiniMetric label="Assigned project" value={primaryProject.code} detail={primaryProject.location} />
+          <MiniMetric label="Today's tasks" value={String(currentTasks.length)} detail={currentTasks[0]?.title ?? "No tasks assigned"} />
+          <MiniMetric label="Leave requests" value={String(leaveRequests.length)} detail={leaveRequests[0]?.status ?? "No leave requests"} />
+          <MiniMetric label="Attendance marks" value={String(trackingSnapshot?.attendance.length ?? 0)} detail="Recent live attendance entries" />
+        </div>
+
+        <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {[
+            { title: "Mark Attendance", detail: "Capture live GPS attendance on site." },
+            { title: "Monthly Attendance", detail: "Review worked days and approved leave." },
+            { title: "Assigned Tasks", detail: "See the tasks pushed for today." },
+            { title: "Leave Requests", detail: "Request and track leave from mobile." }
+          ].map((item) => (
+            <button
+              key={item.title}
+              type="button"
+              onClick={() => onOpenModule(item.title)}
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left transition hover:border-blue-200 hover:bg-white"
+            >
+              <p className="text-sm font-bold text-[#07122f]">{item.title}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">{item.detail}</p>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-6 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5">
+            <p className="text-sm font-semibold text-[#07122f]">Today's assigned tasks</p>
+            <div className="mt-4 space-y-3">
+              {currentTasks.length > 0 ? (
+                currentTasks.map((task) => (
+                  <div key={task.id} className="rounded-2xl border border-white bg-white px-4 py-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-bold text-[#07122f]">{task.title}</p>
+                        <p className="mt-2 text-sm leading-6 text-slate-500">{task.detail}</p>
+                        <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                          {task.dueLabel}
+                        </p>
+                      </div>
+                      <span className={statusChipClass(task.priority === "high" ? "At Risk" : task.priority === "medium" ? "On Track" : "Completed")}>
+                        {task.priority}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-5">
+                  <p className="text-sm font-semibold text-[#07122f]">No tasks assigned today</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Tasks pushed from admin or supervisor will appear here automatically.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5">
+            <p className="text-sm font-semibold text-[#07122f]">Engineer action strip</p>
+            <div className="mt-4 space-y-3">
+              <button type="button" onClick={onOpenProfile} className="w-full rounded-2xl border border-white bg-white px-4 py-4 text-left transition hover:border-blue-200">
+                <p className="text-sm font-bold text-[#07122f]">Profile and photo</p>
+                <p className="mt-2 text-sm leading-6 text-slate-500">Update display name and upload the mobile profile image.</p>
+              </button>
+              <button type="button" onClick={onOpenChat} className="w-full rounded-2xl border border-white bg-white px-4 py-4 text-left transition hover:border-blue-200">
+                <p className="text-sm font-bold text-[#07122f]">Live chat</p>
+                <p className="mt-2 text-sm leading-6 text-slate-500">Open the current project chat with mentions and image upload.</p>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FinanceDashboardModuleView({
+  projectPortfolio,
+  yesterdayReports,
+  pwdDocuments,
+  onOpenModule,
+  onBack
+}: {
+  projectPortfolio: Project[];
+  yesterdayReports: YesterdayReportItem[];
+  pwdDocuments: PwdDocumentItem[];
+  onOpenModule: (title: string) => void;
+  onBack: () => void;
+}) {
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">Finance Dashboard</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">Finance workspace shell</h1>
+        <p className="mt-3 max-w-[760px] text-sm leading-7 text-slate-500">
+          Finance-specific workflows are reserved for the next phase, but the role shell, project context, and document access are already aligned with the live app structure.
+        </p>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <MiniMetric label="Projects" value={String(projectPortfolio.length)} detail="Visible live projects" />
+          <MiniMetric label="Yesterday reports" value={String(yesterdayReports.length)} detail="Field reports available to review" />
+          <MiniMetric label="Documents" value={String(pwdDocuments.length)} detail="Shared permission and client files" />
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          {[
+            { title: "Projects", detail: "Open project status and corridor progress." },
+            { title: "Yesterday Reports", detail: "Read the latest uploaded field reports." },
+            { title: "PWD Permission Reports", detail: "Open shared files and supporting documents." }
+          ].map((item) => (
+            <button
+              key={item.title}
+              type="button"
+              onClick={() => onOpenModule(item.title)}
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left transition hover:border-blue-200 hover:bg-white"
+            >
+              <p className="text-sm font-bold text-[#07122f]">{item.title}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">{item.detail}</p>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
+          <p className="text-sm font-semibold text-[#07122f]">Next finance buildout</p>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            Expense, payroll, invoice, and approval controls are intentionally held for the next phase so the admin, engineer, client, and live tracking foundations stay stable first.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ClientDashboardModuleView({
+  currentUser,
+  primaryProject,
+  clientAccess,
+  onClientAccessChange,
+  projectPortfolio,
+  pwdDocuments,
+  onBack
+}: {
+  currentUser: AppUser | null;
+  primaryProject: Project;
+  clientAccess: ClientAccessEntry[];
+  onClientAccessChange: (
+    updater: ClientAccessEntry[] | ((current: ClientAccessEntry[]) => ClientAccessEntry[])
+  ) => void;
+  projectPortfolio: Project[];
+  pwdDocuments: PwdDocumentItem[];
+  onBack: () => void;
+}) {
+  function assignClient(id: string, projectId: string) {
+    const project = projectPortfolio.find((item) => item.id === projectId) ?? null;
+    onClientAccessChange((current) =>
+      current.map((entry) =>
+        entry.id === id
+          ? {
+              ...entry,
+              accessStatus: "approved",
+              projectId,
+              projectName: project?.name ?? null,
+              lastShare: "Shared just now"
+            }
+          : entry
+      )
+    );
+  }
+
+  function removeClient(id: string) {
+    onClientAccessChange((current) =>
+      current.map((entry) =>
+        entry.id === id
+          ? { ...entry, accessStatus: "not_assigned", projectId: null, projectName: null }
+          : entry
+      )
+    );
+  }
+
+  const approvedDocs = pwdDocuments.filter(
+    (item) => item.projectId === primaryProject.id || item.category === "Client Document"
+  );
+  const [assignmentDrafts, setAssignmentDrafts] = useState<Record<string, string>>({});
+
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">Client Dashboard</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">Client access and project privacy</h1>
+        <p className="mt-3 text-sm leading-7 text-slate-500">
+          Client accounts should only see their assigned project, the related map, and the files shared with them. No cross-project leakage is allowed.
+        </p>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <MiniMetric label="Assigned project" value={primaryProject.name} detail={primaryProject.location} />
+          <MiniMetric label="Approved clients" value={String(clientAccess.filter((item) => item.accessStatus === "approved").length)} detail="Currently mapped client users" />
+          <MiniMetric label="Shared files" value={String(approvedDocs.length)} detail="Documents visible to clients" />
+        </div>
+
+        <div className="mt-6 space-y-4">
+          {clientAccess.map((entry) => (
+            <div key={entry.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="text-sm font-bold text-[#07122f]">{entry.clientName}</p>
+                  <p className="mt-1 text-sm text-slate-500">{entry.email}</p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {entry.projectName ?? "No project assigned yet"} - Last share: {entry.lastShare}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {entry.accessStatus === "not_assigned" ? (
+                    <>
+                      <select
+                        value={assignmentDrafts[entry.id] ?? ""}
+                        onChange={(event) =>
+                          setAssignmentDrafts((current) => ({
+                            ...current,
+                            [entry.id]: event.target.value
+                          }))
+                        }
+                        className="min-h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none focus:border-[#115cff]"
+                      >
+                        <option value="">Select project</option>
+                        {projectPortfolio.map((project) => (
+                          <option key={project.id} value={project.id}>
+                            {project.name}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          assignClient(entry.id, assignmentDrafts[entry.id] || primaryProject.id)
+                        }
+                        className={actionChipClass("green")}
+                      >
+                        Assign project
+                      </button>
+                    </>
+                  ) : (
+                    <button type="button" onClick={() => removeClient(entry.id)} className={actionChipClass("red")}>
+                      Remove access
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CurrentEngineersModuleView({
+  projectPortfolio,
+  trackingSnapshot,
+  accessDirectory,
+  onBack
+}: {
+  projectPortfolio: Project[];
+  trackingSnapshot: MobileTrackingSnapshot | null;
+  accessDirectory: AccessDirectoryEntry[];
+  onBack: () => void;
+}) {
+  const liveNames = new Set((trackingSnapshot?.locations ?? []).map((item) => item.userName));
+  const engineersOnly = accessDirectory.filter((entry) => entry.role === "engineer" || entry.role === "supervisor");
+
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">Current Engineers</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">Live engineering staff</h1>
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <MiniMetric label="Live now" value={String(liveNames.size)} detail="Attendance-based live count" />
+          <MiniMetric label="Engineering users" value={String(engineersOnly.length)} detail="Engineer and supervisor accounts" />
+          <MiniMetric label="Projects" value={String(projectPortfolio.length)} detail="Visible project corridors" />
+        </div>
+        <div className="mt-6 space-y-3">
+          {engineersOnly.map((entry) => (
+            <div key={entry.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold text-[#07122f]">{entry.name}</p>
+                  <p className="mt-1 text-sm text-slate-500">{entry.designation} - {entry.phone}</p>
+                </div>
+                <span className={statusChipClass(liveNames.has(entry.name) ? "On Track" : "Delayed")}>
+                  {liveNames.has(entry.name) ? "live" : "not live"}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function WorkerRegisterModuleView({
+  workerRoster,
+  onWorkerRosterChange,
+  onBack
+}: {
+  workerRoster: WorkerRosterItem[];
+  onWorkerRosterChange: (
+    updater: WorkerRosterItem[] | ((current: WorkerRosterItem[]) => WorkerRosterItem[])
+  ) => void;
+  onBack: () => void;
+}) {
+  function removeWorker(id: string) {
+    onWorkerRosterChange((current) => current.filter((entry) => entry.id !== id));
+  }
+
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">Worker Register</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">All specified workers</h1>
+        <div className="mt-6 space-y-4">
+          {workerRoster.map((worker) => (
+            <div key={worker.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="text-sm font-bold text-[#07122f]">{worker.name}</p>
+                  <p className="mt-1 text-sm text-slate-500">{worker.designation} - {worker.phone}</p>
+                  <p className="mt-1 text-sm text-slate-500">{worker.projectName}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <span className={statusChipClass(worker.workerStatus === "live" ? "On Track" : worker.workerStatus === "leave" ? "At Risk" : "Delayed")}>
+                    {worker.workerStatus}
+                  </span>
+                  <button type="button" onClick={() => removeWorker(worker.id)} className={actionChipClass("red")}>
+                    Remove worker
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PwdPermissionReportsModuleView({
+  currentUser,
+  primaryProject,
+  projectPortfolio,
+  pwdDocuments,
+  onPwdDocumentsChange,
+  onBack
+}: {
+  currentUser: AppUser | null;
+  primaryProject: Project;
+  projectPortfolio: Project[];
+  pwdDocuments: PwdDocumentItem[];
+  onPwdDocumentsChange: (
+    updater: PwdDocumentItem[] | ((current: PwdDocumentItem[]) => PwdDocumentItem[])
+  ) => void;
+  onBack: () => void;
+}) {
+  async function uploadDocument(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    const targetProject =
+      projectPortfolio.find((item) => item.id === primaryProject.id) ?? primaryProject;
+    onPwdDocumentsChange((current) => [
+      {
+        id: crypto.randomUUID(),
+        title: file.name,
+        projectId: targetProject.id,
+        projectName: targetProject.name,
+        uploadedBy: currentUser?.name ?? "Telgo User",
+        uploadedAt: "Uploaded just now",
+        fileType: file.name.split(".").pop()?.toUpperCase() ?? "FILE",
+        category: "PWD Permission"
+      },
+      ...current
+    ]);
+  }
+
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">PWD Permission Reports</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">Permission and client document desk</h1>
+          </div>
+          <label className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border border-blue-100 bg-blue-50 px-4 text-sm font-semibold text-[#115cff]">
+            Upload document
+            <input type="file" className="hidden" onChange={(event) => void uploadDocument(event.target.files)} />
+          </label>
+        </div>
+        <div className="mt-6 space-y-4">
+          {pwdDocuments.map((document) => (
+            <div key={document.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="text-sm font-bold text-[#07122f]">{document.title}</p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {document.projectName} - {document.category} - {document.fileType}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Uploaded by {document.uploadedBy} - {document.uploadedAt}
+                  </p>
+                </div>
+                <button type="button" className={actionChipClass("blue")}>
+                  Download
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function MonthlyAttendanceModuleView({
+  currentUser,
+  trackingSnapshot,
+  leaveRequests,
+  onLeaveRequestsChange,
+  onBack
+}: {
+  currentUser: AppUser | null;
+  trackingSnapshot: MobileTrackingSnapshot | null;
+  leaveRequests: LeaveRequestItem[];
+  onLeaveRequestsChange: (
+    updater: LeaveRequestItem[] | ((current: LeaveRequestItem[]) => LeaveRequestItem[])
+  ) => void;
+  onBack: () => void;
+}) {
+  function requestLeave() {
+    if (!currentUser?.email) return;
+    onLeaveRequestsChange((current) => [
+      {
+        id: crypto.randomUUID(),
+        employeeName: currentUser.name,
+        email: currentUser.email,
+        startDate: "18 May 2026",
+        endDate: "18 May 2026",
+        reason: "Requested from mobile calendar",
+        status: "pending"
+      },
+      ...current
+    ]);
+  }
+
+  const myLeaves = leaveRequests.filter(
+    (entry) => normalizeEmail(entry.email) === normalizeEmail(currentUser?.email ?? "")
+  );
+
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">Monthly Attendance</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">Attendance and leave calendar</h1>
+          </div>
+          <button type="button" onClick={requestLeave} className={actionChipClass("green")}>
+            Request leave
+          </button>
+        </div>
+        <div className="mt-5 grid grid-cols-7 gap-2">
+          {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => {
+            const marked = (trackingSnapshot?.attendance.length ?? 0) > 0 && day <= Math.min(5, trackingSnapshot?.attendance.length ?? 0);
+            const approvedLeave = myLeaves.some((leave) => leave.status === "approved" && day >= 19 && day <= 20);
+            return (
+              <div
+                key={day}
+                className={cn(
+                  "rounded-2xl border px-2 py-3 text-center text-sm font-semibold",
+                  approvedLeave
+                    ? "border-amber-200 bg-amber-50 text-[#ff8a00]"
+                    : marked
+                      ? "border-emerald-200 bg-emerald-50 text-[#14b866]"
+                      : "border-slate-200 bg-slate-50 text-slate-500"
+                )}
+              >
+                {day}
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-6 space-y-3">
+          {myLeaves.map((leave) => (
+            <div key={leave.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <p className="text-sm font-bold text-[#07122f]">{leave.startDate} to {leave.endDate}</p>
+              <p className="mt-1 text-sm text-slate-500">{leave.reason}</p>
+              <p className="mt-1 text-sm font-semibold text-[#115cff]">{leave.status}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LeaveRequestModuleView({
+  currentUser,
+  leaveRequests,
+  onLeaveRequestsChange,
+  onBack
+}: {
+  currentUser: AppUser | null;
+  leaveRequests: LeaveRequestItem[];
+  onLeaveRequestsChange: (
+    updater: LeaveRequestItem[] | ((current: LeaveRequestItem[]) => LeaveRequestItem[])
+  ) => void;
+  onBack: () => void;
+}) {
+  function requestLeave() {
+    if (!currentUser?.email) return;
+    onLeaveRequestsChange((current) => [
+      {
+        id: crypto.randomUUID(),
+        employeeName: currentUser.name,
+        email: currentUser.email,
+        startDate: "22 May 2026",
+        endDate: "23 May 2026",
+        reason: "New mobile leave request",
+        status: "pending"
+      },
+      ...current
+    ]);
+  }
+
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">Leave Requests</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">Request and track leave</h1>
+          </div>
+          <button type="button" onClick={requestLeave} className={actionChipClass("green")}>
+            Add leave request
+          </button>
+        </div>
+        <div className="mt-6 space-y-4">
+          {leaveRequests
+            .filter((item) => normalizeEmail(item.email) === normalizeEmail(currentUser?.email ?? ""))
+            .map((leave) => (
+              <div key={leave.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-[#07122f]">{leave.startDate} to {leave.endDate}</p>
+                    <p className="mt-1 text-sm text-slate-500">{leave.reason}</p>
+                  </div>
+                  <span className={statusChipClass(leave.status === "approved" ? "Completed" : leave.status === "pending" ? "Delayed" : "At Risk")}>
+                    {leave.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function AssignedTasksModuleView({
+  currentUser,
+  projectPortfolio,
+  engineerTasks,
+  onEngineerTasksChange,
+  onBack
+}: {
+  currentUser: AppUser | null;
+  projectPortfolio: Project[];
+  engineerTasks: EngineerTaskItem[];
+  onEngineerTasksChange: (
+    updater: EngineerTaskItem[] | ((current: EngineerTaskItem[]) => EngineerTaskItem[])
+  ) => void;
+  onBack: () => void;
+}) {
+  const visibleTasks =
+    currentUser?.role === "admin"
+      ? engineerTasks
+      : engineerTasks.filter(
+          (task) => normalizeEmail(task.assigneeEmail) === normalizeEmail(currentUser?.email ?? "")
+        );
+
+  function updateTask(id: string, status: EngineerTaskItem["status"]) {
+    onEngineerTasksChange((current) =>
+      current.map((task) => (task.id === id ? { ...task, status } : task))
+    );
+  }
+
+  return (
+    <section className="px-4 pb-10 pt-7 sm:px-6">
+      <BackToDashboard onBack={onBack} />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">Assigned Tasks</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#07122f]">Today's assigned work</h1>
+        <div className="mt-6 space-y-4">
+          {visibleTasks.map((task) => {
+            const projectName =
+              projectPortfolio.find((item) => item.id === task.projectId)?.name ?? task.projectId;
+            return (
+              <div key={task.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-bold text-[#07122f]">{task.title}</p>
+                      <span className={priorityChipClass(task.priority)}>{task.priority}</span>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-500">{projectName} - {task.dueLabel}</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-500">{task.detail}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => updateTask(task.id, "done")} className={actionChipClass("green")}>
+                      Mark done
+                    </button>
+                    <button type="button" onClick={() => updateTask(task.id, "blocked")} className={actionChipClass("orange")}>
+                      Mark blocked
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -3337,6 +5924,40 @@ function MiniMetric({
   );
 }
 
+function statusChipClass(status: string) {
+  const normalized = status.trim().toLowerCase();
+  if (normalized.includes("complete") || normalized.includes("approved") || normalized.includes("active")) {
+    return "rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-[#14b866]";
+  }
+  if (normalized.includes("risk") || normalized.includes("reject") || normalized.includes("blocked")) {
+    return "rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-[#ff3d57]";
+  }
+  if (normalized.includes("track") || normalized.includes("ready") || normalized.includes("live")) {
+    return "rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-[#115cff]";
+  }
+  return "rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-[#ff8a00]";
+}
+
+function actionChipClass(tone: "blue" | "green" | "orange" | "red") {
+  const palette: Record<"blue" | "green" | "orange" | "red", string> = {
+    blue: "border-blue-100 bg-blue-50 text-[#115cff]",
+    green: "border-emerald-100 bg-emerald-50 text-[#14b866]",
+    orange: "border-amber-100 bg-amber-50 text-[#ff8a00]",
+    red: "border-rose-100 bg-rose-50 text-[#ff3d57]"
+  };
+
+  return cn(
+    "inline-flex min-h-10 items-center justify-center rounded-full border px-4 text-sm font-semibold transition hover:opacity-90",
+    palette[tone]
+  );
+}
+
+function priorityChipClass(priority: EngineerTaskItem["priority"]) {
+  if (priority === "high") return "rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase text-[#ff3d57]";
+  if (priority === "medium") return "rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold uppercase text-[#ff8a00]";
+  return "rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase text-[#115cff]";
+}
+
 function ModuleCard({ item, onClick }: { item: ModuleItem; onClick: () => void }) {
   const IconComponent = item.icon;
   return (
@@ -3367,12 +5988,14 @@ function BottomNav({
   onHome,
   onModule,
   onChat,
+  onProfile,
   userName
 }: {
   active: string;
   onHome: () => void;
   onModule: () => void;
   onChat: () => void;
+  onProfile: () => void;
   userName: string;
 }) {
   const items = [
@@ -3380,7 +6003,7 @@ function BottomNav({
     { label: "Projects", icon: Folder, action: onModule },
     { label: "Add", icon: Plus, action: () => undefined },
     { label: "Chat", icon: MessageCircle, action: onChat },
-    { label: "Profile", icon: User, action: () => undefined }
+    { label: "Profile", icon: User, action: onProfile }
   ];
 
   return (
@@ -3579,6 +6202,15 @@ function replaceFileExtension(fileName: string, mimeType: string) {
   const extension = mimeType === "image/webp" ? ".webp" : ".jpg";
   const baseName = fileName.replace(/\.[^.]+$/, "");
   return `${baseName || "chat-photo"}${extension}`;
+}
+
+async function readFileAsDataUrl(file: File) {
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(new Error("Image could not be processed."));
+    reader.readAsDataURL(file);
+  });
 }
 
 function formatBytes(value: number) {

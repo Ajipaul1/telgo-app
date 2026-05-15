@@ -52,6 +52,7 @@ type MarkMobileAttendanceInput = {
   latitude: number;
   longitude: number;
   gpsAccuracyM?: number | null;
+  projectId?: string | null;
 };
 
 export async function markMobileAttendance(
@@ -59,7 +60,7 @@ export async function markMobileAttendance(
   session: MobileSession,
   input: MarkMobileAttendanceInput
 ) {
-  const project = PRIMARY_PROJECT;
+  const project = resolveProject(input.projectId);
   const [targetLng, targetLat] = hasCorridor(project)
     ? project.corridor.startCoordinates
     : project.coordinates;
@@ -116,6 +117,7 @@ export async function markMobileAttendance(
   if (locationError) throw locationError;
 
   await notifyOperationsOnAttendance(supabase, session, {
+    projectId: project.id,
     projectName: project.name,
     distanceFromSiteM,
     withinGeofence
@@ -137,7 +139,6 @@ export async function listMobileTrackingSnapshot(
   let locationQuery = supabase
     .from("mobile_live_locations")
     .select("*")
-    .eq("project_id", PRIMARY_PROJECT.id)
     .order("recorded_at", { ascending: false })
     .limit(canViewAll ? 60 : 20);
 
@@ -151,7 +152,6 @@ export async function listMobileTrackingSnapshot(
   let attendanceQuery = supabase
     .from("mobile_attendance")
     .select("*")
-    .eq("project_id", PRIMARY_PROJECT.id)
     .order("check_in_at", { ascending: false })
     .limit(canViewAll ? 20 : 8);
 
@@ -162,17 +162,20 @@ export async function listMobileTrackingSnapshot(
   const { data: attendanceRows, error: attendanceError } = await attendanceQuery;
   if (attendanceError) throw attendanceError;
 
-  const dedupedLocations = dedupeLatestLocations(
-    (locationRows ?? []).map((row) => formatLocationRow(row as Record<string, unknown>)),
-    canViewAll
+  const formattedLocations = (locationRows ?? []).map((row) =>
+    formatLocationRow(row as Record<string, unknown>)
   );
+  const dedupedLocations = dedupeLatestLocations(formattedLocations, canViewAll);
+  const formattedAttendance = (attendanceRows ?? []).map((row) =>
+    formatAttendanceRow(row as Record<string, unknown>)
+  );
+  const currentProjectId =
+    dedupedLocations[0]?.projectId ?? formattedAttendance[0]?.projectId ?? PRIMARY_PROJECT.id;
 
   return {
-    project: PRIMARY_PROJECT,
+    project: resolveProject(currentProjectId),
     locations: dedupedLocations,
-    attendance: (attendanceRows ?? []).map((row) =>
-      formatAttendanceRow(row as Record<string, unknown>)
-    ),
+    attendance: formattedAttendance,
     canViewAll
   };
 }
@@ -181,6 +184,7 @@ async function notifyOperationsOnAttendance(
   supabase: SupabaseClient,
   session: MobileSession,
   context: {
+    projectId: string;
     projectName: string;
     distanceFromSiteM: number;
     withinGeofence: boolean;
@@ -205,12 +209,12 @@ async function notifyOperationsOnAttendance(
             recipientUserId,
             actorUserId: session.userId,
             title: "Engineer attendance marked",
-            body: `${session.fullName} marked attendance for ${context.projectName} at ${context.distanceFromSiteM} m from the site start${context.withinGeofence ? "" : " outside the geofence"}.`,
+              body: `${session.fullName} marked attendance for ${context.projectName} at ${context.distanceFromSiteM} m from the site start${context.withinGeofence ? "" : " outside the geofence"}.`,
             notificationType: "attendance",
             entityType: "mobile_attendance",
             metadata: {
               userLoginId: session.loginId,
-              projectId: PRIMARY_PROJECT.id,
+              projectId: context.projectId,
               withinGeofence: context.withinGeofence,
               distanceFromSiteM: context.distanceFromSiteM
             }
@@ -220,6 +224,10 @@ async function notifyOperationsOnAttendance(
         }
       })
   );
+}
+
+function resolveProject(projectId?: string | null) {
+  return projects.find((project) => project.id === projectId) ?? PRIMARY_PROJECT;
 }
 
 function dedupeLatestLocations(locations: MobileTrackedLocation[], canViewAll: boolean) {
