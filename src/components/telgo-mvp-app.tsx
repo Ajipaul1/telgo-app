@@ -53,6 +53,8 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import { projects } from "@/lib/demo-data";
+import { formatMeters, getProgressMeters, getRemainingMeters } from "@/lib/project-corridor";
 import { cn } from "@/lib/utils";
 
 type MvpView = "request" | "otp" | "pin" | "signin" | "dashboard" | "module" | "chat";
@@ -1837,11 +1839,34 @@ function DashboardView({
   const userName = user?.name ?? "Team";
   const roleLabel = formatRoleLabel(role);
   const roleConfig = roleDashboardContent[role];
+  const primaryProject = projects[0];
+  const primaryCorridor = primaryProject.corridor;
   const dateLabel =
     clock?.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) ??
     "23 May 2025";
   const timeLabel =
     clock?.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) ?? "09:41 AM";
+  const dashboardNotifications =
+    notifications.length > 0
+      ? notifications
+      : [
+          {
+            id: "seed-live-report-reminder",
+            title:
+              role === "admin"
+                ? "Today's live report follow-up is pending"
+                : "Submit today's live field report",
+            body:
+              role === "admin"
+                ? `${primaryProject.name} still needs the next live progress update after the first ${formatMeters(getProgressMeters(primaryProject))} completion mark.`
+                : `Record the next corridor update for ${primaryProject.name} before the end of shift.`,
+            type: "system",
+            isRead: false,
+            createdAt: clock?.toISOString() ?? "2026-05-15T13:30:00.000Z",
+            metadata: { seeded: true, moduleTitle: "Upload Report" }
+          } satisfies MobileNotificationItem
+        ];
+  const dashboardUnread = notifications.length > 0 ? unreadNotifications : 1;
   const summaryCards = [
     {
       label: "Access Status",
@@ -1907,11 +1932,61 @@ function DashboardView({
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">
+                Live Project
+              </p>
+              <h2 className="mt-2 text-2xl font-bold tracking-normal text-[#07122f]">
+                {primaryProject.name}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                {primaryCorridor
+                  ? `${primaryCorridor.startLabel} to ${primaryCorridor.endLabel} · ${primaryProject.location}`
+                  : primaryProject.location}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onModuleByTitle("Projects")}
+              className="inline-flex min-h-11 items-center justify-center rounded-full border border-blue-100 bg-blue-50 px-4 text-sm font-semibold text-[#115cff]"
+            >
+              Open project details
+            </button>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-4">
+            <MiniMetric
+              label="Completed"
+              value={formatMeters(getProgressMeters(primaryProject))}
+              detail={`${primaryProject.progress}% overall progress`}
+            />
+            <MiniMetric
+              label="Remaining"
+              value={formatMeters(getRemainingMeters(primaryProject))}
+              detail="Balance work on corridor"
+            />
+            <MiniMetric
+              label="Geofence"
+              value={primaryCorridor ? formatMeters(primaryCorridor.geofenceMeters) : "120 m"}
+              detail="Used during attendance"
+            />
+            <MiniMetric
+              label="Latest Update"
+              value={primaryCorridor?.progressUpdates[0]?.recordedAt ?? "No update"}
+              detail={primaryCorridor?.progressUpdates[0]?.label ?? "Waiting for field report"}
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 pt-5 sm:px-6">
+        <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#115cff]">
                 Dashboard notifications
               </p>
               <h2 className="mt-2 text-2xl font-bold tracking-normal text-[#07122f]">
-                {unreadNotifications > 0
-                  ? `${unreadNotifications} unread update${unreadNotifications === 1 ? "" : "s"}`
+                {dashboardUnread > 0
+                  ? `${dashboardUnread} unread update${dashboardUnread === 1 ? "" : "s"}`
                   : "No unread notifications"}
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">
@@ -1928,7 +2003,7 @@ function DashboardView({
           </div>
 
           <div className="mt-5 space-y-3">
-            {notifications.slice(0, 4).map((notification) => (
+            {dashboardNotifications.slice(0, 4).map((notification) => (
               <article
                 key={notification.id}
                 className={cn(
@@ -1952,9 +2027,9 @@ function DashboardView({
 
             {notifications.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
-                <p className="text-sm font-semibold text-[#07122f]">No dashboard notifications yet.</p>
+                <p className="text-sm font-semibold text-[#07122f]">Live report reminder is seeded for now.</p>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  New chat mentions and admin alerts will appear here automatically.
+                  Chat mentions and real admin alerts will replace this reminder automatically once live report and workflow notifications start writing to the backend.
                 </p>
               </div>
             ) : null}
@@ -2063,7 +2138,8 @@ function AppFrame({
             <button
               type="button"
               onClick={onSignOut}
-              className="hidden rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 sm:block"
+              className="inline-flex min-h-10 items-center rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600"
+              aria-label="Sign out"
             >
               Sign Out
             </button>
@@ -2615,6 +2691,24 @@ function SummaryCard({
       <p className="mt-4 text-lg font-bold tracking-normal text-[#07122f] sm:text-xl">{value}</p>
       <p className="mt-2 text-sm leading-5 text-slate-500">{detail}</p>
     </article>
+  );
+}
+
+function MiniMetric({
+  label,
+  value,
+  detail
+}: {
+  label: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</p>
+      <p className="mt-3 text-lg font-bold tracking-normal text-[#07122f]">{value}</p>
+      <p className="mt-2 text-sm leading-5 text-slate-500">{detail}</p>
+    </div>
   );
 }
 
