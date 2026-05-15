@@ -89,7 +89,7 @@ export type Alert = {
 
 export type Approval = {
   id: string;
-  category: "Attendance" | "Finance" | "Leave" | "Overtime";
+  category: "Attendance" | "Finance" | "Leave" | "Overtime" | "Report";
   requester: string;
   project: string;
   location?: string;
