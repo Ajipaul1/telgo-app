@@ -132,6 +132,10 @@ export function LiveMap({
 
         if (safeTrackedPoints.length) {
           safeTrackedPoints.forEach((point) => {
+            const relatedProject = safeProjects.find((project) => project.id === point.projectId) ?? null;
+            if (relatedProject) {
+              addTrackedLocationLink(maps, map, point, relatedProject, overlayRefs.current);
+            }
             addTrackedLocationMarker(maps, map, point, overlayRefs.current, infoWindowRef.current);
           });
         } else {
@@ -593,19 +597,18 @@ function addTrackedLocationMarker(
     map,
     position: { lat: point.latitude, lng: point.longitude },
     icon: {
-      path: maps.SymbolPath.CIRCLE,
-      scale: 8,
-      fillColor: point.withinGeofence ? "#115cff" : "#f59e0b",
-      fillOpacity: 0.95,
-      strokeColor: "#ffffff",
-      strokeWeight: 2
+      url: buildTrackedMarkerIcon(point.withinGeofence ? "#115cff" : "#f59e0b"),
+      scaledSize: new maps.Size(34, 42),
+      anchor: new maps.Point(17, 39),
+      labelOrigin: new maps.Point(17, 15)
     },
     label: {
-      text: point.userLoginId.slice(-2) || "E",
+      text: point.userLoginId.slice(-2).toUpperCase() || "E",
       color: "#ffffff",
-      fontSize: "10px",
+      fontSize: "11px",
       fontWeight: "700"
-    }
+    },
+    zIndex: point.withinGeofence ? 900 : 950
   });
 
   marker.addListener("click", () => {
@@ -616,6 +619,41 @@ function addTrackedLocationMarker(
   });
 
   overlays.push(marker);
+}
+
+function addTrackedLocationLink(
+  maps: any,
+  map: any,
+  point: LiveMapTrackedPoint,
+  project: Project,
+  overlays: any[]
+) {
+  const anchor = hasCorridor(project) ? project.corridor.startCoordinates : project.coordinates;
+
+  const line = new maps.Polyline({
+    map,
+    path: [
+      { lat: anchor[1], lng: anchor[0] },
+      { lat: point.latitude, lng: point.longitude }
+    ],
+    geodesic: true,
+    strokeColor: point.withinGeofence ? "#115cff" : "#f59e0b",
+    strokeOpacity: 0.8,
+    strokeWeight: 3,
+    icons: [
+      {
+        icon: {
+          path: "M 0,-1 0,1",
+          strokeOpacity: 1,
+          scale: 3
+        },
+        offset: "0",
+        repeat: "14px"
+      }
+    ]
+  });
+
+  overlays.push(line);
 }
 
 function fitMapToVisibleProjects(
@@ -1008,6 +1046,17 @@ function accentColor(accent: Project["accent"], alpha?: number) {
   };
 
   return palette[accent];
+}
+
+function buildTrackedMarkerIcon(fillColor: string) {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="34" height="42" viewBox="0 0 34 42" fill="none">
+      <path d="M17 1C8.716 1 2 7.716 2 16C2 26.35 13.086 37.564 16.107 40.412C16.619 40.895 17.381 40.895 17.893 40.412C20.914 37.564 32 26.35 32 16C32 7.716 25.284 1 17 1Z" fill="${fillColor}" stroke="white" stroke-width="2"/>
+      <circle cx="17" cy="16" r="6.5" fill="white" fill-opacity="0.18"/>
+    </svg>
+  `.trim();
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
 function compactStatusChip(status: Project["status"]) {

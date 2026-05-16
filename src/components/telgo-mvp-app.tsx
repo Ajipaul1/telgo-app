@@ -3919,7 +3919,8 @@ function AttendanceModuleView({
         </h1>
         <p className="mt-3 text-sm leading-7 text-slate-500">
           Location is requested only when you tap the attendance button. No continuous tracking
-          runs after logout. The saved mark will appear on the admin live map for this corridor.
+          runs after logout. The saved mark will appear on the admin live map for this corridor,
+          even when the engineer is outside the site geofence.
         </p>
 
         <div className="mt-6 overflow-hidden rounded-[24px] border border-slate-200">
@@ -4051,6 +4052,11 @@ function LiveTrackingModuleView({
     selectedUserId === "all"
       ? null
       : trackedPeople.find((item) => item.mobileUserId === selectedUserId) ?? null;
+  const selectedProjectId = selectedPerson?.projectId ?? project.id;
+  const visibleProjects =
+    selectedPerson != null
+      ? projectPortfolio.filter((item) => item.id === selectedProjectId)
+      : projectPortfolio;
 
   return (
     <section className="px-4 pb-10 pt-7 sm:px-6">
@@ -4081,9 +4087,9 @@ function LiveTrackingModuleView({
         <div className="mt-6 overflow-hidden rounded-[24px] border border-slate-200">
           <LiveMap
             satellite
-            focusProjectId={project.id}
+            focusProjectId={selectedProjectId}
             trackedPoints={locations}
-            projectsData={projectPortfolio}
+            projectsData={visibleProjects}
             className="h-[520px] rounded-none border-0"
           />
         </div>
