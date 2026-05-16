@@ -4134,6 +4134,7 @@ function LiveTrackingModuleView({
   const project = primaryProject;
   const allLocations = trackingSnapshot?.locations ?? [];
   const [selectedUserId, setSelectedUserId] = useState<string>("all");
+  const [selectedLocationLabel, setSelectedLocationLabel] = useState("Select a logged person to view the latest saved pin.");
   const trackedPeople = Array.from(
     new Map(allLocations.map((item) => [item.mobileUserId, item])).values()
   );
@@ -4150,6 +4151,46 @@ function LiveTrackingModuleView({
     selectedPerson != null
       ? projectPortfolio.filter((item) => item.id === selectedProjectId)
       : projectPortfolio;
+  const selectedLocation = selectedPerson
+    ? locations.find((location) => location.mobileUserId === selectedPerson.mobileUserId) ?? null
+    : null;
+
+  useEffect(() => {
+    if (!selectedLocation) {
+      setSelectedLocationLabel("Select a logged person to view the latest saved pin.");
+      return;
+    }
+
+    const fallbackLabel = `${selectedLocation.latitude.toFixed(5)}, ${selectedLocation.longitude.toFixed(5)}`;
+    if (typeof window === "undefined" || !window.google?.maps?.Geocoder) {
+      setSelectedLocationLabel(fallbackLabel);
+      return;
+    }
+
+    let cancelled = false;
+    const geocoder = new window.google.maps.Geocoder();
+
+    geocoder.geocode(
+      {
+        location: {
+          lat: selectedLocation.latitude,
+          lng: selectedLocation.longitude
+        }
+      },
+      (results: Array<{ formatted_address?: string }> = [], status: string) => {
+        if (cancelled) return;
+        if (status === "OK" && results[0]?.formatted_address) {
+          setSelectedLocationLabel(results[0].formatted_address);
+          return;
+        }
+        setSelectedLocationLabel(fallbackLabel);
+      }
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedLocation]);
 
   return (
     <section className="px-4 pb-10 pt-7 sm:px-6">
@@ -4248,6 +4289,46 @@ function LiveTrackingModuleView({
             detail="Signed-in mobile account role"
           />
         </div>
+
+        {selectedLocation ? (
+          <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#115cff]">
+                  Current location
+                </p>
+                <p className="mt-2 text-lg font-bold text-[#07122f]">
+                  {selectedLocation.userName} @{selectedLocation.userLoginId}
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">{selectedLocationLabel}</p>
+                <p className="mt-2 text-sm text-slate-500">
+                  {selectedLocation.projectName} · {selectedLocation.distanceFromSiteM} m from site start ·{" "}
+                  {new Date(selectedLocation.recordedAt).toLocaleString("en-IN")}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
+                    selectedLocation.withinGeofence
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-amber-100 text-[#ff8a00]"
+                  )}
+                >
+                  {selectedLocation.withinGeofence ? "Within geofence" : "Outside geofence"}
+                </span>
+                <a
+                  href={buildGooglePinUrl(selectedLocation.latitude, selectedLocation.longitude)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-h-10 items-center justify-center rounded-full border border-blue-100 bg-white px-4 text-sm font-semibold text-[#115cff]"
+                >
+                  Open exact pin
+                </a>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
           <p className="text-sm font-semibold text-[#07122f]">
@@ -6374,6 +6455,10 @@ function formatLocationPermissionLabel(
     default:
       return "Checking";
   }
+}
+
+function buildGooglePinUrl(latitude: number, longitude: number) {
+  return `https://www.google.com/maps?q=${latitude},${longitude}`;
 }
 
 function renderChatBody(body: string, mentions: ChatMention[], mine: boolean) {

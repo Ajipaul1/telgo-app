@@ -597,16 +597,9 @@ function addTrackedLocationMarker(
     map,
     position: { lat: point.latitude, lng: point.longitude },
     icon: {
-      url: buildTrackedMarkerIcon(point.withinGeofence ? "#115cff" : "#f59e0b"),
-      scaledSize: new maps.Size(34, 42),
-      anchor: new maps.Point(17, 39),
-      labelOrigin: new maps.Point(17, 15)
-    },
-    label: {
-      text: point.userLoginId.slice(-2).toUpperCase() || "E",
-      color: "#ffffff",
-      fontSize: "11px",
-      fontWeight: "700"
+      url: buildTrackedMarkerIcon(point.withinGeofence ? "#115cff" : "#f59e0b", point.userName),
+      scaledSize: new maps.Size(158, 52),
+      anchor: new maps.Point(20, 45)
     },
     zIndex: point.withinGeofence ? 900 : 950
   });
@@ -1048,15 +1041,37 @@ function accentColor(accent: Project["accent"], alpha?: number) {
   return palette[accent];
 }
 
-function buildTrackedMarkerIcon(fillColor: string) {
+function buildTrackedMarkerIcon(fillColor: string, userName: string) {
+  const label = escapeSvgText(shortTrackedName(userName));
   const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="34" height="42" viewBox="0 0 34 42" fill="none">
-      <path d="M17 1C8.716 1 2 7.716 2 16C2 26.35 13.086 37.564 16.107 40.412C16.619 40.895 17.381 40.895 17.893 40.412C20.914 37.564 32 26.35 32 16C32 7.716 25.284 1 17 1Z" fill="${fillColor}" stroke="white" stroke-width="2"/>
-      <circle cx="17" cy="16" r="6.5" fill="white" fill-opacity="0.18"/>
+    <svg xmlns="http://www.w3.org/2000/svg" width="158" height="52" viewBox="0 0 158 52" fill="none">
+      <path d="M20 1C11.163 1 4 8.163 4 17C4 28.04 15.825 39.996 19.048 43.033C19.594 43.548 20.406 43.548 20.952 43.033C24.175 39.996 36 28.04 36 17C36 8.163 28.837 1 20 1Z" fill="${fillColor}" stroke="white" stroke-width="2"/>
+      <circle cx="20" cy="17" r="7" fill="white" fill-opacity="0.18"/>
+      <rect x="42" y="6" width="110" height="30" rx="15" fill="white" fill-opacity="0.96" stroke="rgba(15,23,42,0.10)" />
+      <text x="97" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#07122f">${label}</text>
     </svg>
   `.trim();
 
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function shortTrackedName(userName: string) {
+  const normalized = userName.trim();
+  if (!normalized) return "Engineer";
+  const parts = normalized.split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 16);
+  const first = parts[0];
+  const second = parts[1];
+  return `${first} ${second}`.slice(0, 16);
+}
+
+function escapeSvgText(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
 }
 
 function compactStatusChip(status: Project["status"]) {
