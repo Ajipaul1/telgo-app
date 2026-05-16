@@ -3905,6 +3905,8 @@ function AttendanceModuleView({
   const corridor = project.corridor;
   const lastAttendance =
     trackingSnapshot?.attendance.find((item) => item.mobileUserId === currentUser?.id) ?? null;
+  const latestLocation =
+    trackingSnapshot?.locations.find((item) => item.mobileUserId === currentUser?.id) ?? null;
   const canMark = currentUser?.role !== "client" && currentUser?.role !== "finance";
   const [locationPermissionState, setLocationPermissionState] = useState<
     "checking" | "granted" | "prompt" | "denied" | "unsupported"
@@ -3982,7 +3984,7 @@ function AttendanceModuleView({
             compact
             satellite
             focusProjectId={project.id}
-            trackedPoints={trackingSnapshot?.locations ?? []}
+            trackedPoints={latestLocation ? [latestLocation] : []}
             projectsData={projectPortfolio}
             className="h-[360px] rounded-none border-0"
           />
@@ -4007,7 +4009,11 @@ function AttendanceModuleView({
           <MiniMetric
             label="Role"
             value={formatRoleLabel(currentUser?.role ?? "engineer")}
-            detail="Attendance is saved against this mobile account"
+            detail={
+              latestLocation?.gpsAccuracyM != null
+                ? `GPS accuracy about ${Math.round(latestLocation.gpsAccuracyM)} m`
+                : "Attendance is saved against this mobile account"
+            }
           />
         </div>
 
@@ -4027,6 +4033,12 @@ function AttendanceModuleView({
               ? `Saved on ${formatNotificationTime(lastAttendance.checkInAt)} for ${lastAttendance.projectName}. Admin live tracking can use this mark.`
               : "Tap the button once from the engineer device to save the first live attendance mark."}
           </p>
+          {latestLocation?.gpsAccuracyM != null ? (
+            <p className="mt-2 text-xs leading-5 text-current/80">
+              Device-reported GPS accuracy: about {Math.round(latestLocation.gpsAccuracyM)} m.
+              If this is large, move outdoors or use the APK/device GPS and update the live location again.
+            </p>
+          ) : null}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-current/70">
               Location permission
