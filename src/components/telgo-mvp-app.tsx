@@ -1260,7 +1260,6 @@ export function TelgoMvpApp() {
 
     try {
       const position = await getLiveDevicePosition();
-      setLocationPermissionState("granted");
       if (!isAttendanceAccuracyAcceptable(position.accuracy)) {
         setNotice(
           `Live location is too weak to mark attendance precisely. Current device accuracy is about ${Math.round(
@@ -1332,9 +1331,6 @@ export function TelgoMvpApp() {
           : `Attendance saved ${data.attendance.distanceFromSiteM} m from the corridor start. The mark is outside the geofence.`
       );
     } catch (error) {
-      if (isLocationPermissionDeniedError(getErrorMessage(error))) {
-        setLocationPermissionState("denied");
-      }
       setNotice(`Attendance could not be marked: ${getErrorMessage(error)}`);
     } finally {
       setAttendanceSubmitting(false);
@@ -6617,11 +6613,6 @@ function isAttendanceAccuracyAcceptable(accuracy: number | null) {
 
 function isTargetAttendanceAccuracy(accuracy: number | null) {
   return accuracy != null && Number.isFinite(accuracy) && accuracy <= TARGET_ATTENDANCE_ACCURACY_M;
-}
-
-function isLocationPermissionDeniedError(message: string) {
-  const normalized = message.toLowerCase();
-  return normalized.includes("denied") || normalized.includes("permission");
 }
 
 function saveSession(user: AppUser) {
