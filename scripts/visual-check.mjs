@@ -49,7 +49,9 @@ for (const route of routes) {
     const visibleText = body.innerText.trim();
     const overflowX = root.scrollWidth - window.innerWidth;
     const fixedNav = Boolean(document.querySelector("nav"));
-    const mapCanvas = Boolean(document.querySelector(".maplibregl-canvas"));
+    const mapCanvas = Boolean(
+      document.querySelector('[data-telgo-google-map="true"]') || document.querySelector(".gm-style")
+    );
     const buttons = Array.from(document.querySelectorAll("button, a")).filter((element) => {
       const rect = element.getBoundingClientRect();
       return rect.width > 0 && rect.height > 0;

@@ -4,10 +4,6 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "api.maptiler.com"
-      },
-      {
-        protocol: "https",
         hostname: "*.supabase.co"
       }
     ]

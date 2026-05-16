@@ -4,7 +4,6 @@ export const telgoConfig = {
   supabasePublishableKey:
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
     "sb_publishable__5XnXRk3axoR8XpC-FpIKw_7qqJESNO",
-  mapTilerKey: process.env.NEXT_PUBLIC_MAPTILER_KEY ?? "nYFRAuIKollk1eLtD1Yz",
   googleMapsApiKey:
     process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "AIzaSyApNqBu2x4uBoQRiQjkPGyp5pOPnFDgNf8"
 };
