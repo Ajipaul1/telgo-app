@@ -3906,6 +3906,60 @@ function AttendanceModuleView({
   const lastAttendance =
     trackingSnapshot?.attendance.find((item) => item.mobileUserId === currentUser?.id) ?? null;
   const canMark = currentUser?.role !== "client" && currentUser?.role !== "finance";
+  const [locationPermissionState, setLocationPermissionState] = useState<
+    "checking" | "granted" | "prompt" | "denied" | "unsupported"
+  >("checking");
+  const markedToday = lastAttendance ? isSameCalendarDay(lastAttendance.checkInAt, new Date()) : false;
+  const lastAttendanceStatus = lastAttendance
+    ? markedToday
+      ? "Attendance marked today"
+      : lastAttendance.withinGeofence
+        ? "Attendance marked successfully"
+        : "Attendance marked outside geofence"
+    : "No attendance saved yet";
+  const markButtonLabel = attendanceSubmitting
+    ? "Capturing live location..."
+    : markedToday
+      ? "Update Live Location"
+      : "Mark Attendance Now";
+
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      setLocationPermissionState("unsupported");
+      return;
+    }
+
+    if (!("permissions" in navigator) || !navigator.permissions?.query) {
+      setLocationPermissionState("prompt");
+      return;
+    }
+
+    let cancelled = false;
+    let permissionStatus: PermissionStatus | null = null;
+
+    const updateState = (state: PermissionState) => {
+      if (cancelled) return;
+      setLocationPermissionState(
+        state === "granted" ? "granted" : state === "denied" ? "denied" : "prompt"
+      );
+    };
+
+    void navigator.permissions
+      .query({ name: "geolocation" as PermissionName })
+      .then((status) => {
+        permissionStatus = status;
+        updateState(status.state);
+        status.onchange = () => updateState(status.state);
+      })
+      .catch(() => {
+        setLocationPermissionState("prompt");
+      });
+
+    return () => {
+      cancelled = true;
+      if (permissionStatus) permissionStatus.onchange = null;
+    };
+  }, []);
 
   return (
     <section className="px-4 pb-10 pt-7 sm:px-6">
@@ -3957,6 +4011,43 @@ function AttendanceModuleView({
           />
         </div>
 
+        <div
+          className={cn(
+            "mt-5 rounded-2xl border px-4 py-4 text-sm",
+            lastAttendance
+              ? lastAttendance.withinGeofence
+                ? "border-emerald-100 bg-emerald-50 text-emerald-700"
+                : "border-amber-100 bg-amber-50 text-amber-700"
+              : "border-slate-200 bg-slate-50 text-slate-600"
+          )}
+        >
+          <p className="font-semibold">{lastAttendanceStatus}</p>
+          <p className="mt-1 leading-6">
+            {lastAttendance
+              ? `Saved on ${formatNotificationTime(lastAttendance.checkInAt)} for ${lastAttendance.projectName}. Admin live tracking can use this mark.`
+              : "Tap the button once from the engineer device to save the first live attendance mark."}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-current/70">
+              Location permission
+            </span>
+            <span
+              className={cn(
+                "rounded-full px-3 py-1 text-xs font-semibold",
+                locationPermissionState === "granted"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : locationPermissionState === "denied"
+                    ? "bg-rose-100 text-rose-700"
+                    : locationPermissionState === "unsupported"
+                      ? "bg-slate-200 text-slate-700"
+                      : "bg-blue-100 text-[#115cff]"
+              )}
+            >
+              {formatLocationPermissionLabel(locationPermissionState)}
+            </span>
+          </div>
+        </div>
+
         {trackingError ? (
           <div className="mt-5 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-4 text-sm text-rose-600">
             {trackingError}
@@ -3970,11 +4061,13 @@ function AttendanceModuleView({
             disabled={!canMark || attendanceSubmitting}
             className="inline-flex min-h-14 items-center justify-center rounded-2xl bg-[#115cff] px-6 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(17,92,255,0.22)] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {attendanceSubmitting ? "Capturing live location..." : "Mark Attendance Now"}
+            {markButtonLabel}
           </button>
           <p className="text-sm leading-6 text-slate-500">
             {canMark
-              ? "Use this on site from the engineer device to create a real location mark."
+              ? markedToday
+                ? "Today already has a saved mark. Use this again only if you want to update the live position."
+                : "Use this on site from the engineer device to create a real location mark."
               : "This role can review attendance but cannot create a field location mark."}
           </p>
         </div>
@@ -6254,6 +6347,33 @@ function formatNotificationTime(value: string) {
     hour: "2-digit",
     minute: "2-digit"
   });
+}
+
+function isSameCalendarDay(value: string, compare: Date) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  return (
+    date.getFullYear() === compare.getFullYear() &&
+    date.getMonth() === compare.getMonth() &&
+    date.getDate() === compare.getDate()
+  );
+}
+
+function formatLocationPermissionLabel(
+  state: "checking" | "granted" | "prompt" | "denied" | "unsupported"
+) {
+  switch (state) {
+    case "granted":
+      return "Granted";
+    case "denied":
+      return "Denied";
+    case "prompt":
+      return "Ask on tap";
+    case "unsupported":
+      return "Not available";
+    default:
+      return "Checking";
+  }
 }
 
 function renderChatBody(body: string, mentions: ChatMention[], mine: boolean) {
