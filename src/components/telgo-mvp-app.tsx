@@ -207,6 +207,8 @@ type MobileTrackingSnapshot = {
   canViewAll: boolean;
 };
 
+const MAX_ATTENDANCE_ACCURACY_M = 500;
+
 type ChatDraftImage = {
   id: string;
   file: File;
@@ -1256,6 +1258,15 @@ export function TelgoMvpApp() {
 
     try {
       const position = await getLiveDevicePosition();
+      if (!isAttendanceAccuracyAcceptable(position.accuracy)) {
+        setNotice(
+          `Live location is too weak to mark attendance precisely. Current device accuracy is about ${Math.round(
+            position.accuracy ?? 0
+          )} m. Move outdoors, enable precise location, or use the phone APK and try again.`
+        );
+        return;
+      }
+
       const response = await fetch("/api/mobile/attendance", {
         method: "POST",
         credentials: "include",
@@ -4039,6 +4050,13 @@ function AttendanceModuleView({
               If this is large, move outdoors or use the APK/device GPS and update the live location again.
             </p>
           ) : null}
+          {latestLocation?.gpsAccuracyM != null &&
+          !isAttendanceAccuracyAcceptable(latestLocation.gpsAccuracyM) ? (
+            <p className="mt-2 text-xs font-semibold leading-5 text-rose-600">
+              This saved mark is too coarse for reliable tracking and should be updated from a
+              phone with precise GPS.
+            </p>
+          ) : null}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-current/70">
               Location permission
@@ -6507,6 +6525,28 @@ function getLiveDevicePosition() {
     return Promise.reject(new Error("Live location is not available on this device."));
   }
 
+  return requestSingleDevicePosition().then(async (firstPosition) => {
+    if (isAttendanceAccuracyAcceptable(firstPosition.accuracy)) {
+      return firstPosition;
+    }
+
+    try {
+      const secondPosition = await requestSingleDevicePosition();
+      if (
+        secondPosition.accuracy != null &&
+        (firstPosition.accuracy == null || secondPosition.accuracy < firstPosition.accuracy)
+      ) {
+        return secondPosition;
+      }
+    } catch {
+      // Keep the first location if the retry fails.
+    }
+
+    return firstPosition;
+  });
+}
+
+function requestSingleDevicePosition() {
   return new Promise<{ lat: number; lng: number; accuracy: number | null }>((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
       (position) =>
@@ -6516,9 +6556,13 @@ function getLiveDevicePosition() {
           accuracy: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : null
         }),
       (error) => reject(new Error(error.message || "Location permission was denied.")),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   });
+}
+
+function isAttendanceAccuracyAcceptable(accuracy: number | null) {
+  return accuracy != null && Number.isFinite(accuracy) && accuracy <= MAX_ATTENDANCE_ACCURACY_M;
 }
 
 function saveSession(user: AppUser) {

@@ -3,6 +3,8 @@ import { getMobileAccessClient } from "@/lib/server/mobile-access";
 import { readMobileSession } from "@/lib/server/mobile-session";
 import { markMobileAttendance } from "@/lib/server/mobile-attendance";
 
+const MAX_ATTENDANCE_ACCURACY_M = 500;
+
 export async function POST(request: NextRequest) {
   const session = readMobileSession(request);
   if (!session) {
@@ -38,6 +40,22 @@ export async function POST(request: NextRequest) {
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     return NextResponse.json(
       { ok: false, message: "A real device location is required to mark attendance." },
+      { status: 400 }
+    );
+  }
+
+  if (
+    gpsAccuracyM == null ||
+    !Number.isFinite(gpsAccuracyM) ||
+    gpsAccuracyM > MAX_ATTENDANCE_ACCURACY_M
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: `Location accuracy is too weak for live attendance tracking. Current device accuracy is about ${Math.round(
+          Number.isFinite(gpsAccuracyM ?? NaN) ? gpsAccuracyM ?? 0 : 0
+        )} m. Move outdoors, enable precise location, or use the phone APK and try again.`
+      },
       { status: 400 }
     );
   }
