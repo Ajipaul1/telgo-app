@@ -208,6 +208,8 @@ type MobileTrackingSnapshot = {
 };
 
 const MAX_ATTENDANCE_ACCURACY_M = 500;
+const TARGET_ATTENDANCE_ACCURACY_M = 120;
+const ATTENDANCE_GPS_TIMEOUT_MS = 25000;
 
 type ChatDraftImage = {
   id: string;
@@ -1258,6 +1260,7 @@ export function TelgoMvpApp() {
 
     try {
       const position = await getLiveDevicePosition();
+      setLocationPermissionState("granted");
       if (!isAttendanceAccuracyAcceptable(position.accuracy)) {
         setNotice(
           `Live location is too weak to mark attendance precisely. Current device accuracy is about ${Math.round(
@@ -1329,6 +1332,9 @@ export function TelgoMvpApp() {
           : `Attendance saved ${data.attendance.distanceFromSiteM} m from the corridor start. The mark is outside the geofence.`
       );
     } catch (error) {
+      if (isLocationPermissionDeniedError(getErrorMessage(error))) {
+        setLocationPermissionState("denied");
+      }
       setNotice(`Attendance could not be marked: ${getErrorMessage(error)}`);
     } finally {
       setAttendanceSubmitting(false);
@@ -6525,44 +6531,97 @@ function getLiveDevicePosition() {
     return Promise.reject(new Error("Live location is not available on this device."));
   }
 
-  return requestSingleDevicePosition().then(async (firstPosition) => {
-    if (isAttendanceAccuracyAcceptable(firstPosition.accuracy)) {
-      return firstPosition;
-    }
-
-    try {
-      const secondPosition = await requestSingleDevicePosition();
-      if (
-        secondPosition.accuracy != null &&
-        (firstPosition.accuracy == null || secondPosition.accuracy < firstPosition.accuracy)
-      ) {
-        return secondPosition;
-      }
-    } catch {
-      // Keep the first location if the retry fails.
-    }
-
-    return firstPosition;
-  });
-}
-
-function requestSingleDevicePosition() {
   return new Promise<{ lat: number; lng: number; accuracy: number | null }>((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(
-      (position) =>
-        resolve({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          accuracy: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : null
-        }),
-      (error) => reject(new Error(error.message || "Location permission was denied.")),
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-    );
+    let settled = false;
+    let bestPosition: { lat: number; lng: number; accuracy: number | null } | null = null;
+    let watchId: number | null = null;
+
+    const finish = (
+      result?: { lat: number; lng: number; accuracy: number | null },
+      error?: Error
+    ) => {
+      if (settled) return;
+      settled = true;
+      if (watchId != null) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+      clearTimeout(timeoutId);
+      if (error) {
+        reject(error);
+        return;
+      }
+      if (result) {
+        resolve(result);
+        return;
+      }
+      reject(new Error("Unable to get a precise live location from this device."));
+    };
+
+    const capture = (position: GeolocationPosition) => {
+      const nextPosition = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        accuracy: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : null
+      };
+
+      if (
+        !bestPosition ||
+        (nextPosition.accuracy != null &&
+          (bestPosition.accuracy == null || nextPosition.accuracy < bestPosition.accuracy))
+      ) {
+        bestPosition = nextPosition;
+      }
+
+      if (isTargetAttendanceAccuracy(nextPosition.accuracy)) {
+        finish(nextPosition);
+        return;
+      }
+
+      if (isAttendanceAccuracyAcceptable(nextPosition.accuracy)) {
+        finish(nextPosition);
+      }
+    };
+
+    const handleError = (error: GeolocationPositionError) => {
+      if (bestPosition) {
+        finish(bestPosition);
+        return;
+      }
+      finish(undefined, new Error(error.message || "Location permission was denied."));
+    };
+
+    watchId = navigator.geolocation.watchPosition(capture, handleError, {
+      enableHighAccuracy: true,
+      timeout: ATTENDANCE_GPS_TIMEOUT_MS,
+      maximumAge: 0
+    });
+
+    const timeoutId = window.setTimeout(() => {
+      if (bestPosition) {
+        finish(bestPosition);
+        return;
+      }
+      finish(
+        undefined,
+        new Error(
+          "Unable to get a precise live location. Move outdoors, turn on high-accuracy location, and try again."
+        )
+      );
+    }, ATTENDANCE_GPS_TIMEOUT_MS);
   });
 }
 
 function isAttendanceAccuracyAcceptable(accuracy: number | null) {
   return accuracy != null && Number.isFinite(accuracy) && accuracy <= MAX_ATTENDANCE_ACCURACY_M;
+}
+
+function isTargetAttendanceAccuracy(accuracy: number | null) {
+  return accuracy != null && Number.isFinite(accuracy) && accuracy <= TARGET_ATTENDANCE_ACCURACY_M;
+}
+
+function isLocationPermissionDeniedError(message: string) {
+  const normalized = message.toLowerCase();
+  return normalized.includes("denied") || normalized.includes("permission");
 }
 
 function saveSession(user: AppUser) {
