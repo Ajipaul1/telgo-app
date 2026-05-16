@@ -48,7 +48,10 @@ export function LiveMap({
   focusProjectId,
   trackedPoints,
   satellite = true,
-  projectsData
+  projectsData,
+  compactProjectScope = "focus",
+  compactActionLabel = "View Full Map",
+  onCompactAction
 }: {
   className?: string;
   compact?: boolean;
@@ -56,6 +59,9 @@ export function LiveMap({
   trackedPoints?: LiveMapTrackedPoint[];
   satellite?: boolean;
   projectsData?: Project[];
+  compactProjectScope?: "focus" | "portfolio";
+  compactActionLabel?: string;
+  onCompactAction?: () => void;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
@@ -101,7 +107,7 @@ export function LiveMap({
         const map = new maps.Map(container, {
           center: { lat: anchor[1], lng: anchor[0] },
           zoom: compact ? 13.4 : 11.6,
-          mapTypeId: satellite ? "hybrid" : "roadmap",
+          mapTypeId: compact ? "roadmap" : satellite ? "hybrid" : "roadmap",
           mapTypeControl: false,
           fullscreenControl: false,
           streetViewControl: false,
@@ -113,7 +119,8 @@ export function LiveMap({
         mapRef.current = map;
         infoWindowRef.current = new maps.InfoWindow();
 
-        const visibleProjects = compact ? [focus] : safeProjects;
+        const visibleProjects =
+          compact && compactProjectScope === "portfolio" ? safeProjects : compact ? [focus] : safeProjects;
 
         visibleProjects.forEach((project) => {
           addProjectMarker(maps, map, project, overlayRefs.current, infoWindowRef.current, project.id === focus.id);
@@ -185,18 +192,22 @@ export function LiveMap({
       infoWindowRef.current = null;
       container.innerHTML = "";
     };
-  }, [compact, focusProjectId, safeProjects, satellite, safeTrackedPoints]);
+  }, [compact, compactProjectScope, focusProjectId, safeProjects, satellite, safeTrackedPoints]);
 
   const focus = safeProjects.find((project) => project.id === focusProjectId) ?? safeProjects[0];
-  const visibleProjects = compact ? [focus] : safeProjects;
+  const visibleProjects =
+    compact && compactProjectScope === "portfolio" ? safeProjects : compact ? [focus] : safeProjects;
   const corridor = focus.corridor;
   const latestUpdate = corridor?.progressUpdates[0];
   const googleMapsReady = Boolean(telgoConfig.googleMapsApiKey);
+  const compactCards = (compactProjectScope === "portfolio" ? safeProjects : [focus]).slice(0, 5);
+  const compactViewport = getFallbackViewport(compactCards, safeTrackedPoints);
 
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-white/10 bg-[url('/assets/background-hero-image.webp')] bg-cover bg-center",
+        "relative overflow-hidden rounded-2xl border border-white/10",
+        compact ? "bg-[#edf3f9]" : "bg-[url('/assets/background-hero-image.webp')] bg-cover bg-center",
         compact ? "h-[280px]" : "h-[620px] max-h-[68svh]",
         className
       )}
@@ -242,6 +253,15 @@ export function LiveMap({
         <div className="absolute inset-0 grid place-items-center bg-ink-950/64 text-sm text-slate-300">
           Loading Google map
         </div>
+      ) : null}
+      {compact ? (
+        <CompactMapOverlay
+          projects={compactCards}
+          viewport={compactViewport}
+          focusProjectId={focus.id}
+          onAction={onCompactAction}
+          actionLabel={compactActionLabel}
+        />
       ) : null}
       {!compact && !mapError ? (
         <>
@@ -637,6 +657,81 @@ function clearGoogleOverlays(overlays: any[]) {
   overlays.length = 0;
 }
 
+function CompactMapOverlay({
+  projects,
+  viewport,
+  focusProjectId,
+  actionLabel,
+  onAction
+}: {
+  projects: Project[];
+  viewport: FallbackViewport;
+  focusProjectId: string;
+  actionLabel: string;
+  onAction?: () => void;
+}) {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-10">
+      <div className="absolute right-4 top-4">
+        <button
+          type="button"
+          onClick={onAction}
+          className="pointer-events-auto inline-flex min-h-10 items-center gap-2 rounded-full bg-[#0b1737] px-4 text-xs font-semibold text-white shadow-[0_10px_24px_rgba(7,18,47,0.22)]"
+        >
+          <Icon name="Map" className="h-3.5 w-3.5" />
+          {actionLabel}
+        </button>
+      </div>
+      {projects.map((project) => {
+        const anchor = getProjectAnchor(project);
+        const point = projectPoint(anchor[0], anchor[1], viewport);
+        const left = `${(point.x / FALLBACK_WIDTH) * 100}%`;
+        const top = `${(point.y / FALLBACK_HEIGHT) * 100}%`;
+        const isFocused = project.id === focusProjectId;
+        return (
+          <div
+            key={`compact-card-${project.id}`}
+            className="absolute"
+            style={{
+              left,
+              top,
+              transform: "translate(-34%, -92%)"
+            }}
+          >
+            <div className="pointer-events-auto flex items-start gap-2">
+              <div className="mt-7 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-white shadow-md">
+                <span
+                  className="block h-3.5 w-3.5 rounded-full"
+                  style={{ backgroundColor: accentColor(project.accent) }}
+                />
+              </div>
+              <div
+                className={cn(
+                  "max-w-[140px] rounded-2xl border px-3 py-2 shadow-[0_14px_28px_rgba(15,23,42,0.10)] backdrop-blur-sm",
+                  isFocused ? "border-blue-100 bg-white/96" : "border-white/80 bg-white/92"
+                )}
+              >
+                <span
+                  className={cn(
+                    "inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                    compactStatusChip(project.status)
+                  )}
+                >
+                  {project.status}
+                </span>
+                <p className="mt-1 line-clamp-2 text-[11px] font-semibold leading-4 text-[#07122f]">
+                  {compactProjectLabel(project)}
+                </p>
+                <p className="mt-1 text-[10px] font-medium text-slate-500">{project.totalLengthKm} km</p>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function FallbackProjectMap({
   projects,
   trackedPoints,
@@ -660,12 +755,17 @@ function FallbackProjectMap({
     >
       <defs>
         <linearGradient id="telgoFallbackBg" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0%" stopColor="#07122f" />
-          <stop offset="52%" stopColor="#0d1c45" />
-          <stop offset="100%" stopColor="#132b63" />
+          <stop offset="0%" stopColor={compact ? "#f6f9fc" : "#07122f"} />
+          <stop offset="52%" stopColor={compact ? "#eef4fa" : "#0d1c45"} />
+          <stop offset="100%" stopColor={compact ? "#e8eff7" : "#132b63"} />
         </linearGradient>
         <pattern id="telgoFallbackGrid" width="56" height="56" patternUnits="userSpaceOnUse">
-          <path d="M 56 0 L 0 0 0 56" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+          <path
+            d="M 56 0 L 0 0 0 56"
+            fill="none"
+            stroke={compact ? "rgba(148,163,184,0.18)" : "rgba(255,255,255,0.08)"}
+            strokeWidth="1"
+          />
         </pattern>
         <filter id="telgoGlow">
           <feGaussianBlur stdDeviation="7" result="blur" />
@@ -678,8 +778,63 @@ function FallbackProjectMap({
 
       <rect width={FALLBACK_WIDTH} height={FALLBACK_HEIGHT} fill="url(#telgoFallbackBg)" />
       <rect width={FALLBACK_WIDTH} height={FALLBACK_HEIGHT} fill="url(#telgoFallbackGrid)" opacity="0.35" />
-      <circle cx="180" cy="90" r="220" fill="rgba(17,92,255,0.10)" />
-      <circle cx="860" cy="520" r="260" fill="rgba(34,211,238,0.12)" />
+      {compact ? (
+        <>
+          <path
+            d="M30 120 C180 80, 260 180, 390 150 S650 70, 960 150"
+            fill="none"
+            stroke="rgba(59,130,246,0.12)"
+            strokeWidth="48"
+            strokeLinecap="round"
+          />
+          <path
+            d="M90 500 C220 420, 330 430, 470 360 S760 280, 940 340"
+            fill="none"
+            stroke="rgba(148,163,184,0.18)"
+            strokeWidth="16"
+            strokeLinecap="round"
+          />
+          <path
+            d="M110 240 C220 200, 360 240, 520 210 S760 170, 900 210"
+            fill="none"
+            stroke="rgba(148,163,184,0.22)"
+            strokeWidth="10"
+            strokeLinecap="round"
+            strokeDasharray="12 10"
+          />
+          <path
+            d="M220 60 L240 560"
+            fill="none"
+            stroke="rgba(148,163,184,0.12)"
+            strokeWidth="8"
+            strokeLinecap="round"
+          />
+          <path
+            d="M650 40 L610 580"
+            fill="none"
+            stroke="rgba(148,163,184,0.12)"
+            strokeWidth="8"
+            strokeLinecap="round"
+          />
+          <text x="96" y="222" fontSize="18" fontWeight="600" fill="rgba(71,85,105,0.85)">
+            Kochi
+          </text>
+          <text x="770" y="194" fontSize="18" fontWeight="600" fill="rgba(71,85,105,0.85)">
+            Vadakkekotta
+          </text>
+          <text x="118" y="456" fontSize="18" fontWeight="600" fill="rgba(71,85,105,0.85)">
+            Kottayam
+          </text>
+          <text x="872" y="310" fontSize="18" fontWeight="600" fill="rgba(71,85,105,0.85)">
+            Kannur
+          </text>
+        </>
+      ) : (
+        <>
+          <circle cx="180" cy="90" r="220" fill="rgba(17,92,255,0.10)" />
+          <circle cx="860" cy="520" r="260" fill="rgba(34,211,238,0.12)" />
+        </>
+      )}
 
       {projects.map((project) => (
         <g key={project.id}>
@@ -691,7 +846,7 @@ function FallbackProjectMap({
                 x2={projectPoint(project.corridor.endCoordinates[0], project.corridor.endCoordinates[1], viewport).x}
                 y2={projectPoint(project.corridor.endCoordinates[0], project.corridor.endCoordinates[1], viewport).y}
                 stroke={accentColor(project.accent, 0.4)}
-                strokeWidth={compact ? 8 : 10}
+                strokeWidth={compact ? 6 : 10}
                 strokeLinecap="round"
               />
               <line
@@ -708,14 +863,14 @@ function FallbackProjectMap({
                   viewport
                 ).y}
                 stroke="#22c55e"
-                strokeWidth={compact ? 9 : 12}
+                strokeWidth={compact ? 7 : 12}
                 strokeLinecap="round"
                 filter="url(#telgoGlow)"
               />
             </>
           ) : null}
 
-          {renderProjectMarker(project, viewport, focusProjectId === project.id)}
+          {!compact ? renderProjectMarker(project, viewport, focusProjectId === project.id) : null}
         </g>
       ))}
 
@@ -853,4 +1008,28 @@ function accentColor(accent: Project["accent"], alpha?: number) {
   };
 
   return palette[accent];
+}
+
+function compactStatusChip(status: Project["status"]) {
+  switch (status) {
+    case "Completed":
+      return "bg-emerald-50 text-[#14b866]";
+    case "Delayed":
+      return "bg-rose-50 text-[#ef4444]";
+    case "At Risk":
+      return "bg-amber-50 text-[#ff8a00]";
+    case "Active":
+      return "bg-blue-50 text-[#115cff]";
+    default:
+      return "bg-slate-100 text-slate-600";
+  }
+}
+
+function compactProjectLabel(project: Project) {
+  if (project.name.includes("Vadakkekotta")) return "Vadakkekotta - SN Junction";
+  if (project.name.includes("Kolenchery")) return "Kolenchery - Ernakulam";
+  if (project.name.includes("Kannur")) return "Kannur - PWD Road";
+  if (project.name.includes("Kottayam")) return "Kottayam - Puthuppally";
+  if (project.name.includes("Ernakulam MG Road")) return "Ernakulam - MG Road";
+  return project.name;
 }

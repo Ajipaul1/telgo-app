@@ -2640,6 +2640,8 @@ function RoleHomeSection({
               focusProjectId={primaryProject.id}
               trackedPoints={trackingSnapshot?.locations ?? []}
               projectsData={projectPortfolio}
+              compactActionLabel="Open Project"
+              onCompactAction={() => onOpenModule("Projects")}
               className="h-[340px] rounded-none border-0"
             />
           </div>
@@ -2707,6 +2709,9 @@ function RoleHomeSection({
               focusProjectId={primaryProject.id}
               trackedPoints={trackingSnapshot?.locations ?? []}
               projectsData={projectPortfolio}
+              compactProjectScope="portfolio"
+              compactActionLabel="View Full Map"
+              onCompactAction={() => onOpenModule("Projects")}
               className="h-[340px] rounded-none border-0"
             />
           </div>
