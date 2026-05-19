@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
+  Bell,
   BriefcaseBusiness,
   CalendarClock,
   CalendarDays,
@@ -39,6 +40,7 @@ import {
   ReceiptText,
   Search,
   Send,
+  Settings,
   ShieldCheck,
   ShieldX,
   Signal,
@@ -1091,43 +1093,54 @@ export function ClientDashboardMobileScreen() {
       role="client"
       activeHref="/app/client"
       title="Client Admin Portal"
-      subtitle="Manage all clients and their projects"
+      leftMode="back"
+      backHref="/app"
+      titlePrefix={
+        <div className="flex items-center border-r border-[#dfe3ef] pr-2">
+          <Image src="/assets/telgo-logo-cropped.png" alt="TELGO" width={40} height={22} className="h-6 w-10 object-contain" />
+        </div>
+      }
       rightSlot={
         <div className="flex items-center gap-2">
-          <button type="button" className="relative grid h-12 w-12 place-items-center rounded-2xl border border-[#e4e7fb] bg-white text-[#18214d]">
-            <MessageCircle className="h-5 w-5" />
-            <span className="absolute right-1 top-1 grid h-5 min-w-5 place-items-center rounded-full bg-[#ff3b3b] px-1 text-[10px] font-semibold text-white">12</span>
+          <button type="button" className="relative grid h-11 w-11 place-items-center rounded-[12px] border border-[#e4e7fb] bg-white text-[#18214d]">
+            <Bell className="h-5 w-5" />
+            <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-[#ff3b3b] px-1 text-[10px] font-semibold text-white">12</span>
           </button>
-          <MobileAvatar label="Reliable Infra Pvt. Ltd." size={48} />
+          <MobileAvatar label="Reliable Infra Pvt. Ltd." size={44} />
         </div>
       }
     >
       <div className="space-y-6">
-        <MobileCard className="grid grid-cols-[auto_1fr] gap-4 p-5">
-          <div className="grid h-16 w-16 place-items-center rounded-[22px] bg-[#f3efff] text-[#6a35ff] text-3xl font-semibold">RI</div>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-[1.75rem] font-semibold text-[#121b44]">Reliable Infra Pvt. Ltd.</h2>
-              <MobilePill tone="green">Active</MobilePill>
+        <MobileCard className="p-4">
+          <div className="grid grid-cols-[auto_1fr] gap-3">
+            <div className="grid h-16 w-16 place-items-center rounded-[18px] bg-[#f3efff] text-2xl font-bold text-[#6a35ff]">RI</div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-[1.22rem] font-bold leading-tight text-[#121b44]">Reliable Infra Pvt. Ltd.</h2>
+                <MobilePill tone="green">Active</MobilePill>
+              </div>
+              <p className="mt-2 text-[0.86rem] leading-5 text-[#6d77a6]">info@reliableinfra.com  |  +91 98765 43210</p>
             </div>
-            <p className="mt-2 text-base text-[#6d77a6]">info@reliableinfra.com  |  +91 98765 43210</p>
-            <div className="mt-4 flex gap-3">
-              <MobileSecondaryButton href="/app/client/settings" className="w-auto px-5">Client Settings</MobileSecondaryButton>
-            </div>
+          </div>
+          <div className="mt-3 flex gap-3">
+            <MobileSecondaryButton href="/app/client/settings" className="min-h-[46px] w-full px-4 text-[0.9rem]">
+              <Settings className="mr-2 h-4 w-4" />
+              Client Settings
+            </MobileSecondaryButton>
           </div>
         </MobileCard>
 
-        <MobileGradientCard>
+        <MobileGradientCard className="p-4">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-white/15">
-                <BriefcaseBusiness className="h-6 w-6" />
+              <div className="grid h-10 w-10 place-items-center rounded-[12px] bg-white/15">
+                <BriefcaseBusiness className="h-5 w-5" />
               </div>
-              <p className="text-[1.25rem] font-semibold">Overview</p>
+              <p className="text-[1.05rem] font-bold">Overview</p>
             </div>
             <MobilePill tone="violet" className="bg-white/14 text-white">This Month</MobilePill>
           </div>
-          <div className="mt-6 grid grid-cols-2 gap-5 sm:grid-cols-4">
+          <div className="mt-6 grid grid-cols-4 gap-2 divide-x divide-white/20">
             <BigGradientStat label="Total Projects" value="5" />
             <BigGradientStat label="Active Projects" value="3" />
             <BigGradientStat label="Completed" value="2" />
@@ -1135,15 +1148,15 @@ export function ClientDashboardMobileScreen() {
           </div>
         </MobileGradientCard>
 
-        <MobileCard>
-          <h3 className="text-[1.4rem] font-semibold text-[#121b44]">Overall Work Progress</h3>
+        <MobileCard className="p-4">
+          <h3 className="text-[1.12rem] font-bold text-[#121b44]">Overall Work Progress</h3>
           <div className="mt-4 flex items-center gap-4">
             <div className="min-w-0 flex-1">
               <MobileProgressBar value={72} />
             </div>
-            <p className="text-[1.45rem] font-semibold text-[#121b44]">72%</p>
+            <p className="text-[1.05rem] font-bold text-[#121b44]">72%</p>
           </div>
-          <div className="mt-5 grid grid-cols-2 gap-4 text-sm text-[#5e6897] sm:grid-cols-4">
+          <div className="mt-5 grid grid-cols-4 gap-2 text-[0.72rem] text-[#5e6897]">
             <LegendItem label="Completed" value="134.10 KM" tone="green" />
             <LegendItem label="In Progress" value="52.30 KM" tone="violet" />
             <LegendItem label="Remaining" value="52.30 KM" tone="slate" />
@@ -1151,46 +1164,46 @@ export function ClientDashboardMobileScreen() {
           </div>
         </MobileCard>
 
-        <MobileCard>
+        <div>
           <MobileSectionTitle title="Quick Actions" />
-          <div className="grid grid-cols-2 gap-3">
-            <MobileActionTile href="/app/client/profile" icon={<UserRound className="h-7 w-7" />} title="Edit Profile" />
-            <MobileActionTile href="/app/client/projects" icon={<Folder className="h-7 w-7" />} title="Project Details" />
-            <MobileActionTile href="/app/client/engineers" icon={<Users className="h-7 w-7" />} title="Engineers On-Site" />
-            <MobileActionTile href="/app/client/progress" icon={<TrendingUp className="h-7 w-7" />} title="Work Progress" />
-            <MobileActionTile href="/app/client/documents" icon={<FileText className="h-7 w-7" />} title="Documents" />
-            <MobileActionTile href="/app/client/progress/update" icon={<MapPinned className="h-7 w-7" />} title="Map & Progress" />
-            <MobileActionTile href="/app/client/reports" icon={<FileSpreadsheet className="h-7 w-7" />} title="Reports" />
-            <MobileActionTile href="/app/client/projects/new" icon={<Plus className="h-7 w-7" />} title="Add New Project" />
+          <div className="grid grid-cols-4 gap-3">
+            <MobileActionTile href="/app/client/profile" icon={<UserRound className="h-6 w-6" />} title="Edit Profile" />
+            <MobileActionTile href="/app/client/projects" icon={<Folder className="h-6 w-6" />} title="Project Details" />
+            <MobileActionTile href="/app/client/engineers" icon={<Users className="h-6 w-6" />} title="Engineers On-Site" />
+            <MobileActionTile href="/app/client/progress" icon={<TrendingUp className="h-6 w-6" />} title="Work Progress" />
+            <MobileActionTile href="/app/client/documents" icon={<FileText className="h-6 w-6" />} title="Documents" />
+            <MobileActionTile href="/app/client/progress/update" icon={<MapPinned className="h-6 w-6" />} title="Map & Progress" />
+            <MobileActionTile href="/app/client/reports" icon={<FileSpreadsheet className="h-6 w-6" />} title="Reports" />
+            <MobileActionTile href="/app/client/projects/new" icon={<Plus className="h-6 w-6" />} title="Add Project" />
           </div>
-        </MobileCard>
+        </div>
 
         <MobileCard>
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-[1.35rem] font-semibold text-[#121b44]">Active Projects</h3>
-            <Link href="/app/client/projects" className="text-sm font-semibold text-[#5c2dff]">View All</Link>
+            <h3 className="text-[1.12rem] font-bold text-[#121b44]">Active Projects</h3>
+            <Link href="/app/client/projects" className="text-sm font-bold text-[#5c2dff]">View All</Link>
           </div>
           <div className="space-y-4">
             {projects.slice(0, 3).map((project) => (
-              <Link key={project.id} href="/app/client/projects" className="grid grid-cols-[96px_1fr_auto] gap-4 rounded-[24px] border border-[#e7ebff] p-4">
-                <div className="relative h-24 overflow-hidden rounded-[20px]">
+              <Link key={project.id} href="/app/client/projects" className="grid grid-cols-[84px_1fr_auto] gap-3 rounded-[12px] border border-[#e7ebff] p-3">
+                <div className="relative h-[84px] overflow-hidden rounded-[10px]">
                   <Image src={project.image} alt={project.name} fill className="object-cover" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[1.25rem] font-semibold text-[#121b44]">{project.name}</p>
-                  <p className="mt-1 text-sm text-[#7680af]">{project.location}</p>
-                  <div className="mt-4 flex items-center gap-3">
+                  <p className="text-[1rem] font-bold leading-tight text-[#121b44]">{project.name}</p>
+                  <p className="mt-1 text-xs text-[#7680af]">{project.location}</p>
+                  <div className="mt-3 flex items-center gap-2">
                     <div className="min-w-0 flex-1">
                       <MobileProgressBar value={project.progress} />
                     </div>
-                    <span className="text-lg font-semibold text-[#121b44]">{project.progress}%</span>
+                    <span className="text-xs font-bold text-[#121b44]">{project.progress}%</span>
                   </div>
-                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                     <InfoCell label="Total Distance" value={`${project.totalLengthKm} KM`} />
                     <InfoCell label="Work Completed" value={`${project.completedKm} KM`} />
                   </div>
                 </div>
-                <ChevronRight className="mt-9 h-6 w-6 text-[#6f76a7]" />
+                <ChevronRight className="mt-7 h-5 w-5 text-[#6f76a7]" />
               </Link>
             ))}
           </div>
@@ -1206,36 +1219,41 @@ export function ClientProjectsMobileScreen() {
       role="client"
       activeHref="/app/client/projects"
       title="Project Details"
-      subtitle="Track all assigned projects"
+      leftMode="back"
+      backHref="/app/client"
     >
-      <div className="space-y-6">
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+      <div className="space-y-4">
+        <div className="grid grid-cols-[1fr_auto] gap-2">
           <MobileSearchBar placeholder="Search projects..." />
-          <Link href="/app/client/projects/new" className="inline-flex min-h-[52px] items-center justify-center rounded-[10px] border border-[#cabdff] bg-white px-5 text-sm font-bold text-[#5c2dff] shadow-[0_8px_18px_rgba(44,54,96,0.04)]">
-            <Plus className="mr-2 h-5 w-5" />
+          <Link href="/app/client/projects/new" className="inline-flex min-h-[52px] items-center justify-center rounded-[10px] border border-[#cabdff] bg-white px-3 text-sm font-bold text-[#5c2dff] shadow-[0_8px_18px_rgba(44,54,96,0.04)]">
+            <Plus className="mr-1 h-4 w-4" />
             Add New
           </Link>
         </div>
-        <MobileCard>
+        <MobileCard className="p-3">
           <MobileTabBar
             items={["All (5)", "Active (3)", "Completed (2)"]}
             active="All (5)"
             onChange={() => undefined}
           />
-          <div className="mt-5 space-y-4">
+          <div className="mt-4 space-y-3">
             {projects.map((project) => (
-              <Link key={project.id} href="/app/client/settings" className="grid grid-cols-[76px_1fr_auto] gap-3 rounded-[12px] border border-[#e7ebff] p-4">
-                <div className="relative h-[76px] overflow-hidden rounded-[10px]">
+              <Link key={project.id} href="/app/client/settings" className="grid grid-cols-[74px_1fr_auto] gap-3 rounded-[10px] border border-[#e7ebff] p-3">
+                <div className="relative h-[74px] overflow-hidden rounded-[9px]">
                   <Image src={project.image} alt={project.name} fill className="object-cover" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[1rem] font-bold leading-snug text-[#121b44]">{project.name}</p>
-                  <p className="mt-1 text-sm text-[#7880ac]">{project.location}</p>
-                  <div className="mt-3 flex items-center gap-3">
+                  <p className="text-[0.9rem] font-bold leading-snug text-[#121b44]">{project.name}</p>
+                  <p className="mt-1 text-xs text-[#7880ac]">{project.location}</p>
+                  <div className="mt-2 flex items-center gap-2">
                     <div className="min-w-0 flex-1">
                       <MobileProgressBar value={project.progress} />
                     </div>
-                    <span className="text-sm font-bold text-[#121b44]">{project.progress}%</span>
+                    <span className="text-xs font-bold text-[#121b44]">{project.progress}%</span>
+                  </div>
+                  <div className="mt-2 flex items-center gap-3 text-[10px] font-semibold text-[#737da9]">
+                    <span>{formatInr(project.budget)}</span>
+                    <span>{project.totalLengthKm} KM</span>
                   </div>
                 </div>
                 <ChevronRight className="mt-6 h-5 w-5 text-[#7380aa]" />
@@ -1649,29 +1667,28 @@ export function EngineerDashboardMobileScreen() {
       }
     >
       <div className="space-y-6">
-        <MobileGradientCard>
-          <div className="grid grid-cols-3 gap-4 sm:grid-cols-6">
+        <MobileGradientCard className="p-4">
+          <div className="grid grid-cols-5 gap-2 divide-x divide-white/20">
             <BigGradientStat label="My Projects Assigned" value="05" />
             <BigGradientStat label="Tasks Today" value="12" />
             <BigGradientStat label="Attendance Marked" value="18/25" />
             <BigGradientStat label="Site Visits Today" value="03" />
             <BigGradientStat label="Approvals Pending" value="02" />
-            <BigGradientStat label="Reports" value="06" />
           </div>
         </MobileGradientCard>
 
-        <MobileCard>
-          <div className="grid grid-cols-2 gap-3">
-            <MobileActionTile href="/app/engineer/attendance" icon={<CalendarDays className="h-7 w-7" />} title="Mark Attendance" subtitle="Daily GPS mark" />
-            <MobileActionTile href="/app/engineer/reports" icon={<CalendarRange className="h-7 w-7" />} title="Calendar" subtitle="Schedule & events" />
-            <MobileActionTile href="/app/admin/staff/eng-arjun/assign-task" icon={<ListTodo className="h-7 w-7" />} title="My Tasks" subtitle="View & update" />
-            <MobileActionTile href="/app/engineer/shift-report" icon={<FileText className="h-7 w-7" />} title="Daily Report" subtitle="Submit report" />
-            <MobileActionTile href="/app/admin/map" icon={<Pin className="h-7 w-7" />} title="Site Visit" subtitle="Add / view" />
-            <MobileActionTile href="/app/engineer/documents" icon={<Folder className="h-7 w-7" />} title="Documents" subtitle="Project docs" />
-            <MobileActionTile href="/app/engineer/finance-request" icon={<IndianRupee className="h-7 w-7" />} title="Material Request" subtitle="Request material" />
-            <MobileActionTile href="/app/engineer/leave" icon={<CheckCircle2 className="h-7 w-7" />} title="Requests" subtitle="Raise request" />
+        <div className="grid grid-cols-5 gap-3">
+            <MobileActionTile href="/app/engineer/attendance" icon={<CalendarDays className="h-6 w-6" />} title="Mark Attendance" subtitle="GPS mark" />
+            <MobileActionTile href="/app/engineer/reports" icon={<CalendarRange className="h-6 w-6" />} title="Calendar" subtitle="Events" />
+            <MobileActionTile href="/app/admin/staff/eng-arjun/assign-task" icon={<ListTodo className="h-6 w-6" />} title="My Tasks" subtitle="Update" />
+            <MobileActionTile href="/app/engineer/shift-report" icon={<FileText className="h-6 w-6" />} title="Daily Report" subtitle="Submit" />
+            <MobileActionTile href="/app/admin/map" icon={<Pin className="h-6 w-6" />} title="Site Visit" subtitle="Add/View" />
+            <MobileActionTile href="/app/engineer/documents" icon={<Folder className="h-6 w-6" />} title="Documents" subtitle="Docs" />
+            <MobileActionTile href="/app/engineer/finance-request" icon={<IndianRupee className="h-6 w-6" />} title="Material" subtitle="Request" />
+            <MobileActionTile href="/app/engineer/leave" icon={<FilePlus2 className="h-6 w-6" />} title="Requests" subtitle="Raise" />
+            <MobileActionTile href="/app/admin/approvals" icon={<CheckCircle2 className="h-6 w-6" />} title="Approvals" subtitle="Pending" />
+            <MobileActionTile href="/app/admin/staff" icon={<Users className="h-6 w-6" />} title="Team" subtitle="Attendance" />
           </div>
-        </MobileCard>
 
         <MobileCard>
           <div className="mb-4 flex items-center justify-between">
@@ -2946,9 +2963,9 @@ function ScheduleCard() {
 
 function BigGradientStat({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <p className="text-[2rem] font-semibold leading-none tracking-[-0.04em]">{value}</p>
-      <p className="mt-2 text-sm text-white/80">{label}</p>
+    <div className="px-2 first:pl-0">
+      <p className="text-[1.28rem] font-bold leading-none tracking-normal">{value}</p>
+      <p className="mt-2 text-[0.68rem] font-semibold leading-tight text-white/85">{label}</p>
     </div>
   );
 }
@@ -3002,10 +3019,12 @@ function LegendItem({
   }[tone];
 
   return (
-    <div className="flex items-center gap-2">
-      <span className={cn("h-2.5 w-2.5 rounded-full", dotTone)} />
-      <span>{label}</span>
-      {value ? <span className="font-semibold text-[#17204c]">{value}</span> : null}
+    <div className="min-w-0">
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className={cn("h-2 w-2 shrink-0 rounded-full", dotTone)} />
+        <span className="truncate">{label}</span>
+      </div>
+      {value ? <span className="mt-1 block truncate font-bold text-[#17204c]">{value}</span> : null}
     </div>
   );
 }

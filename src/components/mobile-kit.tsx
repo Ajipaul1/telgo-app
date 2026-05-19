@@ -84,6 +84,7 @@ export function MobileShell({
   backHref,
   rightSlot,
   leftMode = "menu",
+  titlePrefix,
   topUser,
   bottomNav = true
 }: {
@@ -95,6 +96,7 @@ export function MobileShell({
   backHref?: string;
   rightSlot?: React.ReactNode;
   leftMode?: "menu" | "back";
+  titlePrefix?: React.ReactNode;
   topUser?: {
     name: string;
     subtitle: string;
@@ -111,8 +113,8 @@ export function MobileShell({
       <div className="mx-auto max-w-[430px] px-4 pb-28 pt-4">
         <MobileStatusBar />
 
-        <header className="mb-5 flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-start gap-4">
+        <header className="mb-5 flex items-start justify-between gap-2">
+          <div className="flex min-w-0 items-start gap-3">
             <Link
               href={backHref ?? "#"}
               className={cn(
@@ -122,9 +124,12 @@ export function MobileShell({
             >
               <LeftIcon className="h-5 w-5" />
             </Link>
-            <div className="min-w-0">
-              <h1 className="text-[1.65rem] font-bold leading-tight text-[#080d2d]">{title}</h1>
-              {subtitle ? <p className="mt-1 text-[0.98rem] leading-5 text-[#687093]">{subtitle}</p> : null}
+            <div className="flex min-w-0 items-center gap-3">
+              {titlePrefix ? <div className="shrink-0">{titlePrefix}</div> : null}
+              <div className="min-w-0">
+                <h1 className={cn("font-bold leading-tight text-[#080d2d]", titlePrefix ? "whitespace-nowrap text-[0.82rem]" : "text-[1.42rem]")}>{title}</h1>
+                {subtitle ? <p className="mt-1 text-[0.92rem] leading-5 text-[#687093]">{subtitle}</p> : null}
+              </div>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -155,7 +160,7 @@ export function MobileShell({
 
 function MobileStatusBar() {
   return (
-    <div className="mb-6 flex items-center justify-between px-1 text-[15px] font-bold text-[#070b23]">
+    <div className="mb-5 flex items-center justify-between px-1 text-[15px] font-bold text-[#070b23]">
       <span>9:41</span>
       <div className="flex items-end gap-1.5">
         <span className="flex h-5 items-end gap-[2px]">
@@ -381,11 +386,11 @@ export function MobileActionTile({
   badge?: React.ReactNode;
 }) {
   return (
-    <Link href={href} className="relative rounded-[10px] border border-[#e8ebf3] bg-white p-3 text-center shadow-[0_8px_18px_rgba(40,52,96,0.05)]">
+    <Link href={href} className="relative min-h-[84px] rounded-[10px] border border-[#e8ebf3] bg-white p-2.5 text-center shadow-[0_8px_18px_rgba(40,52,96,0.05)]">
       {badge ? <div className="absolute right-2 top-2">{badge}</div> : null}
-      <span className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-[10px] bg-[#f2f0ff] text-[#6a35ff]">{icon}</span>
-      <p className="text-[0.86rem] font-bold text-[#11183d]">{title}</p>
-      {subtitle ? <p className="mt-1 text-xs text-[#858ba8]">{subtitle}</p> : null}
+      <span className="mx-auto mb-2 grid h-10 w-10 place-items-center rounded-[10px] bg-[#f2f0ff] text-[#6a35ff]">{icon}</span>
+      <p className="text-[0.72rem] font-bold leading-tight text-[#11183d]">{title}</p>
+      {subtitle ? <p className="mt-1 text-[0.65rem] leading-tight text-[#858ba8]">{subtitle}</p> : null}
     </Link>
   );
 }
