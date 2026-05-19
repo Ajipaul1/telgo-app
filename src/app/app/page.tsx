@@ -1,5 +1,5 @@
-import { TelgoMvpApp } from "@/components/telgo-mvp-app";
+import { RoleHomeMobileScreen } from "@/components/mobile-screens";
 
 export default function AppIndexPage() {
-  return <TelgoMvpApp />;
+  return <RoleHomeMobileScreen />;
 }
