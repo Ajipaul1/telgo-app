@@ -29,7 +29,7 @@ export default function EngineerDocumentCreatePage() {
         </MobileCard>
         <button
           type="button"
-          className="inline-flex min-h-[58px] w-full items-center justify-center rounded-[20px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-[1.05rem] font-semibold text-white shadow-[0_18px_36px_rgba(92,45,255,0.26)]"
+          className="inline-flex min-h-[52px] w-full items-center justify-center rounded-[9px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-[0.98rem] font-bold text-white shadow-[0_14px_30px_rgba(92,45,255,0.22)]"
         >
           Upload Document
         </button>

@@ -1,17 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const isLegacyAppRoute = pathname.startsWith("/app/") && pathname !== "/app";
-  const isLegacyAuthRoute = ["/otp", "/forgot-password"].includes(pathname);
-
-  if (isLegacyAppRoute || isLegacyAuthRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = isLegacyAppRoute ? "/app" : "/";
-    url.search = "";
-    return NextResponse.redirect(url);
-  }
-
+export function middleware(_request: NextRequest) {
   return NextResponse.next();
 }
 

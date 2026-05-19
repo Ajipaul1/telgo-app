@@ -51,7 +51,6 @@ import {
 } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { chatMessages as seedChatMessages, approvals as seedApprovals, engineers as seedEngineers, projects, sitePhotos } from "@/lib/demo-data";
-import { LiveMap } from "@/components/live-map";
 import {
   MobileActionTile,
   MobileAvatar,
@@ -75,7 +74,7 @@ import {
 import { getCurrentUser, useOpsStore } from "@/store/ops-store";
 import { useOfflineStore } from "@/store/offline-store";
 import { supabase } from "@/lib/supabase/client";
-import { cn, formatInr } from "@/lib/utils";
+import { cn, formatInr, initials } from "@/lib/utils";
 import { formatMeters, getGoogleMapsDirectionsUrl, getProgressMeters, getRemainingMeters } from "@/lib/project-corridor";
 import type { Approval, ChatMessage, Engineer, Project, Role } from "@/lib/types";
 
@@ -113,7 +112,7 @@ type TaskRecord = {
 
 const adminProject = projects[0];
 const engineerProject = projects[0];
-const clientProject = projects[3] ?? projects[0];
+const clientProject = projects[0];
 const workerRecords: WorkerRecord[] = [
   {
     id: "eng-arjun",
@@ -126,7 +125,7 @@ const workerRecords: WorkerRecord[] = [
     location: "Kottayam, Kerala",
     joined: "12 Apr 2024",
     badge: "Engineer",
-    avatar: seedEngineers[0]?.avatar
+    avatar: undefined
   },
   {
     id: "eng-vishnu",
@@ -139,7 +138,7 @@ const workerRecords: WorkerRecord[] = [
     location: "Ernakulam, Kerala",
     joined: "05 Dec 2023",
     badge: "Engineer",
-    avatar: seedEngineers[1]?.avatar
+    avatar: undefined
   },
   {
     id: "eng-rajeev",
@@ -152,7 +151,7 @@ const workerRecords: WorkerRecord[] = [
     location: "Kannur, Kerala",
     joined: "15 Feb 2024",
     badge: "Supervisor",
-    avatar: seedEngineers[2]?.avatar
+    avatar: undefined
   },
   {
     id: "eng-divya",
@@ -165,7 +164,7 @@ const workerRecords: WorkerRecord[] = [
     location: "Kochi, Kerala",
     joined: "01 Nov 2023",
     badge: "Finance",
-    avatar: seedEngineers[3]?.avatar
+    avatar: undefined
   },
   {
     id: "eng-jithin",
@@ -178,7 +177,7 @@ const workerRecords: WorkerRecord[] = [
     location: "Ernakulam, Kerala",
     joined: "18 Apr 2024",
     badge: "Engineer",
-    avatar: seedEngineers[4]?.avatar
+    avatar: undefined
   },
   {
     id: "eng-manu",
@@ -345,7 +344,7 @@ export function AdminDashboardMobileScreen() {
         <MobileCard className="p-4">
           <MobileSectionTitle title="Live Locations" action={<Link href="/app/admin/map" className="text-sm font-semibold text-[#5c2dff]">View All</Link>} />
           <div className="overflow-hidden rounded-[24px] border border-[#e6e9fb]">
-            <LiveMap compact compactProjectScope="portfolio" focusProjectId={adminProject.id} className="h-[260px] rounded-none border-0" />
+            <MobileMapPreview height={260} variant="portfolio" />
           </div>
           <div className="mt-4 grid gap-3 rounded-[24px] bg-[#f6f8ff] p-4">
             {projects.slice(0, 4).map((project, index) => (
@@ -498,12 +497,7 @@ export function LiveLocationsMobileScreen({ fullMap = false }: { fullMap?: boole
 
         <MobileCard className={cn("overflow-hidden p-0", fullMap && "relative")}>
           <div className={cn(fullMap ? "h-[860px]" : "h-[420px]")}>
-            <LiveMap
-              compact={!fullMap}
-              compactProjectScope="portfolio"
-              focusProjectId={adminProject.id}
-              className={cn(fullMap ? "h-full rounded-none border-0" : "h-full rounded-none border-0")}
-            />
+            <MobileMapPreview height={fullMap ? 860 : 420} variant={fullMap ? "workers" : "clusters"} full={fullMap} />
           </div>
           {fullMap ? (
             <div className="absolute inset-x-5 bottom-5 rounded-[28px] border border-[#e7ebff] bg-white/96 p-5 shadow-[0_18px_34px_rgba(33,48,91,0.16)] backdrop-blur">
@@ -607,20 +601,23 @@ export function ProjectsMobileScreen({
       leftMode={leftMode}
       rightSlot={
         <div className="flex items-center gap-2">
-          <button type="button" className="grid h-12 w-12 place-items-center rounded-2xl border border-[#e4e7fb] bg-white">
+          <button type="button" className="grid h-11 w-11 place-items-center rounded-[10px] border border-[#e4e7fb] bg-white">
             <Search className="h-5 w-5 text-[#16204c]" />
           </button>
-          <button type="button" className="grid h-12 w-12 place-items-center rounded-2xl border border-[#e4e7fb] bg-white">
+          <button type="button" className="grid h-11 w-11 place-items-center rounded-[10px] border border-[#e4e7fb] bg-white">
             <Filter className="h-5 w-5 text-[#16204c]" />
           </button>
-          <Link href={role === "client" ? "/app/client/projects/new" : "/app/admin/projects/new"} className="inline-flex min-h-[52px] items-center rounded-[18px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-base font-semibold text-white">
-            <Plus className="mr-2 h-5 w-5" />
-            Add Project
-          </Link>
         </div>
       }
     >
       <div className="space-y-6">
+        <Link
+          href={role === "client" ? "/app/client/projects/new" : "/app/admin/projects/new"}
+          className="inline-flex min-h-[52px] w-full items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(92,45,255,0.22)]"
+        >
+          <Plus className="mr-2 h-5 w-5" />
+          Add Project
+        </Link>
         <div className="grid grid-cols-2 gap-3">
           <MobileMetricCard icon={<Folder className="h-6 w-6" />} label="Total Projects" value="12" meta="All Projects" />
           <MobileMetricCard icon={<ShieldCheck className="h-6 w-6" />} label="Completed" value="3" meta="25%" accent="text-[#18aa5d]" />
@@ -780,20 +777,23 @@ export function WorkersMobileScreen() {
       subtitle="Manage all team members and their access"
       rightSlot={
         <div className="flex items-center gap-2">
-          <button type="button" className="grid h-12 w-12 place-items-center rounded-2xl border border-[#e4e7fb] bg-white">
+          <button type="button" className="grid h-11 w-11 place-items-center rounded-[10px] border border-[#e4e7fb] bg-white">
             <Search className="h-5 w-5 text-[#16204c]" />
           </button>
-          <button type="button" className="grid h-12 w-12 place-items-center rounded-2xl border border-[#e4e7fb] bg-white">
+          <button type="button" className="grid h-11 w-11 place-items-center rounded-[10px] border border-[#e4e7fb] bg-white">
             <Filter className="h-5 w-5 text-[#16204c]" />
           </button>
-          <Link href="/app/admin/staff/eng-arjun/assign-task" className="inline-flex min-h-[52px] items-center rounded-[18px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-base font-semibold text-white">
-            <Plus className="mr-2 h-5 w-5" />
-            Add Worker
-          </Link>
         </div>
       }
     >
       <div className="space-y-6">
+        <Link
+          href="/app/admin/staff/eng-arjun/assign-task"
+          className="inline-flex min-h-[52px] w-full items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(92,45,255,0.22)]"
+        >
+          <Plus className="mr-2 h-5 w-5" />
+          Add Worker
+        </Link>
         <div className="grid grid-cols-2 gap-3">
           <MobileMetricCard icon={<Users className="h-6 w-6" />} label="Total Workers" value="84" meta="All Members" />
           <MobileMetricCard icon={<UserPlus className="h-6 w-6" />} label="Active" value="72" meta="85.7%" accent="text-[#18aa5d]" />
@@ -904,7 +904,7 @@ export function WorkerDetailMobileScreen({ workerId }: { workerId?: string }) {
             </div>
           </div>
           <div className="h-[260px]">
-            <LiveMap compact focusProjectId={adminProject.id} className="h-full rounded-none border-0" />
+            <MobileMapPreview height={260} variant="worker" />
           </div>
           <div className="grid gap-4 p-5">
             <InfoGrid
@@ -1211,7 +1211,7 @@ export function ClientProjectsMobileScreen() {
       <div className="space-y-6">
         <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
           <MobileSearchBar placeholder="Search projects..." />
-          <Link href="/app/client/projects/new" className="inline-flex min-h-[58px] items-center justify-center rounded-[22px] border border-[#cabdff] bg-white px-5 text-[1rem] font-semibold text-[#5c2dff] shadow-[0_10px_22px_rgba(44,54,96,0.05)]">
+          <Link href="/app/client/projects/new" className="inline-flex min-h-[52px] items-center justify-center rounded-[10px] border border-[#cabdff] bg-white px-5 text-sm font-bold text-[#5c2dff] shadow-[0_8px_18px_rgba(44,54,96,0.04)]">
             <Plus className="mr-2 h-5 w-5" />
             Add New
           </Link>
@@ -1224,21 +1224,21 @@ export function ClientProjectsMobileScreen() {
           />
           <div className="mt-5 space-y-4">
             {projects.map((project) => (
-              <Link key={project.id} href="/app/client/settings" className="grid grid-cols-[90px_1fr_auto] gap-4 rounded-[24px] border border-[#e7ebff] p-4">
-                <div className="relative h-[92px] overflow-hidden rounded-[20px]">
+              <Link key={project.id} href="/app/client/settings" className="grid grid-cols-[76px_1fr_auto] gap-3 rounded-[12px] border border-[#e7ebff] p-4">
+                <div className="relative h-[76px] overflow-hidden rounded-[10px]">
                   <Image src={project.image} alt={project.name} fill className="object-cover" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[1.22rem] font-semibold text-[#121b44]">{project.name}</p>
+                  <p className="text-[1rem] font-bold leading-snug text-[#121b44]">{project.name}</p>
                   <p className="mt-1 text-sm text-[#7880ac]">{project.location}</p>
                   <div className="mt-3 flex items-center gap-3">
                     <div className="min-w-0 flex-1">
                       <MobileProgressBar value={project.progress} />
                     </div>
-                    <span className="text-base font-semibold text-[#121b44]">{project.progress}%</span>
+                    <span className="text-sm font-bold text-[#121b44]">{project.progress}%</span>
                   </div>
                 </div>
-                <ChevronRight className="mt-9 h-6 w-6 text-[#7380aa]" />
+                <ChevronRight className="mt-6 h-5 w-5 text-[#7380aa]" />
               </Link>
             ))}
           </div>
@@ -1275,7 +1275,7 @@ export function ClientSettingsMobileScreen() {
           {projectSettingsRows.map((label) => (
             <Link
               key={label}
-              href={label === "Delete Project" ? "#" : "/app/client/projects"}
+              href="/app/client/projects"
               className="grid grid-cols-[1fr_auto] items-center border-b border-[#edf0ff] px-5 py-5 text-[#17204c] last:border-b-0"
             >
               <span className="font-medium">{label}</span>
@@ -1283,7 +1283,7 @@ export function ClientSettingsMobileScreen() {
             </Link>
           ))}
         </MobileCard>
-        <button type="button" className="inline-flex min-h-[58px] w-full items-center justify-center rounded-[20px] border border-[#ffccd3] bg-white px-5 text-[1.05rem] font-semibold text-[#ff4f63]">
+        <button type="button" className="inline-flex min-h-[52px] w-full items-center justify-center rounded-[9px] border border-[#ffccd3] bg-white px-5 text-[0.98rem] font-bold text-[#ff4f63]">
           Delete Project
         </button>
       </div>
@@ -1479,7 +1479,7 @@ export function ClientEngineersOnSiteMobileScreen() {
       <div className="space-y-6">
         <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
           <MobileSearchBar placeholder="Search engineers..." />
-          <Link href="/app/client/engineers" className="inline-flex min-h-[58px] items-center justify-center rounded-[22px] border border-[#cabdff] bg-white px-5 text-[1rem] font-semibold text-[#5c2dff] shadow-[0_10px_22px_rgba(44,54,96,0.05)]">
+          <Link href="/app/client/engineers" className="inline-flex min-h-[52px] items-center justify-center rounded-[10px] border border-[#cabdff] bg-white px-5 text-sm font-bold text-[#5c2dff] shadow-[0_8px_18px_rgba(44,54,96,0.04)]">
             <Plus className="mr-2 h-5 w-5" />
             Add Engineer
           </Link>
@@ -1518,6 +1518,7 @@ export function ClientWorkProgressMobileScreen() {
       subtitle="Current project progress"
       backHref="/app/client"
       leftMode="back"
+      bottomNav={false}
       rightSlot={<MobileAvatar label="RA" size={40} />}
     >
       <div className="space-y-6">
@@ -1527,7 +1528,7 @@ export function ClientWorkProgressMobileScreen() {
             <ChevronDown className="h-5 w-5 text-[#7681af]" />
           </div>
           <div className="mt-4 overflow-hidden rounded-[24px] border border-[#e8ebff]">
-            <LiveMap compact focusProjectId={project.id} className="h-[320px] rounded-none border-0" />
+            <MobileMapPreview height={320} variant="route" progress={project.progress} />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-4">
             <InfoCell label="Total Distance" value={`${project.totalLengthKm} KM`} />
@@ -1562,7 +1563,7 @@ export function ClientUpdateProgressMobileScreen() {
             <ChevronDown className="h-5 w-5 text-[#7681af]" />
           </div>
           <div className="mt-4 overflow-hidden rounded-[24px] border border-[#e8ebff]">
-            <LiveMap compact focusProjectId={clientProject.id} className="h-[320px] rounded-none border-0" />
+            <MobileMapPreview height={320} variant="route" progress={percent} />
           </div>
           <div className="mt-4 space-y-4">
             <InfoCell label="Current Progress Location" value="13.40 KM" />
@@ -1848,6 +1849,99 @@ export function EngineerDocumentsMobileScreen() {
       }
     >
       <ClientDocumentsMobileScreenInner uploadHref="/app/engineer/documents/new" />
+    </MobileShell>
+  );
+}
+
+export function ClientReportsMobileScreen() {
+  return (
+    <MobileShell
+      role="client"
+      activeHref="/app/client/reports"
+      title="Reports"
+      subtitle="View and manage site reports"
+      backHref="/app/client"
+      leftMode="back"
+      rightSlot={
+        <div className="flex items-center gap-3">
+          <MobileAvatar label="Arjun Nair" size={46} />
+          <div className="text-right">
+            <p className="text-base font-bold text-[#17204c]">Arjun Nair</p>
+            <p className="text-xs text-[#7d85b0]">Site Engineer</p>
+          </div>
+        </div>
+      }
+    >
+      <div className="space-y-6">
+        <MobileCard>
+          <MobileTabBar
+            items={["Overview", "Daily Reports", "Weekly Reports", "Monthly Reports"]}
+            active="Overview"
+            onChange={() => undefined}
+          />
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <MobileMetricCard icon={<FileText className="h-6 w-6" />} label="Total Reports" value="28" meta="All Time" />
+            <MobileMetricCard icon={<CheckCircle2 className="h-6 w-6" />} label="Approved" value="22" meta="78%" accent="text-[#18aa5d]" />
+            <MobileMetricCard icon={<Clock3 className="h-6 w-6" />} label="Pending" value="4" meta="14%" accent="text-[#ff8a00]" />
+            <MobileMetricCard icon={<ShieldX className="h-6 w-6" />} label="Rejected" value="2" meta="7%" accent="text-[#ff4f63]" />
+          </div>
+          <div className="mt-5 grid gap-4">
+            <MobileSelect label="Date Range" defaultValue="01 May 2025 - 16 May 2025" />
+            <MobileSelect label="Project" defaultValue="All Projects" />
+            <MobileSelect label="Report Type" defaultValue="All Types" />
+          </div>
+        </MobileCard>
+
+        <MobileCard>
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-[1.2rem] font-bold text-[#121b44]">Reports Overview</h3>
+            <div className="flex gap-3 text-xs">
+              <span className="flex items-center gap-1.5 text-[#18aa5d]"><span className="h-2 w-2 rounded-full bg-[#18aa5d]" />Approved</span>
+              <span className="flex items-center gap-1.5 text-[#ff8a00]"><span className="h-2 w-2 rounded-full bg-[#ff8a00]" />Pending</span>
+              <span className="flex items-center gap-1.5 text-[#ff4f63]"><span className="h-2 w-2 rounded-full bg-[#ff4f63]" />Rejected</span>
+            </div>
+          </div>
+          <TrendChart />
+        </MobileCard>
+
+        <MobileCard>
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-[1.2rem] font-bold text-[#121b44]">Recent Reports</h3>
+            <Link href="/app/client/reports" className="text-sm font-bold text-[#5c2dff]">View All</Link>
+          </div>
+          <div className="space-y-3">
+            {projects.slice(0, 5).map((project, index) => (
+              <div key={project.id} className="grid grid-cols-[62px_1fr_auto] gap-3 border-b border-[#edf0f7] pb-3 last:border-b-0 last:pb-0">
+                <div className="relative h-[62px] overflow-hidden rounded-[10px]">
+                  <Image src={project.image} alt={project.name} fill className="object-cover" />
+                </div>
+                <div>
+                  <p className="font-bold text-[#17204c]">{project.name}</p>
+                  <p className="mt-1 text-xs text-[#7d85b0]">{`16 May 2025, 09:${15 + index} AM - Daily Report`}</p>
+                  <p className="mt-1 text-xs text-[#7d85b0]">Arjun Nair</p>
+                </div>
+                <div className="grid content-start justify-items-end gap-3">
+                  <MobilePill tone={index === 1 ? "orange" : index === 3 ? "red" : "green"}>
+                    {index === 1 ? "Pending" : index === 3 ? "Rejected" : "Approved"}
+                  </MobilePill>
+                  <FileText className="h-5 w-5 text-[#5c2dff]" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </MobileCard>
+
+        <MobileCard>
+          <div className="grid grid-cols-2 gap-3">
+            <MobileMetricCard icon={<FileText className="h-6 w-6" />} label="Daily Reports" value="18" meta="64%" />
+            <MobileMetricCard icon={<FileCheck2 className="h-6 w-6" />} label="Weekly Reports" value="6" meta="21%" accent="text-[#18aa5d]" />
+            <MobileMetricCard icon={<CalendarDays className="h-6 w-6" />} label="Monthly Reports" value="3" meta="11%" accent="text-[#ff8a00]" />
+            <MobileMetricCard icon={<FileSpreadsheet className="h-6 w-6" />} label="Other Reports" value="1" meta="4%" accent="text-[#337dff]" />
+          </div>
+        </MobileCard>
+
+        <MobilePrimaryButton href="/app/client/documents/new">Submit New Report</MobilePrimaryButton>
+      </div>
     </MobileShell>
   );
 }
@@ -2176,11 +2270,11 @@ export function EngineerAttendanceMobileScreen() {
           </div>
           <div className="mt-8 grid grid-cols-2 gap-6">
             <div className="border-r border-white/20 pr-4">
-              <p className="text-[2.3rem] font-semibold">{checkInTime}</p>
+              <p className="whitespace-nowrap text-[1.9rem] font-bold">{checkInTime}</p>
               <p className="mt-2 text-lg text-white/90">Checked In</p>
             </div>
             <div className="pl-4">
-              <p className="text-[2.3rem] font-semibold">--:--</p>
+              <p className="whitespace-nowrap text-[1.9rem] font-bold">--:--</p>
               <p className="mt-2 text-lg text-white/90">Check-out</p>
             </div>
           </div>
@@ -2517,6 +2611,137 @@ export function GenericOfflineSyncMobileScreen() {
   );
 }
 
+function MobileMapPreview({
+  height,
+  variant = "portfolio",
+  full = false,
+  progress = 72
+}: {
+  height: number;
+  variant?: "portfolio" | "clusters" | "workers" | "worker" | "route";
+  full?: boolean;
+  progress?: number;
+}) {
+  const workerPins = [
+    { x: 58, y: 16, name: "Manu Mohan", role: "Supervisor", tone: "green" },
+    { x: 44, y: 30, name: "Jithin Jose", role: "Engineer", tone: "blue" },
+    { x: 73, y: 40, name: "Divya S", role: "Finance", tone: "orange" },
+    { x: 52, y: 55, name: "Aby Thomas", role: "Engineer", tone: "blue" },
+    { x: 68, y: 64, name: "Rajeev R", role: "Supervisor", tone: "green" },
+    { x: 50, y: 75, name: "Arjun Nair", role: "Engineer", tone: "blue" }
+  ];
+  const clusterPins = [
+    { x: 32, y: 31, value: "12", tone: "green" },
+    { x: 49, y: 40, value: "8", tone: "violet" },
+    { x: 69, y: 50, value: "6", tone: "orange" },
+    { x: 57, y: 72, value: "", tone: "blue" }
+  ];
+  const routePoints = "18,76 31,64 41,60 52,48 62,40 78,34";
+  const progressWidth = Math.max(18, Math.min(82, progress));
+  const toneClass: Record<string, string> = {
+    green: "border-[#15bd72] text-[#15a864]",
+    blue: "border-[#2477ff] text-[#1766e8]",
+    orange: "border-[#ff8a00] text-[#e27800]",
+    violet: "border-[#6b34ff] text-[#5c2dff]"
+  };
+
+  return (
+    <div
+      className="relative h-full overflow-hidden rounded-[10px] bg-[#eaf2ec]"
+      style={{ minHeight: height }}
+    >
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
+        <rect width="100" height="100" fill="#eaf2ec" />
+        <path d="M0 0 H27 C20 24 22 48 14 67 C8 82 8 94 0 100 Z" fill="#b7ddfb" />
+        <path d="M22 0 C37 16 42 32 51 44 C62 58 72 68 100 75" fill="none" stroke="#ffffff" strokeWidth="2.4" opacity="0.75" />
+        <path d="M30 9 C44 18 58 23 83 21" fill="none" stroke="#ffffff" strokeWidth="1.5" opacity="0.7" />
+        <path d="M28 82 C46 70 61 63 93 58" fill="none" stroke="#ffffff" strokeWidth="1.7" opacity="0.72" />
+        <path d="M41 0 C40 18 43 38 39 59 C36 75 34 85 36 100" fill="none" stroke="#d5d8c4" strokeWidth="1.1" />
+        <path d="M65 0 C61 19 63 42 58 62 C55 78 55 88 51 100" fill="none" stroke="#d5d8c4" strokeWidth="1.1" />
+        <text x="30" y="19" fontSize="4" fontWeight="700" fill="#2a365a">Kozhikode</text>
+        <text x="45" y="49" fontSize="4" fontWeight="700" fill="#2a365a">Thrissur</text>
+        <text x="53" y="70" fontSize="4" fontWeight="700" fill="#2a365a">Kochi</text>
+        <text x="70" y="67" fontSize="4" fontWeight="700" fill="#2a365a">Kottayam</text>
+      </svg>
+
+      {variant === "route" ? (
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
+          <polyline points={routePoints} fill="none" stroke="#6b35ff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="1.5 1.2" />
+          <polyline points={`18,76 31,64 41,60 ${progressWidth > 45 ? "52,48" : ""} ${progressWidth > 62 ? "62,40" : ""}`} fill="none" stroke="#1f78ff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="18" cy="76" r="2.4" fill="#18bd72" stroke="#fff" strokeWidth="1.2" />
+          <circle cx="78" cy="34" r="2.4" fill="#ff4056" stroke="#fff" strokeWidth="1.2" />
+          <circle cx="52" cy="48" r="2.6" fill="#fff" stroke="#6b35ff" strokeWidth="1.4" />
+        </svg>
+      ) : null}
+
+      {variant === "workers" ? (
+        <div className="absolute inset-0">
+          {workerPins.map((pin) => (
+            <div
+              key={pin.name}
+              className="absolute flex items-center gap-2 rounded-[10px] border border-white bg-white px-2.5 py-2 shadow-[0_8px_22px_rgba(20,35,80,0.16)]"
+              style={{ left: `${pin.x}%`, top: `${pin.y}%`, transform: "translate(-50%, -50%)" }}
+            >
+              <span className={cn("grid h-9 w-9 place-items-center rounded-full border-2 bg-white text-[10px] font-bold", toneClass[pin.tone])}>
+                {initials(pin.name)}
+              </span>
+              <span>
+                <span className="block whitespace-nowrap text-xs font-bold text-[#11183d]">{pin.name}</span>
+                <span className={cn("block whitespace-nowrap text-[10px] font-bold", toneClass[pin.tone])}>{pin.role}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {variant === "clusters" || variant === "portfolio" ? (
+        <div className="absolute inset-0">
+          {clusterPins.map((pin) => (
+            <div
+              key={`${pin.x}-${pin.y}`}
+              className={cn(
+                "absolute grid h-12 w-12 place-items-center rounded-full border-[5px] bg-white text-base font-bold shadow-[0_8px_22px_rgba(20,35,80,0.16)]",
+                toneClass[pin.tone]
+              )}
+              style={{ left: `${pin.x}%`, top: `${pin.y}%`, transform: "translate(-50%, -50%)" }}
+            >
+              {pin.value || "AN"}
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {variant === "worker" ? (
+        <div className="absolute inset-0">
+          <div className="absolute left-[44%] top-[44%] rounded-[10px] bg-white px-3 py-2 text-xs font-bold text-[#11183d] shadow-[0_8px_22px_rgba(20,35,80,0.16)]">
+            Kottayam Utility Expansion
+          </div>
+          <div className="absolute left-[52%] top-[60%] grid h-14 w-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-[5px] border-[#6b35ff] bg-white text-xs font-bold text-[#6b35ff] shadow-[0_8px_22px_rgba(20,35,80,0.16)]">
+            AN
+          </div>
+        </div>
+      ) : null}
+
+      <div className="absolute bottom-4 right-4 grid gap-2">
+        <button type="button" className="grid h-10 w-10 place-items-center rounded-[10px] bg-white text-xl font-bold text-[#101638] shadow-[0_8px_22px_rgba(20,35,80,0.12)]">
+          +
+        </button>
+        <button type="button" className="grid h-10 w-10 place-items-center rounded-[10px] bg-white text-xl font-bold text-[#101638] shadow-[0_8px_22px_rgba(20,35,80,0.12)]">
+          -
+        </button>
+      </div>
+      {!full && variant !== "route" ? (
+        <Link
+          href="/app/admin/map/full"
+          className="absolute bottom-4 left-4 rounded-[10px] bg-white px-4 py-3 text-sm font-bold text-[#5c2dff] shadow-[0_8px_22px_rgba(20,35,80,0.12)]"
+        >
+          View Full Map
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
 function ClientDocumentsMobileScreenInner({ uploadHref }: { uploadHref: string }) {
   const [tab, setTab] = useState("All Documents");
   return (
@@ -2845,7 +3070,7 @@ function distanceMeters(latA: number, lngA: number, latB: number, lngB: number) 
   return earthRadius * c;
 }
 
-async function guardedSupabaseWrite<T extends { error: unknown }>(operation: Promise<T>) {
+async function guardedSupabaseWrite<T extends { error: unknown }>(operation: PromiseLike<T>) {
   try {
     return await operation;
   } catch (error) {
