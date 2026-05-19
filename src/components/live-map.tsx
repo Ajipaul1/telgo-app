@@ -9,7 +9,7 @@ import {
   getGoogleMapsDirectionsUrl,
   getProjectAnchor,
   hasCorridor,
-  interpolateAlongCorridor
+  interpolateAlongCorridor,
 } from "@/lib/project-corridor";
 import type { Project } from "@/lib/types";
 import { Badge, GlassCard, Icon } from "@/components/ui";

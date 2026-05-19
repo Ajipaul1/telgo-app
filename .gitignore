@@ -144,6 +144,7 @@ vite.config.ts.timestamp-*
 
 # Local Codex/runtime tooling
 .codex-tools/
+.refact/
 supabase/.temp/
 
 # Local diagnostics
