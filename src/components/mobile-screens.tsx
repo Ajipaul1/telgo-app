@@ -277,6 +277,24 @@ function getVisibleReports(state: OpsState, viewer: DemoUser) {
   });
 }
 
+function reportStatusLabel(status: "approved" | "pending" | "rejected") {
+  if (status === "approved") return "Approved";
+  if (status === "pending") return "Pending";
+  return "Rejected";
+}
+
+function reportStatusTone(status: "approved" | "pending" | "rejected") {
+  if (status === "approved") return "green";
+  if (status === "pending") return "orange";
+  return "red";
+}
+
+function reportTypeLabel(type: "daily" | "weekly" | "monthly") {
+  if (type === "daily") return "Daily Report";
+  if (type === "weekly") return "Weekly Report";
+  return "Monthly Report";
+}
+
 function getApprovalQueue(state: OpsState): EnterpriseApprovalItem[] {
   const access = state.accessRequests
     .filter((request) => request.status === "pending")
@@ -1433,6 +1451,44 @@ export function WorkerAssignTaskMobileScreen({ workerId }: { workerId?: string }
 }
 
 export function ClientDashboardMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const visibleProjects = getProjectsForUser(ops, currentUser);
+  const visibleProjectIds = new Set(visibleProjects.map((project) => project.id));
+  const visibleDocuments = getDocumentRecords(ops, currentUser);
+  const visibleReports = getVisibleReports(ops, currentUser);
+  const visiblePermissions = ops.clientPermissions.filter(
+    (permission) => permission.clientUserId === currentUser.id && permission.status === "approved"
+  );
+  const assignedWorkers = ops.users.filter(
+    (user) =>
+      user.role !== "admin" &&
+      user.role !== "client" &&
+      user.projectIds.some((projectId) => visibleProjectIds.has(projectId))
+  );
+  const activeProjects = visibleProjects.filter((project) => project.status !== "Completed");
+  const completedProjects = visibleProjects.filter((project) => project.status === "Completed");
+  const totalDistanceKm = visibleProjects.reduce((sum, project) => sum + project.totalLengthKm, 0);
+  const completedKm = visibleProjects.reduce((sum, project) => sum + project.completedKm, 0);
+  const remainingKm = visibleProjects.reduce(
+    (sum, project) => sum + Math.max(project.totalLengthKm - project.completedKm, 0),
+    0
+  );
+  const notStartedKm = visibleProjects.reduce(
+    (sum, project) => sum + (project.progress === 0 ? project.totalLengthKm : 0),
+    0
+  );
+  const overallProgress = totalDistanceKm
+    ? Math.round((completedKm / totalDistanceKm) * 100)
+    : 0;
+  const unreadNotifications = ops.notifications.filter(
+    (item) => !item.read && (item.targetRole === currentUser.role || item.targetRole === "all")
+  ).length;
+  const canViewDocuments = visiblePermissions.some((permission) => permission.canViewDocuments);
+  const canViewReports = visiblePermissions.some((permission) => permission.canViewReports);
+  const canViewTracking = visiblePermissions.some((permission) => permission.canViewTracking);
+  const canChat = visiblePermissions.some((permission) => permission.canChat);
+
   return (
     <MobileShell
       role="client"
@@ -1449,9 +1505,11 @@ export function ClientDashboardMobileScreen() {
         <div className="flex items-center gap-2">
           <button type="button" className="relative grid h-11 w-11 place-items-center rounded-[12px] border border-[#e4e7fb] bg-white text-[#18214d]">
             <Bell className="h-5 w-5" />
-            <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-[#ff3b3b] px-1 text-[10px] font-semibold text-white">12</span>
+            <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-[#ff3b3b] px-1 text-[10px] font-semibold text-white">
+              {unreadNotifications}
+            </span>
           </button>
-          <MobileAvatar label="Reliable Infra Pvt. Ltd." size={44} />
+          <MobileAvatar label={currentUser.company} size={44} />
         </div>
       }
     >
@@ -1461,10 +1519,12 @@ export function ClientDashboardMobileScreen() {
             <div className="grid h-14 w-14 place-items-center rounded-[16px] bg-[#f3efff] text-[1.35rem] font-bold text-[#6a35ff]">RI</div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-[1.05rem] font-bold leading-tight text-[#121b44]">Reliable Infra Pvt. Ltd.</h2>
+                <h2 className="text-[1.05rem] font-bold leading-tight text-[#121b44]">{currentUser.company}</h2>
                 <MobilePill tone="green">Active</MobilePill>
               </div>
-              <p className="mt-1.5 text-[12px] leading-4 text-[#6d77a6]">info@reliableinfra.com  |  +91 98765 43210</p>
+              <p className="mt-1.5 text-[12px] leading-4 text-[#6d77a6]">
+                {currentUser.email}  |  {currentUser.phone}
+              </p>
             </div>
           </div>
           <div className="mt-3 flex gap-3">
@@ -1486,10 +1546,10 @@ export function ClientDashboardMobileScreen() {
             <MobilePill tone="violet" className="bg-white/14 text-white">This Month</MobilePill>
           </div>
           <div className="mt-4 grid grid-cols-4 gap-1.5 divide-x divide-white/20">
-            <BigGradientStat label="Total Projects" value="5" />
-            <BigGradientStat label="Active Projects" value="3" />
-            <BigGradientStat label="Completed" value="2" />
-            <BigGradientStat label="Total Distance" value="186.40 KM" />
+            <BigGradientStat label="Total Projects" value={String(visibleProjects.length)} />
+            <BigGradientStat label="Active Projects" value={String(activeProjects.length)} />
+            <BigGradientStat label="Completed" value={String(completedProjects.length)} />
+            <BigGradientStat label="Total Distance" value={`${totalDistanceKm.toFixed(2)} KM`} />
           </div>
         </MobileGradientCard>
 
@@ -1497,31 +1557,31 @@ export function ClientDashboardMobileScreen() {
           <h3 className="text-[1.02rem] font-bold text-[#121b44]">Overall Work Progress</h3>
           <div className="mt-3 flex items-center gap-3">
             <div className="min-w-0 flex-1">
-              <MobileProgressBar value={72} />
+              <MobileProgressBar value={overallProgress} />
             </div>
-            <p className="text-[0.98rem] font-bold text-[#121b44]">72%</p>
+            <p className="text-[0.98rem] font-bold text-[#121b44]">{overallProgress}%</p>
           </div>
           <div className="mt-4 grid grid-cols-4 gap-2 text-[0.66rem] text-[#5e6897]">
-            <LegendItem label="Completed" value="134.10 KM" tone="green" />
-            <LegendItem label="In Progress" value="52.30 KM" tone="violet" />
-            <LegendItem label="Remaining" value="52.30 KM" tone="slate" />
-            <LegendItem label="Not Started" value="10.00 KM" tone="slate" />
+            <LegendItem label="Completed" value={`${completedKm.toFixed(2)} KM`} tone="green" />
+            <LegendItem label="Visible Reports" value={String(visibleReports.length)} tone="violet" />
+            <LegendItem label="Remaining" value={`${remainingKm.toFixed(2)} KM`} tone="slate" />
+            <LegendItem label="Not Started" value={`${notStartedKm.toFixed(2)} KM`} tone="slate" />
           </div>
         </MobileCard>
 
         <div>
           <MobileSectionTitle title="Quick Actions" />
           <div className="grid grid-cols-5 gap-2">
-            <MobileActionTile href="/app/client/profile" icon={<UserRound className="h-6 w-6" />} title="Edit Profile" />
-            <MobileActionTile href="/app/client/projects" icon={<Folder className="h-6 w-6" />} title="Project Details" />
-            <MobileActionTile href="/app/client/engineers" icon={<Users className="h-6 w-6" />} title="Engineers On-Site" />
-            <MobileActionTile href="/app/client/progress" icon={<TrendingUp className="h-6 w-6" />} title="Work Progress" />
-            <MobileActionTile href="/app/chat" icon={<MessageCircle className="h-6 w-6" />} title="Live Chat" />
-            <MobileActionTile href="/app/client/documents" icon={<FileText className="h-6 w-6" />} title="Documents" />
-            <MobileActionTile href="/app/client/progress/update" icon={<MapPinned className="h-6 w-6" />} title="Live Tracking" />
-            <MobileActionTile href="/app/client/reports" icon={<FileSpreadsheet className="h-6 w-6" />} title="Reports" />
-            <MobileActionTile href="/app/client/settings" icon={<ShieldCheck className="h-6 w-6" />} title="Permissions" />
-            <MobileActionTile href="/app/client/profile" icon={<Phone className="h-6 w-6" />} title="Contacts" />
+            <MobileActionTile href="/app/client/profile" icon={<UserRound className="h-6 w-6" />} title="Edit Profile" subtitle={currentUser.fullName} />
+            <MobileActionTile href="/app/client/projects" icon={<Folder className="h-6 w-6" />} title="Project Details" subtitle={`${visibleProjects.length} visible`} />
+            <MobileActionTile href="/app/client/engineers" icon={<Users className="h-6 w-6" />} title="Engineers On-Site" subtitle={`${assignedWorkers.length} assigned`} />
+            <MobileActionTile href="/app/client/progress" icon={<TrendingUp className="h-6 w-6" />} title="Work Progress" subtitle={`${overallProgress}% overall`} />
+            {canChat ? <MobileActionTile href="/app/chat" icon={<MessageCircle className="h-6 w-6" />} title="Live Chat" subtitle="Admin linked" /> : null}
+            {canViewDocuments ? <MobileActionTile href="/app/client/documents" icon={<FileText className="h-6 w-6" />} title="Documents" subtitle={`${visibleDocuments.length} visible`} /> : null}
+            {canViewTracking ? <MobileActionTile href="/app/client/progress/update" icon={<MapPinned className="h-6 w-6" />} title="Live Tracking" subtitle="Permission based" /> : null}
+            {canViewReports ? <MobileActionTile href="/app/client/reports" icon={<FileSpreadsheet className="h-6 w-6" />} title="Reports" subtitle={`${visibleReports.length} visible`} /> : null}
+            <MobileActionTile href="/app/client/settings" icon={<ShieldCheck className="h-6 w-6" />} title="Permissions" subtitle={`${visiblePermissions.length} rules`} />
+            <MobileActionTile href="/app/client/profile" icon={<Phone className="h-6 w-6" />} title="Contacts" subtitle="Client desk" />
           </div>
         </div>
 
@@ -1531,7 +1591,7 @@ export function ClientDashboardMobileScreen() {
             <Link href="/app/client/projects" className="text-sm font-bold text-[#5c2dff]">View All</Link>
           </div>
           <div className="space-y-3">
-            {projects.slice(0, 3).map((project) => (
+            {visibleProjects.slice(0, 3).map((project) => (
               <Link key={project.id} href="/app/client/projects" className="grid grid-cols-[74px_1fr_auto] gap-3 rounded-[12px] border border-[#e7ebff] p-2.5">
                 <div className="relative h-[74px] overflow-hidden rounded-[10px]">
                   <Image src={project.image} alt={project.name} fill className="object-cover" />
@@ -1553,6 +1613,11 @@ export function ClientDashboardMobileScreen() {
                 <ChevronRight className="mt-5 h-[18px] w-[18px] text-[#6f76a7]" />
               </Link>
             ))}
+            {visibleProjects.length === 0 ? (
+              <p className="rounded-[12px] border border-dashed border-[#e2e7fb] px-4 py-5 text-sm text-[#7680af]">
+                No client-visible projects are assigned yet. Admin permission controls need to publish a project here first.
+              </p>
+            ) : null}
           </div>
         </MobileCard>
       </div>
@@ -2327,6 +2392,18 @@ export function EngineerDocumentsMobileScreen() {
 }
 
 export function ClientReportsMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const visibleReports = getVisibleReports(ops, currentUser);
+  const visibleProjects = getProjectsForUser(ops, currentUser);
+  const primaryProject = getPrimaryProjectForUser(ops, currentUser);
+  const [reviewRequested, setReviewRequested] = useState(false);
+  const approvedReports = visibleReports.filter((report) => report.status === "approved");
+  const pendingReports = visibleReports.filter((report) => report.status === "pending");
+  const rejectedReports = visibleReports.filter((report) => report.status === "rejected");
+  const dailyReports = visibleReports.filter((report) => report.type === "daily");
+  const weeklyReports = visibleReports.filter((report) => report.type === "weekly");
+  const monthlyReports = visibleReports.filter((report) => report.type === "monthly");
   return (
     <MobileShell
       role="client"
@@ -2337,10 +2414,10 @@ export function ClientReportsMobileScreen() {
       leftMode="back"
       rightSlot={
         <div className="flex items-center gap-3">
-          <MobileAvatar label="Arjun Nair" size={46} />
+          <MobileAvatar label={currentUser.fullName} size={46} />
           <div className="text-right">
-            <p className="text-base font-bold text-[#17204c]">Arjun Nair</p>
-            <p className="text-xs text-[#7d85b0]">Site Engineer</p>
+            <p className="text-base font-bold text-[#17204c]">{currentUser.fullName}</p>
+            <p className="text-xs text-[#7d85b0]">{currentUser.designation}</p>
           </div>
         </div>
       }
@@ -2353,15 +2430,15 @@ export function ClientReportsMobileScreen() {
             onChange={() => undefined}
           />
           <div className="mt-5 grid grid-cols-2 gap-3">
-            <MobileMetricCard icon={<FileText className="h-6 w-6" />} label="Total Reports" value="28" meta="All Time" />
-            <MobileMetricCard icon={<CheckCircle2 className="h-6 w-6" />} label="Approved" value="22" meta="78%" accent="text-[#18aa5d]" />
-            <MobileMetricCard icon={<Clock3 className="h-6 w-6" />} label="Pending" value="4" meta="14%" accent="text-[#ff8a00]" />
-            <MobileMetricCard icon={<ShieldX className="h-6 w-6" />} label="Rejected" value="2" meta="7%" accent="text-[#ff4f63]" />
+            <MobileMetricCard icon={<FileText className="h-6 w-6" />} label="Total Reports" value={String(visibleReports.length)} meta="Client visible" />
+            <MobileMetricCard icon={<CheckCircle2 className="h-6 w-6" />} label="Approved" value={String(approvedReports.length)} meta={`${visibleReports.length ? Math.round((approvedReports.length / visibleReports.length) * 100) : 0}%`} accent="text-[#18aa5d]" />
+            <MobileMetricCard icon={<Clock3 className="h-6 w-6" />} label="Pending" value={String(pendingReports.length)} meta={`${visibleReports.length ? Math.round((pendingReports.length / visibleReports.length) * 100) : 0}%`} accent="text-[#ff8a00]" />
+            <MobileMetricCard icon={<ShieldX className="h-6 w-6" />} label="Rejected" value={String(rejectedReports.length)} meta={`${visibleReports.length ? Math.round((rejectedReports.length / visibleReports.length) * 100) : 0}%`} accent="text-[#ff4f63]" />
           </div>
           <div className="mt-5 grid gap-4">
-            <MobileSelect label="Date Range" defaultValue="01 May 2025 - 16 May 2025" />
-            <MobileSelect label="Project" defaultValue="All Projects" />
-            <MobileSelect label="Report Type" defaultValue="All Types" />
+            <MobileSelect label="Date Range" defaultValue="Last visible submissions" />
+            <MobileSelect label="Project" defaultValue={primaryProject?.name ?? "Assigned projects"} />
+            <MobileSelect label="Report Type" defaultValue="All visible types" />
           </div>
         </MobileCard>
 
@@ -2383,43 +2460,76 @@ export function ClientReportsMobileScreen() {
             <Link href="/app/client/reports" className="text-sm font-bold text-[#5c2dff]">View All</Link>
           </div>
           <div className="space-y-3">
-            {projects.slice(0, 5).map((project, index) => (
-              <div key={project.id} className="grid grid-cols-[62px_1fr_auto] gap-3 border-b border-[#edf0f7] pb-3 last:border-b-0 last:pb-0">
+            {visibleReports.slice(0, 5).map((report) => {
+              const project = projectById(ops, report.projectId);
+              const author = userById(ops, report.userId);
+              return (
+              <div key={report.id} className="grid grid-cols-[62px_1fr_auto] gap-3 border-b border-[#edf0f7] pb-3 last:border-b-0 last:pb-0">
                 <div className="relative h-[62px] overflow-hidden rounded-[10px]">
-                  <Image src={project.image} alt={project.name} fill className="object-cover" />
+                  <Image src={project?.image ?? projects[0]!.image} alt={project?.name ?? report.title} fill className="object-cover" />
                 </div>
                 <div>
-                  <p className="font-bold text-[#17204c]">{project.name}</p>
-                  <p className="mt-1 text-xs text-[#7d85b0]">{`16 May 2025, 09:${15 + index} AM - Daily Report`}</p>
-                  <p className="mt-1 text-xs text-[#7d85b0]">Arjun Nair</p>
+                  <p className="font-bold text-[#17204c]">{report.title}</p>
+                  <p className="mt-1 text-xs text-[#7d85b0]">{`${report.submittedAt}  -  ${reportTypeLabel(report.type)}`}</p>
+                  <p className="mt-1 text-xs text-[#7d85b0]">{author?.fullName ?? "TELGO Team"}</p>
                 </div>
                 <div className="grid content-start justify-items-end gap-3">
-                  <MobilePill tone={index === 1 ? "orange" : index === 3 ? "red" : "green"}>
-                    {index === 1 ? "Pending" : index === 3 ? "Rejected" : "Approved"}
+                  <MobilePill tone={reportStatusTone(report.status)}>
+                    {reportStatusLabel(report.status)}
                   </MobilePill>
                   <FileText className="h-5 w-5 text-[#5c2dff]" />
                 </div>
               </div>
-            ))}
+            );})}
+            {visibleReports.length === 0 ? (
+              <p className="rounded-[12px] border border-dashed border-[#e2e7fb] px-4 py-5 text-sm text-[#7680af]">
+                No reports are visible for this client until admin permissions publish them.
+              </p>
+            ) : null}
           </div>
         </MobileCard>
 
         <MobileCard>
           <div className="grid grid-cols-2 gap-3">
-            <MobileMetricCard icon={<FileText className="h-6 w-6" />} label="Daily Reports" value="18" meta="64%" />
-            <MobileMetricCard icon={<FileCheck2 className="h-6 w-6" />} label="Weekly Reports" value="6" meta="21%" accent="text-[#18aa5d]" />
-            <MobileMetricCard icon={<CalendarDays className="h-6 w-6" />} label="Monthly Reports" value="3" meta="11%" accent="text-[#ff8a00]" />
-            <MobileMetricCard icon={<FileSpreadsheet className="h-6 w-6" />} label="Other Reports" value="1" meta="4%" accent="text-[#337dff]" />
+            <MobileMetricCard icon={<FileText className="h-6 w-6" />} label="Daily Reports" value={String(dailyReports.length)} meta={`${visibleProjects.length} projects`} />
+            <MobileMetricCard icon={<FileCheck2 className="h-6 w-6" />} label="Weekly Reports" value={String(weeklyReports.length)} meta="Admin reviewed" accent="text-[#18aa5d]" />
+            <MobileMetricCard icon={<CalendarDays className="h-6 w-6" />} label="Monthly Reports" value={String(monthlyReports.length)} meta="Visible cadence" accent="text-[#ff8a00]" />
+            <MobileMetricCard icon={<FileSpreadsheet className="h-6 w-6" />} label="Pending Review" value={String(pendingReports.length)} meta="Admin queue" accent="text-[#337dff]" />
           </div>
         </MobileCard>
 
-        <MobilePrimaryButton href="/app/client/documents/new">Submit New Report</MobilePrimaryButton>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (!primaryProject) return;
+              ops.requestClientReview(primaryProject.id);
+              setReviewRequested(true);
+            }}
+            className="inline-flex min-h-[46px] w-full items-center justify-center rounded-[12px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-4 text-[0.94rem] font-bold text-white shadow-[0_12px_24px_rgba(92,45,255,0.2)]"
+          >
+            Request Admin Review
+          </button>
+          {reviewRequested ? (
+            <p className="text-center text-sm font-semibold text-[#18aa5d]">
+              Review request sent to admin control center.
+            </p>
+          ) : null}
+        </div>
       </div>
     </MobileShell>
   );
 }
 
 export function EngineerReportsMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const visibleReports = getVisibleReports(ops, currentUser);
+  const visibleProjects = getProjectsForUser(ops, currentUser);
+  const primaryProject = getPrimaryProjectForUser(ops, currentUser);
+  const approvedReports = visibleReports.filter((report) => report.status === "approved");
+  const pendingReports = visibleReports.filter((report) => report.status === "pending");
+  const rejectedReports = visibleReports.filter((report) => report.status === "rejected");
   return (
     <MobileShell
       role="engineer"
@@ -2430,10 +2540,10 @@ export function EngineerReportsMobileScreen() {
       leftMode="back"
       rightSlot={
         <div className="flex items-center gap-3">
-          <MobileAvatar label="Arjun Nair" size={46} />
+          <MobileAvatar label={currentUser.fullName} size={46} />
           <div className="text-right">
-            <p className="text-lg font-semibold text-[#17204c]">Arjun Nair</p>
-            <p className="text-sm text-[#7d85b0]">Site Engineer</p>
+            <p className="text-lg font-semibold text-[#17204c]">{currentUser.fullName}</p>
+            <p className="text-sm text-[#7d85b0]">{currentUser.designation}</p>
           </div>
         </div>
       }
@@ -2446,15 +2556,15 @@ export function EngineerReportsMobileScreen() {
             onChange={() => undefined}
           />
           <div className="mt-5 grid grid-cols-2 gap-3">
-            <MobileMetricCard icon={<FileText className="h-6 w-6" />} label="Total Reports" value="28" meta="All Time" />
-            <MobileMetricCard icon={<CheckCircle2 className="h-6 w-6" />} label="Approved" value="22" meta="78%" accent="text-[#18aa5d]" />
-            <MobileMetricCard icon={<Clock3 className="h-6 w-6" />} label="Pending" value="4" meta="14%" accent="text-[#ff8a00]" />
-            <MobileMetricCard icon={<ShieldX className="h-6 w-6" />} label="Rejected" value="2" meta="7%" accent="text-[#ff4f63]" />
+            <MobileMetricCard icon={<FileText className="h-6 w-6" />} label="Total Reports" value={String(visibleReports.length)} meta={primaryProject?.name ?? "Assigned projects"} />
+            <MobileMetricCard icon={<CheckCircle2 className="h-6 w-6" />} label="Approved" value={String(approvedReports.length)} meta={`${visibleReports.length ? Math.round((approvedReports.length / visibleReports.length) * 100) : 0}%`} accent="text-[#18aa5d]" />
+            <MobileMetricCard icon={<Clock3 className="h-6 w-6" />} label="Pending" value={String(pendingReports.length)} meta={`${visibleReports.length ? Math.round((pendingReports.length / visibleReports.length) * 100) : 0}%`} accent="text-[#ff8a00]" />
+            <MobileMetricCard icon={<ShieldX className="h-6 w-6" />} label="Rejected" value={String(rejectedReports.length)} meta={`${visibleReports.length ? Math.round((rejectedReports.length / visibleReports.length) * 100) : 0}%`} accent="text-[#ff4f63]" />
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-3">
-            <MobileSelect label="Date Range" defaultValue="01 May 2025 - 16 May 2025" />
-            <MobileSelect label="Project" defaultValue="All Projects" />
-            <MobileSelect label="Report Type" defaultValue="All Types" />
+            <MobileSelect label="Date Range" defaultValue="Latest submissions" />
+            <MobileSelect label="Project" defaultValue={primaryProject?.name ?? "Assigned projects"} />
+            <MobileSelect label="Report Type" defaultValue="All assigned types" />
           </div>
         </MobileCard>
 
@@ -2476,24 +2586,40 @@ export function EngineerReportsMobileScreen() {
             <Link href="/app/engineer/reports" className="text-sm font-semibold text-[#5c2dff]">View All</Link>
           </div>
           <div className="space-y-4">
-            {projects.slice(0, 5).map((project, index) => (
-              <div key={project.id} className="grid grid-cols-[74px_1fr_auto] gap-3 rounded-[22px] border border-[#e8ebff] p-4">
+            {visibleReports.slice(0, 5).map((report) => {
+              const project = projectById(ops, report.projectId);
+              return (
+              <div key={report.id} className="grid grid-cols-[74px_1fr_auto] gap-3 rounded-[22px] border border-[#e8ebff] p-4">
                 <div className="relative h-[74px] overflow-hidden rounded-[18px]">
-                  <Image src={project.image} alt={project.name} fill className="object-cover" />
+                  <Image src={project?.image ?? projects[0]!.image} alt={project?.name ?? report.title} fill className="object-cover" />
                 </div>
                 <div>
-                  <p className="font-semibold text-[#17204c]">{project.name}</p>
-                  <p className="mt-1 text-sm text-[#7d85b0]">{`16 May 2025, 09:${15 + index} AM  -  Daily Report`}</p>
-                  <p className="mt-1 text-sm text-[#7d85b0]">Arjun Nair</p>
+                  <p className="font-semibold text-[#17204c]">{report.title}</p>
+                  <p className="mt-1 text-sm text-[#7d85b0]">{`${report.submittedAt}  -  ${reportTypeLabel(report.type)}`}</p>
+                  <p className="mt-1 text-sm text-[#7d85b0]">{project?.name ?? "Project"}</p>
                 </div>
                 <div className="grid content-start justify-items-end gap-3">
-                  <MobilePill tone={index === 1 ? "orange" : index === 3 ? "red" : "green"}>
-                    {index === 1 ? "Pending" : index === 3 ? "Rejected" : "Approved"}
+                  <MobilePill tone={reportStatusTone(report.status)}>
+                    {reportStatusLabel(report.status)}
                   </MobilePill>
                   <FileText className="h-5 w-5 text-[#5c2dff]" />
                 </div>
               </div>
-            ))}
+            );})}
+            {visibleReports.length === 0 ? (
+              <p className="rounded-[18px] border border-dashed border-[#e2e7fb] px-4 py-5 text-sm text-[#7680af]">
+                No reports are available yet. Submit one from the daily report workflow to push it into the admin review queue.
+              </p>
+            ) : null}
+          </div>
+        </MobileCard>
+
+        <MobileCard>
+          <div className="grid grid-cols-2 gap-3">
+            <MobileMetricCard icon={<FileText className="h-6 w-6" />} label="Daily Reports" value={String(visibleReports.filter((report) => report.type === "daily").length)} meta={`${visibleProjects.length} projects`} />
+            <MobileMetricCard icon={<FileCheck2 className="h-6 w-6" />} label="Weekly Reports" value={String(visibleReports.filter((report) => report.type === "weekly").length)} meta="Submitted" accent="text-[#18aa5d]" />
+            <MobileMetricCard icon={<CalendarDays className="h-6 w-6" />} label="Monthly Reports" value={String(visibleReports.filter((report) => report.type === "monthly").length)} meta="Submitted" accent="text-[#ff8a00]" />
+            <MobileMetricCard icon={<FileClock className="h-6 w-6" />} label="Admin Queue" value={String(pendingReports.length)} meta="Pending review" accent="text-[#337dff]" />
           </div>
         </MobileCard>
 
