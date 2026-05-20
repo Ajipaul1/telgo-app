@@ -90,7 +90,7 @@ for (const route of routes) {
         });
         break;
       } catch (error) {
-        const currentUrl = await page.url().catch(() => "");
+        const currentUrl = page.url();
         if (
           error instanceof Error &&
           error.message.includes("interrupted by another navigation") &&
@@ -139,7 +139,7 @@ for (const route of routes) {
       timeout: 120_000
     });
     const stat = await fs.stat(screenshot);
-    const currentUrl = await page.url().catch(() => "");
+    const currentUrl = page.url();
     const navigationOk =
       (response?.ok() ?? false) ||
       currentUrl === targetUrl ||
