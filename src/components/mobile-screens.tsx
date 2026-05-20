@@ -321,7 +321,8 @@ const projectSettingsRows = [
 
 export function RoleHomeMobileScreen() {
   const currentUser = useOpsStore((state) => getCurrentUser(state));
-  if (currentUser.role === "admin" || currentUser.role === "supervisor") return <AdminDashboardMobileScreen />;
+  if (currentUser.role === "admin") return <AdminDashboardMobileScreen />;
+  if (currentUser.role === "supervisor") return <SupervisorDashboardMobileScreen />;
   if (currentUser.role === "client") return <ClientDashboardMobileScreen />;
   if (currentUser.role === "finance") return <FinanceDashboardMobileScreen />;
   return <EngineerDashboardMobileScreen />;
@@ -335,7 +336,7 @@ export function AdminDashboardMobileScreen() {
       title="Admin Dashboard"
       subtitle="Welcome back, Admin"
     >
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <MobileMetricCard icon={<Folder className="h-6 w-6" />} label="Total Projects" value="12" meta="Active" />
           <MobileMetricCard icon={<Users className="h-6 w-6" />} label="Total Workers" value="84" meta="32 Online" accent="text-[#18aa5d]" />
@@ -366,16 +367,18 @@ export function AdminDashboardMobileScreen() {
 
         <MobileCard>
           <MobileSectionTitle title="Quick Access" />
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-5 gap-2">
             <MobileActionTile href="/app/admin/projects" icon={<Folder className="h-7 w-7" />} title="All Projects" />
+            <MobileActionTile href="/app/admin/projects/new" icon={<Upload className="h-7 w-7" />} title="Update Projects" />
             <MobileActionTile href="/app/admin/staff" icon={<Users className="h-7 w-7" />} title="All Workers" />
             <MobileActionTile href="/app/admin/map" icon={<MapPinned className="h-7 w-7" />} title="Live Locations" />
             <MobileActionTile href="/app/admin/staff/eng-arjun" icon={<UserRound className="h-7 w-7" />} title="Engineer Admin" />
+            <MobileActionTile href="/app/admin/staff/eng-rajeev" icon={<UserRound className="h-7 w-7" />} title="Supervisor Admin" />
             <MobileActionTile href="/app/admin/finance" icon={<IndianRupee className="h-7 w-7" />} title="Finance Admin" />
             <MobileActionTile href="/app/client" icon={<BriefcaseBusiness className="h-7 w-7" />} title="Client Admin" />
             <MobileActionTile href="/app/chat" icon={<MessageCircle className="h-7 w-7" />} title="Live Chats" badge={<span className="grid h-6 min-w-6 place-items-center rounded-full bg-[#ff4f63] px-1 text-xs font-semibold text-white">3</span>} />
+            <MobileActionTile href="/app/admin/alerts" icon={<Bell className="h-7 w-7" />} title="Notifications" badge={<span className="grid h-6 min-w-6 place-items-center rounded-full bg-[#ff4f63] px-1 text-xs font-semibold text-white">8</span>} />
             <MobileActionTile href="/app/admin/approvals" icon={<CheckCircle2 className="h-7 w-7" />} title="Approvals" badge={<span className="grid h-6 min-w-6 place-items-center rounded-full bg-[#ff4f63] px-1 text-xs font-semibold text-white">6</span>} />
-            <MobileActionTile href="/app/admin/profile" icon={<ShieldCheck className="h-7 w-7" />} title="Profile" />
           </div>
         </MobileCard>
 
@@ -433,13 +436,23 @@ export function AdminDashboardMobileScreen() {
 export function FinanceDashboardMobileScreen() {
   return (
     <MobileShell role="finance" activeHref="/app/admin/finance" title="Finance Overview" subtitle="Track spend, approvals and project funds">
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <MobileMetricCard icon={<IndianRupee className="h-6 w-6" />} label="Total Spent" value={formatInr(24578320)} meta="12.5% higher" />
           <MobileMetricCard icon={<ShieldCheck className="h-6 w-6" />} label="Budget Utilization" value="70.2%" meta="Across projects" accent="text-[#18aa5d]" />
           <MobileMetricCard icon={<ReceiptText className="h-6 w-6" />} label="Pending Approvals" value={formatInr(1876450)} meta="Requires action" accent="text-[#ff8a00]" />
           <MobileMetricCard icon={<FileCheck2 className="h-6 w-6" />} label="Approved Today" value="18" meta="Transactions" accent="text-[#337dff]" />
         </div>
+
+        <MobileCard>
+          <MobileSectionTitle title="Finance Actions" />
+          <div className="grid grid-cols-4 gap-2">
+            <MobileActionTile href="/app/admin/approvals" icon={<CheckCircle2 className="h-6 w-6" />} title="Payment Requests" subtitle="Review" />
+            <MobileActionTile href="/app/chat" icon={<MessageCircle className="h-6 w-6" />} title="Live Chat" subtitle="Teams" />
+            <MobileActionTile href="/app/admin/projects" icon={<Folder className="h-6 w-6" />} title="Expense Reports" subtitle="Projects" />
+            <MobileActionTile href="/app/admin/alerts" icon={<Bell className="h-6 w-6" />} title="Alerts" subtitle="Updates" />
+          </div>
+        </MobileCard>
 
         <MobileCard>
           <MobileSectionTitle title="Recent Transactions" />
@@ -459,6 +472,72 @@ export function FinanceDashboardMobileScreen() {
                   <MobilePill tone={status === "Approved" ? "green" : "orange"}>{status}</MobilePill>
                 </div>
               </div>
+            ))}
+          </div>
+        </MobileCard>
+      </div>
+    </MobileShell>
+  );
+}
+
+export function SupervisorDashboardMobileScreen() {
+  const supervisor = workerRecords.find((worker) => worker.id === "eng-rajeev") ?? workerRecords[2];
+  const teamMembers = workerRecords.filter((worker) => worker.badge === "Engineer").slice(0, 4);
+
+  return (
+    <MobileShell
+      role="supervisor"
+      activeHref="/app/supervisor"
+      title={`Hello, ${supervisor.name}`}
+      subtitle="Site Supervisor"
+    >
+      <div className="space-y-4">
+        <MobileGradientCard>
+          <div className="grid grid-cols-4 gap-1.5 divide-x divide-white/20">
+            <BigGradientStat label="Assigned Project" value="01" />
+            <BigGradientStat label="Team Active" value="08" />
+            <BigGradientStat label="Attendance" value="21/24" />
+            <BigGradientStat label="Site Reports" value="03" />
+          </div>
+        </MobileGradientCard>
+
+        <MobileCard>
+          <MobileSectionTitle title="Supervisor Actions" />
+          <div className="grid grid-cols-5 gap-2">
+            <MobileActionTile href="/app/admin/projects" icon={<Folder className="h-6 w-6" />} title="Current Project" subtitle="Status" />
+            <MobileActionTile href="/app/engineer/attendance" icon={<CalendarDays className="h-6 w-6" />} title="Attendance" subtitle="Mark" />
+            <MobileActionTile href="/app/engineer/reports" icon={<CalendarRange className="h-6 w-6" />} title="Calendar" subtitle="Month" />
+            <MobileActionTile href="/app/chat" icon={<MessageCircle className="h-6 w-6" />} title="Live Chat" subtitle="Open" />
+            <MobileActionTile href="/app/admin/staff" icon={<Users className="h-6 w-6" />} title="Team Attendance" subtitle="View" />
+            <MobileActionTile href="/app/admin/map" icon={<LocateFixed className="h-6 w-6" />} title="Work Monitor" subtitle="Live" />
+            <MobileActionTile href="/app/admin/projects/new" icon={<FileText className="h-6 w-6" />} title="Site Reports" subtitle="Upload" />
+            <MobileActionTile href="/app/admin/map/full" icon={<MapPinned className="h-6 w-6" />} title="Live Tracking" subtitle="Map" />
+            <MobileActionTile href="/app/admin/staff/eng-arjun" icon={<UserRound className="h-6 w-6" />} title="Engineer Detail" subtitle="Open" />
+            <MobileActionTile href="/app/admin/alerts" icon={<Bell className="h-6 w-6" />} title="Alerts" subtitle="Review" />
+          </div>
+        </MobileCard>
+
+        <MobileCard>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-[1rem] font-semibold text-[#121b44]">Team Snapshot</h3>
+            <Link href="/app/admin/staff" className="text-sm font-semibold text-[#5c2dff]">View Team</Link>
+          </div>
+          <div className="space-y-3">
+            {teamMembers.map((worker) => (
+              <Link
+                key={worker.id}
+                href={`/app/admin/staff/${worker.id}`}
+                className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[16px] border border-[#e8ebff] p-3"
+              >
+                <MobileAvatar label={worker.name} size={44} />
+                <div className="min-w-0">
+                  <p className="text-[0.92rem] font-semibold text-[#17204c]">{worker.name}</p>
+                  <p className="mt-0.5 text-[11px] text-[#7d85b0]">{worker.project}</p>
+                </div>
+                <MobilePill tone={worker.status === "Active" ? "green" : worker.status === "Offline" ? "slate" : "orange"}>
+                  {worker.status}
+                </MobilePill>
+              </Link>
             ))}
           </div>
         </MobileCard>
@@ -1110,7 +1189,7 @@ export function ClientDashboardMobileScreen() {
         </div>
       }
     >
-      <div className="space-y-5">
+      <div className="space-y-4">
         <MobileCard className="p-[14px]">
           <div className="grid grid-cols-[auto_1fr] gap-3">
             <div className="grid h-14 w-14 place-items-center rounded-[16px] bg-[#f3efff] text-[1.35rem] font-bold text-[#6a35ff]">RI</div>
@@ -1166,15 +1245,17 @@ export function ClientDashboardMobileScreen() {
 
         <div>
           <MobileSectionTitle title="Quick Actions" />
-          <div className="grid grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-5 gap-2">
             <MobileActionTile href="/app/client/profile" icon={<UserRound className="h-6 w-6" />} title="Edit Profile" />
             <MobileActionTile href="/app/client/projects" icon={<Folder className="h-6 w-6" />} title="Project Details" />
             <MobileActionTile href="/app/client/engineers" icon={<Users className="h-6 w-6" />} title="Engineers On-Site" />
             <MobileActionTile href="/app/client/progress" icon={<TrendingUp className="h-6 w-6" />} title="Work Progress" />
+            <MobileActionTile href="/app/chat" icon={<MessageCircle className="h-6 w-6" />} title="Live Chat" />
             <MobileActionTile href="/app/client/documents" icon={<FileText className="h-6 w-6" />} title="Documents" />
-            <MobileActionTile href="/app/client/progress/update" icon={<MapPinned className="h-6 w-6" />} title="Map & Progress" />
+            <MobileActionTile href="/app/client/progress/update" icon={<MapPinned className="h-6 w-6" />} title="Live Tracking" />
             <MobileActionTile href="/app/client/reports" icon={<FileSpreadsheet className="h-6 w-6" />} title="Reports" />
-            <MobileActionTile href="/app/client/projects/new" icon={<Plus className="h-6 w-6" />} title="Add Project" />
+            <MobileActionTile href="/app/client/settings" icon={<ShieldCheck className="h-6 w-6" />} title="Permissions" />
+            <MobileActionTile href="/app/client/profile" icon={<Phone className="h-6 w-6" />} title="Contacts" />
           </div>
         </div>
 
@@ -1666,29 +1747,29 @@ export function EngineerDashboardMobileScreen() {
         </div>
       }
     >
-      <div className="space-y-5">
+      <div className="space-y-4">
         <MobileGradientCard className="p-[14px]">
           <div className="grid grid-cols-5 gap-1 divide-x divide-white/20">
-            <BigGradientStat label="My Projects Assigned" value="05" />
-            <BigGradientStat label="Tasks Today" value="12" />
-            <BigGradientStat label="Attendance Marked" value="18/25" />
-            <BigGradientStat label="Site Visits Today" value="03" />
-            <BigGradientStat label="Approvals Pending" value="02" />
+            <BigGradientStat label="Assigned" value="05" />
+            <BigGradientStat label="Tasks" value="12" />
+            <BigGradientStat label="Attendance" value="18/25" />
+            <BigGradientStat label="Visits" value="03" />
+            <BigGradientStat label="Approvals" value="02" />
           </div>
         </MobileGradientCard>
 
-        <div className="grid grid-cols-5 gap-2.5">
-            <MobileActionTile href="/app/engineer/attendance" icon={<CalendarDays className="h-6 w-6" />} title="Mark Attendance" subtitle="GPS mark" />
-            <MobileActionTile href="/app/engineer/reports" icon={<CalendarRange className="h-6 w-6" />} title="Calendar" subtitle="Events" />
-            <MobileActionTile href="/app/admin/staff/eng-arjun/assign-task" icon={<ListTodo className="h-6 w-6" />} title="My Tasks" subtitle="Update" />
-            <MobileActionTile href="/app/engineer/shift-report" icon={<FileText className="h-6 w-6" />} title="Daily Report" subtitle="Submit" />
-            <MobileActionTile href="/app/admin/map" icon={<Pin className="h-6 w-6" />} title="Site Visit" subtitle="Add/View" />
-            <MobileActionTile href="/app/engineer/documents" icon={<Folder className="h-6 w-6" />} title="Documents" subtitle="Docs" />
-            <MobileActionTile href="/app/engineer/finance-request" icon={<IndianRupee className="h-6 w-6" />} title="Material" subtitle="Request" />
-            <MobileActionTile href="/app/engineer/leave" icon={<FilePlus2 className="h-6 w-6" />} title="Requests" subtitle="Raise" />
-            <MobileActionTile href="/app/admin/approvals" icon={<CheckCircle2 className="h-6 w-6" />} title="Approvals" subtitle="Pending" />
-            <MobileActionTile href="/app/admin/staff" icon={<Users className="h-6 w-6" />} title="Team" subtitle="Attendance" />
-          </div>
+        <div className="grid grid-cols-5 gap-2">
+          <MobileActionTile href="/app/engineer/projects" icon={<Folder className="h-6 w-6" />} title="Current Project" subtitle="Open" />
+          <MobileActionTile href="/app/engineer/attendance" icon={<CalendarDays className="h-6 w-6" />} title="Attendance" subtitle="GPS mark" />
+          <MobileActionTile href="/app/engineer/reports" icon={<CalendarRange className="h-6 w-6" />} title="Calendar" subtitle="Events" />
+          <MobileActionTile href="/app/chat" icon={<MessageCircle className="h-6 w-6" />} title="Live Chat" subtitle="Team" />
+          <MobileActionTile href="/app/admin/staff/eng-arjun/assign-task" icon={<ListTodo className="h-6 w-6" />} title="Assigned Tasks" subtitle="Update" />
+          <MobileActionTile href="/app/engineer/shift-report" icon={<FileText className="h-6 w-6" />} title="Daily Report" subtitle="Submit" />
+          <MobileActionTile href="/app/admin/map" icon={<Pin className="h-6 w-6" />} title="Site Visit" subtitle="Add/View" />
+          <MobileActionTile href="/app/engineer/documents" icon={<Folder className="h-6 w-6" />} title="Documents" subtitle="Docs" />
+          <MobileActionTile href="/app/engineer/finance-request" icon={<IndianRupee className="h-6 w-6" />} title="Material" subtitle="Request" />
+          <MobileActionTile href="/app/engineer/leave" icon={<FilePlus2 className="h-6 w-6" />} title="Requests" subtitle="Raise" />
+        </div>
 
         <MobileCard className="p-[14px]">
           <div className="mb-4 flex items-center justify-between">
@@ -2522,6 +2603,74 @@ export function GenericShiftReportMobileScreen() {
   );
 }
 
+export function EngineerLogsMobileScreen() {
+  return (
+    <MobileShell
+      role="engineer"
+      activeHref="/app/engineer/logs"
+      title="Quick Site Update"
+      subtitle="Capture work logs, tasks and supporting files"
+      backHref="/app/engineer"
+      leftMode="back"
+      bottomNav={false}
+    >
+      <div className="space-y-4">
+        <MobileCard>
+          <MobileSectionTitle title="Log Actions" />
+          <div className="grid grid-cols-4 gap-2">
+            <MobileActionTile href="/app/engineer/attendance" icon={<CalendarDays className="h-6 w-6" />} title="Attendance" subtitle="Check-in" />
+            <MobileActionTile href="/app/admin/staff/eng-arjun/assign-task" icon={<ListTodo className="h-6 w-6" />} title="Tasks" subtitle="Update" />
+            <MobileActionTile href="/app/engineer/shift-report" icon={<FileText className="h-6 w-6" />} title="Daily Report" subtitle="Upload" />
+            <MobileActionTile href="/app/engineer/documents/new" icon={<Upload className="h-6 w-6" />} title="Documents" subtitle="Add File" />
+          </div>
+        </MobileCard>
+
+        <MobileCard>
+          <div className="grid gap-4">
+            <MobileSelect label="Project" defaultValue={engineerProject.name} />
+            <MobileSelect label="Log Type" defaultValue="Progress Update" />
+            <MobileTextArea label="Update Notes" placeholder="Work completed up to manhole no. 45, cable team moved to next stretch..." rows={5} />
+            <div className="grid grid-cols-2 gap-3">
+              <MobileInput label="Progress (%)" defaultValue="72" />
+              <MobileInput label="Distance Covered (KM)" defaultValue="13.40" />
+            </div>
+            <MobileUploadBox title="Attach Site Photo or Document" detail="Images, drawings, checklist or measurement proof" />
+          </div>
+        </MobileCard>
+
+        <MobileCard>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-[1rem] font-semibold text-[#121b44]">Recent Updates</h3>
+            <Link href="/app/engineer/reports" className="text-sm font-semibold text-[#5c2dff]">View History</Link>
+          </div>
+          <div className="space-y-3">
+            {[
+              ["09:15 AM", "Attendance marked with GPS at Kottayam site", "Completed"],
+              ["11:30 AM", "Material quality check logged for cable trench", "In Review"],
+              ["02:40 PM", "Progress photo uploaded for utility crossing", "Synced"]
+            ].map(([time, detail, state]) => (
+              <div key={detail} className="grid grid-cols-[auto_1fr_auto] gap-3 rounded-[16px] border border-[#e8ebff] p-3">
+                <div className="grid h-9 w-9 place-items-center rounded-[11px] bg-[#f3efff] text-[#6a35ff]">
+                  <Paperclip className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-semibold text-[#17204c]">{detail}</p>
+                  <p className="mt-1 text-[10px] text-[#7d85b0]">{time}</p>
+                </div>
+                <MobilePill tone={state === "Completed" ? "green" : state === "Synced" ? "blue" : "orange"}>
+                  {state}
+                </MobilePill>
+              </div>
+            ))}
+          </div>
+        </MobileCard>
+
+        <MobilePrimaryButton href="/app/engineer/shift-report">Save Quick Update</MobilePrimaryButton>
+      </div>
+    </MobileShell>
+  );
+}
+
 export function GenericOfflineSyncMobileScreen() {
   const online = useOnlineStatus();
   const forceOffline = useOpsStore((state) => state.forceOffline);
@@ -2885,7 +3034,43 @@ function TrendChart() {
 
 function CalendarCard() {
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const numbers = Array.from({ length: 35 }, (_, index) => index + 1);
+  const cells = [
+    null,
+    null,
+    null,
+    null,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31
+  ];
   return (
     <MobileCard className="h-full p-[14px]">
       <div className="mb-3 flex items-center justify-between">
@@ -2899,11 +3084,12 @@ function CalendarCard() {
         {days.map((day) => (
           <span key={day}>{day}</span>
         ))}
-        {numbers.map((value) => (
+        {cells.map((value, index) => (
           <span
-            key={value}
+            key={`${value ?? "empty"}-${index}`}
             className={cn(
               "grid h-8 w-8 place-items-center rounded-full justify-self-center text-[13px] font-medium",
+              value === null && "text-transparent",
               value === 16
                 ? "bg-[#5c2dff] text-white"
                 : value === 19
@@ -2913,7 +3099,7 @@ function CalendarCard() {
                     : "text-[#1c2450]"
             )}
           >
-            {value}
+            {value ?? "0"}
           </span>
         ))}
       </div>

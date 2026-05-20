@@ -43,7 +43,7 @@ const navByRole: Record<Role, NavItem[]> = {
   engineer: [
     { href: "/app/engineer", label: "Dashboard", icon: Home },
     { href: "/app/engineer/projects", label: "Projects", icon: Folder },
-    { href: "/app/engineer/attendance", label: "Add", icon: Plus, highlight: true },
+    { href: "/app/engineer/logs", label: "Add", icon: Plus, highlight: true },
     { href: "/app/engineer/reports", label: "Reports", icon: CalendarDays },
     { href: "/app/engineer/profile", label: "Profile", icon: UserRound }
   ],

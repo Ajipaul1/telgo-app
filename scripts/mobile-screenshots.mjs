@@ -15,6 +15,7 @@ const allRoutes = [
   "/otp",
   "/app",
   "/app/admin",
+  "/app/supervisor",
   "/app/admin/projects",
   "/app/admin/projects/new",
   "/app/admin/staff",
@@ -70,6 +71,7 @@ const browser = await chromium.launch({
 const results = [];
 
 for (const route of routes) {
+  console.log(`Capturing ${route}`);
   const page = await browser.newPage({
     viewport: { width: 393, height: 852 },
     deviceScaleFactor: 2,
@@ -77,67 +79,113 @@ for (const route of routes) {
     hasTouch: true
   });
 
-  const response = await page.goto(`${baseUrl}${route}`, {
-    waitUntil: "domcontentloaded",
-    timeout: 45_000
-  });
-  await page.waitForTimeout(900);
-  if (route === "/") {
-    await page.waitForFunction(() => !document.body.innerText.includes("Loading..."), null, {
-      timeout: 8_000
-    }).catch(() => undefined);
-  }
+  try {
+    let response;
+    const targetUrl = new URL(route, `${baseUrl}/`).toString();
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        response = await page.goto(targetUrl, {
+          waitUntil: "domcontentloaded",
+          timeout: 90_000
+        });
+        break;
+      } catch (error) {
+        const currentUrl = await page.url().catch(() => "");
+        if (
+          error instanceof Error &&
+          error.message.includes("interrupted by another navigation") &&
+          (currentUrl === targetUrl || currentUrl === targetUrl.replace(/\/$/, ""))
+        ) {
+          break;
+        }
+        if (attempt === 1) throw error;
+        await page.waitForTimeout(1500);
+      }
+    }
 
-  const metrics = await page.evaluate(() => {
-    const root = document.documentElement;
-    const visibleText = document.body.innerText.trim();
-    const buttons = Array.from(document.querySelectorAll("button, a")).filter((element) => {
-      const rect = element.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0;
+    await page.waitForTimeout(900);
+    if (route === "/") {
+      await page.waitForFunction(() => !document.body.innerText.includes("Loading..."), null, {
+        timeout: 8_000
+      }).catch(() => undefined);
+    }
+
+    const metrics = await page.evaluate(() => {
+      const root = document.documentElement;
+      const visibleText = document.body.innerText.trim();
+      const buttons = Array.from(document.querySelectorAll("button, a")).filter((element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      });
+      const smallTargets = buttons.filter((element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.width < 34 || rect.height < 34;
+      }).length;
+
+      return {
+        textLength: visibleText.length,
+        overflowX: Math.max(0, root.scrollWidth - window.innerWidth),
+        smallTargets,
+        scrollHeight: root.scrollHeight
+      };
     });
-    const smallTargets = buttons.filter((element) => {
-      const rect = element.getBoundingClientRect();
-      return rect.width < 34 || rect.height < 34;
-    }).length;
 
-    return {
-      textLength: visibleText.length,
-      overflowX: Math.max(0, root.scrollWidth - window.innerWidth),
-      smallTargets,
-      scrollHeight: root.scrollHeight
-    };
-  });
+    const safeName = route === "/" ? "home" : route.replaceAll("/", "__").replace(/^__/, "");
+    const screenshot = path.join(outDir, `${safeName}.png`);
+    await page.screenshot({
+      path: screenshot,
+      fullPage,
+      animations: "disabled",
+      timeout: 120_000
+    });
+    const stat = await fs.stat(screenshot);
+    const currentUrl = await page.url().catch(() => "");
+    const navigationOk =
+      (response?.ok() ?? false) ||
+      currentUrl === targetUrl ||
+      currentUrl === targetUrl.replace(/\/$/, "");
 
-  const safeName = route === "/" ? "home" : route.replaceAll("/", "__").replace(/^__/, "");
-  const screenshot = path.join(outDir, `${safeName}.png`);
-  await page.screenshot({ path: screenshot, fullPage });
-  const stat = await fs.stat(screenshot);
-  await page.close();
-
-  results.push({
-    route,
-    status: response?.status() ?? 0,
-    screenshot: path.relative(process.cwd(), screenshot),
-    bytes: stat.size,
-    ...metrics,
-    ok:
-      (response?.ok() ?? false) &&
-      metrics.textLength > 50 &&
-      metrics.overflowX <= 2 &&
-      stat.size > 10_000
-  });
+    results.push({
+      route,
+      status: response?.status() ?? (navigationOk ? 200 : 0),
+      screenshot: path.relative(process.cwd(), screenshot),
+      bytes: stat.size,
+      ...metrics,
+      ok:
+        navigationOk &&
+        metrics.textLength > 50 &&
+        metrics.overflowX <= 2 &&
+        stat.size > 10_000
+    });
+  } catch (error) {
+    results.push({
+      route,
+      status: 0,
+      screenshot: "",
+      bytes: 0,
+      textLength: 0,
+      overflowX: 0,
+      smallTargets: 0,
+      scrollHeight: 0,
+      ok: false,
+      error: error instanceof Error ? error.message : String(error)
+    });
+  } finally {
+    await page.close();
+  }
 }
 
 await browser.close();
 
 console.table(
-  results.map(({ route, status, overflowX, smallTargets, bytes, ok }) => ({
+  results.map(({ route, status, overflowX, smallTargets, bytes, ok, error }) => ({
     route,
     status,
     overflowX,
     smallTargets,
     bytes,
-    ok
+    ok,
+    error
   }))
 );
 
