@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -12,7 +13,7 @@ import {
   Folder,
   Home,
   LayoutGrid,
-  Menu,
+  LogOut,
   MessageCircle,
   MoreHorizontal,
   Plus,
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import type { Role } from "@/lib/types";
+import { useOpsStore } from "@/store/ops-store";
 
 type NavItem = {
   href: string;
@@ -100,7 +102,6 @@ export function MobileShell({
   children,
   backHref,
   rightSlot,
-  leftMode = "menu",
   titlePrefix,
   topUser,
   bottomNav = true
@@ -122,24 +123,49 @@ export function MobileShell({
   };
   bottomNav?: boolean;
 }) {
+  const router = useRouter();
+  const signOut = useOpsStore((state) => state.signOut);
   const user = topUser ?? topUserByRole[role];
-  const LeftIcon = leftMode === "back" ? ArrowLeft : Menu;
-  const leftHref = backHref ?? homeHrefByRole[role];
+  const homeHref = homeHrefByRole[role];
+  const fallbackBackHref = activeHref === homeHref ? "/" : homeHref;
+
+  function handleBack() {
+    if (backHref) {
+      router.push(backHref);
+      return;
+    }
+    if (activeHref === homeHref) {
+      router.push(fallbackBackHref);
+      return;
+    }
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push(fallbackBackHref);
+  }
+
+  function handleSignOut() {
+    signOut();
+    router.push("/");
+  }
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#fcfdff_0%,#f4f7ff_100%)] text-[#11173d]">
       <div className="mx-auto max-w-[402px] px-3 pb-[5.9rem] pt-2">
         <header className="mb-3.5 flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-start gap-3">
-            <Link
-              href={leftHref}
+            <button
+              type="button"
+              onClick={handleBack}
+              aria-label="Go back"
               className={cn(
                 "mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-[12px] border border-[#eceef7] bg-white text-[#101638] shadow-[0_6px_16px_rgba(35,46,92,0.05)]",
-                leftMode === "menu" && !backHref && "opacity-90"
+                !backHref && activeHref !== homeHref && "opacity-95"
               )}
             >
-              <LeftIcon className="h-[18px] w-[18px]" />
-            </Link>
+              <ArrowLeft className="h-[18px] w-[18px]" />
+            </button>
             <div className="flex min-w-0 items-center gap-3">
               {titlePrefix ? <div className="shrink-0">{titlePrefix}</div> : null}
               <div className="min-w-0">
@@ -150,21 +176,30 @@ export function MobileShell({
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {rightSlot ?? (
-              <>
-                <Link
-                  href="/app/notifications"
-                  className="relative grid h-10 w-10 place-items-center rounded-[12px] border border-[#eceef7] bg-white text-[#18214d] shadow-[0_6px_16px_rgba(35,46,92,0.05)]"
-                >
-                  <Bell className="h-[18px] w-[18px]" />
-                  <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#ff3047] px-1 text-[9px] font-bold text-white">
-                    5
-                  </span>
-                </Link>
-                <Link href={profileHrefByRole[role]}>
-                  <MobileAvatar src={user.avatar || undefined} label={user.name} size={40} />
-                </Link>
-              </>
+              <Link
+                href="/app/notifications"
+                aria-label="Notifications"
+                className="relative grid h-10 w-10 place-items-center rounded-[12px] border border-[#eceef7] bg-white text-[#18214d] shadow-[0_6px_16px_rgba(35,46,92,0.05)]"
+              >
+                <Bell className="h-[18px] w-[18px]" />
+                <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#ff3047] px-1 text-[9px] font-bold text-white">
+                  5
+                </span>
+              </Link>
             )}
+            {!rightSlot ? (
+              <Link href={profileHrefByRole[role]} aria-label="Open profile">
+                <MobileAvatar src={user.avatar || undefined} label={user.name} size={40} />
+              </Link>
+            ) : null}
+            <button
+              type="button"
+              onClick={handleSignOut}
+              aria-label="Sign out"
+              className="grid h-10 w-10 place-items-center rounded-[12px] border border-[#eceef7] bg-white text-[#18214d] shadow-[0_6px_16px_rgba(35,46,92,0.05)]"
+            >
+              <LogOut className="h-[18px] w-[18px]" />
+            </button>
           </div>
         </header>
 

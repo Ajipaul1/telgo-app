@@ -130,6 +130,7 @@ for (const route of routes) {
 
     const metrics = await page.evaluate(() => {
       const root = document.documentElement;
+      const pathname = window.location.pathname;
       const visibleText = document.body.innerText.trim();
       const buttons = Array.from(document.querySelectorAll("button, a")).filter((element) => {
         const rect = element.getBoundingClientRect();
@@ -143,6 +144,10 @@ for (const route of routes) {
       return {
         textLength: visibleText.length,
         overflowX: Math.max(0, root.scrollWidth - window.innerWidth),
+        backControls: document.querySelectorAll('[aria-label="Go back"]').length,
+        signOutControls: document.querySelectorAll('[aria-label="Sign out"]').length,
+        expectsBack: pathname !== "/",
+        expectsSignOut: pathname.startsWith("/app"),
         smallTargets,
         scrollHeight: root.scrollHeight
       };
@@ -173,6 +178,8 @@ for (const route of routes) {
         navigationOk &&
         metrics.textLength > 50 &&
         metrics.overflowX <= 2 &&
+        (!metrics.expectsBack || metrics.backControls > 0) &&
+        (!metrics.expectsSignOut || metrics.signOutControls > 0) &&
         stat.size > 10_000
     });
   } catch (error) {
@@ -196,10 +203,12 @@ for (const route of routes) {
 await browser.close();
 
 console.table(
-  results.map(({ route, status, overflowX, smallTargets, bytes, ok, error }) => ({
+  results.map(({ route, status, overflowX, backControls, signOutControls, smallTargets, bytes, ok, error }) => ({
     route,
     status,
     overflowX,
+    backControls,
+    signOutControls,
     smallTargets,
     bytes,
     ok,

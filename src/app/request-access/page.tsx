@@ -8,7 +8,7 @@ export default function RequestAccessPage() {
     <main className="safe-screen bg-industrial-radial px-5 pb-10 pt-5 text-white sm:px-8">
       <div className="mx-auto max-w-[980px]">
         <div className="mb-6 flex items-center justify-between">
-          <Link href="/" className="grid h-12 w-12 place-items-center rounded-xl border border-white/10">
+          <Link href="/" aria-label="Go back" className="grid h-12 w-12 place-items-center rounded-xl border border-white/10">
             <Icon name="ChevronLeft" />
           </Link>
           <Logo compact />

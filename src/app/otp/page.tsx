@@ -6,7 +6,7 @@ export default function OtpPage() {
     <main className="safe-screen grid place-items-center bg-industrial-radial px-5 text-white">
       <div className="w-full max-w-[520px]">
         <div className="mb-8 flex items-center justify-between">
-          <Link href="/forgot-password" className="grid h-12 w-12 place-items-center rounded-xl border border-white/10">
+          <Link href="/forgot-password" aria-label="Go back" className="grid h-12 w-12 place-items-center rounded-xl border border-white/10">
             <Icon name="ChevronLeft" />
           </Link>
           <Logo compact />
