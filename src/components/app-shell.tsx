@@ -118,7 +118,6 @@ export function AppShell({
   return (
     <div className="safe-screen bg-industrial-radial text-white">
       <div className="mx-auto flex min-h-screen w-full max-w-[980px] flex-col px-4 pb-24 pt-3 sm:px-6 lg:px-8">
-        <StatusBar />
         <header className="sticky top-0 z-30 -mx-4 mb-5 border-b border-transparent bg-ink-950/72 px-4 pb-3 pt-2 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -160,20 +159,6 @@ export function AppShell({
         </motion.main>
 
         <BottomNav items={nav} activeHref={activeHref} />
-      </div>
-    </div>
-  );
-}
-
-function StatusBar() {
-  return (
-    <div className="mb-1 flex h-8 items-center justify-between px-2 text-sm font-semibold text-white">
-      <span>9:41</span>
-      <div className="flex items-center gap-1.5 text-white">
-        <span className="h-3 w-4 rounded-sm border border-white/70">
-          <span className="block h-full w-3 rounded-sm bg-white" />
-        </span>
-        <Icon name="Activity" className="h-4 w-4" />
       </div>
     </div>
   );

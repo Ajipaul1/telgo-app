@@ -52,7 +52,7 @@ import {
   WifiOff
 } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
-import { chatMessages as seedChatMessages, approvals as seedApprovals, engineers as seedEngineers, projects, sitePhotos } from "@/lib/demo-data";
+import { projects, sitePhotos } from "@/lib/demo-data";
 import {
   MobileActionTile,
   MobileAvatar,
@@ -73,7 +73,13 @@ import {
   MobileTextArea,
   MobileUploadBox
 } from "@/components/mobile-kit";
-import { getCurrentUser, useOpsStore } from "@/store/ops-store";
+import {
+  getCurrentUser,
+  type DemoUser,
+  type ManagedTask,
+  type OpsState,
+  useOpsStore
+} from "@/store/ops-store";
 import { useOfflineStore } from "@/store/offline-store";
 import { supabase } from "@/lib/supabase/client";
 import { cn, formatInr, initials } from "@/lib/utils";
@@ -109,161 +115,261 @@ type TaskRecord = {
   detail: string;
   priority: "High" | "Medium" | "Low";
   time: string;
-  status: "Pending" | "In Progress" | "Completed" | "Upcoming";
+  status: "Pending" | "In Progress" | "Completed" | "Upcoming" | "Blocked";
 };
 
-const adminProject = projects[0];
-const engineerProject = projects[0];
-const clientProject = projects[0];
-const workerRecords: WorkerRecord[] = [
-  {
-    id: "eng-arjun",
-    name: "Arjun Nair",
-    role: "Site Engineer",
-    email: "arjun.nair@telgo.com",
-    phone: "+91 98765 43210",
-    status: "Active",
-    project: "Kottayam Utility Expansion",
-    location: "Kottayam, Kerala",
-    joined: "12 Apr 2024",
-    badge: "Engineer",
-    avatar: undefined
-  },
-  {
-    id: "eng-vishnu",
-    name: "Vishnu P",
-    role: "Site Engineer",
-    email: "vishnu.p@telgo.com",
-    phone: "+91 91234 56789",
-    status: "Active",
-    project: "Kolenchery to Ernakulam Utility Link",
-    location: "Ernakulam, Kerala",
-    joined: "05 Dec 2023",
-    badge: "Engineer",
-    avatar: undefined
-  },
-  {
-    id: "eng-rajeev",
-    name: "Rajeev R",
-    role: "Supervisor",
-    email: "rajeev.r@telgo.com",
-    phone: "+91 98470 11223",
-    status: "On Site",
-    project: "Kannur Smart Corridor",
-    location: "Kannur, Kerala",
-    joined: "15 Feb 2024",
-    badge: "Supervisor",
-    avatar: undefined
-  },
-  {
-    id: "eng-divya",
-    name: "Divya S",
-    role: "Finance Controller",
-    email: "divya.s@telgo.com",
-    phone: "+91 90375 55667",
-    status: "Active",
-    project: "Finance Department",
-    location: "Kochi, Kerala",
-    joined: "01 Nov 2023",
-    badge: "Finance",
-    avatar: undefined
-  },
-  {
-    id: "eng-jithin",
-    name: "Jithin Jose",
-    role: "Site Engineer",
-    email: "jithin.j@telgo.com",
-    phone: "+91 94967 88990",
-    status: "Offline",
-    project: "Ernakulam City Cable Upgrade",
-    location: "Ernakulam, Kerala",
-    joined: "18 Apr 2024",
-    badge: "Engineer",
-    avatar: undefined
-  },
-  {
-    id: "eng-manu",
-    name: "Manu Mohan",
-    role: "Supervisor",
-    email: "manu.m@telgo.com",
-    phone: "+91 90722 33445",
-    status: "On Leave",
-    project: "SN Junction to Vadakara",
-    location: "Kozhikode, Kerala",
-    joined: "20 Jan 2024",
-    badge: "Supervisor"
-  }
-];
+type EnterpriseApprovalItem = {
+  id: string;
+  entityId: string;
+  kind: "access" | "leave" | "attendance" | "finance" | "report" | "document";
+  name: string;
+  label: string;
+  info: string;
+  sub: string;
+  priority: "High Priority" | "Medium Priority" | "Low Priority";
+  time: string;
+  projectId?: string;
+};
 
-const documentRecords: DocumentRecord[] = [
-  {
-    id: "doc-1",
-    name: "PWD Approval Letter.pdf",
-    type: "PDF",
-    status: "Approved",
-    meta: "16 May 2025, 09:30 AM  -  2.4 MB",
-    author: "Arjun Nair"
-  },
-  {
-    id: "doc-2",
-    name: "Site Inspection Report.docx",
-    type: "DOC",
-    status: "Pending",
-    meta: "16 May 2025, 08:15 AM  -  1.8 MB",
-    author: "Arjun Nair"
-  },
-  {
-    id: "doc-3",
-    name: "Site Photo - Road Crossing.jpg",
-    type: "JPG",
-    status: "Approved",
-    meta: "15 May 2025, 06:45 PM  -  3.2 MB",
-    author: "Arjun Nair"
-  },
-  {
-    id: "doc-4",
-    name: "Material Delivery Note.pdf",
-    type: "PDF",
-    status: "Approved",
-    meta: "15 May 2025, 04:20 PM  -  1.2 MB",
-    author: "Arjun Nair"
-  },
-  {
-    id: "doc-5",
-    name: "Progress Summary.xlsx",
-    type: "XLS",
-    status: "Rejected",
-    meta: "14 May 2025, 07:10 PM  -  950 KB",
-    author: "Arjun Nair"
+function roleBadgeLabel(role: DemoUser["role"]) {
+  switch (role) {
+    case "supervisor":
+      return "Supervisor";
+    case "finance":
+      return "Finance";
+    case "client":
+      return "Client";
+    case "admin":
+      return "Admin";
+    default:
+      return "Engineer";
   }
-];
+}
 
-const taskRecords: TaskRecord[] = [
-  {
-    id: "task-1",
-    title: "Site inspection at Block A",
-    detail: "Check foundation quality and materials",
-    priority: "High",
-    time: "09:00 AM",
-    status: "Pending"
-  },
-  {
-    id: "task-2",
-    title: "Material quality check",
-    detail: "Verify cement, steel and sand quality",
-    priority: "Medium",
-    time: "11:30 AM",
-    status: "In Progress"
-  },
-  {
-    id: "task-3",
-    title: "Daily progress update",
-    detail: "Upload site photos and update work progress",
-    priority: "Low",
-    time: "04:00 PM",
-    status: "Upcoming"
+function workerStatusLabel(user: DemoUser): WorkerRecord["status"] {
+  if (user.status === "inactive") return "Inactive";
+  if (user.workStatus === "on_leave") return "On Leave";
+  if (user.workStatus === "on_site") return "On Site";
+  if (user.workStatus === "offline") return "Offline";
+  return "Active";
+}
+
+function taskPriorityLabel(priority: ManagedTask["priority"]): TaskRecord["priority"] {
+  if (priority === "high") return "High";
+  if (priority === "medium") return "Medium";
+  return "Low";
+}
+
+function taskStatusLabel(status: ManagedTask["status"]): TaskRecord["status"] {
+  if (status === "in_progress") return "In Progress";
+  if (status === "completed") return "Completed";
+  if (status === "blocked") return "Blocked";
+  if (status === "upcoming") return "Upcoming";
+  return "Pending";
+}
+
+function projectById(state: OpsState, projectId?: string) {
+  return state.managedProjects.find((project) => project.id === projectId) ?? state.managedProjects[0];
+}
+
+function userById(state: OpsState, userId?: string) {
+  return state.users.find((user) => user.id === userId);
+}
+
+function getProjectsForUser(state: OpsState, user: DemoUser) {
+  if (user.role === "admin") return state.managedProjects;
+  if (user.role === "client") {
+    const allowedProjectIds = state.clientPermissions
+      .filter((permission) => permission.clientUserId === user.id && permission.status === "approved")
+      .map((permission) => permission.projectId);
+    return state.managedProjects.filter((project) => allowedProjectIds.includes(project.id));
   }
-];
+  return state.managedProjects.filter((project) => user.projectIds.includes(project.id));
+}
+
+function getPrimaryProjectForUser(state: OpsState, user: DemoUser) {
+  return (
+    projectById(state, state.activeAssignments[user.id]) ??
+    getProjectsForUser(state, user)[0] ??
+    state.managedProjects[0]
+  );
+}
+
+function getWorkerRecords(state: OpsState): WorkerRecord[] {
+  return state.users
+    .filter((user) => user.role !== "admin")
+    .map((user) => {
+      const primaryProject = getPrimaryProjectForUser(state, user);
+      return {
+        id: user.id,
+        name: user.fullName,
+        role: user.designation,
+        email: user.email,
+        phone: user.phone,
+        status: workerStatusLabel(user),
+        project: primaryProject?.name ?? user.site,
+        location: primaryProject?.location ?? user.site,
+        joined: user.joinedAt,
+        badge: roleBadgeLabel(user.role),
+        avatar: user.avatar ?? undefined
+      };
+    });
+}
+
+function getTaskRecords(state: OpsState, assigneeUserId?: string): TaskRecord[] {
+  return state.tasks
+    .filter((task) => (assigneeUserId ? task.assigneeUserId === assigneeUserId : true))
+    .map((task) => ({
+      id: task.id,
+      title: task.title,
+      detail: task.detail,
+      priority: taskPriorityLabel(task.priority),
+      time: task.dueAt.split(", ").at(-1) ?? task.dueAt,
+      status: taskStatusLabel(task.status)
+    }));
+}
+
+function getDocumentRecords(state: OpsState, viewer: DemoUser, projectId?: string): DocumentRecord[] {
+  return state.projectDocuments
+    .filter((document) => document.visibilityRoles.includes(viewer.role))
+    .filter((document) => (projectId ? document.projectId === projectId : true))
+    .filter((document) => {
+      if (viewer.role === "admin") return true;
+      if (viewer.role === "client") {
+        return state.clientPermissions.some(
+          (permission) =>
+            permission.clientUserId === viewer.id &&
+            permission.projectId === document.projectId &&
+            permission.status === "approved" &&
+            permission.canViewDocuments
+        );
+      }
+      return viewer.projectIds.includes(document.projectId);
+    })
+    .map((document) => ({
+      id: document.id,
+      name: document.name,
+      type: document.type === "ZIP" ? "PDF" : document.type,
+      status:
+        document.status === "approved"
+          ? "Approved"
+          : document.status === "pending"
+            ? "Pending"
+            : "Rejected",
+      meta: `${document.uploadedAt}  -  ${document.sizeLabel}`,
+      author: userById(state, document.authorUserId)?.fullName ?? "TELGO"
+    }));
+}
+
+function getVisibleReports(state: OpsState, viewer: DemoUser) {
+  return state.projectReports.filter((report) => {
+    if (viewer.role === "admin") return true;
+    if (viewer.role === "client") {
+      return state.clientPermissions.some(
+        (permission) =>
+          permission.clientUserId === viewer.id &&
+          permission.projectId === report.projectId &&
+          permission.status === "approved" &&
+          permission.canViewReports
+      );
+    }
+    return viewer.projectIds.includes(report.projectId);
+  });
+}
+
+function getApprovalQueue(state: OpsState): EnterpriseApprovalItem[] {
+  const access = state.accessRequests
+    .filter((request) => request.status === "pending")
+    .map<EnterpriseApprovalItem>((request) => ({
+      id: `approval-${request.id}`,
+      entityId: request.id,
+      kind: "access",
+      name: request.fullName,
+      label: "New User",
+      info: `Role: ${roleBadgeLabel(request.requestedRole)}`,
+      sub: request.accessPurpose,
+      priority: "Medium Priority",
+      time: request.createdAt,
+      projectId: state.managedProjects[0]?.id
+    }));
+
+  const leave = state.leaveRequests
+    .filter((request) => request.status === "pending")
+    .map<EnterpriseApprovalItem>((request) => ({
+      id: `approval-${request.id}`,
+      entityId: request.id,
+      kind: "leave",
+      name: userById(state, request.userId)?.fullName ?? "Leave Request",
+      label: "Leave Request",
+      info: `${request.startDate} - ${request.endDate}`,
+      sub: request.reason,
+      priority: "High Priority",
+      time: request.createdAt,
+      projectId: state.activeAssignments[request.userId]
+    }));
+
+  const attendance = state.attendance
+    .filter((record) => record.status === "pending_approval")
+    .map<EnterpriseApprovalItem>((record) => ({
+      id: `approval-${record.id}`,
+      entityId: record.id,
+      kind: "attendance",
+      name: userById(state, record.userId)?.fullName ?? "Attendance Review",
+      label: "Attendance Review",
+      info: `Distance: ${record.distanceFromSiteM} m`,
+      sub: record.withinGeofence ? "Inside geofence" : "Outside geofence",
+      priority: record.withinGeofence ? "Medium Priority" : "High Priority",
+      time: record.checkInAt,
+      projectId: record.projectId
+    }));
+
+  const finance = state.financeRequests
+    .filter((request) => request.status === "pending")
+    .map<EnterpriseApprovalItem>((request) => ({
+      id: `approval-${request.id}`,
+      entityId: request.id,
+      kind: "finance",
+      name: request.title,
+      label: "Expense Request",
+      info: `Amount: ${formatInr(request.amount)}`,
+      sub: projectById(state, request.projectId)?.name ?? "Project spend",
+      priority: request.urgency === "urgent" ? "High Priority" : "Medium Priority",
+      time: request.createdAt,
+      projectId: request.projectId
+    }));
+
+  const reports = state.projectReports
+    .filter((report) => report.status === "pending")
+    .map<EnterpriseApprovalItem>((report) => ({
+      id: `approval-${report.id}`,
+      entityId: report.id,
+      kind: "report",
+      name: report.title,
+      label: "Report Review",
+      info: `Progress: ${report.progressPercent}%`,
+      sub: report.summary,
+      priority: "Medium Priority",
+      time: report.submittedAt,
+      projectId: report.projectId
+    }));
+
+  const documents = state.projectDocuments
+    .filter((document) => document.status === "pending")
+    .map<EnterpriseApprovalItem>((document) => ({
+      id: `approval-${document.id}`,
+      entityId: document.id,
+      kind: "document",
+      name: document.name,
+      label: "Document Approval",
+      info: document.type,
+      sub: projectById(state, document.projectId)?.name ?? "Project document",
+      priority: document.category === "permission" ? "High Priority" : "Medium Priority",
+      time: document.uploadedAt,
+      projectId: document.projectId
+    }));
+
+  return [...leave, ...access, ...attendance, ...finance, ...reports, ...documents];
+}
 
 const reportTrend = {
   approved: [6, 6, 10, 9, 7, 7, 6, 6, 10, 9, 7, 7, 9, 12],
@@ -271,50 +377,11 @@ const reportTrend = {
   rejected: [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0]
 };
 
-const approvalQueue = [
-  {
-    id: "approval-ui-1",
-    name: "Arjun Nair",
-    label: "Leave Request",
-    info: "12-14 May 2025 (3 Days)",
-    sub: "Personal Leave",
-    priority: "High Priority",
-    time: "Today, 10:30 AM"
-  },
-  {
-    id: "approval-ui-2",
-    name: "New User Registration",
-    label: "New User",
-    info: "Name: Rakesh Kumar",
-    sub: "Role: Engineer",
-    priority: "Medium Priority",
-    time: "Today, 09:15 AM"
-  },
-  {
-    id: "approval-ui-3",
-    name: "Vishnu P",
-    label: "Attendance Correction",
-    info: "Date: 08 May 2025",
-    sub: "Check-in missed",
-    priority: "Medium Priority",
-    time: "Yesterday, 05:45 PM"
-  },
-  {
-    id: "approval-ui-4",
-    name: "Expense Claim",
-    label: "Expense Request",
-    info: "Amount: Rs. 4,560",
-    sub: "Travel to site - Kozhikode",
-    priority: "High Priority",
-    time: "Yesterday, 02:20 PM"
-  }
-];
-
 const projectSettingsRows = [
   "Edit Project Details",
-  "Project Team",
-  "Work Categories",
-  "Milestones",
+  "Assignments & Permissions",
+  "Document Visibility",
+  "Tracking Controls",
   "Budget & Cost",
   "Settings & Preferences"
 ];
@@ -329,6 +396,25 @@ export function RoleHomeMobileScreen() {
 }
 
 export function AdminDashboardMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const workerRecords = getWorkerRecords(ops);
+  const approvalQueue = getApprovalQueue(ops);
+  const activeProjects = ops.managedProjects.filter((project) => project.status !== "Completed");
+  const workersOnSite = workerRecords.filter((worker) => worker.status === "On Site").length;
+  const liveWorkers = workerRecords.filter(
+    (worker) => worker.status === "Active" || worker.status === "On Site"
+  ).length;
+  const unreadNotifications = ops.notifications.filter(
+    (item) =>
+      !item.read &&
+      (item.targetRole === currentUser.role || item.targetRole === "all")
+  ).length;
+  const engineerAdminLink =
+    workerRecords.find((worker) => worker.badge === "Engineer")?.id ?? "eng-arjun";
+  const supervisorAdminLink =
+    workerRecords.find((worker) => worker.badge === "Supervisor")?.id ?? "eng-rajeev";
+
   return (
     <MobileShell
       role="admin"
@@ -338,10 +424,10 @@ export function AdminDashboardMobileScreen() {
     >
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <MobileMetricCard icon={<Folder className="h-6 w-6" />} label="Total Projects" value="12" meta="Active" />
-          <MobileMetricCard icon={<Users className="h-6 w-6" />} label="Total Workers" value="84" meta="32 Online" accent="text-[#18aa5d]" />
-          <MobileMetricCard icon={<LocateFixed className="h-6 w-6" />} label="Live on Site" value="28" meta="Workers" accent="text-[#ff8a00]" />
-          <MobileMetricCard icon={<ShieldCheck className="h-6 w-6" />} label="Pending Approvals" value="6" meta="Requests" accent="text-[#ff4f63]" />
+          <MobileMetricCard icon={<Folder className="h-6 w-6" />} label="Total Projects" value={String(ops.managedProjects.length)} meta={`${activeProjects.length} active`} />
+          <MobileMetricCard icon={<Users className="h-6 w-6" />} label="Total Workers" value={String(workerRecords.length)} meta={`${liveWorkers} live`} accent="text-[#18aa5d]" />
+          <MobileMetricCard icon={<LocateFixed className="h-6 w-6" />} label="Live on Site" value={String(workersOnSite)} meta="Workers" accent="text-[#ff8a00]" />
+          <MobileMetricCard icon={<ShieldCheck className="h-6 w-6" />} label="Pending Approvals" value={String(approvalQueue.length)} meta="Requests" accent="text-[#ff4f63]" />
         </div>
 
         <MobileCard className="p-4">
@@ -350,7 +436,7 @@ export function AdminDashboardMobileScreen() {
             <MobileMapPreview height={260} variant="portfolio" />
           </div>
           <div className="mt-4 grid gap-3 rounded-[24px] bg-[#f6f8ff] p-4">
-            {projects.slice(0, 4).map((project, index) => (
+            {ops.managedProjects.slice(0, 4).map((project, index) => (
               <div key={project.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
                 <span className={cn("h-3 w-3 rounded-full", ["bg-[#6a35ff]", "bg-[#22c55e]", "bg-[#f59e0b]", "bg-[#3b82f6]"][index % 4])} />
                 <div>
@@ -372,13 +458,13 @@ export function AdminDashboardMobileScreen() {
             <MobileActionTile href="/app/admin/projects/new" icon={<Upload className="h-7 w-7" />} title="Update Projects" />
             <MobileActionTile href="/app/admin/staff" icon={<Users className="h-7 w-7" />} title="All Workers" />
             <MobileActionTile href="/app/admin/map" icon={<MapPinned className="h-7 w-7" />} title="Live Locations" />
-            <MobileActionTile href="/app/admin/staff/eng-arjun" icon={<UserRound className="h-7 w-7" />} title="Engineer Admin" />
-            <MobileActionTile href="/app/admin/staff/eng-rajeev" icon={<UserRound className="h-7 w-7" />} title="Supervisor Admin" />
+            <MobileActionTile href={`/app/admin/staff/${engineerAdminLink}`} icon={<UserRound className="h-7 w-7" />} title="Engineer Admin" />
+            <MobileActionTile href={`/app/admin/staff/${supervisorAdminLink}`} icon={<UserRound className="h-7 w-7" />} title="Supervisor Admin" />
             <MobileActionTile href="/app/admin/finance" icon={<IndianRupee className="h-7 w-7" />} title="Finance Admin" />
             <MobileActionTile href="/app/client" icon={<BriefcaseBusiness className="h-7 w-7" />} title="Client Admin" />
-            <MobileActionTile href="/app/chat" icon={<MessageCircle className="h-7 w-7" />} title="Live Chats" badge={<span className="grid h-6 min-w-6 place-items-center rounded-full bg-[#ff4f63] px-1 text-xs font-semibold text-white">3</span>} />
-            <MobileActionTile href="/app/admin/alerts" icon={<Bell className="h-7 w-7" />} title="Notifications" badge={<span className="grid h-6 min-w-6 place-items-center rounded-full bg-[#ff4f63] px-1 text-xs font-semibold text-white">8</span>} />
-            <MobileActionTile href="/app/admin/approvals" icon={<CheckCircle2 className="h-7 w-7" />} title="Approvals" badge={<span className="grid h-6 min-w-6 place-items-center rounded-full bg-[#ff4f63] px-1 text-xs font-semibold text-white">6</span>} />
+            <MobileActionTile href="/app/chat" icon={<MessageCircle className="h-7 w-7" />} title="Live Chats" badge={<span className="grid h-6 min-w-6 place-items-center rounded-full bg-[#ff4f63] px-1 text-xs font-semibold text-white">{ops.chatMessages.length}</span>} />
+            <MobileActionTile href="/app/admin/alerts" icon={<Bell className="h-7 w-7" />} title="Notifications" badge={<span className="grid h-6 min-w-6 place-items-center rounded-full bg-[#ff4f63] px-1 text-xs font-semibold text-white">{unreadNotifications}</span>} />
+            <MobileActionTile href="/app/admin/approvals" icon={<CheckCircle2 className="h-7 w-7" />} title="Approvals" badge={<span className="grid h-6 min-w-6 place-items-center rounded-full bg-[#ff4f63] px-1 text-xs font-semibold text-white">{approvalQueue.length}</span>} />
           </div>
         </MobileCard>
 
@@ -389,7 +475,7 @@ export function AdminDashboardMobileScreen() {
               <Link href="/app/admin/projects" className="text-sm font-semibold text-[#5c2dff]">View All</Link>
             </div>
             <div className="space-y-4">
-              {projects.slice(0, 4).map((project) => (
+              {ops.managedProjects.slice(0, 4).map((project) => (
                 <div key={project.id} className="space-y-2 rounded-[22px] bg-[#f7f8ff] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -434,14 +520,25 @@ export function AdminDashboardMobileScreen() {
 }
 
 export function FinanceDashboardMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const visibleProjects = ops.managedProjects.filter((project) =>
+    project.status !== "Completed"
+  );
+  const totalSpent = visibleProjects.reduce((sum, project) => sum + project.spent, 0);
+  const totalBudget = visibleProjects.reduce((sum, project) => sum + project.budget, 0);
+  const pendingRequests = ops.financeRequests.filter((request) => request.status === "pending");
+  const approvedToday = ops.financeRequests.filter(
+    (request) => request.status === "approved" || request.status === "paid"
+  );
+
   return (
     <MobileShell role="finance" activeHref="/app/admin/finance" title="Finance Overview" subtitle="Track spend, approvals and project funds">
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <MobileMetricCard icon={<IndianRupee className="h-6 w-6" />} label="Total Spent" value={formatInr(24578320)} meta="12.5% higher" />
-          <MobileMetricCard icon={<ShieldCheck className="h-6 w-6" />} label="Budget Utilization" value="70.2%" meta="Across projects" accent="text-[#18aa5d]" />
-          <MobileMetricCard icon={<ReceiptText className="h-6 w-6" />} label="Pending Approvals" value={formatInr(1876450)} meta="Requires action" accent="text-[#ff8a00]" />
-          <MobileMetricCard icon={<FileCheck2 className="h-6 w-6" />} label="Approved Today" value="18" meta="Transactions" accent="text-[#337dff]" />
+          <MobileMetricCard icon={<IndianRupee className="h-6 w-6" />} label="Total Spent" value={formatInr(totalSpent)} meta={`${visibleProjects.length} live projects`} />
+          <MobileMetricCard icon={<ShieldCheck className="h-6 w-6" />} label="Budget Utilization" value={`${Math.round((totalSpent / Math.max(totalBudget, 1)) * 100)}%`} meta="Across managed projects" accent="text-[#18aa5d]" />
+          <MobileMetricCard icon={<ReceiptText className="h-6 w-6" />} label="Pending Approvals" value={formatInr(pendingRequests.reduce((sum, request) => sum + request.amount, 0))} meta="Requires action" accent="text-[#ff8a00]" />
+          <MobileMetricCard icon={<FileCheck2 className="h-6 w-6" />} label="Approved Today" value={String(approvedToday.length)} meta="Transactions" accent="text-[#337dff]" />
         </div>
 
         <MobileCard>
@@ -457,19 +554,17 @@ export function FinanceDashboardMobileScreen() {
         <MobileCard>
           <MobileSectionTitle title="Recent Transactions" />
           <div className="space-y-4">
-            {[
-              ["Fuel Purchase - Thrissur Site", "Kannur Project", 125600, "Approved"],
-              ["Equipment Repair - Panangad", "Vadakkekotta Cable Laying", 78450, "Pending"],
-              ["Materials - Cable Drum", "Kottayam Utility Expansion", 96320, "Approved"]
-            ].map(([title, project, amount, status]) => (
-              <div key={String(title)} className="rounded-[22px] border border-[#e8ebff] p-4">
+            {ops.financeRequests.slice(0, 3).map((request) => (
+              <div key={request.id} className="rounded-[22px] border border-[#e8ebff] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-[#18214d]">{title}</p>
-                    <p className="mt-1 text-sm text-[#7f87b0]">{project}</p>
-                    <p className="mt-3 text-lg font-semibold text-[#121b44]">{formatInr(Number(amount))}</p>
+                    <p className="font-semibold text-[#18214d]">{request.title}</p>
+                    <p className="mt-1 text-sm text-[#7f87b0]">{projectById(ops, request.projectId)?.name}</p>
+                    <p className="mt-3 text-lg font-semibold text-[#121b44]">{formatInr(request.amount)}</p>
                   </div>
-                  <MobilePill tone={status === "Approved" ? "green" : "orange"}>{status}</MobilePill>
+                  <MobilePill tone={request.status === "approved" || request.status === "paid" ? "green" : "orange"}>
+                    {request.status === "approved" ? "Approved" : request.status === "paid" ? "Paid" : "Pending"}
+                  </MobilePill>
                 </div>
               </div>
             ))}
@@ -481,23 +576,37 @@ export function FinanceDashboardMobileScreen() {
 }
 
 export function SupervisorDashboardMobileScreen() {
-  const supervisor = workerRecords.find((worker) => worker.id === "eng-rajeev") ?? workerRecords[2];
-  const teamMembers = workerRecords.filter((worker) => worker.badge === "Engineer").slice(0, 4);
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const supervisor = getWorkerRecords(ops).find((worker) => worker.id === currentUser.id) ?? getWorkerRecords(ops)[0];
+  const teamMembers = getWorkerRecords(ops)
+    .filter(
+      (worker) =>
+        worker.badge === "Engineer" &&
+        userById(ops, worker.id)?.projectIds.some((projectId) =>
+          currentUser.projectIds.includes(projectId)
+        )
+    )
+    .slice(0, 4);
+  const supervisorTasks = getTaskRecords(ops, currentUser.id);
+  const teamAttendance = ops.attendance.filter((record) =>
+    teamMembers.some((worker) => worker.id === record.userId)
+  );
 
   return (
     <MobileShell
       role="supervisor"
       activeHref="/app/supervisor"
       title={`Hello, ${supervisor.name}`}
-      subtitle="Site Supervisor"
+      subtitle={currentUser.designation}
     >
       <div className="space-y-4">
         <MobileGradientCard>
           <div className="grid grid-cols-4 gap-1.5 divide-x divide-white/20">
-            <BigGradientStat label="Assigned Project" value="01" />
-            <BigGradientStat label="Team Active" value="08" />
-            <BigGradientStat label="Attendance" value="21/24" />
-            <BigGradientStat label="Site Reports" value="03" />
+            <BigGradientStat label="Assigned Project" value={String(currentUser.projectIds.length)} />
+            <BigGradientStat label="Team Active" value={String(teamMembers.length)} />
+            <BigGradientStat label="Attendance" value={`${teamAttendance.length}/${Math.max(teamMembers.length, 1)}`} />
+            <BigGradientStat label="Site Reports" value={String(ops.projectReports.filter((report) => currentUser.projectIds.includes(report.projectId)).length)} />
           </div>
         </MobileGradientCard>
 
@@ -671,7 +780,25 @@ export function ProjectsMobileScreen({
   title?: string;
   subtitle?: string;
 }) {
-  const [tab, setTab] = useState("All Projects (12)");
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const visibleProjects =
+    role === "admin"
+      ? ops.managedProjects
+      : getProjectsForUser(ops, currentUser);
+  const activeProjects = visibleProjects.filter((project) => project.status === "Active");
+  const completedProjects = visibleProjects.filter((project) => project.status === "Completed");
+  const pendingProjects = visibleProjects.filter((project) => project.status === "Delayed");
+  const [tab, setTab] = useState(`All Projects (${visibleProjects.length})`);
+  const tabbedProjects =
+    tab.startsWith("Active")
+      ? activeProjects
+      : tab.startsWith("Completed")
+        ? completedProjects
+        : tab.startsWith("Pending")
+          ? pendingProjects
+          : visibleProjects;
+
   return (
     <MobileShell
       role={role}
@@ -700,20 +827,25 @@ export function ProjectsMobileScreen({
           Add Project
         </Link>
         <div className="grid grid-cols-2 gap-3">
-          <MobileMetricCard icon={<Folder className="h-6 w-6" />} label="Total Projects" value="12" meta="All Projects" />
-          <MobileMetricCard icon={<ShieldCheck className="h-6 w-6" />} label="Completed" value="3" meta="25%" accent="text-[#18aa5d]" />
-          <MobileMetricCard icon={<TrendingUp className="h-6 w-6" />} label="Active" value="6" meta="50%" accent="text-[#337dff]" />
-          <MobileMetricCard icon={<Clock3 className="h-6 w-6" />} label="Pending" value="3" meta="25%" accent="text-[#ff8a00]" />
+          <MobileMetricCard icon={<Folder className="h-6 w-6" />} label="Total Projects" value={String(visibleProjects.length)} meta="Managed in one system" />
+          <MobileMetricCard icon={<ShieldCheck className="h-6 w-6" />} label="Completed" value={String(completedProjects.length)} meta={`${Math.round((completedProjects.length / Math.max(visibleProjects.length, 1)) * 100)}%`} accent="text-[#18aa5d]" />
+          <MobileMetricCard icon={<TrendingUp className="h-6 w-6" />} label="Active" value={String(activeProjects.length)} meta={`${Math.round((activeProjects.length / Math.max(visibleProjects.length, 1)) * 100)}%`} accent="text-[#337dff]" />
+          <MobileMetricCard icon={<Clock3 className="h-6 w-6" />} label="Pending" value={String(pendingProjects.length)} meta={`${Math.round((pendingProjects.length / Math.max(visibleProjects.length, 1)) * 100)}%`} accent="text-[#ff8a00]" />
         </div>
 
         <MobileCard>
           <MobileTabBar
-            items={["All Projects (12)", "Active (6)", "Completed (3)", "Pending (3)"]}
+            items={[
+              `All Projects (${visibleProjects.length})`,
+              `Active (${activeProjects.length})`,
+              `Completed (${completedProjects.length})`,
+              `Pending (${pendingProjects.length})`
+            ]}
             active={tab}
             onChange={setTab}
           />
           <div className="mt-5 space-y-4">
-            {projects.map((project) => (
+            {tabbedProjects.map((project) => (
               <Link
                 key={project.id}
                 href={role === "client" ? "/app/client/settings" : "/app/admin/projects/new"}
@@ -755,8 +887,54 @@ export function ProjectsMobileScreen({
 }
 
 export function ApprovalsMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const approvalQueue = getApprovalQueue(ops);
+  const leaveApprovals = approvalQueue.filter((item) => item.kind === "leave");
+  const userApprovals = approvalQueue.filter((item) => item.kind === "access");
+  const attendanceApprovals = approvalQueue.filter((item) => item.kind === "attendance");
+  const otherApprovals = approvalQueue.filter(
+    (item) => !["leave", "access", "attendance"].includes(item.kind)
+  );
   const [decisions, setDecisions] = useState<Record<string, "Approved" | "Rejected" | undefined>>({});
-  const [tab, setTab] = useState("All (28)");
+  const [tab, setTab] = useState(`All (${approvalQueue.length})`);
+
+  function handleDecision(item: EnterpriseApprovalItem, decision: "Approved" | "Rejected") {
+    if (item.kind === "access") {
+      if (decision === "Approved") {
+        ops.approveAccessRequest(item.entityId, item.projectId ?? ops.managedProjects[0]!.id);
+      } else {
+        ops.rejectAccessRequest(item.entityId);
+      }
+    }
+    if (item.kind === "leave") {
+      ops.decideLeaveRequest(item.entityId, decision === "Approved" ? "approved" : "rejected");
+    }
+    if (item.kind === "attendance") {
+      ops.reviewAttendance(item.entityId, decision === "Approved" ? "approved" : "queued");
+    }
+    if (item.kind === "finance") {
+      ops.decideFinanceRequest(item.entityId, decision === "Approved" ? "approved" : "rejected");
+    }
+    if (item.kind === "report") {
+      ops.reviewProjectReport(item.entityId, decision === "Approved" ? "approved" : "rejected");
+    }
+    if (item.kind === "document") {
+      ops.reviewProjectDocument(item.entityId, decision === "Approved" ? "approved" : "rejected");
+    }
+    setDecisions((state) => ({ ...state, [item.id]: decision }));
+  }
+
+  const visibleApprovals =
+    tab.startsWith("Leave")
+      ? leaveApprovals
+      : tab.startsWith("New Users")
+        ? userApprovals
+        : tab.startsWith("Attendance")
+          ? attendanceApprovals
+          : tab.startsWith("Other")
+            ? otherApprovals
+            : approvalQueue;
+
   return (
     <MobileShell
       role="admin"
@@ -776,20 +954,26 @@ export function ApprovalsMobileScreen() {
     >
       <div className="space-y-6">
         <div className="grid grid-cols-2 gap-3">
-          <MobileMetricCard icon={<FileClock className="h-6 w-6" />} label="Total Pending" value="28" meta="Requests" />
-          <MobileMetricCard icon={<CalendarDays className="h-6 w-6" />} label="Leave Requests" value="12" meta="Pending" accent="text-[#ff8a00]" />
-          <MobileMetricCard icon={<UserPlus className="h-6 w-6" />} label="New Users" value="06" meta="Pending" accent="text-[#18aa5d]" />
-          <MobileMetricCard icon={<ShieldCheck className="h-6 w-6" />} label="Other Requests" value="10" meta="Pending" accent="text-[#337dff]" />
+          <MobileMetricCard icon={<FileClock className="h-6 w-6" />} label="Total Pending" value={String(approvalQueue.length)} meta="Requests" />
+          <MobileMetricCard icon={<CalendarDays className="h-6 w-6" />} label="Leave Requests" value={String(leaveApprovals.length)} meta="Pending" accent="text-[#ff8a00]" />
+          <MobileMetricCard icon={<UserPlus className="h-6 w-6" />} label="New Users" value={String(userApprovals.length)} meta="Pending" accent="text-[#18aa5d]" />
+          <MobileMetricCard icon={<ShieldCheck className="h-6 w-6" />} label="Other Requests" value={String(otherApprovals.length)} meta="Pending" accent="text-[#337dff]" />
         </div>
 
         <MobileCard>
           <MobileTabBar
-            items={["All (28)", "Leave (12)", "New Users (6)", "Attendance (4)", "Other (6)"]}
+            items={[
+              `All (${approvalQueue.length})`,
+              `Leave (${leaveApprovals.length})`,
+              `New Users (${userApprovals.length})`,
+              `Attendance (${attendanceApprovals.length})`,
+              `Other (${otherApprovals.length})`
+            ]}
             active={tab}
             onChange={setTab}
           />
           <div className="mt-5 space-y-4">
-            {approvalQueue.map((item) => {
+            {visibleApprovals.map((item) => {
               const decision = decisions[item.id];
               return (
                 <div key={item.id} className="rounded-[24px] border border-[#e7ebff] p-4">
@@ -813,7 +997,7 @@ export function ApprovalsMobileScreen() {
                   <div className="mt-4 grid grid-cols-2 gap-3">
                     <button
                       type="button"
-                      onClick={() => setDecisions((state) => ({ ...state, [item.id]: "Approved" }))}
+                      onClick={() => handleDecision(item, "Approved")}
                       className={cn(
                         "inline-flex min-h-[54px] items-center justify-center rounded-[18px] border px-4 text-base font-semibold",
                         decision === "Approved"
@@ -826,7 +1010,7 @@ export function ApprovalsMobileScreen() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setDecisions((state) => ({ ...state, [item.id]: "Rejected" }))}
+                      onClick={() => handleDecision(item, "Rejected")}
                       className={cn(
                         "inline-flex min-h-[54px] items-center justify-center rounded-[18px] border px-4 text-base font-semibold",
                         decision === "Rejected"
@@ -849,7 +1033,26 @@ export function ApprovalsMobileScreen() {
 }
 
 export function WorkersMobileScreen() {
-  const [tab, setTab] = useState("All Workers (84)");
+  const ops = useOpsStore((state) => state);
+  const workerRecords = getWorkerRecords(ops);
+  const engineers = workerRecords.filter((worker) => worker.badge === "Engineer");
+  const supervisors = workerRecords.filter((worker) => worker.badge === "Supervisor");
+  const finance = workerRecords.filter((worker) => worker.badge === "Finance");
+  const clients = workerRecords.filter((worker) => worker.badge === "Client");
+  const activeWorkers = workerRecords.filter((worker) => worker.status === "Active" || worker.status === "On Site");
+  const offlineWorkers = workerRecords.filter((worker) => worker.status === "Offline");
+  const inactiveWorkers = workerRecords.filter((worker) => worker.status === "Inactive");
+  const [tab, setTab] = useState(`All Workers (${workerRecords.length})`);
+  const visibleWorkers =
+    tab.startsWith("Engineers")
+      ? engineers
+      : tab.startsWith("Supervisors")
+        ? supervisors
+        : tab.startsWith("Finance")
+          ? finance
+          : tab.startsWith("Clients")
+            ? clients
+            : workerRecords;
   return (
     <MobileShell
       role="admin"
@@ -876,14 +1079,20 @@ export function WorkersMobileScreen() {
           Add Worker
         </Link>
         <div className="grid grid-cols-2 gap-3">
-          <MobileMetricCard icon={<Users className="h-6 w-6" />} label="Total Workers" value="84" meta="All Members" />
-          <MobileMetricCard icon={<UserPlus className="h-6 w-6" />} label="Active" value="72" meta="85.7%" accent="text-[#18aa5d]" />
-          <MobileMetricCard icon={<Signal className="h-6 w-6" />} label="Offline" value="10" meta="11.9%" accent="text-[#337dff]" />
-          <MobileMetricCard icon={<ShieldX className="h-6 w-6" />} label="Inactive" value="2" meta="2.4%" accent="text-[#ff4f63]" />
+          <MobileMetricCard icon={<Users className="h-6 w-6" />} label="Total Workers" value={String(workerRecords.length)} meta="All Members" />
+          <MobileMetricCard icon={<UserPlus className="h-6 w-6" />} label="Active" value={String(activeWorkers.length)} meta={`${Math.round((activeWorkers.length / Math.max(workerRecords.length, 1)) * 100)}%`} accent="text-[#18aa5d]" />
+          <MobileMetricCard icon={<Signal className="h-6 w-6" />} label="Offline" value={String(offlineWorkers.length)} meta={`${Math.round((offlineWorkers.length / Math.max(workerRecords.length, 1)) * 100)}%`} accent="text-[#337dff]" />
+          <MobileMetricCard icon={<ShieldX className="h-6 w-6" />} label="Inactive" value={String(inactiveWorkers.length)} meta={`${Math.round((inactiveWorkers.length / Math.max(workerRecords.length, 1)) * 100)}%`} accent="text-[#ff4f63]" />
         </div>
         <MobileCard>
           <MobileTabBar
-            items={["All Workers (84)", "Engineers (52)", "Supervisors (12)", "Finance (8)", "Clients (12)"]}
+            items={[
+              `All Workers (${workerRecords.length})`,
+              `Engineers (${engineers.length})`,
+              `Supervisors (${supervisors.length})`,
+              `Finance (${finance.length})`,
+              `Clients (${clients.length})`
+            ]}
             active={tab}
             onChange={setTab}
           />
@@ -892,7 +1101,7 @@ export function WorkersMobileScreen() {
             <MobileFilterButton label="Sort By" icon={<ArrowRight className="h-5 w-5 rotate-90" />} />
           </div>
           <div className="mt-5 space-y-4">
-            {workerRecords.map((worker) => (
+            {visibleWorkers.map((worker) => (
               <Link
                 key={worker.id}
                 href={`/app/admin/staff/${worker.id}`}
