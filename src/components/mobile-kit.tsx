@@ -5,7 +5,6 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
-  Bolt,
   Bell,
   CalendarDays,
   FileText,
@@ -17,10 +16,8 @@ import {
   MoreHorizontal,
   Plus,
   Search,
-  SignalHigh,
   Settings2,
-  UserRound,
-  Wifi
+  UserRound
 } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import type { Role } from "@/lib/types";
@@ -114,8 +111,6 @@ export function MobileShell({
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#fcfdff_0%,#f4f7ff_100%)] text-[#11173d]">
       <div className="mx-auto max-w-[402px] px-3 pb-[5.9rem] pt-2">
-        <MobileStatusBar />
-
         <header className="mb-3.5 flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-start gap-3">
             <Link
@@ -158,26 +153,6 @@ export function MobileShell({
 
       {bottomNav ? <MobileBottomNav role={role} activeHref={activeHref} /> : null}
     </main>
-  );
-}
-
-function MobileStatusBar() {
-  return (
-    <div className="mb-3 flex items-center justify-between px-1 text-[13px] font-bold text-[#070b23]">
-      <span>9:41</span>
-      <div className="flex items-center gap-2">
-        <SignalHigh className="h-[15px] w-[15px]" />
-        <Wifi className="h-[15px] w-[15px]" />
-        <div className="flex items-center gap-1 rounded-full border border-[#dde4f7] bg-white px-1.5 py-0.5 shadow-[0_4px_12px_rgba(35,46,92,0.06)]">
-          <span className="text-[10px] font-bold leading-none text-[#0b1236]">82</span>
-          <div className="relative h-[14px] w-[24px] rounded-[4px] border border-[#11183d] px-[1px] py-[1px]">
-            <span className="absolute -right-[3px] top-[4px] h-[5px] w-[2px] rounded-full bg-[#11183d]" />
-            <span className="block h-full w-[72%] rounded-[3px] bg-[linear-gradient(135deg,#35d47c_0%,#18b863_100%)]" />
-            <Bolt className="absolute inset-0 m-auto h-[8px] w-[8px] text-white" />
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 
