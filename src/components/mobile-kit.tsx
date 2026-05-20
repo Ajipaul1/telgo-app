@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import type { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
@@ -405,13 +406,14 @@ export function MobileInput({
   label,
   placeholder,
   defaultValue,
-  type = "text"
+  type = "text",
+  ...props
 }: {
   label: string;
   placeholder?: string;
   defaultValue?: string;
   type?: string;
-}) {
+} & Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-[11px] font-bold text-[#3f486f]">{label}</span>
@@ -419,20 +421,33 @@ export function MobileInput({
         type={type}
         placeholder={placeholder}
         defaultValue={defaultValue}
+        {...props}
         className="min-h-[44px] w-full rounded-[12px] border border-[#e3e6ee] bg-white px-3.5 text-[13px] font-medium text-[#11183d] outline-none placeholder:text-[#9aa1b8] focus:border-[#7b58ff]"
       />
     </label>
   );
 }
 
-export function MobileSelect({ label, defaultValue }: { label: string; defaultValue?: string }) {
+export function MobileSelect({
+  label,
+  defaultValue,
+  onClick
+}: {
+  label: string;
+  defaultValue?: string;
+  onClick?: () => void;
+}) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-[11px] font-bold text-[#3f486f]">{label}</span>
-      <div className="flex min-h-[44px] items-center justify-between rounded-[12px] border border-[#e3e6ee] bg-white px-3.5 text-[13px] font-medium text-[#11183d]">
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex min-h-[44px] w-full items-center justify-between rounded-[12px] border border-[#e3e6ee] bg-white px-3.5 text-left text-[13px] font-medium text-[#11183d]"
+      >
         <span className={cn(defaultValue ? "text-[#11183d]" : "text-[#9aa1b8]")}>{defaultValue ?? `Select ${label.toLowerCase()}`}</span>
         <MoreHorizontal className="h-[18px] w-[18px] rotate-90 text-[#8188aa]" />
-      </div>
+      </button>
     </label>
   );
 }
@@ -440,18 +455,20 @@ export function MobileSelect({ label, defaultValue }: { label: string; defaultVa
 export function MobileTextArea({
   label,
   placeholder,
-  rows = 4
+  rows = 4,
+  ...props
 }: {
   label: string;
   placeholder?: string;
   rows?: number;
-}) {
+} & TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-[11px] font-bold text-[#3f486f]">{label}</span>
       <textarea
         rows={rows}
         placeholder={placeholder}
+        {...props}
         className="w-full resize-none rounded-[12px] border border-[#e3e6ee] bg-white px-3.5 py-3 text-[13px] font-medium text-[#11183d] outline-none placeholder:text-[#9aa1b8] focus:border-[#7b58ff]"
       />
     </label>

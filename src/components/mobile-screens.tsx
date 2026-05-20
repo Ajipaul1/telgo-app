@@ -656,7 +656,11 @@ export function SupervisorDashboardMobileScreen() {
 }
 
 export function LiveLocationsMobileScreen({ fullMap = false }: { fullMap?: boolean }) {
+  const ops = useOpsStore((state) => state);
+  const workerRecords = getWorkerRecords(ops);
   const activeWorkers = workerRecords.filter((worker) => worker.status === "Active" || worker.status === "On Site");
+  const onSiteWorkers = workerRecords.filter((worker) => worker.status === "On Site");
+  const offlineWorkers = workerRecords.filter((worker) => worker.status === "Offline" || worker.status === "Inactive");
   return (
     <MobileShell
       role="admin"
@@ -679,10 +683,10 @@ export function LiveLocationsMobileScreen({ fullMap = false }: { fullMap?: boole
     >
       <div className="space-y-6">
         <div className="grid grid-cols-2 gap-3">
-          <MobileMetricCard icon={<Users className="h-6 w-6" />} label="Total Workers" value="84" meta="All" />
-          <MobileMetricCard icon={<LocateFixed className="h-6 w-6" />} label="On Site" value="32" meta="Online" accent="text-[#18aa5d]" />
-          <MobileMetricCard icon={<Gauge className="h-6 w-6" />} label="En Route" value="18" meta="Traveling" accent="text-[#ff8a00]" />
-          <MobileMetricCard icon={<WifiOff className="h-6 w-6" />} label="Offline" value="34" meta="Offline" accent="text-[#7d85b1]" />
+          <MobileMetricCard icon={<Users className="h-6 w-6" />} label="Total Workers" value={String(workerRecords.length)} meta="All" />
+          <MobileMetricCard icon={<LocateFixed className="h-6 w-6" />} label="On Site" value={String(onSiteWorkers.length)} meta="Online" accent="text-[#18aa5d]" />
+          <MobileMetricCard icon={<Gauge className="h-6 w-6" />} label="En Route" value={String(activeWorkers.length)} meta="Traveling" accent="text-[#ff8a00]" />
+          <MobileMetricCard icon={<WifiOff className="h-6 w-6" />} label="Offline" value={String(offlineWorkers.length)} meta="Offline" accent="text-[#7d85b1]" />
         </div>
 
         <MobileCard className={cn("overflow-hidden p-0", fullMap && "relative")}>
@@ -1139,7 +1143,13 @@ export function WorkersMobileScreen() {
 }
 
 export function WorkerDetailMobileScreen({ workerId }: { workerId?: string }) {
+  const ops = useOpsStore((state) => state);
+  const workerRecords = getWorkerRecords(ops);
   const worker = workerRecords.find((item) => item.id === workerId) ?? workerRecords[0];
+  const workerUser = userById(ops, worker?.id);
+  const workerTasks = getTaskRecords(ops, worker.id);
+  const workerProject = workerUser ? getPrimaryProjectForUser(ops, workerUser) : ops.managedProjects[0];
+  const workerAttendance = ops.attendance.filter((item) => item.userId === worker.id);
   return (
     <MobileShell
       role="admin"
@@ -1171,16 +1181,16 @@ export function WorkerDetailMobileScreen({ workerId }: { workerId?: string }) {
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-[1.65rem] font-semibold text-[#121b44]">{worker.name}</h2>
                 <MobilePill tone="violet">{worker.role}</MobilePill>
-                <MobilePill tone="green">Active</MobilePill>
+                <MobilePill tone={statusTone(worker.status)}>{worker.status}</MobilePill>
               </div>
-              <p className="mt-3 text-base text-[#6974a4]">Employee ID: ENG-1007</p>
+              <p className="mt-3 text-base text-[#6974a4]">Employee ID: {workerUser?.employeeCode ?? "ENG-0000"}</p>
             </div>
           </div>
         </MobileCard>
 
         <div className="grid grid-cols-2 gap-3">
-          <MobileMetricCard icon={<CalendarDays className="h-6 w-6" />} label="Check-in" value="09:15 AM" meta="Today" accent="text-[#18aa5d]" />
-          <MobileMetricCard icon={<Clock3 className="h-6 w-6" />} label="Tasks" value="03" meta="Today" accent="text-[#5c2dff]" />
+          <MobileMetricCard icon={<CalendarDays className="h-6 w-6" />} label="Check-in" value={(workerAttendance[0]?.checkInAt.split("T")[1]?.slice(0, 5).replace(/^(\d{2}):(\d{2}).*/, "$1:$2") ?? "09:15")} meta="Today" accent="text-[#18aa5d]" />
+          <MobileMetricCard icon={<Clock3 className="h-6 w-6" />} label="Tasks" value={String(workerTasks.length)} meta="Assigned" accent="text-[#5c2dff]" />
         </div>
 
         <MobileCard className="overflow-hidden p-0">
@@ -1199,10 +1209,10 @@ export function WorkerDetailMobileScreen({ workerId }: { workerId?: string }) {
           <div className="grid gap-4 p-5">
             <InfoGrid
               items={[
-                ["Project", worker.project],
+                ["Project", workerProject?.name ?? worker.project],
                 ["Location", worker.location],
-                ["Last Updated", "16 May 2025, 09:16 AM"],
-                ["Accuracy", "10 meters"]
+                ["Last Updated", workerAttendance[0]?.checkInAt ?? "No live update"],
+                ["Accuracy", workerAttendance[0] ? `${workerAttendance[0].accuracyM} meters` : "Unavailable"]
               ]}
             />
             <MobileSecondaryButton href="/app/admin/map/full">View Full Tracking</MobileSecondaryButton>
@@ -1210,27 +1220,27 @@ export function WorkerDetailMobileScreen({ workerId }: { workerId?: string }) {
         </MobileCard>
 
         <MobileCard>
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-[1.35rem] font-semibold text-[#121b44]">Today's Tasks</h3>
-            <Link href="/app/admin/staff/eng-arjun/assign-task" className="text-sm font-semibold text-[#5c2dff]">03 Tasks</Link>
-          </div>
-          <div className="space-y-4">
-            {taskRecords.map((task) => (
-              <div key={task.id} className="grid grid-cols-[auto_1fr_auto] gap-3 rounded-[22px] border border-[#e8ebff] p-4">
-                <MobilePill tone={task.priority === "High" ? "red" : task.priority === "Medium" ? "orange" : "green"} className="self-start px-2 py-1 text-xs">
-                  {task.priority}
-                </MobilePill>
-                <div>
-                  <p className="font-semibold text-[#17204c]">{task.title}</p>
-                  <p className="mt-1 text-sm text-[#7d85b0]">{task.detail}</p>
-                  <p className="mt-2 text-sm text-[#7d85b0]">{worker.project}</p>
-                </div>
-                <div className="text-right text-sm text-[#7c84b0]">
-                  <p>{task.time}</p>
-                  <MobilePill tone={task.status === "Pending" ? "slate" : task.status === "In Progress" ? "orange" : task.status === "Completed" ? "green" : "blue"} className="mt-2 px-2.5 py-1 text-xs">
-                    {task.status}
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-[1.35rem] font-semibold text-[#121b44]">Today's Tasks</h3>
+              <Link href={`/app/admin/staff/${worker.id}/assign-task`} className="text-sm font-semibold text-[#5c2dff]">{workerTasks.length} Tasks</Link>
+            </div>
+            <div className="space-y-4">
+              {workerTasks.map((task) => (
+                <div key={task.id} className="grid grid-cols-[auto_1fr_auto] gap-3 rounded-[22px] border border-[#e8ebff] p-4">
+                  <MobilePill tone={task.priority === "High" ? "red" : task.priority === "Medium" ? "orange" : "green"} className="self-start px-2 py-1 text-xs">
+                    {task.priority}
                   </MobilePill>
-                </div>
+                  <div>
+                    <p className="font-semibold text-[#17204c]">{task.title}</p>
+                    <p className="mt-1 text-sm text-[#7d85b0]">{task.detail}</p>
+                    <p className="mt-2 text-sm text-[#7d85b0]">{workerProject?.name ?? worker.project}</p>
+                  </div>
+                  <div className="text-right text-sm text-[#7c84b0]">
+                    <p>{task.time}</p>
+                    <MobilePill tone={task.status === "Pending" ? "slate" : task.status === "In Progress" ? "orange" : task.status === "Completed" ? "green" : task.status === "Blocked" ? "red" : "blue"} className="mt-2 px-2.5 py-1 text-xs">
+                      {task.status}
+                    </MobilePill>
+                  </div>
               </div>
             ))}
           </div>
@@ -1254,7 +1264,11 @@ export function WorkerDetailMobileScreen({ workerId }: { workerId?: string }) {
               <MobileSecondaryButton href="/app/engineer/attendance">Mark Attendance</MobileSecondaryButton>
               <MobileSecondaryButton href="/app/chat">Send Message</MobileSecondaryButton>
             </div>
-            <button type="button" className="mt-4 inline-flex min-h-[58px] w-full items-center justify-center rounded-[20px] border border-[#ffbfc6] bg-white px-5 text-[1.05rem] font-semibold text-[#ff4f63]">
+            <button
+              type="button"
+              onClick={() => ops.removeUserAccess(worker.id)}
+              className="mt-4 inline-flex min-h-[58px] w-full items-center justify-center rounded-[20px] border border-[#ffbfc6] bg-white px-5 text-[1.05rem] font-semibold text-[#ff4f63]"
+            >
               Remove Access
             </button>
           </MobileCard>
@@ -1265,8 +1279,17 @@ export function WorkerDetailMobileScreen({ workerId }: { workerId?: string }) {
 }
 
 export function WorkerAssignTaskMobileScreen({ workerId }: { workerId?: string }) {
-  const worker = workerRecords.find((item) => item.id === workerId) ?? workerRecords[0];
+  const ops = useOpsStore((state) => state);
+  const worker = getWorkerRecords(ops).find((item) => item.id === workerId) ?? getWorkerRecords(ops)[0];
+  const workerUser = userById(ops, worker.id);
+  const workerProject = workerUser ? getPrimaryProjectForUser(ops, workerUser) : ops.managedProjects[0];
   const [saved, setSaved] = useState(false);
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDescription, setTaskDescription] = useState("");
+  const [priority, setPriority] = useState("Medium");
+  const [taskType, setTaskType] = useState("Inspection");
+  const [dueDate, setDueDate] = useState("20 May 2026, 06:00 PM");
+  const [notes, setNotes] = useState("");
   return (
     <MobileShell
       role="admin"
@@ -1290,6 +1313,18 @@ export function WorkerAssignTaskMobileScreen({ workerId }: { workerId?: string }
         className="space-y-5"
         onSubmit={(event) => {
           event.preventDefault();
+          ops.assignTask({
+            title: taskTitle || "New assigned task",
+            detail: taskDescription || "Task detail to be confirmed.",
+            projectId: workerProject?.id ?? ops.managedProjects[0]!.id,
+            assigneeUserId: worker.id,
+            priority: priority.toLowerCase() as ManagedTask["priority"],
+            status: "pending",
+            dueAt: dueDate,
+            taskType,
+            notes,
+            location: workerProject?.location
+          });
           setSaved(true);
         }}
       >
@@ -1301,13 +1336,35 @@ export function WorkerAssignTaskMobileScreen({ workerId }: { workerId?: string }
             <h3 className="text-[1.35rem] font-semibold text-[#121b44]">Task Information</h3>
           </div>
           <div className="space-y-4">
-            <MobileInput label="Task Title" placeholder="Enter task title" />
-            <MobileTextArea label="Task Description" placeholder="Enter task description..." rows={5} />
+            <MobileInput label="Task Title" placeholder="Enter task title" value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} />
+            <MobileTextArea label="Task Description" placeholder="Enter task description..." rows={5} value={taskDescription} onChange={(event) => setTaskDescription(event.target.value)} />
             <div className="grid grid-cols-2 gap-4">
-              <MobileSelect label="Project" defaultValue="Kottayam Utility Expansion" />
-              <MobileSelect label="Priority" defaultValue="Select Priority" />
-              <MobileSelect label="Task Type" defaultValue="Select Type" />
-              <MobileInput label="Due Date" placeholder="Select due date" />
+              <MobileSelect label="Project" defaultValue={workerProject?.name ?? "Select Project"} />
+              <MobileSelect
+                label="Priority"
+                defaultValue={priority}
+                onClick={() =>
+                  setPriority((value) =>
+                    value === "High" ? "Medium" : value === "Medium" ? "Low" : "High"
+                  )
+                }
+              />
+              <MobileSelect
+                label="Task Type"
+                defaultValue={taskType}
+                onClick={() =>
+                  setTaskType((value) =>
+                    value === "Inspection"
+                      ? "Reporting"
+                      : value === "Reporting"
+                        ? "Permission"
+                        : value === "Permission"
+                          ? "Quality Check"
+                          : "Inspection"
+                  )
+                }
+              />
+              <MobileInput label="Due Date" placeholder="Select due date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
             </div>
           </div>
         </MobileCard>
@@ -1339,7 +1396,7 @@ export function WorkerAssignTaskMobileScreen({ workerId }: { workerId?: string }
             </div>
             <h3 className="text-[1.35rem] font-semibold text-[#121b44]">Additional Notes</h3>
           </div>
-          <MobileTextArea label="Notes for Engineer (Optional)" placeholder="Add any special instructions or notes..." rows={4} />
+          <MobileTextArea label="Notes for Engineer (Optional)" placeholder="Add any special instructions or notes..." rows={4} value={notes} onChange={(event) => setNotes(event.target.value)} />
         </MobileCard>
 
         <MobileCard>
@@ -1356,8 +1413,8 @@ export function WorkerAssignTaskMobileScreen({ workerId }: { workerId?: string }
               <p className="mt-1 text-sm text-[#7d85b0]">{worker.role}</p>
             </div>
             <div className="text-right">
-              <MobilePill tone="green">Active</MobilePill>
-              <p className="mt-2 text-base text-[#7d85b0]">ENG-1007</p>
+              <MobilePill tone={statusTone(worker.status)}>{worker.status}</MobilePill>
+              <p className="mt-2 text-base text-[#7d85b0]">{workerUser?.employeeCode ?? "ENG-0000"}</p>
             </div>
           </div>
           {saved ? <p className="mt-4 text-sm font-semibold text-[#18aa5d]">Task draft saved locally.</p> : null}
@@ -1504,6 +1561,11 @@ export function ClientDashboardMobileScreen() {
 }
 
 export function ClientProjectsMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const visibleProjects = getProjectsForUser(ops, currentUser);
+  const activeProjects = visibleProjects.filter((project) => project.status === "Active");
+  const completedProjects = visibleProjects.filter((project) => project.status === "Completed");
   return (
     <MobileShell
       role="client"
@@ -1522,12 +1584,16 @@ export function ClientProjectsMobileScreen() {
         </div>
         <MobileCard className="p-3">
           <MobileTabBar
-            items={["All (5)", "Active (3)", "Completed (2)"]}
-            active="All (5)"
+            items={[
+              `All (${visibleProjects.length})`,
+              `Active (${activeProjects.length})`,
+              `Completed (${completedProjects.length})`
+            ]}
+            active={`All (${visibleProjects.length})`}
             onChange={() => undefined}
           />
           <div className="mt-4 space-y-3">
-            {projects.map((project) => (
+            {visibleProjects.map((project) => (
               <Link key={project.id} href="/app/client/settings" className="grid grid-cols-[74px_1fr_auto] gap-3 rounded-[10px] border border-[#e7ebff] p-3">
                 <div className="relative h-[74px] overflow-hidden rounded-[9px]">
                   <Image src={project.image} alt={project.name} fill className="object-cover" />
@@ -1557,12 +1623,15 @@ export function ClientProjectsMobileScreen() {
 }
 
 export function ClientSettingsMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const project = getPrimaryProjectForUser(ops, currentUser);
   return (
     <MobileShell
       role="client"
       activeHref="/app/client/projects"
       title="Project Settings"
-      subtitle={clientProject.name}
+      subtitle={project?.name ?? "Project"}
       backHref="/app/client/projects"
       leftMode="back"
       bottomNav={false}
@@ -1570,12 +1639,14 @@ export function ClientSettingsMobileScreen() {
       <div className="space-y-6">
         <MobileCard className="grid grid-cols-[88px_1fr_auto] gap-4 p-4">
           <div className="relative h-[88px] overflow-hidden rounded-[20px]">
-            <Image src={clientProject.image} alt={clientProject.name} fill className="object-cover" />
+            <Image src={project?.image ?? projects[0]!.image} alt={project?.name ?? "Project"} fill className="object-cover" />
           </div>
           <div>
-            <p className="text-[1.22rem] font-semibold text-[#121b44]">{clientProject.name}</p>
-            <p className="mt-1 text-sm text-[#7780ad]">{clientProject.location}</p>
-            <MobilePill tone="green" className="mt-3">Active</MobilePill>
+            <p className="text-[1.22rem] font-semibold text-[#121b44]">{project?.name ?? "Project"}</p>
+            <p className="mt-1 text-sm text-[#7780ad]">{project?.location ?? "Kerala"}</p>
+            <MobilePill tone={project?.status === "Completed" ? "blue" : project?.status === "Delayed" ? "orange" : "green"} className="mt-3">
+              {project?.status ?? "Active"}
+            </MobilePill>
           </div>
           <ChevronRight className="mt-8 h-6 w-6 text-[#7b84b1]" />
         </MobileCard>
@@ -1600,7 +1671,13 @@ export function ClientSettingsMobileScreen() {
 }
 
 export function ClientAddProjectMobileScreen() {
+  const ops = useOpsStore((state) => state);
   const [saved, setSaved] = useState(false);
+  const [projectName, setProjectName] = useState("");
+  const [location, setLocation] = useState("");
+  const [distanceKm, setDistanceKm] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   return (
     <MobileShell
       role="client"
@@ -1615,17 +1692,37 @@ export function ClientAddProjectMobileScreen() {
         className="space-y-5"
         onSubmit={(event) => {
           event.preventDefault();
+          ops.addProject({
+            code: `TLGO-PRJ-${String(Date.now()).slice(-6)}`,
+            name: projectName || "New Managed Project",
+            type: "Enterprise Operations Project",
+            location: location || "Kerala",
+            client: "Reliable Infra Pvt. Ltd.",
+            image: projects[0]!.image,
+            status: "Active",
+            progress: 0,
+            budget: 2500000,
+            spent: 0,
+            totalLengthKm: Number(distanceKm || "1"),
+            completedKm: 0,
+            startDate: startDate || "20 May 2026",
+            endDate: endDate || "20 Jun 2026",
+            manager: "Vishnu Prasad",
+            siteInCharge: "Arjun Nair",
+            coordinates: projects[0]!.coordinates,
+            accent: "cyan"
+          });
           setSaved(true);
         }}
       >
         <MobileCard>
           <div className="space-y-4">
             <MobileUploadBox title="Upload Image" detail="JPG, PNG up to 5MB" />
-            <MobileInput label="Project Name" placeholder="Enter project name" />
-            <MobileInput label="Location" placeholder="Enter project location" />
-            <MobileInput label="Total Distance (KM)" placeholder="Enter total distance" />
-            <MobileInput label="Start Date" placeholder="Select start date" />
-            <MobileInput label="Expected End Date" placeholder="Select end date" />
+            <MobileInput label="Project Name" placeholder="Enter project name" value={projectName} onChange={(event) => setProjectName(event.target.value)} />
+            <MobileInput label="Location" placeholder="Enter project location" value={location} onChange={(event) => setLocation(event.target.value)} />
+            <MobileInput label="Total Distance (KM)" placeholder="Enter total distance" value={distanceKm} onChange={(event) => setDistanceKm(event.target.value)} />
+            <MobileInput label="Start Date" placeholder="Select start date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
+            <MobileInput label="Expected End Date" placeholder="Select end date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
             <MobileSelect label="Project Manager" defaultValue="Select manager" />
           </div>
         </MobileCard>
@@ -1639,6 +1736,13 @@ export function ClientAddProjectMobileScreen() {
 }
 
 export function ClientDocumentsMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const primaryProject = getPrimaryProjectForUser(ops, currentUser);
+  const documentRecords = getDocumentRecords(ops, currentUser, primaryProject?.id);
+  const approvedDocs = documentRecords.filter((document) => document.status === "Approved");
+  const pendingDocs = documentRecords.filter((document) => document.status === "Pending");
+  const rejectedDocs = documentRecords.filter((document) => document.status === "Rejected");
   const [tab, setTab] = useState("All Documents");
   return (
     <MobileShell
@@ -1658,7 +1762,7 @@ export function ClientDocumentsMobileScreen() {
               </div>
               <div>
                 <p className="text-sm text-[#8690bc]">Project</p>
-                <p className="text-[1.35rem] font-semibold text-[#121b44]">Kottayam Utility Expansion</p>
+                <p className="text-[1.35rem] font-semibold text-[#121b44]">{primaryProject?.name ?? "Project"}</p>
               </div>
             </div>
             <ChevronDown className="h-5 w-5 text-[#7c84b0]" />
@@ -1670,10 +1774,10 @@ export function ClientDocumentsMobileScreen() {
         </MobileCard>
 
         <div className="grid grid-cols-2 gap-3">
-          <MobileMetricCard icon={<FolderOpen className="h-6 w-6" />} label="Total Documents" value="24" meta="Total" />
-          <MobileMetricCard icon={<CheckCircle2 className="h-6 w-6" />} label="Approved" value="16" meta="Documents" accent="text-[#18aa5d]" />
-          <MobileMetricCard icon={<Clock3 className="h-6 w-6" />} label="Pending" value="5" meta="Documents" accent="text-[#ff8a00]" />
-          <MobileMetricCard icon={<ShieldX className="h-6 w-6" />} label="Rejected" value="3" meta="Documents" accent="text-[#ff4f63]" />
+          <MobileMetricCard icon={<FolderOpen className="h-6 w-6" />} label="Total Documents" value={String(documentRecords.length)} meta="Visible to client" />
+          <MobileMetricCard icon={<CheckCircle2 className="h-6 w-6" />} label="Approved" value={String(approvedDocs.length)} meta="Documents" accent="text-[#18aa5d]" />
+          <MobileMetricCard icon={<Clock3 className="h-6 w-6" />} label="Pending" value={String(pendingDocs.length)} meta="Documents" accent="text-[#ff8a00]" />
+          <MobileMetricCard icon={<ShieldX className="h-6 w-6" />} label="Rejected" value={String(rejectedDocs.length)} meta="Documents" accent="text-[#ff4f63]" />
         </div>
 
         <MobileCard>
@@ -1738,7 +1842,13 @@ export function ClientDocumentsMobileScreen() {
 }
 
 export function ClientAddDocumentMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const primaryProject = getPrimaryProjectForUser(ops, currentUser);
   const [saved, setSaved] = useState(false);
+  const [documentType, setDocumentType] = useState("PDF");
+  const [documentName, setDocumentName] = useState("");
+  const [description, setDescription] = useState("");
   return (
     <MobileShell
       role="client"
@@ -1753,15 +1863,33 @@ export function ClientAddDocumentMobileScreen() {
         className="space-y-5"
         onSubmit={(event) => {
           event.preventDefault();
+          ops.addProjectDocument({
+            name: documentName || "New client document",
+            projectId: primaryProject?.id ?? ops.managedProjects[0]!.id,
+            type: documentType as "PDF" | "DOC" | "XLS" | "JPG" | "ZIP",
+            category: "client",
+            authorUserId: currentUser.id,
+            sizeLabel: "1.0 MB",
+            description,
+            visibilityRoles: ["admin", "client", "engineer", "supervisor"]
+          });
           setSaved(true);
         }}
       >
         <MobileCard>
           <div className="space-y-4">
-            <MobileSelect label="Document Type" defaultValue="Select Type" />
-            <MobileInput label="Document Name" placeholder="Enter document name" />
+            <MobileSelect
+              label="Document Type"
+              defaultValue={documentType}
+              onClick={() =>
+                setDocumentType((value) =>
+                  value === "PDF" ? "DOC" : value === "DOC" ? "XLS" : value === "XLS" ? "JPG" : "PDF"
+                )
+              }
+            />
+            <MobileInput label="Document Name" placeholder="Enter document name" value={documentName} onChange={(event) => setDocumentName(event.target.value)} />
             <MobileUploadBox title="Upload File" detail="Drag & drop file here or choose file" />
-            <MobileTextArea label="Description (Optional)" placeholder="Enter description" rows={4} />
+            <MobileTextArea label="Description (Optional)" placeholder="Enter description" rows={4} value={description} onChange={(event) => setDescription(event.target.value)} />
           </div>
         </MobileCard>
         {saved ? <p className="text-sm font-semibold text-[#18aa5d]">Document draft saved locally.</p> : null}
@@ -1774,6 +1902,14 @@ export function ClientAddDocumentMobileScreen() {
 }
 
 export function ClientEngineersOnSiteMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const visibleProjectIds = getProjectsForUser(ops, currentUser).map((project) => project.id);
+  const workerRecords = getWorkerRecords(ops).filter(
+    (worker) =>
+      worker.badge !== "Client" &&
+      userById(ops, worker.id)?.projectIds.some((projectId) => visibleProjectIds.includes(projectId))
+  );
   return (
     <MobileShell
       role="client"
@@ -1817,7 +1953,9 @@ export function ClientEngineersOnSiteMobileScreen() {
 }
 
 export function ClientWorkProgressMobileScreen() {
-  const project = clientProject;
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const project = getPrimaryProjectForUser(ops, currentUser);
   return (
     <MobileShell
       role="client"
@@ -1852,7 +1990,10 @@ export function ClientWorkProgressMobileScreen() {
 }
 
 export function ClientUpdateProgressMobileScreen() {
-  const [percent, setPercent] = useState(72);
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const project = getPrimaryProjectForUser(ops, currentUser);
+  const [percent, setPercent] = useState(project?.progress ?? 0);
   return (
     <MobileShell
       role="client"
@@ -1892,13 +2033,27 @@ export function ClientUpdateProgressMobileScreen() {
             <MobileTextArea label="Update Notes" placeholder="Work completed up to manhole no. 45" rows={4} />
           </div>
         </MobileCard>
-        <MobilePrimaryButton href="/app/client/progress">Save Location</MobilePrimaryButton>
+        <button
+          type="button"
+          onClick={() => {
+            if (project) {
+              ops.updateProject(project.id, {
+                progress: percent,
+                completedKm: Number(((project.totalLengthKm * percent) / 100).toFixed(1))
+              });
+            }
+          }}
+          className="inline-flex min-h-[58px] w-full items-center justify-center rounded-[20px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-[1.05rem] font-semibold text-white shadow-[0_18px_36px_rgba(92,45,255,0.26)]"
+        >
+          Save Location
+        </button>
       </div>
     </MobileShell>
   );
 }
 
 export function ClientProfileMobileScreen() {
+  const currentUser = useOpsStore((state) => getCurrentUser(state));
   return (
     <MobileShell
       role="client"
@@ -1920,13 +2075,13 @@ export function ClientProfileMobileScreen() {
         <MobileCard>
           <h3 className="mb-4 text-[1.35rem] font-semibold text-[#121b44]">Company Information</h3>
           <div className="space-y-4">
-            <MobileInput label="Company Name" defaultValue="Reliable Infra Pvt. Ltd." />
-            <MobileInput label="Email" defaultValue="info@reliableinfra.com" />
-            <MobileInput label="Phone" defaultValue="+91 98765 43210" />
+            <MobileInput label="Company Name" defaultValue={currentUser.company} />
+            <MobileInput label="Email" defaultValue={currentUser.email} />
+            <MobileInput label="Phone" defaultValue={currentUser.phone} />
             <MobileInput label="Address" defaultValue="123, Business Park, Kochi, Kerala, India" />
             <MobileInput label="Website" defaultValue="www.reliableinfra.com" />
-            <MobileInput label="Contact Person" defaultValue="Rakesh Nair" />
-            <MobileInput label="Designation" defaultValue="Managing Director" />
+            <MobileInput label="Contact Person" defaultValue={currentUser.managerName} />
+            <MobileInput label="Designation" defaultValue={currentUser.designation} />
           </div>
         </MobileCard>
         <MobilePrimaryButton href="/app/client">Save Changes</MobilePrimaryButton>
@@ -1936,12 +2091,20 @@ export function ClientProfileMobileScreen() {
 }
 
 export function EngineerDashboardMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const myProjects = getProjectsForUser(ops, currentUser);
+  const myTasks = getTaskRecords(ops, currentUser.id);
+  const myAttendance = ops.attendance.filter((record) => record.userId === currentUser.id);
+  const myApprovals = getApprovalQueue(ops).filter(
+    (item) => item.projectId && currentUser.projectIds.includes(item.projectId)
+  );
   return (
     <MobileShell
       role="engineer"
       activeHref="/app/engineer"
-      title="Hello, Arjun Nair"
-      subtitle="Site Engineer"
+      title={`Hello, ${currentUser.fullName}`}
+      subtitle={currentUser.designation}
       rightSlot={
         <div className="flex items-center gap-3">
           <div className="text-center">
@@ -1950,20 +2113,20 @@ export function EngineerDashboardMobileScreen() {
           </div>
           <button type="button" className="relative grid h-12 w-12 place-items-center rounded-2xl border border-[#e4e7fb] bg-white text-[#18214d]">
             <MessageCircle className="h-5 w-5" />
-            <span className="absolute right-1 top-1 grid h-5 min-w-5 place-items-center rounded-full bg-[#ff3b3b] px-1 text-[10px] font-semibold text-white">5</span>
+            <span className="absolute right-1 top-1 grid h-5 min-w-5 place-items-center rounded-full bg-[#ff3b3b] px-1 text-[10px] font-semibold text-white">{ops.chatMessages.length}</span>
           </button>
-          <MobileAvatar label="Arjun Nair" size={48} />
+          <MobileAvatar label={currentUser.fullName} size={48} />
         </div>
       }
     >
       <div className="space-y-4">
         <MobileGradientCard className="p-[14px]">
           <div className="grid grid-cols-5 gap-1 divide-x divide-white/20">
-            <BigGradientStat label="Assigned" value="05" />
-            <BigGradientStat label="Tasks" value="12" />
-            <BigGradientStat label="Attendance" value="18/25" />
-            <BigGradientStat label="Visits" value="03" />
-            <BigGradientStat label="Approvals" value="02" />
+            <BigGradientStat label="Assigned" value={String(myProjects.length).padStart(2, "0")} />
+            <BigGradientStat label="Tasks" value={String(myTasks.length).padStart(2, "0")} />
+            <BigGradientStat label="Attendance" value={`${myAttendance.length.toString().padStart(2, "0")}/${Math.max(myProjects.length * 5, 1)}`} />
+            <BigGradientStat label="Visits" value={String(myProjects.filter((project) => project.progress > 0).length).padStart(2, "0")} />
+            <BigGradientStat label="Approvals" value={String(myApprovals.length).padStart(2, "0")} />
           </div>
         </MobileGradientCard>
 
@@ -1986,7 +2149,7 @@ export function EngineerDashboardMobileScreen() {
             <Link href="/app/engineer/projects" className="text-sm font-semibold text-[#5c2dff]">View All</Link>
           </div>
           <div className="space-y-3">
-            {projects.slice(0, 3).map((project) => (
+            {myProjects.slice(0, 3).map((project) => (
               <Link key={project.id} href="/app/engineer/projects" className="grid grid-cols-[78px_1fr_auto] gap-3 rounded-[18px] border border-[#e7ebff] p-3">
                 <div className="relative h-[78px] overflow-hidden rounded-[14px]">
                   <Image src={project.image} alt={project.name} fill className="object-cover" />
@@ -2015,16 +2178,16 @@ export function EngineerDashboardMobileScreen() {
               <Link href="/app/admin/staff/eng-arjun/assign-task" className="text-sm font-semibold text-[#5c2dff]">View All</Link>
             </div>
             <div className="space-y-3">
-              {taskRecords.map((task) => (
+              {myTasks.map((task) => (
                 <div key={task.id} className="grid grid-cols-[auto_1fr_auto] gap-3 rounded-[16px] border border-[#e8ebff] p-3">
-                  <CircleDot className={cn("mt-1 h-4 w-4", task.status === "Completed" ? "text-[#18aa5d]" : "text-[#c0c5e6]")} />
+                  <CircleDot className={cn("mt-1 h-4 w-4", task.status === "Completed" ? "text-[#18aa5d]" : task.status === "Blocked" ? "text-[#ff4f63]" : "text-[#c0c5e6]")} />
                   <div>
                     <p className="text-[13px] font-semibold text-[#17204c]">{task.title}</p>
-                    <p className="mt-1 text-[11px] text-[#7d85b0]">{engineerProject.name}</p>
+                    <p className="mt-1 text-[11px] text-[#7d85b0]">{getPrimaryProjectForUser(ops, currentUser)?.name}</p>
                   </div>
                   <div className="text-right text-[11px]">
                     <p className="font-semibold text-[#5c2dff]">{task.time}</p>
-                    <MobilePill tone={task.status === "Completed" ? "green" : task.status === "In Progress" ? "orange" : "slate"} className="mt-1.5">
+                    <MobilePill tone={task.status === "Completed" ? "green" : task.status === "In Progress" ? "orange" : task.status === "Blocked" ? "red" : "slate"} className="mt-1.5">
                       {task.status}
                     </MobilePill>
                   </div>
@@ -2050,7 +2213,10 @@ export function EngineerProjectsMobileScreen() {
 }
 
 export function EngineerProfileMobileScreen() {
-  const worker = workerRecords[0];
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const worker = getWorkerRecords(ops).find((item) => item.id === currentUser.id) ?? getWorkerRecords(ops)[0];
+  const workerProject = getPrimaryProjectForUser(ops, currentUser);
   return (
     <MobileShell
       role="engineer"
@@ -2083,9 +2249,9 @@ export function EngineerProfileMobileScreen() {
                 <h2 className="text-[1.75rem] font-semibold text-[#121b44]">{worker.name}</h2>
                 <MobileSecondaryButton href="/app/engineer/profile" className="min-h-[42px] w-auto px-4">Edit</MobileSecondaryButton>
               </div>
-              <p className="mt-2 text-[1.08rem] text-[#6772a2]">{worker.role}  -  Online</p>
+              <p className="mt-2 text-[1.08rem] text-[#6772a2]">{worker.role}  -  {worker.status}</p>
               <div className="mt-4 grid gap-3 text-base text-[#18214d]">
-                <p><span className="font-semibold">Employee ID</span>  ENG-1007</p>
+                <p><span className="font-semibold">Employee ID</span>  {currentUser.employeeCode}</p>
                 <p><span className="font-semibold">Phone</span>  {worker.phone}</p>
                 <p><span className="font-semibold">Email</span>  {worker.email}</p>
               </div>
@@ -2103,7 +2269,7 @@ export function EngineerProfileMobileScreen() {
             <InfoGrid
               title="Personal Information"
               items={[
-                ["Full Name", "Arjun Nair"],
+                ["Full Name", currentUser.fullName],
                 ["Date of Birth", "15 Aug 1993"],
                 ["Gender", "Male"],
                 ["Address", "Puthenangadi House, Kottayam, Kerala - 686001"]
@@ -2112,10 +2278,10 @@ export function EngineerProfileMobileScreen() {
             <InfoGrid
               title="Job Information"
               items={[
-                ["Designation", "Site Engineer"],
-                ["Department", "Operations"],
-                ["Reporting To", "Manu Mohan (Project Manager)"],
-                ["Work Location", "Kottayam Utility Expansion Project"],
+                ["Designation", currentUser.designation],
+                ["Department", currentUser.department],
+                ["Reporting To", currentUser.managerName],
+                ["Work Location", workerProject?.name ?? currentUser.site],
                 ["Employment Type", "Full Time"]
               ]}
             />
@@ -2338,11 +2504,9 @@ export function EngineerReportsMobileScreen() {
 }
 
 export function ChatMobileScreen() {
-  const users = useOpsStore((state) => state.users);
-  const currentUserId = useOpsStore((state) => state.currentUserId);
-  const messages = useOpsStore((state) => state.chatMessages);
-  const addChatMessage = useOpsStore((state) => state.addChatMessage);
-  const currentUser = getCurrentUser({ users, currentUserId });
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const chatProject = getPrimaryProjectForUser(ops, currentUser);
   const [body, setBody] = useState("");
   const [connected, setConnected] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -2359,7 +2523,7 @@ export function ChatMobileScreen() {
   async function sendMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!body.trim()) return;
-    const message = addChatMessage({
+    const message = ops.addChatMessage({
       author: currentUser.fullName,
       role: currentUser.role === "finance" ? "Finance" : currentUser.role === "admin" ? "Admin" : "Site Engineer",
       body,
@@ -2369,7 +2533,7 @@ export function ChatMobileScreen() {
     setBody("");
     await guardedSupabaseWrite(
       supabase.from("messages").insert({
-        project_id: engineerProject.id,
+        project_id: chatProject?.id ?? ops.managedProjects[0]!.id,
         sender_id: currentUser.id,
         body: message.body
       })
@@ -2415,7 +2579,7 @@ export function ChatMobileScreen() {
           <div className="text-center">
             <span className="inline-flex rounded-full bg-[#eef1ff] px-4 py-2 text-sm font-semibold text-[#7b82ac]">Today</span>
           </div>
-          {messages.slice(-5).map((message, index) => {
+          {ops.chatMessages.slice(-5).map((message, index) => {
             const mine = index % 2 === 0;
             return (
               <div key={message.id} className={cn("flex", mine ? "justify-end" : "justify-start")}>
@@ -2474,11 +2638,12 @@ export function EngineerAttendanceMobileScreen() {
       users: state.users,
       currentUserId: state.currentUserId,
       activeAssignments: state.activeAssignments,
+      managedProjects: state.managedProjects,
       markAttendance: state.markAttendance
     }))
   );
   const currentUser = getCurrentUser(ops);
-  const project = projects.find((item) => item.id === ops.activeAssignments[currentUser.id]) ?? projects[0];
+  const project = ops.managedProjects.find((item) => item.id === ops.activeAssignments[currentUser.id]) ?? ops.managedProjects[0];
   const [status, setStatus] = useState("Checked In");
   const [note, setNote] = useState("");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -2695,6 +2860,9 @@ export function EngineerAttendanceMobileScreen() {
 }
 
 export function GenericFinanceRequestMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const project = getPrimaryProjectForUser(ops, currentUser);
   const [saved, setSaved] = useState(false);
   return (
     <MobileShell
@@ -2710,12 +2878,23 @@ export function GenericFinanceRequestMobileScreen() {
         className="space-y-5"
         onSubmit={(event) => {
           event.preventDefault();
+          if (project) {
+            ops.addFinanceRequest({
+              requesterId: currentUser.id,
+              projectId: project.id,
+              title: "HDD bearing replacement",
+              description: "Advance or reimbursement request raised from mobile form.",
+              amount: 12000,
+              urgency: "urgent",
+              attachmentName: "mobile-finance-request.jpg"
+            });
+          }
           setSaved(true);
         }}
       >
         <MobileCard>
           <div className="space-y-4">
-            <MobileSelect label="Project" defaultValue={engineerProject.name} />
+            <MobileSelect label="Project" defaultValue={project?.name ?? "Select project"} />
             <MobileInput label="Request Title" placeholder="HDD bearing replacement" />
             <MobileTextArea label="Description" placeholder="Add request details..." rows={5} />
             <div className="grid grid-cols-2 gap-4">
@@ -2735,6 +2914,8 @@ export function GenericFinanceRequestMobileScreen() {
 }
 
 export function GenericLeaveMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
   const [saved, setSaved] = useState(false);
   return (
     <MobileShell
@@ -2750,6 +2931,12 @@ export function GenericLeaveMobileScreen() {
         className="space-y-5"
         onSubmit={(event) => {
           event.preventDefault();
+          ops.requestLeave({
+            userId: currentUser.id,
+            startDate: "20 May 2026",
+            endDate: "22 May 2026",
+            reason: "Family function"
+          });
           setSaved(true);
         }}
       >
@@ -2773,6 +2960,9 @@ export function GenericLeaveMobileScreen() {
 }
 
 export function GenericShiftReportMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const project = getPrimaryProjectForUser(ops, currentUser);
   const [saved, setSaved] = useState(false);
   return (
     <MobileShell
@@ -2788,12 +2978,23 @@ export function GenericShiftReportMobileScreen() {
         className="space-y-5"
         onSubmit={(event) => {
           event.preventDefault();
+          if (project) {
+            ops.addShiftReport({
+              userId: currentUser.id,
+              projectId: project.id,
+              metersDrilled: 245,
+              fuelUsedL: 32,
+              notes: "Mobile daily shift report submitted from engineer dashboard.",
+              safetyIssue: "No critical issue reported.",
+              photoName: "mobile-shift-upload.jpg"
+            });
+          }
           setSaved(true);
         }}
       >
         <MobileCard>
           <div className="space-y-4">
-            <MobileSelect label="Project" defaultValue={engineerProject.name} />
+            <MobileSelect label="Project" defaultValue={project?.name ?? "Select project"} />
             <div className="grid grid-cols-2 gap-4">
               <MobileInput label="Meters Completed" placeholder="245" />
               <MobileInput label="Fuel Used (L)" placeholder="32" />
@@ -2813,6 +3014,10 @@ export function GenericShiftReportMobileScreen() {
 }
 
 export function EngineerLogsMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const project = getPrimaryProjectForUser(ops, currentUser);
+  const recentDocuments = getDocumentRecords(ops, currentUser, project?.id).slice(0, 3);
   return (
     <MobileShell
       role="engineer"
@@ -2836,7 +3041,7 @@ export function EngineerLogsMobileScreen() {
 
         <MobileCard>
           <div className="grid gap-4">
-            <MobileSelect label="Project" defaultValue={engineerProject.name} />
+            <MobileSelect label="Project" defaultValue={project?.name ?? "Select project"} />
             <MobileSelect label="Log Type" defaultValue="Progress Update" />
             <MobileTextArea label="Update Notes" placeholder="Work completed up to manhole no. 45, cable team moved to next stretch..." rows={5} />
             <div className="grid grid-cols-2 gap-3">
@@ -2854,9 +3059,8 @@ export function EngineerLogsMobileScreen() {
           </div>
           <div className="space-y-3">
             {[
-              ["09:15 AM", "Attendance marked with GPS at Kottayam site", "Completed"],
-              ["11:30 AM", "Material quality check logged for cable trench", "In Review"],
-              ["02:40 PM", "Progress photo uploaded for utility crossing", "Synced"]
+              ["09:15 AM", "Attendance marked with GPS at current site", "Completed"],
+              ...recentDocuments.map((document) => [document.meta.split("  - ")[0] ?? "Today", `${document.name} uploaded to project workspace`, document.status === "Approved" ? "Synced" : "In Review"] as const)
             ].map(([time, detail, state]) => (
               <div key={detail} className="grid grid-cols-[auto_1fr_auto] gap-3 rounded-[16px] border border-[#e8ebff] p-3">
                 <div className="grid h-9 w-9 place-items-center rounded-[11px] bg-[#f3efff] text-[#6a35ff]">
@@ -3118,6 +3322,13 @@ function MobileMapPreview({
 }
 
 function ClientDocumentsMobileScreenInner({ uploadHref }: { uploadHref: string }) {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const primaryProject = getPrimaryProjectForUser(ops, currentUser);
+  const documentRecords = getDocumentRecords(ops, currentUser, primaryProject?.id);
+  const approvedDocs = documentRecords.filter((document) => document.status === "Approved");
+  const pendingDocs = documentRecords.filter((document) => document.status === "Pending");
+  const rejectedDocs = documentRecords.filter((document) => document.status === "Rejected");
   const [tab, setTab] = useState("All Documents");
   return (
     <div className="space-y-6">
@@ -3141,10 +3352,10 @@ function ClientDocumentsMobileScreenInner({ uploadHref }: { uploadHref: string }
       </MobileCard>
 
       <div className="grid grid-cols-2 gap-3">
-        <MobileMetricCard icon={<FolderOpen className="h-6 w-6" />} label="Total Documents" value="24" meta="Total" />
-        <MobileMetricCard icon={<CheckCircle2 className="h-6 w-6" />} label="Approved" value="16" meta="Documents" accent="text-[#18aa5d]" />
-        <MobileMetricCard icon={<Clock3 className="h-6 w-6" />} label="Pending" value="5" meta="Documents" accent="text-[#ff8a00]" />
-        <MobileMetricCard icon={<ShieldX className="h-6 w-6" />} label="Rejected" value="3" meta="Documents" accent="text-[#ff4f63]" />
+        <MobileMetricCard icon={<FolderOpen className="h-6 w-6" />} label="Total Documents" value={String(documentRecords.length)} meta="Total" />
+        <MobileMetricCard icon={<CheckCircle2 className="h-6 w-6" />} label="Approved" value={String(approvedDocs.length)} meta="Documents" accent="text-[#18aa5d]" />
+        <MobileMetricCard icon={<Clock3 className="h-6 w-6" />} label="Pending" value={String(pendingDocs.length)} meta="Documents" accent="text-[#ff8a00]" />
+        <MobileMetricCard icon={<ShieldX className="h-6 w-6" />} label="Rejected" value={String(rejectedDocs.length)} meta="Documents" accent="text-[#ff4f63]" />
       </div>
 
       <MobileCard>
@@ -3344,7 +3555,7 @@ function ScheduleCard() {
             <span className="mt-1 h-3 w-3 rounded-full" style={{ backgroundColor: color }} />
             <div>
               <p className="font-semibold text-[#17204c]">{label}</p>
-              <p className="mt-1 text-sm text-[#7d85b0]">{engineerProject.name}</p>
+              <p className="mt-1 text-sm text-[#7d85b0]">{projects[0]!.name}</p>
             </div>
             <MobilePill tone={state === "Pending" ? "slate" : state === "In Progress" ? "orange" : "blue"} className="px-2.5 py-1 text-xs">
               {state}
