@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
+  BatteryFull,
   Bell,
   CalendarDays,
   FileText,
@@ -16,8 +17,10 @@ import {
   MoreHorizontal,
   Plus,
   Search,
+  SignalHigh,
   Settings2,
-  UserRound
+  UserRound,
+  Wifi
 } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import type { Role } from "@/lib/types";
@@ -110,25 +113,25 @@ export function MobileShell({
 
   return (
     <main className="min-h-screen bg-[#fbfcff] text-[#11173d]">
-      <div className="mx-auto max-w-[430px] px-4 pb-28 pt-4">
+      <div className="mx-auto max-w-[400px] px-[14px] pb-24 pt-3">
         <MobileStatusBar />
 
-        <header className="mb-5 flex items-start justify-between gap-2">
+        <header className="mb-4 flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-start gap-3">
             <Link
               href={backHref ?? "#"}
               className={cn(
-                "mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-[10px] border border-[#eceef7] bg-white text-[#101638] shadow-[0_8px_20px_rgba(35,46,92,0.06)]",
+                "mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-[10px] border border-[#eceef7] bg-white text-[#101638] shadow-[0_6px_16px_rgba(35,46,92,0.05)]",
                 leftMode === "menu" && !backHref && "pointer-events-none opacity-70"
               )}
             >
-              <LeftIcon className="h-5 w-5" />
+              <LeftIcon className="h-[18px] w-[18px]" />
             </Link>
             <div className="flex min-w-0 items-center gap-3">
               {titlePrefix ? <div className="shrink-0">{titlePrefix}</div> : null}
               <div className="min-w-0">
-                <h1 className={cn("font-bold leading-tight text-[#080d2d]", titlePrefix ? "whitespace-nowrap text-[0.82rem]" : "text-[1.42rem]")}>{title}</h1>
-                {subtitle ? <p className="mt-1 text-[0.92rem] leading-5 text-[#687093]">{subtitle}</p> : null}
+                <h1 className={cn("font-bold leading-tight text-[#080d2d]", titlePrefix ? "whitespace-nowrap text-[0.8rem]" : "text-[1.28rem]")}>{title}</h1>
+                {subtitle ? <p className="mt-1 text-[0.84rem] leading-4 text-[#687093]">{subtitle}</p> : null}
               </div>
             </div>
           </div>
@@ -137,14 +140,14 @@ export function MobileShell({
               <>
                 <button
                   type="button"
-                  className="relative grid h-11 w-11 place-items-center rounded-[10px] border border-[#eceef7] bg-white text-[#18214d] shadow-[0_8px_20px_rgba(35,46,92,0.06)]"
+                  className="relative grid h-10 w-10 place-items-center rounded-[10px] border border-[#eceef7] bg-white text-[#18214d] shadow-[0_6px_16px_rgba(35,46,92,0.05)]"
                 >
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-[#ff3047] px-1 text-[10px] font-bold text-white">
+                  <Bell className="h-[18px] w-[18px]" />
+                  <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#ff3047] px-1 text-[9px] font-bold text-white">
                     5
                   </span>
                 </button>
-                <MobileAvatar src={user.avatar || undefined} label={user.name} size={44} />
+                <MobileAvatar src={user.avatar || undefined} label={user.name} size={40} />
               </>
             )}
           </div>
@@ -160,22 +163,12 @@ export function MobileShell({
 
 function MobileStatusBar() {
   return (
-    <div className="mb-5 flex items-center justify-between px-1 text-[15px] font-bold text-[#070b23]">
+    <div className="mb-4 flex items-center justify-between px-1 text-[14px] font-bold text-[#070b23]">
       <span>9:41</span>
-      <div className="flex items-end gap-1.5">
-        <span className="flex h-5 items-end gap-[2px]">
-          <span className="h-[10px] w-1 rounded-full bg-[#070b23]" />
-          <span className="h-[13px] w-1 rounded-full bg-[#070b23]" />
-          <span className="h-[16px] w-1 rounded-full bg-[#070b23]" />
-          <span className="h-[19px] w-1 rounded-full bg-[#070b23]" />
-        </span>
-        <span className="relative h-4 w-5 overflow-hidden">
-          <span className="absolute inset-x-0 bottom-0 h-4 rounded-t-full border-2 border-[#070b23] border-b-0" />
-          <span className="absolute inset-x-[5px] bottom-0 h-2 rounded-t-full bg-[#070b23]" />
-        </span>
-        <span className="flex h-[16px] w-[30px] items-center rounded-[4px] border-2 border-[#070b23] p-[2px] after:ml-[2px] after:h-2 after:w-[2px] after:rounded-r after:bg-[#070b23]">
-          <span className="block h-full w-[18px] rounded-[2px] bg-[#070b23]" />
-        </span>
+      <div className="flex items-center gap-1.5">
+        <SignalHigh className="h-4 w-4" />
+        <Wifi className="h-4 w-4" />
+        <BatteryFull className="h-[18px] w-[18px]" />
       </div>
     </div>
   );
@@ -184,8 +177,8 @@ function MobileStatusBar() {
 function MobileBottomNav({ role, activeHref }: { role: Role; activeHref: string }) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40">
-      <div className="mx-auto max-w-[430px] px-3 pb-3">
-        <div className="grid grid-cols-5 rounded-[22px] border border-[#eceef7] bg-white/95 px-1.5 py-2 shadow-[0_18px_44px_rgba(27,34,75,0.12)] backdrop-blur">
+      <div className="mx-auto max-w-[400px] px-2.5 pb-2.5">
+        <div className="grid grid-cols-5 rounded-[18px] border border-[#eceef7] bg-white/95 px-1 py-1.5 shadow-[0_14px_30px_rgba(27,34,75,0.1)] backdrop-blur">
           {navByRole[role].map((item) => {
             const active = item.href === activeHref;
             const Icon = item.icon;
@@ -194,19 +187,19 @@ function MobileBottomNav({ role, activeHref }: { role: Role; activeHref: string 
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex min-h-[62px] flex-col items-center justify-center gap-1.5 rounded-[12px] text-[11px] font-semibold text-[#777d9d]",
+                  "flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-[11px] text-[10px] font-semibold text-[#777d9d]",
                   active && !item.highlight && "text-[#5c2dff]",
                   item.highlight && "text-[#5c2dff]"
                 )}
               >
                 {item.highlight ? (
-                  <span className="grid h-14 w-14 -translate-y-4 place-items-center rounded-full bg-[linear-gradient(135deg,#7035ff_0%,#4d1eea_100%)] text-white shadow-[0_14px_30px_rgba(92,45,255,0.35)]">
-                    <Icon className="h-8 w-8" />
+                  <span className="grid h-12 w-12 -translate-y-3 place-items-center rounded-full bg-[linear-gradient(135deg,#7035ff_0%,#4d1eea_100%)] text-white shadow-[0_12px_24px_rgba(92,45,255,0.3)]">
+                    <Icon className="h-7 w-7" />
                   </span>
                 ) : (
-                  <Icon className={cn("h-[23px] w-[23px]", active && "text-[#5c2dff]")} />
+                  <Icon className={cn("h-5 w-5", active && "text-[#5c2dff]")} />
                 )}
-                <span className={cn(item.highlight && "-mt-4")}>{item.label}</span>
+                <span className={cn(item.highlight && "-mt-3")}>{item.label}</span>
               </Link>
             );
           })}
@@ -220,7 +213,7 @@ export function MobileCard({ children, className }: { children: React.ReactNode;
   return (
     <section
       className={cn(
-        "rounded-[12px] border border-[#edf0f7] bg-white p-4 shadow-[0_10px_28px_rgba(30,38,82,0.06)]",
+        "rounded-[12px] border border-[#edf0f7] bg-white p-[14px] shadow-[0_8px_22px_rgba(30,38,82,0.055)]",
         className
       )}
     >
@@ -233,7 +226,7 @@ export function MobileGradientCard({ children, className }: { children: React.Re
   return (
     <section
       className={cn(
-        "rounded-[14px] bg-[linear-gradient(135deg,#6f35ff_0%,#4d1eea_100%)] p-4 text-white shadow-[0_18px_38px_rgba(92,45,255,0.26)]",
+        "rounded-[14px] bg-[linear-gradient(135deg,#6f35ff_0%,#4d1eea_100%)] p-[14px] text-white shadow-[0_14px_30px_rgba(92,45,255,0.22)]",
         className
       )}
     >
@@ -244,8 +237,8 @@ export function MobileGradientCard({ children, className }: { children: React.Re
 
 export function MobileSectionTitle({ title, action }: { title: string; action?: React.ReactNode }) {
   return (
-    <div className="mb-4 flex items-center justify-between gap-4">
-      <h2 className="text-[1.22rem] font-bold text-[#0b1033]">{title}</h2>
+    <div className="mb-3 flex items-center justify-between gap-4">
+      <h2 className="text-[1.08rem] font-bold text-[#0b1033]">{title}</h2>
       {action}
     </div>
   );
@@ -283,7 +276,7 @@ export function MobilePill({
     blue: "bg-[#e8f1ff] text-[#2e73ec]",
     slate: "bg-[#f0f2f7] text-[#687093]"
   };
-  return <span className={cn("inline-flex items-center rounded-[8px] px-2.5 py-1 text-xs font-bold", tones[tone], className)}>{children}</span>;
+  return <span className={cn("inline-flex items-center rounded-[7px] px-2 py-0.5 text-[11px] font-bold", tones[tone], className)}>{children}</span>;
 }
 
 export function MobileMetricCard({
@@ -301,10 +294,10 @@ export function MobileMetricCard({
 }) {
   return (
     <MobileCard className="p-4">
-      <div className="mb-3 grid h-11 w-11 place-items-center rounded-[10px] bg-[#f2f0ff] text-[#6a35ff]">{icon}</div>
-      <p className="text-[0.82rem] font-bold text-[#5f668b]">{label}</p>
-      <p className="mt-1 text-[1.65rem] font-bold leading-none text-[#070b2b]">{value}</p>
-      {meta ? <p className={cn("mt-2 text-xs font-bold", accent ?? "text-[#6a35ff]")}>{meta}</p> : null}
+      <div className="mb-2.5 grid h-10 w-10 place-items-center rounded-[10px] bg-[#f2f0ff] text-[#6a35ff]">{icon}</div>
+      <p className="text-[0.76rem] font-bold leading-tight text-[#5f668b]">{label}</p>
+      <p className="mt-1 text-[1.42rem] font-bold leading-none text-[#070b2b]">{value}</p>
+      {meta ? <p className={cn("mt-1.5 text-[11px] font-bold", accent ?? "text-[#6a35ff]")}>{meta}</p> : null}
     </MobileCard>
   );
 }
@@ -341,12 +334,12 @@ export function MobileSearchBar({
   className?: string;
 }) {
   return (
-    <div className={cn("flex items-center gap-3", className)}>
-      <div className="flex min-h-[52px] flex-1 items-center gap-3 rounded-[10px] border border-[#e4e8f0] bg-white px-4 shadow-[0_8px_18px_rgba(44,54,96,0.04)]">
-        <Search className="h-5 w-5 text-[#7d84a6]" />
+    <div className={cn("flex items-center gap-2.5", className)}>
+      <div className="flex min-h-[48px] flex-1 items-center gap-3 rounded-[10px] border border-[#e4e8f0] bg-white px-3.5 shadow-[0_6px_16px_rgba(44,54,96,0.04)]">
+        <Search className="h-[18px] w-[18px] text-[#7d84a6]" />
         <input
           placeholder={placeholder}
-          className="w-full border-0 bg-transparent text-sm font-medium text-[#11183d] outline-none placeholder:text-[#9198b0]"
+          className="w-full border-0 bg-transparent text-[13px] font-medium text-[#11183d] outline-none placeholder:text-[#9198b0]"
         />
       </div>
       {rightSlot}
@@ -364,7 +357,7 @@ export function MobileFilterButton({
   return (
     <button
       type="button"
-      className="inline-flex min-h-[52px] items-center gap-3 rounded-[10px] border border-[#dddffd] bg-white px-4 text-sm font-bold text-[#5c2dff] shadow-[0_8px_18px_rgba(44,54,96,0.04)]"
+      className="inline-flex min-h-[48px] items-center gap-2.5 rounded-[10px] border border-[#dddffd] bg-white px-3.5 text-[13px] font-bold text-[#5c2dff] shadow-[0_6px_16px_rgba(44,54,96,0.04)]"
     >
       {icon}
       {label}
@@ -386,11 +379,11 @@ export function MobileActionTile({
   badge?: React.ReactNode;
 }) {
   return (
-    <Link href={href} className="relative min-h-[84px] rounded-[10px] border border-[#e8ebf3] bg-white p-2.5 text-center shadow-[0_8px_18px_rgba(40,52,96,0.05)]">
+    <Link href={href} className="relative min-h-[72px] rounded-[10px] border border-[#e8ebf3] bg-white p-2 text-center shadow-[0_6px_16px_rgba(40,52,96,0.045)]">
       {badge ? <div className="absolute right-2 top-2">{badge}</div> : null}
-      <span className="mx-auto mb-2 grid h-10 w-10 place-items-center rounded-[10px] bg-[#f2f0ff] text-[#6a35ff]">{icon}</span>
-      <p className="text-[0.72rem] font-bold leading-tight text-[#11183d]">{title}</p>
-      {subtitle ? <p className="mt-1 text-[0.65rem] leading-tight text-[#858ba8]">{subtitle}</p> : null}
+      <span className="mx-auto mb-1.5 grid h-9 w-9 place-items-center rounded-[10px] bg-[#f2f0ff] text-[#6a35ff]">{icon}</span>
+      <p className="text-[11px] font-bold leading-tight text-[#11183d]">{title}</p>
+      {subtitle ? <p className="mt-0.5 text-[10px] leading-tight text-[#858ba8]">{subtitle}</p> : null}
     </Link>
   );
 }
@@ -405,14 +398,14 @@ export function MobileTabBar({
   onChange: (next: string) => void;
 }) {
   return (
-    <div className="flex gap-3 overflow-x-auto border-b border-[#e8ebf3] pb-2 text-sm thin-scrollbar">
+    <div className="flex gap-2 overflow-x-auto border-b border-[#e8ebf3] pb-1.5 text-[13px] thin-scrollbar">
       {items.map((item) => (
         <button
           key={item}
           type="button"
           onClick={() => onChange(item)}
           className={cn(
-            "shrink-0 rounded-[8px] border-b-2 px-3 py-2 font-bold transition",
+            "shrink-0 rounded-[8px] border-b-2 px-2.5 py-1.5 font-bold transition",
             item === active ? "border-[#5c2dff] text-[#5c2dff]" : "border-transparent text-[#727a9e]"
           )}
         >
@@ -436,12 +429,12 @@ export function MobileInput({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-xs font-bold text-[#3f486f]">{label}</span>
+      <span className="mb-1.5 block text-[11px] font-bold text-[#3f486f]">{label}</span>
       <input
         type={type}
         placeholder={placeholder}
         defaultValue={defaultValue}
-        className="min-h-[50px] w-full rounded-[9px] border border-[#e3e6ee] bg-white px-4 text-sm font-medium text-[#11183d] outline-none placeholder:text-[#9aa1b8] focus:border-[#7b58ff]"
+        className="min-h-[46px] w-full rounded-[10px] border border-[#e3e6ee] bg-white px-3.5 text-[13px] font-medium text-[#11183d] outline-none placeholder:text-[#9aa1b8] focus:border-[#7b58ff]"
       />
     </label>
   );
@@ -450,10 +443,10 @@ export function MobileInput({
 export function MobileSelect({ label, defaultValue }: { label: string; defaultValue?: string }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-xs font-bold text-[#3f486f]">{label}</span>
-      <div className="flex min-h-[50px] items-center justify-between rounded-[9px] border border-[#e3e6ee] bg-white px-4 text-sm font-medium text-[#11183d]">
+      <span className="mb-1.5 block text-[11px] font-bold text-[#3f486f]">{label}</span>
+      <div className="flex min-h-[46px] items-center justify-between rounded-[10px] border border-[#e3e6ee] bg-white px-3.5 text-[13px] font-medium text-[#11183d]">
         <span className={cn(defaultValue ? "text-[#11183d]" : "text-[#9aa1b8]")}>{defaultValue ?? `Select ${label.toLowerCase()}`}</span>
-        <MoreHorizontal className="h-5 w-5 rotate-90 text-[#8188aa]" />
+        <MoreHorizontal className="h-[18px] w-[18px] rotate-90 text-[#8188aa]" />
       </div>
     </label>
   );
@@ -470,11 +463,11 @@ export function MobileTextArea({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-xs font-bold text-[#3f486f]">{label}</span>
+      <span className="mb-1.5 block text-[11px] font-bold text-[#3f486f]">{label}</span>
       <textarea
         rows={rows}
         placeholder={placeholder}
-        className="w-full resize-none rounded-[9px] border border-[#e3e6ee] bg-white px-4 py-4 text-sm font-medium text-[#11183d] outline-none placeholder:text-[#9aa1b8] focus:border-[#7b58ff]"
+        className="w-full resize-none rounded-[10px] border border-[#e3e6ee] bg-white px-3.5 py-3 text-[13px] font-medium text-[#11183d] outline-none placeholder:text-[#9aa1b8] focus:border-[#7b58ff]"
       />
     </label>
   );
@@ -482,19 +475,19 @@ export function MobileTextArea({
 
 export function MobileUploadBox({ title, detail }: { title: string; detail: string }) {
   return (
-    <div className="rounded-[10px] border border-dashed border-[#d7d2ff] bg-[#fbfaff] px-5 py-8 text-center">
-      <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-[10px] bg-[#f2efff] text-[#6a35ff]">
-        <Plus className="h-7 w-7" />
+    <div className="rounded-[10px] border border-dashed border-[#d7d2ff] bg-[#fbfaff] px-4 py-6 text-center">
+      <div className="mx-auto mb-2.5 grid h-10 w-10 place-items-center rounded-[10px] bg-[#f2efff] text-[#6a35ff]">
+        <Plus className="h-6 w-6" />
       </div>
-      <p className="text-sm font-bold text-[#5f34ff]">{title}</p>
-      <p className="mt-1 text-xs text-[#9197be]">{detail}</p>
+      <p className="text-[13px] font-bold text-[#5f34ff]">{title}</p>
+      <p className="mt-1 text-[11px] text-[#9197be]">{detail}</p>
     </div>
   );
 }
 
 export function MobilePrimaryButton({ href, children, className }: { href?: string; children: React.ReactNode; className?: string }) {
   const classes =
-    "inline-flex min-h-[52px] w-full items-center justify-center rounded-[9px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-[0.98rem] font-bold text-white shadow-[0_14px_30px_rgba(92,45,255,0.22)]";
+    "inline-flex min-h-[48px] w-full items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-4 text-[0.94rem] font-bold text-white shadow-[0_12px_24px_rgba(92,45,255,0.2)]";
 
   if (href) {
     return (
@@ -513,7 +506,7 @@ export function MobilePrimaryButton({ href, children, className }: { href?: stri
 
 export function MobileSecondaryButton({ href, children, className }: { href?: string; children: React.ReactNode; className?: string }) {
   const classes =
-    "inline-flex min-h-[52px] w-full items-center justify-center rounded-[9px] border border-[#cabdff] bg-white px-5 text-[0.98rem] font-bold text-[#5c2dff]";
+    "inline-flex min-h-[48px] w-full items-center justify-center rounded-[10px] border border-[#cabdff] bg-white px-4 text-[0.94rem] font-bold text-[#5c2dff]";
   if (href) {
     return (
       <Link href={href} className={cn(classes, className)}>

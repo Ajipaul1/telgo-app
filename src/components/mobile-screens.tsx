@@ -1110,37 +1110,37 @@ export function ClientDashboardMobileScreen() {
         </div>
       }
     >
-      <div className="space-y-6">
-        <MobileCard className="p-4">
+      <div className="space-y-5">
+        <MobileCard className="p-[14px]">
           <div className="grid grid-cols-[auto_1fr] gap-3">
-            <div className="grid h-16 w-16 place-items-center rounded-[18px] bg-[#f3efff] text-2xl font-bold text-[#6a35ff]">RI</div>
+            <div className="grid h-14 w-14 place-items-center rounded-[16px] bg-[#f3efff] text-[1.35rem] font-bold text-[#6a35ff]">RI</div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-[1.22rem] font-bold leading-tight text-[#121b44]">Reliable Infra Pvt. Ltd.</h2>
+                <h2 className="text-[1.05rem] font-bold leading-tight text-[#121b44]">Reliable Infra Pvt. Ltd.</h2>
                 <MobilePill tone="green">Active</MobilePill>
               </div>
-              <p className="mt-2 text-[0.86rem] leading-5 text-[#6d77a6]">info@reliableinfra.com  |  +91 98765 43210</p>
+              <p className="mt-1.5 text-[12px] leading-4 text-[#6d77a6]">info@reliableinfra.com  |  +91 98765 43210</p>
             </div>
           </div>
           <div className="mt-3 flex gap-3">
-            <MobileSecondaryButton href="/app/client/settings" className="min-h-[46px] w-full px-4 text-[0.9rem]">
+            <MobileSecondaryButton href="/app/client/settings" className="min-h-[42px] w-full px-4 text-[0.86rem]">
               <Settings className="mr-2 h-4 w-4" />
               Client Settings
             </MobileSecondaryButton>
           </div>
         </MobileCard>
 
-        <MobileGradientCard className="p-4">
+        <MobileGradientCard className="p-[14px]">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-[12px] bg-white/15">
-                <BriefcaseBusiness className="h-5 w-5" />
+              <div className="grid h-9 w-9 place-items-center rounded-[10px] bg-white/15">
+                <BriefcaseBusiness className="h-[18px] w-[18px]" />
               </div>
-              <p className="text-[1.05rem] font-bold">Overview</p>
+              <p className="text-[0.98rem] font-bold">Overview</p>
             </div>
             <MobilePill tone="violet" className="bg-white/14 text-white">This Month</MobilePill>
           </div>
-          <div className="mt-6 grid grid-cols-4 gap-2 divide-x divide-white/20">
+          <div className="mt-4 grid grid-cols-4 gap-1.5 divide-x divide-white/20">
             <BigGradientStat label="Total Projects" value="5" />
             <BigGradientStat label="Active Projects" value="3" />
             <BigGradientStat label="Completed" value="2" />
@@ -1148,15 +1148,15 @@ export function ClientDashboardMobileScreen() {
           </div>
         </MobileGradientCard>
 
-        <MobileCard className="p-4">
-          <h3 className="text-[1.12rem] font-bold text-[#121b44]">Overall Work Progress</h3>
-          <div className="mt-4 flex items-center gap-4">
+        <MobileCard className="p-[14px]">
+          <h3 className="text-[1.02rem] font-bold text-[#121b44]">Overall Work Progress</h3>
+          <div className="mt-3 flex items-center gap-3">
             <div className="min-w-0 flex-1">
               <MobileProgressBar value={72} />
             </div>
-            <p className="text-[1.05rem] font-bold text-[#121b44]">72%</p>
+            <p className="text-[0.98rem] font-bold text-[#121b44]">72%</p>
           </div>
-          <div className="mt-5 grid grid-cols-4 gap-2 text-[0.72rem] text-[#5e6897]">
+          <div className="mt-4 grid grid-cols-4 gap-2 text-[0.66rem] text-[#5e6897]">
             <LegendItem label="Completed" value="134.10 KM" tone="green" />
             <LegendItem label="In Progress" value="52.30 KM" tone="violet" />
             <LegendItem label="Remaining" value="52.30 KM" tone="slate" />
@@ -1166,7 +1166,7 @@ export function ClientDashboardMobileScreen() {
 
         <div>
           <MobileSectionTitle title="Quick Actions" />
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-4 gap-2.5">
             <MobileActionTile href="/app/client/profile" icon={<UserRound className="h-6 w-6" />} title="Edit Profile" />
             <MobileActionTile href="/app/client/projects" icon={<Folder className="h-6 w-6" />} title="Project Details" />
             <MobileActionTile href="/app/client/engineers" icon={<Users className="h-6 w-6" />} title="Engineers On-Site" />
@@ -1178,32 +1178,32 @@ export function ClientDashboardMobileScreen() {
           </div>
         </div>
 
-        <MobileCard>
+        <MobileCard className="p-[14px]">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-[1.12rem] font-bold text-[#121b44]">Active Projects</h3>
+            <h3 className="text-[1.02rem] font-bold text-[#121b44]">Active Projects</h3>
             <Link href="/app/client/projects" className="text-sm font-bold text-[#5c2dff]">View All</Link>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {projects.slice(0, 3).map((project) => (
-              <Link key={project.id} href="/app/client/projects" className="grid grid-cols-[84px_1fr_auto] gap-3 rounded-[12px] border border-[#e7ebff] p-3">
-                <div className="relative h-[84px] overflow-hidden rounded-[10px]">
+              <Link key={project.id} href="/app/client/projects" className="grid grid-cols-[74px_1fr_auto] gap-3 rounded-[12px] border border-[#e7ebff] p-2.5">
+                <div className="relative h-[74px] overflow-hidden rounded-[10px]">
                   <Image src={project.image} alt={project.name} fill className="object-cover" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[1rem] font-bold leading-tight text-[#121b44]">{project.name}</p>
-                  <p className="mt-1 text-xs text-[#7680af]">{project.location}</p>
-                  <div className="mt-3 flex items-center gap-2">
+                  <p className="text-[0.92rem] font-bold leading-tight text-[#121b44]">{project.name}</p>
+                  <p className="mt-1 text-[11px] text-[#7680af]">{project.location}</p>
+                  <div className="mt-2.5 flex items-center gap-2">
                     <div className="min-w-0 flex-1">
                       <MobileProgressBar value={project.progress} />
                     </div>
-                    <span className="text-xs font-bold text-[#121b44]">{project.progress}%</span>
+                    <span className="text-[11px] font-bold text-[#121b44]">{project.progress}%</span>
                   </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <div className="mt-2.5 grid grid-cols-2 gap-2 text-[11px]">
                     <InfoCell label="Total Distance" value={`${project.totalLengthKm} KM`} />
                     <InfoCell label="Work Completed" value={`${project.completedKm} KM`} />
                   </div>
                 </div>
-                <ChevronRight className="mt-7 h-5 w-5 text-[#6f76a7]" />
+                <ChevronRight className="mt-5 h-[18px] w-[18px] text-[#6f76a7]" />
               </Link>
             ))}
           </div>
@@ -1666,9 +1666,9 @@ export function EngineerDashboardMobileScreen() {
         </div>
       }
     >
-      <div className="space-y-6">
-        <MobileGradientCard className="p-4">
-          <div className="grid grid-cols-5 gap-2 divide-x divide-white/20">
+      <div className="space-y-5">
+        <MobileGradientCard className="p-[14px]">
+          <div className="grid grid-cols-5 gap-1 divide-x divide-white/20">
             <BigGradientStat label="My Projects Assigned" value="05" />
             <BigGradientStat label="Tasks Today" value="12" />
             <BigGradientStat label="Attendance Marked" value="18/25" />
@@ -1677,7 +1677,7 @@ export function EngineerDashboardMobileScreen() {
           </div>
         </MobileGradientCard>
 
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-5 gap-2.5">
             <MobileActionTile href="/app/engineer/attendance" icon={<CalendarDays className="h-6 w-6" />} title="Mark Attendance" subtitle="GPS mark" />
             <MobileActionTile href="/app/engineer/reports" icon={<CalendarRange className="h-6 w-6" />} title="Calendar" subtitle="Events" />
             <MobileActionTile href="/app/admin/staff/eng-arjun/assign-task" icon={<ListTodo className="h-6 w-6" />} title="My Tasks" subtitle="Update" />
@@ -1690,25 +1690,25 @@ export function EngineerDashboardMobileScreen() {
             <MobileActionTile href="/app/admin/staff" icon={<Users className="h-6 w-6" />} title="Team" subtitle="Attendance" />
           </div>
 
-        <MobileCard>
+        <MobileCard className="p-[14px]">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-[1.35rem] font-semibold text-[#121b44]">My Projects</h3>
+            <h3 className="text-[1.08rem] font-semibold text-[#121b44]">My Projects</h3>
             <Link href="/app/engineer/projects" className="text-sm font-semibold text-[#5c2dff]">View All</Link>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {projects.slice(0, 3).map((project) => (
-              <Link key={project.id} href="/app/engineer/projects" className="grid grid-cols-[92px_1fr_auto] gap-4 rounded-[24px] border border-[#e7ebff] p-4">
-                <div className="relative h-[92px] overflow-hidden rounded-[20px]">
+              <Link key={project.id} href="/app/engineer/projects" className="grid grid-cols-[78px_1fr_auto] gap-3 rounded-[18px] border border-[#e7ebff] p-3">
+                <div className="relative h-[78px] overflow-hidden rounded-[14px]">
                   <Image src={project.image} alt={project.name} fill className="object-cover" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[1.2rem] font-semibold text-[#121b44]">{project.name}</p>
-                  <p className="mt-1 text-sm text-[#7d85b0]">{project.location}</p>
-                  <div className="mt-4 flex items-center gap-3">
+                  <p className="text-[0.98rem] font-semibold text-[#121b44]">{project.name}</p>
+                  <p className="mt-1 text-[11px] text-[#7d85b0]">{project.location}</p>
+                  <div className="mt-2.5 flex items-center gap-2">
                     <div className="min-w-0 flex-1">
                       <MobileProgressBar value={project.progress} />
                     </div>
-                    <span className="text-base font-semibold text-[#121b44]">{project.progress}%</span>
+                    <span className="text-[11px] font-semibold text-[#121b44]">{project.progress}%</span>
                   </div>
                 </div>
                 <MobilePill tone={project.status === "Active" ? "green" : project.status === "Delayed" ? "orange" : "blue"}>{project.status === "Delayed" ? "Planning" : project.status}</MobilePill>
@@ -1719,22 +1719,22 @@ export function EngineerDashboardMobileScreen() {
 
         <div className="grid gap-4">
           <CalendarCard />
-          <MobileCard>
+          <MobileCard className="p-[14px]">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-[1.35rem] font-semibold text-[#121b44]">Today's Tasks</h3>
+              <h3 className="text-[1.08rem] font-semibold text-[#121b44]">Today's Tasks</h3>
               <Link href="/app/admin/staff/eng-arjun/assign-task" className="text-sm font-semibold text-[#5c2dff]">View All</Link>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {taskRecords.map((task) => (
-                <div key={task.id} className="grid grid-cols-[auto_1fr_auto] gap-3 rounded-[22px] border border-[#e8ebff] p-4">
-                  <CircleDot className={cn("mt-1 h-5 w-5", task.status === "Completed" ? "text-[#18aa5d]" : "text-[#c0c5e6]")} />
+                <div key={task.id} className="grid grid-cols-[auto_1fr_auto] gap-3 rounded-[16px] border border-[#e8ebff] p-3">
+                  <CircleDot className={cn("mt-1 h-4 w-4", task.status === "Completed" ? "text-[#18aa5d]" : "text-[#c0c5e6]")} />
                   <div>
-                    <p className="font-semibold text-[#17204c]">{task.title}</p>
-                    <p className="mt-1 text-sm text-[#7d85b0]">{engineerProject.name}</p>
+                    <p className="text-[13px] font-semibold text-[#17204c]">{task.title}</p>
+                    <p className="mt-1 text-[11px] text-[#7d85b0]">{engineerProject.name}</p>
                   </div>
-                  <div className="text-right text-sm">
+                  <div className="text-right text-[11px]">
                     <p className="font-semibold text-[#5c2dff]">{task.time}</p>
-                    <MobilePill tone={task.status === "Completed" ? "green" : task.status === "In Progress" ? "orange" : "slate"} className="mt-2 px-2.5 py-1 text-xs">
+                    <MobilePill tone={task.status === "Completed" ? "green" : task.status === "In Progress" ? "orange" : "slate"} className="mt-1.5">
                       {task.status}
                     </MobilePill>
                   </div>
@@ -2887,15 +2887,15 @@ function CalendarCard() {
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const numbers = Array.from({ length: 35 }, (_, index) => index + 1);
   return (
-    <MobileCard className="h-full">
-      <div className="mb-4 flex items-center justify-between">
+    <MobileCard className="h-full p-[14px]">
+      <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <CalendarDays className="h-5 w-5 text-[#6a35ff]" />
-          <p className="text-[1.22rem] font-semibold text-[#121b44]">Attendance Overview</p>
+          <CalendarDays className="h-[18px] w-[18px] text-[#6a35ff]" />
+          <p className="text-[1.02rem] font-semibold text-[#121b44]">Attendance Overview</p>
         </div>
-        <p className="font-semibold text-[#5c2dff]">May 2025</p>
+        <p className="text-[13px] font-semibold text-[#5c2dff]">May 2025</p>
       </div>
-      <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-[#7b84af]">
+      <div className="grid grid-cols-7 gap-1.5 text-center text-[11px] font-semibold text-[#7b84af]">
         {days.map((day) => (
           <span key={day}>{day}</span>
         ))}
@@ -2903,7 +2903,7 @@ function CalendarCard() {
           <span
             key={value}
             className={cn(
-              "grid h-9 w-9 place-items-center rounded-full justify-self-center text-sm font-medium",
+              "grid h-8 w-8 place-items-center rounded-full justify-self-center text-[13px] font-medium",
               value === 16
                 ? "bg-[#5c2dff] text-white"
                 : value === 19
@@ -2917,7 +2917,7 @@ function CalendarCard() {
           </span>
         ))}
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-[#6d78a9]">
+      <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-[#6d78a9]">
         <LegendItem label="Present" value="" tone="green" />
         <LegendItem label="Leave" value="" tone="orange" />
         <LegendItem label="Absent" value="" tone="red" />
@@ -2964,8 +2964,8 @@ function ScheduleCard() {
 function BigGradientStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="px-2 first:pl-0">
-      <p className="text-[1.28rem] font-bold leading-none tracking-normal">{value}</p>
-      <p className="mt-2 text-[0.68rem] font-semibold leading-tight text-white/85">{label}</p>
+      <p className="text-[1.08rem] font-bold leading-none tracking-normal">{value}</p>
+      <p className="mt-1.5 text-[0.62rem] font-semibold leading-tight text-white/85">{label}</p>
     </div>
   );
 }
@@ -2973,8 +2973,8 @@ function BigGradientStat({ label, value }: { label: string; value: string }) {
 function InfoCell({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-sm text-[#7a84b0]">{label}</p>
-      <p className="mt-1 font-semibold text-[#17204c]">{value}</p>
+      <p className="text-[10px] text-[#7a84b0]">{label}</p>
+      <p className="mt-0.5 text-[12px] font-semibold text-[#17204c]">{value}</p>
     </div>
   );
 }
@@ -2988,12 +2988,12 @@ function InfoGrid({
 }) {
   return (
     <div>
-      {title ? <h3 className="mb-4 text-[1.3rem] font-semibold text-[#121b44]">{title}</h3> : null}
-      <div className="space-y-3 rounded-[24px] border border-[#e8ebff] p-4">
+      {title ? <h3 className="mb-3 text-[1.08rem] font-semibold text-[#121b44]">{title}</h3> : null}
+      <div className="space-y-2.5 rounded-[18px] border border-[#e8ebff] p-3">
         {items.map(([label, value]) => (
-          <div key={label} className="grid grid-cols-[140px_1fr] gap-3 border-b border-[#edf0ff] pb-3 last:border-b-0 last:pb-0">
-            <p className="text-sm text-[#7f87b0]">{label}</p>
-            <p className="font-semibold text-[#17204c]">{value}</p>
+          <div key={label} className="grid grid-cols-[108px_1fr] gap-3 border-b border-[#edf0ff] pb-2.5 last:border-b-0 last:pb-0">
+            <p className="text-[12px] text-[#7f87b0]">{label}</p>
+            <p className="text-[13px] font-semibold text-[#17204c]">{value}</p>
           </div>
         ))}
       </div>
