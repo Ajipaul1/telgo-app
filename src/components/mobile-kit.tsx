@@ -61,11 +61,27 @@ const navByRole: Record<Role, NavItem[]> = {
   ],
   supervisor: [
     { href: "/app/supervisor", label: "Dashboard", icon: Home },
-    { href: "/app/admin/staff", label: "Team", icon: LayoutGrid },
-    { href: "/app/admin/map", label: "Add", icon: Plus, highlight: true },
+    { href: "/app/supervisor/team", label: "Team", icon: LayoutGrid },
+    { href: "/app/supervisor/tracking", label: "Add", icon: Plus, highlight: true },
     { href: "/app/chat", label: "Chats", icon: MessageCircle },
-    { href: "/app/admin/profile", label: "Profile", icon: UserRound }
+    { href: "/app/supervisor/profile", label: "Profile", icon: UserRound }
   ]
+};
+
+const homeHrefByRole: Record<Role, string> = {
+  admin: "/app/admin",
+  engineer: "/app/engineer",
+  finance: "/app/admin/finance",
+  client: "/app/client",
+  supervisor: "/app/supervisor"
+};
+
+const profileHrefByRole: Record<Role, string> = {
+  admin: "/app/admin/profile",
+  engineer: "/app/engineer/profile",
+  finance: "/app/admin/profile",
+  client: "/app/client/profile",
+  supervisor: "/app/supervisor/profile"
 };
 
 const topUserByRole: Record<Role, { name: string; subtitle: string; avatar: string; status: string }> = {
@@ -108,6 +124,7 @@ export function MobileShell({
 }) {
   const user = topUser ?? topUserByRole[role];
   const LeftIcon = leftMode === "back" ? ArrowLeft : Menu;
+  const leftHref = backHref ?? homeHrefByRole[role];
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#fcfdff_0%,#f4f7ff_100%)] text-[#11173d]">
@@ -115,10 +132,10 @@ export function MobileShell({
         <header className="mb-3.5 flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-start gap-3">
             <Link
-              href={backHref ?? "#"}
+              href={leftHref}
               className={cn(
                 "mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-[12px] border border-[#eceef7] bg-white text-[#101638] shadow-[0_6px_16px_rgba(35,46,92,0.05)]",
-                leftMode === "menu" && !backHref && "pointer-events-none opacity-70"
+                leftMode === "menu" && !backHref && "opacity-90"
               )}
             >
               <LeftIcon className="h-[18px] w-[18px]" />
@@ -134,16 +151,18 @@ export function MobileShell({
           <div className="flex shrink-0 items-center gap-2">
             {rightSlot ?? (
               <>
-                <button
-                  type="button"
+                <Link
+                  href="/app/notifications"
                   className="relative grid h-10 w-10 place-items-center rounded-[12px] border border-[#eceef7] bg-white text-[#18214d] shadow-[0_6px_16px_rgba(35,46,92,0.05)]"
                 >
                   <Bell className="h-[18px] w-[18px]" />
                   <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#ff3047] px-1 text-[9px] font-bold text-white">
                     5
                   </span>
-                </button>
-                <MobileAvatar src={user.avatar || undefined} label={user.name} size={40} />
+                </Link>
+                <Link href={profileHrefByRole[role]}>
+                  <MobileAvatar src={user.avatar || undefined} label={user.name} size={40} />
+                </Link>
               </>
             )}
           </div>

@@ -277,6 +277,25 @@ function getVisibleReports(state: OpsState, viewer: DemoUser) {
   });
 }
 
+function getTeamWorkerIds(state: OpsState, currentUser: DemoUser) {
+  return state.users
+    .filter(
+      (user) =>
+        user.role !== "admin" &&
+        user.role !== "client" &&
+        user.projectIds.some((projectId) => currentUser.projectIds.includes(projectId))
+    )
+    .map((user) => user.id);
+}
+
+function homeHrefForRole(role: Role) {
+  if (role === "admin") return "/app/admin";
+  if (role === "client") return "/app/client";
+  if (role === "finance") return "/app/admin/finance";
+  if (role === "supervisor") return "/app/supervisor";
+  return "/app/engineer";
+}
+
 function reportStatusLabel(status: "approved" | "pending" | "rejected") {
   if (status === "approved") return "Approved";
   if (status === "pending") return "Pending";
@@ -793,7 +812,10 @@ export function ProjectsMobileScreen({
   backHref,
   leftMode = "menu",
   title = "All Projects",
-  subtitle = "Manage and track all projects"
+  subtitle = "Manage and track all projects",
+  createHref,
+  detailHrefBuilder,
+  showCreate
 }: {
   role?: Role;
   activeHref?: string;
@@ -801,6 +823,9 @@ export function ProjectsMobileScreen({
   leftMode?: "menu" | "back";
   title?: string;
   subtitle?: string;
+  createHref?: string;
+  detailHrefBuilder?: (project: Project) => string;
+  showCreate?: boolean;
 }) {
   const ops = useOpsStore((state) => state);
   const currentUser = getCurrentUser(ops);
@@ -820,6 +845,13 @@ export function ProjectsMobileScreen({
         : tab.startsWith("Pending")
           ? pendingProjects
           : visibleProjects;
+  const resolvedCreateHref =
+    createHref ?? (role === "client" ? "/app/client/projects/new" : "/app/admin/projects/new");
+  const canCreate = showCreate ?? (role === "admin" || role === "client");
+  const resolvedDetailHref =
+    detailHrefBuilder ??
+    ((project: Project) =>
+      role === "client" ? "/app/client/settings" : `/app/admin/projects/${project.id}`);
 
   return (
     <MobileShell
@@ -841,13 +873,15 @@ export function ProjectsMobileScreen({
       }
     >
       <div className="space-y-6">
-        <Link
-          href={role === "client" ? "/app/client/projects/new" : "/app/admin/projects/new"}
-          className="inline-flex min-h-[52px] w-full items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(92,45,255,0.22)]"
-        >
-          <Plus className="mr-2 h-5 w-5" />
-          Add Project
-        </Link>
+        {canCreate ? (
+          <Link
+            href={resolvedCreateHref}
+            className="inline-flex min-h-[52px] w-full items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(92,45,255,0.22)]"
+          >
+            <Plus className="mr-2 h-5 w-5" />
+            Add Project
+          </Link>
+        ) : null}
         <div className="grid grid-cols-2 gap-3">
           <MobileMetricCard icon={<Folder className="h-6 w-6" />} label="Total Projects" value={String(visibleProjects.length)} meta="Managed in one system" />
           <MobileMetricCard icon={<ShieldCheck className="h-6 w-6" />} label="Completed" value={String(completedProjects.length)} meta={`${Math.round((completedProjects.length / Math.max(visibleProjects.length, 1)) * 100)}%`} accent="text-[#18aa5d]" />
@@ -870,7 +904,7 @@ export function ProjectsMobileScreen({
             {tabbedProjects.map((project) => (
               <Link
                 key={project.id}
-                href={role === "client" ? "/app/client/settings" : "/app/admin/projects/new"}
+                href={resolvedDetailHref(project)}
                 className="grid grid-cols-[92px_1fr] gap-4 rounded-[24px] border border-[#e7ebff] p-4"
               >
                 <div className="relative h-[92px] overflow-hidden rounded-[20px]">
@@ -901,6 +935,11 @@ export function ProjectsMobileScreen({
                 </div>
               </Link>
             ))}
+            {tabbedProjects.length === 0 ? (
+              <div className="rounded-[20px] border border-dashed border-[#dfe4fb] px-4 py-6 text-sm text-[#7280af]">
+                No projects match this view yet. Publish a new project or adjust permissions to continue the workflow.
+              </div>
+            ) : null}
           </div>
         </MobileCard>
       </div>
@@ -908,7 +947,21 @@ export function ProjectsMobileScreen({
   );
 }
 
-export function ApprovalsMobileScreen() {
+export function ApprovalsMobileScreen({
+  role = "admin",
+  activeHref = "/app/admin/approvals",
+  backHref,
+  leftMode = "menu",
+  title = "Pending Approvals",
+  subtitle = "Review and approve requests"
+}: {
+  role?: Role;
+  activeHref?: string;
+  backHref?: string;
+  leftMode?: "menu" | "back";
+  title?: string;
+  subtitle?: string;
+} = {}) {
   const ops = useOpsStore((state) => state);
   const approvalQueue = getApprovalQueue(ops);
   const leaveApprovals = approvalQueue.filter((item) => item.kind === "leave");
@@ -959,10 +1012,12 @@ export function ApprovalsMobileScreen() {
 
   return (
     <MobileShell
-      role="admin"
-      activeHref="/app/admin/approvals"
-      title="Pending Approvals"
-      subtitle="Review and approve requests"
+      role={role}
+      activeHref={activeHref}
+      title={title}
+      subtitle={subtitle}
+      backHref={backHref}
+      leftMode={leftMode}
       rightSlot={
         <div className="flex items-center gap-2">
           <button type="button" className="grid h-12 w-12 place-items-center rounded-2xl border border-[#e4e7fb] bg-white">
@@ -1047,6 +1102,11 @@ export function ApprovalsMobileScreen() {
                 </div>
               );
             })}
+            {visibleApprovals.length === 0 ? (
+              <div className="rounded-[20px] border border-dashed border-[#dfe4fb] px-4 py-6 text-sm text-[#7280af]">
+                Nothing is waiting for approval right now. New access, leave, attendance, document, and report actions will appear here automatically.
+              </div>
+            ) : null}
           </div>
         </MobileCard>
       </div>
@@ -1054,9 +1114,33 @@ export function ApprovalsMobileScreen() {
   );
 }
 
-export function WorkersMobileScreen() {
+export function WorkersMobileScreen({
+  role = "admin",
+  activeHref = "/app/admin/staff",
+  title = "All Workers",
+  subtitle = "Manage all team members and their access",
+  backHref,
+  leftMode = "menu",
+  workerIds,
+  allowAddWorker = true,
+  addWorkerHref = "/app/admin/staff/new",
+  detailHrefBuilder
+}: {
+  role?: Role;
+  activeHref?: string;
+  title?: string;
+  subtitle?: string;
+  backHref?: string;
+  leftMode?: "menu" | "back";
+  workerIds?: string[];
+  allowAddWorker?: boolean;
+  addWorkerHref?: string;
+  detailHrefBuilder?: (worker: WorkerRecord) => string;
+} = {}) {
   const ops = useOpsStore((state) => state);
-  const workerRecords = getWorkerRecords(ops);
+  const workerRecords = getWorkerRecords(ops).filter((worker) =>
+    workerIds ? workerIds.includes(worker.id) : true
+  );
   const engineers = workerRecords.filter((worker) => worker.badge === "Engineer");
   const supervisors = workerRecords.filter((worker) => worker.badge === "Supervisor");
   const finance = workerRecords.filter((worker) => worker.badge === "Finance");
@@ -1075,12 +1159,16 @@ export function WorkersMobileScreen() {
           : tab.startsWith("Clients")
             ? clients
             : workerRecords;
+  const resolvedDetailHref =
+    detailHrefBuilder ?? ((worker: WorkerRecord) => `/app/admin/staff/${worker.id}`);
   return (
     <MobileShell
-      role="admin"
-      activeHref="/app/admin/staff"
-      title="All Workers"
-      subtitle="Manage all team members and their access"
+      role={role}
+      activeHref={activeHref}
+      title={title}
+      subtitle={subtitle}
+      backHref={backHref}
+      leftMode={leftMode}
       rightSlot={
         <div className="flex items-center gap-2">
           <button type="button" className="grid h-11 w-11 place-items-center rounded-[10px] border border-[#e4e7fb] bg-white">
@@ -1093,13 +1181,15 @@ export function WorkersMobileScreen() {
       }
     >
       <div className="space-y-6">
-        <Link
-          href="/app/admin/staff/eng-arjun/assign-task"
-          className="inline-flex min-h-[52px] w-full items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(92,45,255,0.22)]"
-        >
-          <Plus className="mr-2 h-5 w-5" />
-          Add Worker
-        </Link>
+        {allowAddWorker ? (
+          <Link
+            href={addWorkerHref}
+            className="inline-flex min-h-[52px] w-full items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(92,45,255,0.22)]"
+          >
+            <Plus className="mr-2 h-5 w-5" />
+            Add Worker
+          </Link>
+        ) : null}
         <div className="grid grid-cols-2 gap-3">
           <MobileMetricCard icon={<Users className="h-6 w-6" />} label="Total Workers" value={String(workerRecords.length)} meta="All Members" />
           <MobileMetricCard icon={<UserPlus className="h-6 w-6" />} label="Active" value={String(activeWorkers.length)} meta={`${Math.round((activeWorkers.length / Math.max(workerRecords.length, 1)) * 100)}%`} accent="text-[#18aa5d]" />
@@ -1126,7 +1216,7 @@ export function WorkersMobileScreen() {
             {visibleWorkers.map((worker) => (
               <Link
                 key={worker.id}
-                href={`/app/admin/staff/${worker.id}`}
+                href={resolvedDetailHref(worker)}
                 className="grid grid-cols-[auto_1fr_auto] gap-3 rounded-[24px] border border-[#e8ebff] p-4"
               >
                 <MobileAvatar src={worker.avatar} label={worker.name} size={58} />
@@ -1153,6 +1243,11 @@ export function WorkersMobileScreen() {
                 </div>
               </Link>
             ))}
+            {visibleWorkers.length === 0 ? (
+              <div className="rounded-[20px] border border-dashed border-[#dfe4fb] px-4 py-6 text-sm text-[#7280af]">
+                No workers are available in this scope yet. Admin assignments and access approvals will populate this team list.
+              </div>
+            ) : null}
           </div>
         </MobileCard>
       </div>
@@ -1160,7 +1255,23 @@ export function WorkersMobileScreen() {
   );
 }
 
-export function WorkerDetailMobileScreen({ workerId }: { workerId?: string }) {
+export function WorkerDetailMobileScreen({
+  workerId,
+  role = "admin",
+  activeHref = "/app/admin/staff",
+  backHref = "/app/admin/staff",
+  detailBasePath,
+  trackingHref,
+  allowRemoveAccess = true
+}: {
+  workerId?: string;
+  role?: Role;
+  activeHref?: string;
+  backHref?: string;
+  detailBasePath?: string;
+  trackingHref?: string;
+  allowRemoveAccess?: boolean;
+} = {}) {
   const ops = useOpsStore((state) => state);
   const workerRecords = getWorkerRecords(ops);
   const worker = workerRecords.find((item) => item.id === workerId) ?? workerRecords[0];
@@ -1168,18 +1279,23 @@ export function WorkerDetailMobileScreen({ workerId }: { workerId?: string }) {
   const workerTasks = getTaskRecords(ops, worker.id);
   const workerProject = workerUser ? getPrimaryProjectForUser(ops, workerUser) : ops.managedProjects[0];
   const workerAttendance = ops.attendance.filter((item) => item.userId === worker.id);
+  const assignTaskHref = detailBasePath
+    ? `${detailBasePath}/${worker.id}/assign-task`
+    : `/app/admin/staff/${worker.id}/assign-task`;
+  const resolvedTrackingHref =
+    trackingHref ?? (role === "supervisor" ? "/app/supervisor/tracking/full" : "/app/admin/map/full");
   return (
     <MobileShell
-      role="admin"
-      activeHref="/app/admin/staff"
+      role={role}
+      activeHref={activeHref}
       title={worker.name}
       subtitle={`${worker.phone}  -  Joined: ${worker.joined}`}
-      backHref="/app/admin/staff"
+      backHref={backHref}
       leftMode="back"
       bottomNav={false}
       rightSlot={
         <div className="flex items-center gap-2">
-          <Link href="/app/admin/map/full" className="grid h-12 w-12 place-items-center rounded-2xl border border-[#e4e7fb] bg-white text-[#5c2dff]">
+          <Link href={resolvedTrackingHref} className="grid h-12 w-12 place-items-center rounded-2xl border border-[#e4e7fb] bg-white text-[#5c2dff]">
             <LocateFixed className="h-5 w-5" />
           </Link>
           <Link href="/app/chat" className="grid h-12 w-12 place-items-center rounded-2xl border border-[#e4e7fb] bg-white text-[#16204c]">
@@ -1233,14 +1349,14 @@ export function WorkerDetailMobileScreen({ workerId }: { workerId?: string }) {
                 ["Accuracy", workerAttendance[0] ? `${workerAttendance[0].accuracyM} meters` : "Unavailable"]
               ]}
             />
-            <MobileSecondaryButton href="/app/admin/map/full">View Full Tracking</MobileSecondaryButton>
+            <MobileSecondaryButton href={resolvedTrackingHref}>View Full Tracking</MobileSecondaryButton>
           </div>
         </MobileCard>
 
         <MobileCard>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-[1.35rem] font-semibold text-[#121b44]">Today's Tasks</h3>
-              <Link href={`/app/admin/staff/${worker.id}/assign-task`} className="text-sm font-semibold text-[#5c2dff]">{workerTasks.length} Tasks</Link>
+              <Link href={assignTaskHref} className="text-sm font-semibold text-[#5c2dff]">{workerTasks.length} Tasks</Link>
             </div>
             <div className="space-y-4">
               {workerTasks.map((task) => (
@@ -1268,7 +1384,7 @@ export function WorkerDetailMobileScreen({ workerId }: { workerId?: string }) {
           <MobileCard>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-[1.35rem] font-semibold text-[#121b44]">Attendance Overview</h3>
-              <Link href="/app/engineer/attendance" className="text-sm font-semibold text-[#5c2dff]">View Calendar</Link>
+              <Link href={role === "supervisor" ? "/app/supervisor/attendance" : "/app/engineer/attendance"} className="text-sm font-semibold text-[#5c2dff]">View Calendar</Link>
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
               <CalendarCard />
@@ -1277,18 +1393,20 @@ export function WorkerDetailMobileScreen({ workerId }: { workerId?: string }) {
           </MobileCard>
           <MobileCard>
             <div className="grid grid-cols-2 gap-3">
-              <MobileSecondaryButton href="/app/engineer/profile">Edit Profile</MobileSecondaryButton>
-              <MobileSecondaryButton href={`/app/admin/staff/${worker.id}/assign-task`}>Assign Tasks</MobileSecondaryButton>
-              <MobileSecondaryButton href="/app/engineer/attendance">Mark Attendance</MobileSecondaryButton>
+              <MobileSecondaryButton href={backHref}>Back to Team</MobileSecondaryButton>
+              <MobileSecondaryButton href={assignTaskHref}>Assign Tasks</MobileSecondaryButton>
+              <MobileSecondaryButton href={role === "supervisor" ? "/app/supervisor/attendance" : "/app/engineer/attendance"}>Mark Attendance</MobileSecondaryButton>
               <MobileSecondaryButton href="/app/chat">Send Message</MobileSecondaryButton>
             </div>
-            <button
-              type="button"
-              onClick={() => ops.removeUserAccess(worker.id)}
-              className="mt-4 inline-flex min-h-[58px] w-full items-center justify-center rounded-[20px] border border-[#ffbfc6] bg-white px-5 text-[1.05rem] font-semibold text-[#ff4f63]"
-            >
-              Remove Access
-            </button>
+            {allowRemoveAccess ? (
+              <button
+                type="button"
+                onClick={() => ops.removeUserAccess(worker.id)}
+                className="mt-4 inline-flex min-h-[58px] w-full items-center justify-center rounded-[20px] border border-[#ffbfc6] bg-white px-5 text-[1.05rem] font-semibold text-[#ff4f63]"
+              >
+                Remove Access
+              </button>
+            ) : null}
           </MobileCard>
         </div>
       </div>
@@ -1296,7 +1414,19 @@ export function WorkerDetailMobileScreen({ workerId }: { workerId?: string }) {
   );
 }
 
-export function WorkerAssignTaskMobileScreen({ workerId }: { workerId?: string }) {
+export function WorkerAssignTaskMobileScreen({
+  workerId,
+  role = "admin",
+  activeHref = "/app/admin/staff",
+  backHref,
+  detailBasePath
+}: {
+  workerId?: string;
+  role?: Role;
+  activeHref?: string;
+  backHref?: string;
+  detailBasePath?: string;
+} = {}) {
   const ops = useOpsStore((state) => state);
   const worker = getWorkerRecords(ops).find((item) => item.id === workerId) ?? getWorkerRecords(ops)[0];
   const workerUser = userById(ops, worker.id);
@@ -1308,13 +1438,15 @@ export function WorkerAssignTaskMobileScreen({ workerId }: { workerId?: string }
   const [taskType, setTaskType] = useState("Inspection");
   const [dueDate, setDueDate] = useState("20 May 2026, 06:00 PM");
   const [notes, setNotes] = useState("");
+  const resolvedBackHref =
+    backHref ?? (detailBasePath ? `${detailBasePath}/${worker.id}` : `/app/admin/staff/${worker.id}`);
   return (
     <MobileShell
-      role="admin"
-      activeHref="/app/admin/staff"
+      role={role}
+      activeHref={activeHref}
       title="Assign Task"
       subtitle={`Create and assign task to ${worker.name}`}
-      backHref={`/app/admin/staff/${worker.id}`}
+      backHref={resolvedBackHref}
       leftMode="back"
       bottomNav={false}
       rightSlot={
@@ -1439,7 +1571,7 @@ export function WorkerAssignTaskMobileScreen({ workerId }: { workerId?: string }
         </MobileCard>
 
         <div className="grid grid-cols-2 gap-3">
-          <MobileSecondaryButton href={`/app/admin/staff/${worker.id}`}>Cancel</MobileSecondaryButton>
+          <MobileSecondaryButton href={resolvedBackHref}>Cancel</MobileSecondaryButton>
           <button type="submit" className="inline-flex min-h-[58px] items-center justify-center rounded-[20px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-[1.05rem] font-semibold text-white shadow-[0_18px_36px_rgba(92,45,255,0.26)]">
             <Send className="mr-2 h-5 w-5" />
             Assign Task
