@@ -1,5 +1,5 @@
-import { ClientDocumentsMobileScreen } from "@/components/mobile-screens";
+import { ClientPhotosMobileScreen } from "@/components/mobile-screens";
 
 export default function ClientPhotosPage() {
-  return <ClientDocumentsMobileScreen />;
+  return <ClientPhotosMobileScreen />;
 }

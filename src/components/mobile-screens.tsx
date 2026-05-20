@@ -500,7 +500,7 @@ export function AdminDashboardMobileScreen() {
             <MobileActionTile href="/app/admin/finance" icon={<IndianRupee className="h-7 w-7" />} title="Finance Admin" />
             <MobileActionTile href="/app/client" icon={<BriefcaseBusiness className="h-7 w-7" />} title="Client Admin" />
             <MobileActionTile href="/app/chat" icon={<MessageCircle className="h-7 w-7" />} title="Live Chats" badge={<span className="grid h-6 min-w-6 place-items-center rounded-full bg-[#ff4f63] px-1 text-xs font-semibold text-white">{ops.chatMessages.length}</span>} />
-            <MobileActionTile href="/app/admin/alerts" icon={<Bell className="h-7 w-7" />} title="Notifications" badge={<span className="grid h-6 min-w-6 place-items-center rounded-full bg-[#ff4f63] px-1 text-xs font-semibold text-white">{unreadNotifications}</span>} />
+            <MobileActionTile href="/app/notifications" icon={<Bell className="h-7 w-7" />} title="Notifications" badge={<span className="grid h-6 min-w-6 place-items-center rounded-full bg-[#ff4f63] px-1 text-xs font-semibold text-white">{unreadNotifications}</span>} />
             <MobileActionTile href="/app/admin/approvals" icon={<CheckCircle2 className="h-7 w-7" />} title="Approvals" badge={<span className="grid h-6 min-w-6 place-items-center rounded-full bg-[#ff4f63] px-1 text-xs font-semibold text-white">{approvalQueue.length}</span>} />
           </div>
         </MobileCard>
@@ -584,7 +584,7 @@ export function FinanceDashboardMobileScreen() {
             <MobileActionTile href="/app/admin/approvals" icon={<CheckCircle2 className="h-6 w-6" />} title="Payment Requests" subtitle="Review" />
             <MobileActionTile href="/app/chat" icon={<MessageCircle className="h-6 w-6" />} title="Live Chat" subtitle="Teams" />
             <MobileActionTile href="/app/admin/projects" icon={<Folder className="h-6 w-6" />} title="Expense Reports" subtitle="Projects" />
-            <MobileActionTile href="/app/admin/alerts" icon={<Bell className="h-6 w-6" />} title="Alerts" subtitle="Updates" />
+            <MobileActionTile href="/app/notifications" icon={<Bell className="h-6 w-6" />} title="Alerts" subtitle="Updates" />
           </div>
         </MobileCard>
 
@@ -650,29 +650,29 @@ export function SupervisorDashboardMobileScreen() {
         <MobileCard>
           <MobileSectionTitle title="Supervisor Actions" />
           <div className="grid grid-cols-5 gap-2">
-            <MobileActionTile href="/app/admin/projects" icon={<Folder className="h-6 w-6" />} title="Current Project" subtitle="Status" />
-            <MobileActionTile href="/app/engineer/attendance" icon={<CalendarDays className="h-6 w-6" />} title="Attendance" subtitle="Mark" />
-            <MobileActionTile href="/app/engineer/reports" icon={<CalendarRange className="h-6 w-6" />} title="Calendar" subtitle="Month" />
+            <MobileActionTile href="/app/supervisor/projects" icon={<Folder className="h-6 w-6" />} title="Current Project" subtitle="Status" />
+            <MobileActionTile href="/app/supervisor/attendance" icon={<CalendarDays className="h-6 w-6" />} title="Attendance" subtitle="Mark" />
+            <MobileActionTile href="/app/supervisor/calendar" icon={<CalendarRange className="h-6 w-6" />} title="Calendar" subtitle="Month" />
             <MobileActionTile href="/app/chat" icon={<MessageCircle className="h-6 w-6" />} title="Live Chat" subtitle="Open" />
-            <MobileActionTile href="/app/admin/staff" icon={<Users className="h-6 w-6" />} title="Team Attendance" subtitle="View" />
-            <MobileActionTile href="/app/admin/map" icon={<LocateFixed className="h-6 w-6" />} title="Work Monitor" subtitle="Live" />
-            <MobileActionTile href="/app/admin/projects/new" icon={<FileText className="h-6 w-6" />} title="Site Reports" subtitle="Upload" />
-            <MobileActionTile href="/app/admin/map/full" icon={<MapPinned className="h-6 w-6" />} title="Live Tracking" subtitle="Map" />
-            <MobileActionTile href="/app/admin/staff/eng-arjun" icon={<UserRound className="h-6 w-6" />} title="Engineer Detail" subtitle="Open" />
-            <MobileActionTile href="/app/admin/alerts" icon={<Bell className="h-6 w-6" />} title="Alerts" subtitle="Review" />
+            <MobileActionTile href="/app/supervisor/team" icon={<Users className="h-6 w-6" />} title="Team Attendance" subtitle="View" />
+            <MobileActionTile href="/app/supervisor/tracking" icon={<LocateFixed className="h-6 w-6" />} title="Work Monitor" subtitle="Live" />
+            <MobileActionTile href="/app/supervisor/reports" icon={<FileText className="h-6 w-6" />} title="Site Reports" subtitle="Review" />
+            <MobileActionTile href="/app/supervisor/tracking/full" icon={<MapPinned className="h-6 w-6" />} title="Live Tracking" subtitle="Map" />
+            <MobileActionTile href={`/app/supervisor/engineers/${teamMembers[0]?.id ?? "eng-arjun"}`} icon={<UserRound className="h-6 w-6" />} title="Engineer Detail" subtitle="Open" />
+            <MobileActionTile href="/app/notifications" icon={<Bell className="h-6 w-6" />} title="Alerts" subtitle="Review" />
           </div>
         </MobileCard>
 
         <MobileCard>
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-[1rem] font-semibold text-[#121b44]">Team Snapshot</h3>
-            <Link href="/app/admin/staff" className="text-sm font-semibold text-[#5c2dff]">View Team</Link>
+            <Link href="/app/supervisor/team" className="text-sm font-semibold text-[#5c2dff]">View Team</Link>
           </div>
           <div className="space-y-3">
             {teamMembers.map((worker) => (
               <Link
                 key={worker.id}
-                href={`/app/admin/staff/${worker.id}`}
+                href={`/app/supervisor/engineers/${worker.id}`}
                 className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[16px] border border-[#e8ebff] p-3"
               >
                 <MobileAvatar label={worker.name} size={44} />
@@ -692,20 +692,49 @@ export function SupervisorDashboardMobileScreen() {
   );
 }
 
-export function LiveLocationsMobileScreen({ fullMap = false }: { fullMap?: boolean }) {
+export function LiveLocationsMobileScreen({
+  fullMap = false,
+  role = "admin",
+  activeHref = "/app/admin/map",
+  backHref,
+  leftMode,
+  title,
+  subtitle,
+  workerIds,
+  detailHrefBuilder
+}: {
+  fullMap?: boolean;
+  role?: Role;
+  activeHref?: string;
+  backHref?: string;
+  leftMode?: "menu" | "back";
+  title?: string;
+  subtitle?: string;
+  workerIds?: string[];
+  detailHrefBuilder?: (worker: WorkerRecord) => string;
+} = {}) {
   const ops = useOpsStore((state) => state);
-  const workerRecords = getWorkerRecords(ops);
+  const workerRecords = getWorkerRecords(ops).filter((worker) =>
+    workerIds ? workerIds.includes(worker.id) : true
+  );
   const activeWorkers = workerRecords.filter((worker) => worker.status === "Active" || worker.status === "On Site");
   const onSiteWorkers = workerRecords.filter((worker) => worker.status === "On Site");
   const offlineWorkers = workerRecords.filter((worker) => worker.status === "Offline" || worker.status === "Inactive");
+  const primaryWorker = activeWorkers[0] ?? workerRecords[0];
+  const resolvedDetailHref =
+    detailHrefBuilder ??
+    ((worker: WorkerRecord) =>
+      role === "supervisor"
+        ? `/app/supervisor/engineers/${worker.id}`
+        : `/app/admin/staff/${worker.id}`);
   return (
     <MobileShell
-      role="admin"
-      activeHref="/app/admin/map"
-      title={fullMap ? "Full Map View" : "Live Locations"}
-      subtitle={fullMap ? "Real-time worker tracking" : "Track all workers in real-time"}
-      backHref={fullMap ? "/app/admin/map" : "/app/admin"}
-      leftMode={fullMap ? "back" : "menu"}
+      role={role}
+      activeHref={activeHref}
+      title={title ?? (fullMap ? "Full Map View" : "Live Locations")}
+      subtitle={subtitle ?? (fullMap ? "Real-time worker tracking" : "Track all workers in real-time")}
+      backHref={backHref ?? (fullMap ? activeHref : homeHrefForRole(role))}
+      leftMode={leftMode ?? (fullMap ? "back" : "menu")}
       bottomNav={!fullMap}
       rightSlot={
         <div className="flex items-center gap-2">
@@ -755,7 +784,9 @@ export function LiveLocationsMobileScreen({ fullMap = false }: { fullMap?: boole
                     </div>
                   </div>
                   <div className="mt-5">
-                    <MobilePrimaryButton href="/app/admin/staff/eng-arjun">View Details</MobilePrimaryButton>
+                    <MobilePrimaryButton href={primaryWorker ? resolvedDetailHref(primaryWorker) : homeHrefForRole(role)}>
+                      View Details
+                    </MobilePrimaryButton>
                   </div>
                 </div>
               </div>
@@ -775,7 +806,7 @@ export function LiveLocationsMobileScreen({ fullMap = false }: { fullMap?: boole
               {activeWorkers.map((worker) => (
                 <Link
                   key={worker.id}
-                  href={`/app/admin/staff/${worker.id}`}
+                  href={resolvedDetailHref(worker)}
                   className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[24px] border border-[#e7ebff] p-4"
                 >
                   <MobileAvatar src={worker.avatar} label={worker.name} size={56} />
@@ -851,7 +882,13 @@ export function ProjectsMobileScreen({
   const resolvedDetailHref =
     detailHrefBuilder ??
     ((project: Project) =>
-      role === "client" ? "/app/client/settings" : `/app/admin/projects/${project.id}`);
+      role === "client"
+        ? "/app/client/settings"
+        : role === "supervisor"
+          ? `/app/supervisor/projects/${project.id}`
+          : role === "engineer"
+            ? `/app/engineer/projects/${project.id}`
+            : `/app/admin/projects/${project.id}`);
 
   return (
     <MobileShell
@@ -2330,11 +2367,11 @@ export function EngineerDashboardMobileScreen() {
         <div className="grid grid-cols-5 gap-2">
           <MobileActionTile href="/app/engineer/projects" icon={<Folder className="h-6 w-6" />} title="Current Project" subtitle="Open" />
           <MobileActionTile href="/app/engineer/attendance" icon={<CalendarDays className="h-6 w-6" />} title="Attendance" subtitle="GPS mark" />
-          <MobileActionTile href="/app/engineer/reports" icon={<CalendarRange className="h-6 w-6" />} title="Calendar" subtitle="Events" />
-          <MobileActionTile href="/app/chat" icon={<MessageCircle className="h-6 w-6" />} title="Live Chat" subtitle="Team" />
-          <MobileActionTile href="/app/admin/staff/eng-arjun/assign-task" icon={<ListTodo className="h-6 w-6" />} title="Assigned Tasks" subtitle="Update" />
-          <MobileActionTile href="/app/engineer/shift-report" icon={<FileText className="h-6 w-6" />} title="Daily Report" subtitle="Submit" />
-          <MobileActionTile href="/app/admin/map" icon={<Pin className="h-6 w-6" />} title="Site Visit" subtitle="Add/View" />
+            <MobileActionTile href="/app/engineer/calendar" icon={<CalendarRange className="h-6 w-6" />} title="Calendar" subtitle="Events" />
+            <MobileActionTile href="/app/chat" icon={<MessageCircle className="h-6 w-6" />} title="Live Chat" subtitle="Team" />
+            <MobileActionTile href="/app/engineer/tasks" icon={<ListTodo className="h-6 w-6" />} title="Assigned Tasks" subtitle="Update" />
+            <MobileActionTile href="/app/engineer/shift-report" icon={<FileText className="h-6 w-6" />} title="Daily Report" subtitle="Submit" />
+            <MobileActionTile href="/app/engineer/site-visit" icon={<Pin className="h-6 w-6" />} title="Site Visit" subtitle="Add/View" />
           <MobileActionTile href="/app/engineer/documents" icon={<Folder className="h-6 w-6" />} title="Documents" subtitle="Docs" />
           <MobileActionTile href="/app/engineer/finance-request" icon={<IndianRupee className="h-6 w-6" />} title="Material" subtitle="Request" />
           <MobileActionTile href="/app/engineer/leave" icon={<FilePlus2 className="h-6 w-6" />} title="Requests" subtitle="Raise" />
@@ -2372,7 +2409,7 @@ export function EngineerDashboardMobileScreen() {
           <MobileCard className="p-[14px]">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-[1.08rem] font-semibold text-[#121b44]">Today's Tasks</h3>
-              <Link href="/app/admin/staff/eng-arjun/assign-task" className="text-sm font-semibold text-[#5c2dff]">View All</Link>
+              <Link href="/app/engineer/tasks" className="text-sm font-semibold text-[#5c2dff]">View All</Link>
             </div>
             <div className="space-y-3">
               {myTasks.map((task) => (
@@ -2653,7 +2690,23 @@ export function ClientReportsMobileScreen() {
   );
 }
 
-export function EngineerReportsMobileScreen() {
+export function EngineerReportsMobileScreen({
+  role = "engineer",
+  activeHref = "/app/engineer/reports",
+  backHref,
+  title = "Reports",
+  subtitle = "View and manage site reports",
+  submitHref = "/app/engineer/shift-report",
+  submitLabel = "Submit New Report"
+}: {
+  role?: Role;
+  activeHref?: string;
+  backHref?: string;
+  title?: string;
+  subtitle?: string;
+  submitHref?: string;
+  submitLabel?: string;
+} = {}) {
   const ops = useOpsStore((state) => state);
   const currentUser = getCurrentUser(ops);
   const visibleReports = getVisibleReports(ops, currentUser);
@@ -2664,11 +2717,11 @@ export function EngineerReportsMobileScreen() {
   const rejectedReports = visibleReports.filter((report) => report.status === "rejected");
   return (
     <MobileShell
-      role="engineer"
-      activeHref="/app/engineer/reports"
-      title="Reports"
-      subtitle="View and manage site reports"
-      backHref="/app/engineer"
+      role={role}
+      activeHref={activeHref}
+      title={title}
+      subtitle={subtitle}
+      backHref={backHref ?? homeHrefForRole(role)}
       leftMode="back"
       rightSlot={
         <div className="flex items-center gap-3">
@@ -2715,7 +2768,7 @@ export function EngineerReportsMobileScreen() {
         <MobileCard>
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-[1.35rem] font-semibold text-[#121b44]">Recent Reports</h3>
-            <Link href="/app/engineer/reports" className="text-sm font-semibold text-[#5c2dff]">View All</Link>
+            <Link href={activeHref} className="text-sm font-semibold text-[#5c2dff]">View All</Link>
           </div>
           <div className="space-y-4">
             {visibleReports.slice(0, 5).map((report) => {
@@ -2755,9 +2808,774 @@ export function EngineerReportsMobileScreen() {
           </div>
         </MobileCard>
 
-        <MobilePrimaryButton href="/app/engineer/shift-report">Submit New Report</MobilePrimaryButton>
+        <MobilePrimaryButton href={submitHref}>{submitLabel}</MobilePrimaryButton>
       </div>
     </MobileShell>
+  );
+}
+
+export function NotificationsMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const visibleNotifications = ops.notifications.filter(
+    (item) => item.targetRole === currentUser.role || item.targetRole === "all"
+  );
+  const unreadNotifications = visibleNotifications.filter((item) => !item.read);
+
+  return (
+    <MobileShell
+      role={currentUser.role}
+      activeHref={homeHrefForRole(currentUser.role)}
+      title="Notifications"
+      subtitle="Alerts, approvals, chat updates, and system events"
+      backHref={homeHrefForRole(currentUser.role)}
+      leftMode="back"
+      bottomNav={false}
+    >
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-3">
+          <MobileMetricCard icon={<Bell className="h-6 w-6" />} label="Total Alerts" value={String(visibleNotifications.length)} meta="Role filtered" />
+          <MobileMetricCard icon={<CheckCircle2 className="h-6 w-6" />} label="Unread" value={String(unreadNotifications.length)} meta="Requires review" accent="text-[#ff8a00]" />
+        </div>
+        <MobileCard>
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-[1.1rem] font-semibold text-[#121b44]">Activity Feed</h3>
+            <button
+              type="button"
+              onClick={() => unreadNotifications.forEach((item) => ops.markNotificationRead(item.id))}
+              className="text-sm font-semibold text-[#5c2dff]"
+            >
+              Mark all read
+            </button>
+          </div>
+          <div className="space-y-3">
+            {visibleNotifications.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => ops.markNotificationRead(item.id)}
+                className={cn(
+                  "w-full rounded-[18px] border px-4 py-4 text-left",
+                  item.read ? "border-[#eef1fb] bg-[#fafbff]" : "border-[#d9def8] bg-white"
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-[#17204c]">{item.title}</p>
+                    <p className="mt-1 text-sm text-[#6d77a6]">{item.body}</p>
+                    <p className="mt-2 text-xs text-[#8f97bd]">{item.createdAt}</p>
+                  </div>
+                  {!item.read ? <span className="mt-1 h-2.5 w-2.5 rounded-full bg-[#ff4f63]" /> : null}
+                </div>
+              </button>
+            ))}
+            {visibleNotifications.length === 0 ? (
+              <div className="rounded-[18px] border border-dashed border-[#dfe4fb] px-4 py-6 text-sm text-[#7280af]">
+                No notifications are available for this role right now.
+              </div>
+            ) : null}
+          </div>
+        </MobileCard>
+      </div>
+    </MobileShell>
+  );
+}
+
+export function ProjectManagementMobileScreen({
+  projectId,
+  role = "admin",
+  activeHref = "/app/admin/projects",
+  backHref,
+  title = "Project Management"
+}: {
+  projectId?: string;
+  role?: Role;
+  activeHref?: string;
+  backHref?: string;
+  title?: string;
+} = {}) {
+  const ops = useOpsStore((state) => state);
+  const project = projectById(ops, projectId);
+  const assignedWorkers = ops.users.filter((user) => user.projectIds.includes(project.id));
+  const projectDocuments = ops.projectDocuments.filter((item) => item.projectId === project.id);
+  const projectReports = ops.projectReports.filter((item) => item.projectId === project.id);
+  const projectPermissions = ops.clientPermissions.filter((item) => item.projectId === project.id);
+  const projectFinance = ops.financeRequests.filter((item) => item.projectId === project.id);
+  const allowAdminControls = role === "admin";
+
+  return (
+    <MobileShell
+      role={role}
+      activeHref={activeHref}
+      title={title}
+      subtitle={project.name}
+      backHref={backHref ?? homeHrefForRole(role)}
+      leftMode="back"
+      bottomNav={false}
+    >
+      <div className="space-y-5">
+        <MobileGradientCard>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[1.2rem] font-semibold">{project.name}</p>
+              <p className="mt-1 text-sm text-white/80">{project.location}</p>
+            </div>
+            <MobilePill tone="violet" className="bg-white/15 text-white">{project.status}</MobilePill>
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <BigGradientStat label="Progress" value={`${project.progress}%`} />
+            <BigGradientStat label="Budget" value={formatInr(project.budget)} />
+            <BigGradientStat label="Spent" value={formatInr(project.spent)} />
+          </div>
+        </MobileGradientCard>
+
+        <div className="grid grid-cols-2 gap-3">
+          <MobileMetricCard icon={<Users className="h-6 w-6" />} label="Assignments" value={String(assignedWorkers.length)} meta="Workers + clients" />
+          <MobileMetricCard icon={<FileText className="h-6 w-6" />} label="Documents" value={String(projectDocuments.length)} meta="Workspace" accent="text-[#337dff]" />
+          <MobileMetricCard icon={<FileSpreadsheet className="h-6 w-6" />} label="Reports" value={String(projectReports.length)} meta="Submitted" accent="text-[#18aa5d]" />
+          <MobileMetricCard icon={<IndianRupee className="h-6 w-6" />} label="Finance" value={String(projectFinance.length)} meta="Requests" accent="text-[#ff8a00]" />
+        </div>
+
+        <MobileCard>
+          <MobileSectionTitle title={allowAdminControls ? "Admin Controls" : "Project Workspace"} />
+          <div className="grid grid-cols-4 gap-2">
+            {allowAdminControls ? (
+              <>
+                <MobileActionTile href="/app/admin/staff" icon={<Users className="h-6 w-6" />} title="Assignments" subtitle="Manage" />
+                <MobileActionTile href="/app/admin/approvals" icon={<CheckCircle2 className="h-6 w-6" />} title="Approvals" subtitle="Review" />
+                <MobileActionTile href="/app/admin/map" icon={<MapPinned className="h-6 w-6" />} title="Tracking" subtitle="Live" />
+                <MobileActionTile href="/app/chat" icon={<MessageCircle className="h-6 w-6" />} title="Chat" subtitle="Project" />
+              </>
+            ) : role === "supervisor" ? (
+              <>
+                <MobileActionTile href="/app/supervisor/team" icon={<Users className="h-6 w-6" />} title="Team" subtitle="Assigned" />
+                <MobileActionTile href="/app/supervisor/reports" icon={<FileText className="h-6 w-6" />} title="Reports" subtitle="Review" />
+                <MobileActionTile href="/app/supervisor/tracking" icon={<MapPinned className="h-6 w-6" />} title="Tracking" subtitle="Live" />
+                <MobileActionTile href="/app/chat" icon={<MessageCircle className="h-6 w-6" />} title="Chat" subtitle="Project" />
+              </>
+            ) : (
+              <>
+                <MobileActionTile href="/app/engineer/site-visit" icon={<Pin className="h-6 w-6" />} title="Site Visit" subtitle="Update" />
+                <MobileActionTile href="/app/engineer/documents" icon={<Folder className="h-6 w-6" />} title="Documents" subtitle="Files" />
+                <MobileActionTile href="/app/engineer/reports" icon={<FileText className="h-6 w-6" />} title="Reports" subtitle="Status" />
+                <MobileActionTile href="/app/chat" icon={<MessageCircle className="h-6 w-6" />} title="Chat" subtitle="Project" />
+              </>
+            )}
+          </div>
+        </MobileCard>
+
+        <MobileCard>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-[1.05rem] font-semibold text-[#121b44]">Document Governance</h3>
+            <Link href="/app/admin/approvals" className="text-sm font-semibold text-[#5c2dff]">Open Queue</Link>
+          </div>
+          <div className="space-y-3">
+            {projectDocuments.map((document) => (
+              <div key={document.id} className="rounded-[16px] border border-[#e7ebff] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-[#17204c]">{document.name}</p>
+                    <p className="mt-1 text-sm text-[#7480ae]">{document.uploadedAt}  -  {document.sizeLabel}</p>
+                  </div>
+                  <MobilePill tone={reportStatusTone(document.status)}>{reportStatusLabel(document.status)}</MobilePill>
+                </div>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {allowAdminControls ? (
+                    <>
+                      <button type="button" onClick={() => ops.reviewProjectDocument(document.id, "approved")} className="rounded-[12px] border border-[#cdebd7] px-3 py-2 text-sm font-semibold text-[#18aa5d]">Approve</button>
+                      <button type="button" onClick={() => ops.reviewProjectDocument(document.id, "rejected")} className="rounded-[12px] border border-[#ffd1d7] px-3 py-2 text-sm font-semibold text-[#ff4f63]">Reject</button>
+                      <button type="button" onClick={() => ops.removeProjectDocument(document.id)} className="rounded-[12px] border border-[#eceffa] px-3 py-2 text-sm font-semibold text-[#6b759f]">Remove</button>
+                    </>
+                  ) : (
+                    <div className="col-span-3 text-xs text-[#8d96bc]">
+                      Admin controls govern approval, rejection, and replacement of project documents.
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            {projectDocuments.length === 0 ? <p className="text-sm text-[#7680af]">No project documents uploaded yet.</p> : null}
+          </div>
+        </MobileCard>
+
+        <MobileCard>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-[1.05rem] font-semibold text-[#121b44]">Report Reviews</h3>
+            <Link href="/app/admin/approvals" className="text-sm font-semibold text-[#5c2dff]">Review All</Link>
+          </div>
+          <div className="space-y-3">
+            {projectReports.map((report) => (
+              <div key={report.id} className="rounded-[16px] border border-[#e7ebff] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-[#17204c]">{report.title}</p>
+                    <p className="mt-1 text-sm text-[#7480ae]">{report.summary}</p>
+                    <p className="mt-2 text-xs text-[#8d96bc]">{report.submittedAt}</p>
+                  </div>
+                  <MobilePill tone={reportStatusTone(report.status)}>{reportStatusLabel(report.status)}</MobilePill>
+                </div>
+                {allowAdminControls ? (
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button type="button" onClick={() => ops.reviewProjectReport(report.id, "approved")} className="rounded-[12px] border border-[#cdebd7] px-3 py-2 text-sm font-semibold text-[#18aa5d]">Approve</button>
+                    <button type="button" onClick={() => ops.reviewProjectReport(report.id, "rejected")} className="rounded-[12px] border border-[#ffd1d7] px-3 py-2 text-sm font-semibold text-[#ff4f63]">Reject</button>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-xs text-[#8d96bc]">Admin review controls determine final report approval and client visibility.</p>
+                )}
+              </div>
+            ))}
+            {projectReports.length === 0 ? <p className="text-sm text-[#7680af]">No reports submitted for this project yet.</p> : null}
+          </div>
+        </MobileCard>
+
+        <MobileCard>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-[1.05rem] font-semibold text-[#121b44]">Client Visibility Controls</h3>
+            <Link href="/app/client" className="text-sm font-semibold text-[#5c2dff]">Preview</Link>
+          </div>
+          <div className="space-y-3">
+            {projectPermissions.map((permission) => {
+              const client = userById(ops, permission.clientUserId);
+              return (
+                <div key={permission.id} className="rounded-[16px] border border-[#e7ebff] p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-[#17204c]">{client?.company ?? client?.fullName ?? "Client Access"}</p>
+                      <p className="mt-1 text-sm text-[#7480ae]">
+                        Docs {permission.canViewDocuments ? "On" : "Off"}  |  Reports {permission.canViewReports ? "On" : "Off"}  |  Tracking {permission.canViewTracking ? "On" : "Off"}  |  Chat {permission.canChat ? "On" : "Off"}
+                      </p>
+                    </div>
+                    {allowAdminControls ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          ops.upsertClientPermission({
+                            ...permission,
+                            canViewTracking: !permission.canViewTracking
+                          })
+                        }
+                        className="rounded-[12px] border border-[#cabdff] px-3 py-2 text-sm font-semibold text-[#5c2dff]"
+                      >
+                        Toggle Tracking
+                      </button>
+                    ) : (
+                      <MobilePill tone="blue">Admin Managed</MobilePill>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            {projectPermissions.length === 0 ? <p className="text-sm text-[#7680af]">No client permissions are configured for this project.</p> : null}
+          </div>
+        </MobileCard>
+      </div>
+    </MobileShell>
+  );
+}
+
+export function AdminWorkerAccessMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const [saved, setSaved] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [companyName, setCompanyName] = useState("TELGO Operations");
+  const [requestedRole, setRequestedRole] = useState<Role>("engineer");
+  const [site, setSite] = useState("Kerala Operations HQ");
+
+  return (
+    <MobileShell
+      role="admin"
+      activeHref="/app/admin/staff"
+      title="Add Worker"
+      subtitle="Create a pending access workflow for admin review"
+      backHref="/app/admin/staff"
+      leftMode="back"
+      bottomNav={false}
+    >
+      <form
+        className="space-y-5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          ops.requestAccess({
+            fullName: fullName || "New Worker",
+            phone: phone || "+91 90000 00000",
+            email: email || `worker.${Date.now()}@telgo.test`,
+            companyName,
+            site,
+            requestedRole,
+            accessPurpose: "Admin-created workforce onboarding request",
+            documentPath: null
+          });
+          setSaved(true);
+        }}
+      >
+        <MobileCard>
+          <div className="space-y-4">
+            <MobileInput label="Full Name" placeholder="Enter worker name" value={fullName} onChange={(event) => setFullName(event.target.value)} />
+            <MobileInput label="Email" placeholder="worker@telgo.test" value={email} onChange={(event) => setEmail(event.target.value)} />
+            <MobileInput label="Phone" placeholder="+91 90000 00000" value={phone} onChange={(event) => setPhone(event.target.value)} />
+            <MobileInput label="Company" placeholder="TELGO Operations" value={companyName} onChange={(event) => setCompanyName(event.target.value)} />
+            <MobileInput label="Site / Branch" placeholder="Kerala Operations HQ" value={site} onChange={(event) => setSite(event.target.value)} />
+            <MobileSelect
+              label="Requested Role"
+              defaultValue={roleBadgeLabel(requestedRole)}
+              onClick={() =>
+                setRequestedRole((value) =>
+                  value === "engineer"
+                    ? "supervisor"
+                    : value === "supervisor"
+                      ? "finance"
+                      : value === "finance"
+                        ? "client"
+                        : "engineer"
+                )
+              }
+            />
+          </div>
+        </MobileCard>
+        {saved ? <p className="text-sm font-semibold text-[#18aa5d]">Access request created and sent into the approval queue.</p> : null}
+        <button type="submit" className="inline-flex min-h-[58px] w-full items-center justify-center rounded-[20px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-[1.05rem] font-semibold text-white shadow-[0_18px_36px_rgba(92,45,255,0.26)]">
+          Create Access Request
+        </button>
+      </form>
+    </MobileShell>
+  );
+}
+
+export function EngineerTasksMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const myTasks = ops.tasks.filter((task) => task.assigneeUserId === currentUser.id);
+  const pending = myTasks.filter((task) => task.status === "pending" || task.status === "upcoming");
+  const inProgress = myTasks.filter((task) => task.status === "in_progress");
+  const completed = myTasks.filter((task) => task.status === "completed");
+
+  function nextStatus(task: ManagedTask) {
+    if (task.status === "pending" || task.status === "upcoming") return "in_progress";
+    if (task.status === "in_progress" || task.status === "blocked") return "completed";
+    return "pending";
+  }
+
+  return (
+    <MobileShell
+      role="engineer"
+      activeHref="/app/engineer/tasks"
+      title="Assigned Tasks"
+      subtitle="View, update, and complete your work items"
+      backHref="/app/engineer"
+      leftMode="back"
+    >
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-3">
+          <MobileMetricCard icon={<ListTodo className="h-6 w-6" />} label="Total Tasks" value={String(myTasks.length)} meta="Assigned" />
+          <MobileMetricCard icon={<Clock3 className="h-6 w-6" />} label="Pending" value={String(pending.length)} meta="To start" accent="text-[#ff8a00]" />
+          <MobileMetricCard icon={<TrendingUp className="h-6 w-6" />} label="In Progress" value={String(inProgress.length)} meta="Active now" accent="text-[#337dff]" />
+          <MobileMetricCard icon={<CheckCircle2 className="h-6 w-6" />} label="Completed" value={String(completed.length)} meta="Delivered" accent="text-[#18aa5d]" />
+        </div>
+        <MobileCard>
+          <div className="space-y-3">
+            {myTasks.map((task) => {
+              const project = projectById(ops, task.projectId);
+              return (
+                <div key={task.id} className="rounded-[18px] border border-[#e7ebff] p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-[#17204c]">{task.title}</p>
+                      <p className="mt-1 text-sm text-[#7480ae]">{task.detail}</p>
+                      <p className="mt-2 text-xs text-[#8d96bc]">{project?.name ?? "Project"}  |  {task.dueAt}</p>
+                    </div>
+                    <MobilePill tone={task.priority === "high" ? "red" : task.priority === "medium" ? "orange" : "green"}>
+                      {taskPriorityLabel(task.priority)}
+                    </MobilePill>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <MobilePill tone={task.status === "completed" ? "green" : task.status === "in_progress" ? "orange" : task.status === "blocked" ? "red" : "slate"}>
+                      {taskStatusLabel(task.status)}
+                    </MobilePill>
+                    <button
+                      type="button"
+                      onClick={() => ops.updateTask(task.id, { status: nextStatus(task) })}
+                      className="rounded-[12px] border border-[#cabdff] px-3 py-2 text-sm font-semibold text-[#5c2dff]"
+                    >
+                      {task.status === "completed" ? "Reopen" : task.status === "in_progress" ? "Mark Complete" : "Start Task"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            {myTasks.length === 0 ? (
+              <div className="rounded-[18px] border border-dashed border-[#dfe4fb] px-4 py-6 text-sm text-[#7280af]">
+                No tasks have been assigned yet. Admin or supervisors can push assignments into this queue.
+              </div>
+            ) : null}
+          </div>
+        </MobileCard>
+      </div>
+    </MobileShell>
+  );
+}
+
+export function RoleCalendarMobileScreen({
+  role = "engineer",
+  activeHref = "/app/engineer/calendar",
+  backHref,
+  title = "Calendar",
+  subtitle = "Attendance, leave, and work schedule"
+}: {
+  role?: Role;
+  activeHref?: string;
+  backHref?: string;
+  title?: string;
+  subtitle?: string;
+} = {}) {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const scopedTasks =
+    role === "supervisor"
+      ? ops.tasks.filter((task) => getTeamWorkerIds(ops, currentUser).includes(task.assigneeUserId))
+      : ops.tasks.filter((task) => task.assigneeUserId === currentUser.id);
+  const scopedAttendance =
+    role === "supervisor"
+      ? ops.attendance.filter((item) => getTeamWorkerIds(ops, currentUser).includes(item.userId))
+      : ops.attendance.filter((item) => item.userId === currentUser.id);
+  const scopedLeave =
+    role === "supervisor"
+      ? ops.leaveRequests.filter((item) => getTeamWorkerIds(ops, currentUser).includes(item.userId))
+      : ops.leaveRequests.filter((item) => item.userId === currentUser.id);
+
+  return (
+    <MobileShell
+      role={role}
+      activeHref={activeHref}
+      title={title}
+      subtitle={subtitle}
+      backHref={backHref ?? homeHrefForRole(role)}
+      leftMode="back"
+    >
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-3">
+          <MobileMetricCard icon={<CalendarDays className="h-6 w-6" />} label="Attendance Logs" value={String(scopedAttendance.length)} meta="Recorded" />
+          <MobileMetricCard icon={<ListTodo className="h-6 w-6" />} label="Scheduled Tasks" value={String(scopedTasks.length)} meta="Visible" accent="text-[#337dff]" />
+          <MobileMetricCard icon={<FilePlus2 className="h-6 w-6" />} label="Leave Requests" value={String(scopedLeave.length)} meta="Tracked" accent="text-[#ff8a00]" />
+          <MobileMetricCard icon={<CheckCircle2 className="h-6 w-6" />} label="Approved Leave" value={String(scopedLeave.filter((item) => item.status === "approved").length)} meta="Accepted" accent="text-[#18aa5d]" />
+        </div>
+        <CalendarCard />
+        <MobileCard>
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-[1.05rem] font-semibold text-[#121b44]">Upcoming Schedule</h3>
+            <Link href={role === "supervisor" ? "/app/supervisor/team" : "/app/engineer/tasks"} className="text-sm font-semibold text-[#5c2dff]">Open Tasks</Link>
+          </div>
+          <div className="space-y-3">
+            {scopedTasks.slice(0, 5).map((task) => (
+              <div key={task.id} className="rounded-[16px] border border-[#e7ebff] p-4">
+                <p className="font-semibold text-[#17204c]">{task.title}</p>
+                <p className="mt-1 text-sm text-[#7480ae]">{task.detail}</p>
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <p className="text-xs text-[#8d96bc]">{task.dueAt}</p>
+                  <MobilePill tone={task.status === "completed" ? "green" : task.status === "in_progress" ? "orange" : "slate"}>
+                    {taskStatusLabel(task.status)}
+                  </MobilePill>
+                </div>
+              </div>
+            ))}
+            {scopedTasks.length === 0 ? <p className="text-sm text-[#7680af]">No scheduled work items are available yet.</p> : null}
+          </div>
+        </MobileCard>
+      </div>
+    </MobileShell>
+  );
+}
+
+export function EngineerSiteVisitMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const project = getPrimaryProjectForUser(ops, currentUser);
+  const lastAttendance = ops.attendance.find((item) => item.userId === currentUser.id);
+  const updateCount = ops.shiftReports.filter((item) => item.userId === currentUser.id).length;
+
+  return (
+    <MobileShell
+      role="engineer"
+      activeHref="/app/engineer/projects"
+      title="Site Visit"
+      subtitle="Navigate, log activity, and update visit status"
+      backHref="/app/engineer"
+      leftMode="back"
+    >
+      <div className="space-y-5">
+        <MobileGradientCard>
+          <div className="grid grid-cols-3 gap-2">
+            <BigGradientStat label="Project" value={project?.code ?? "TELGO"} />
+            <BigGradientStat label="Updates" value={String(updateCount)} />
+            <BigGradientStat label="Status" value={lastAttendance?.withinGeofence ? "On Site" : "En Route"} />
+          </div>
+        </MobileGradientCard>
+        <MobileCard className="overflow-hidden p-0">
+          <div className="h-[260px]">
+            <MobileMapPreview height={260} variant="worker" />
+          </div>
+          <div className="p-4">
+            <InfoGrid
+              items={[
+                ["Project", project?.name ?? "Assigned Project"],
+                ["Location", project?.location ?? currentUser.site],
+                ["Last Visit", lastAttendance?.checkInAt ?? "Not marked"],
+                ["Distance", `${project?.totalLengthKm ?? 0} KM corridor`]
+              ]}
+            />
+          </div>
+        </MobileCard>
+        <div className="grid grid-cols-2 gap-3">
+          <MobileSecondaryButton href="/app/engineer/attendance">Mark Visit</MobileSecondaryButton>
+          <MobileSecondaryButton href="/app/engineer/logs">Quick Update</MobileSecondaryButton>
+          <MobileSecondaryButton href="/app/engineer/documents/new">Upload Proof</MobileSecondaryButton>
+          <MobileSecondaryButton href="/app/engineer/shift-report">Daily Report</MobileSecondaryButton>
+        </div>
+      </div>
+    </MobileShell>
+  );
+}
+
+export function ClientPhotosMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const photoDocuments = ops.projectDocuments.filter(
+    (document) =>
+      document.type === "JPG" &&
+      document.visibilityRoles.includes("client") &&
+      currentUser.projectIds.includes(document.projectId)
+  );
+
+  return (
+    <MobileShell
+      role="client"
+      activeHref="/app/client/reports"
+      title="Site Photos"
+      subtitle="Approved project image records"
+      backHref="/app/client"
+      leftMode="back"
+    >
+      <div className="space-y-5">
+        <MobileCard>
+          <div className="grid grid-cols-2 gap-3">
+            {photoDocuments.map((document, index) => (
+              <div key={document.id} className="overflow-hidden rounded-[18px] border border-[#e7ebff]">
+                <div className="relative h-[122px]">
+                  <Image src={sitePhotos[index % sitePhotos.length] ?? projects[0]!.image} alt={document.name} fill className="object-cover" />
+                </div>
+                <div className="p-3">
+                  <p className="text-sm font-semibold text-[#17204c]">{document.name}</p>
+                  <p className="mt-1 text-xs text-[#7480ae]">{document.uploadedAt}</p>
+                </div>
+              </div>
+            ))}
+            {photoDocuments.length === 0 ? (
+              <div className="col-span-2 rounded-[18px] border border-dashed border-[#dfe4fb] px-4 py-6 text-sm text-[#7280af]">
+                No approved site photos are visible for this client yet.
+              </div>
+            ) : null}
+          </div>
+        </MobileCard>
+      </div>
+    </MobileShell>
+  );
+}
+
+export function ClientReviewMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const primaryProject = getPrimaryProjectForUser(ops, currentUser);
+  const visibleReports = getVisibleReports(ops, currentUser);
+  const permissions = ops.clientPermissions.filter((item) => item.clientUserId === currentUser.id);
+  const [requested, setRequested] = useState(false);
+
+  return (
+    <MobileShell
+      role="client"
+      activeHref="/app/client/reports"
+      title="Client Review"
+      subtitle="Permission status and admin review workflow"
+      backHref="/app/client"
+      leftMode="back"
+    >
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-3">
+          <MobileMetricCard icon={<ShieldCheck className="h-6 w-6" />} label="Permissions" value={String(permissions.length)} meta="Active rules" />
+          <MobileMetricCard icon={<FileSpreadsheet className="h-6 w-6" />} label="Visible Reports" value={String(visibleReports.length)} meta="Client side" accent="text-[#337dff]" />
+        </div>
+        <MobileCard>
+          <div className="space-y-3">
+            {permissions.map((permission) => (
+              <div key={permission.id} className="rounded-[16px] border border-[#e7ebff] p-4">
+                <p className="font-semibold text-[#17204c]">{projectById(ops, permission.projectId)?.name ?? "Project Access"}</p>
+                <p className="mt-1 text-sm text-[#7480ae]">
+                  Documents {permission.canViewDocuments ? "On" : "Off"}  |  Reports {permission.canViewReports ? "On" : "Off"}  |  Tracking {permission.canViewTracking ? "On" : "Off"}  |  Chat {permission.canChat ? "On" : "Off"}
+                </p>
+              </div>
+            ))}
+          </div>
+        </MobileCard>
+        <button
+          type="button"
+          onClick={() => {
+            if (!primaryProject) return;
+            ops.requestClientReview(primaryProject.id);
+            setRequested(true);
+          }}
+          className="inline-flex min-h-[58px] w-full items-center justify-center rounded-[20px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-[1.05rem] font-semibold text-white shadow-[0_18px_36px_rgba(92,45,255,0.26)]"
+        >
+          Request Admin Review
+        </button>
+        {requested ? <p className="text-center text-sm font-semibold text-[#18aa5d]">Admin review request sent for this project.</p> : null}
+      </div>
+    </MobileShell>
+  );
+}
+
+export function SupervisorReportsMobileScreen() {
+  return (
+    <EngineerReportsMobileScreen
+      role="supervisor"
+      activeHref="/app/supervisor/reports"
+      backHref="/app/supervisor"
+      title="Site Reports"
+      subtitle="Review team progress submissions"
+      submitHref="/app/chat"
+      submitLabel="Open Team Chat"
+    />
+  );
+}
+
+export function SupervisorAttendanceMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const teamWorkerIds = getTeamWorkerIds(ops, currentUser);
+  const teamAttendance = ops.attendance.filter((item) => teamWorkerIds.includes(item.userId));
+
+  return (
+    <MobileShell
+      role="supervisor"
+      activeHref="/app/supervisor/attendance"
+      title="Team Attendance"
+      subtitle="Monitor daily attendance and geofence compliance"
+      backHref="/app/supervisor"
+      leftMode="back"
+    >
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-3">
+          <MobileMetricCard icon={<CalendarDays className="h-6 w-6" />} label="Attendance Logs" value={String(teamAttendance.length)} meta="Team records" />
+          <MobileMetricCard icon={<LocateFixed className="h-6 w-6" />} label="Inside Geofence" value={String(teamAttendance.filter((item) => item.withinGeofence).length)} meta="Validated" accent="text-[#18aa5d]" />
+        </div>
+        <MobileCard>
+          <div className="space-y-3">
+            {teamAttendance.map((record) => {
+              const worker = userById(ops, record.userId);
+              return (
+                <div key={record.id} className="rounded-[16px] border border-[#e7ebff] p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-[#17204c]">{worker?.fullName ?? "Worker"}</p>
+                      <p className="mt-1 text-sm text-[#7480ae]">{record.checkInAt}</p>
+                      <p className="mt-1 text-xs text-[#8d96bc]">{record.distanceFromSiteM} m from site  |  {record.accuracyM} m accuracy</p>
+                    </div>
+                    <MobilePill tone={record.withinGeofence ? "green" : "orange"}>
+                      {record.withinGeofence ? "Within Site" : "Review"}
+                    </MobilePill>
+                  </div>
+                </div>
+              );
+            })}
+            {teamAttendance.length === 0 ? <p className="text-sm text-[#7680af]">No team attendance has been marked yet.</p> : null}
+          </div>
+        </MobileCard>
+      </div>
+    </MobileShell>
+  );
+}
+
+export function SupervisorProfileMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  const teamCount = getTeamWorkerIds(ops, currentUser).length;
+
+  return (
+    <MobileShell
+      role="supervisor"
+      activeHref="/app/supervisor/profile"
+      title="Supervisor Profile"
+      subtitle="Team oversight and account details"
+      backHref="/app/supervisor"
+      leftMode="back"
+    >
+      <div className="space-y-5">
+        <MobileCard>
+          <div className="grid gap-3">
+            <p className="text-[1.3rem] font-semibold text-[#17204c]">{currentUser.fullName}</p>
+            <p className="text-sm text-[#7480ae]">{currentUser.designation}</p>
+            <InfoGrid
+              items={[
+                ["Employee ID", currentUser.employeeCode],
+                ["Department", currentUser.department],
+                ["Phone", currentUser.phone],
+                ["Email", currentUser.email],
+                ["Team Members", String(teamCount)]
+              ]}
+            />
+          </div>
+        </MobileCard>
+      </div>
+    </MobileShell>
+  );
+}
+
+export function SupervisorProjectsMobileScreen() {
+  return (
+    <ProjectsMobileScreen
+      role="supervisor"
+      activeHref="/app/supervisor/projects"
+      backHref="/app/supervisor"
+      leftMode="back"
+      title="Assigned Project"
+      subtitle="Track project progress and team delivery"
+      showCreate={false}
+      detailHrefBuilder={(project) => `/app/admin/projects/${project.id}`}
+    />
+  );
+}
+
+export function SupervisorTeamMobileScreen() {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  return (
+    <WorkersMobileScreen
+      role="supervisor"
+      activeHref="/app/supervisor/team"
+      backHref="/app/supervisor"
+      leftMode="back"
+      title="Team Attendance"
+      subtitle="Monitor assigned engineers and supervisors"
+      workerIds={getTeamWorkerIds(ops, currentUser)}
+      allowAddWorker={false}
+      detailHrefBuilder={(worker) => `/app/supervisor/engineers/${worker.id}`}
+    />
+  );
+}
+
+export function SupervisorTrackingMobileScreen({ fullMap = false }: { fullMap?: boolean }) {
+  const ops = useOpsStore((state) => state);
+  const currentUser = getCurrentUser(ops);
+  return (
+    <LiveLocationsMobileScreen
+      fullMap={fullMap}
+      role="supervisor"
+      activeHref="/app/supervisor/tracking"
+      backHref={fullMap ? "/app/supervisor/tracking" : "/app/supervisor"}
+      title={fullMap ? "Team Tracking Map" : "Work Monitor"}
+      subtitle={fullMap ? "Live team map and movement status" : "Monitor assigned team locations"}
+      workerIds={getTeamWorkerIds(ops, currentUser)}
+      detailHrefBuilder={(worker) => `/app/supervisor/engineers/${worker.id}`}
+    />
   );
 }
 
@@ -2800,7 +3618,7 @@ export function ChatMobileScreen() {
 
   return (
     <MobileShell
-      role="engineer"
+      role={currentUser.role}
       activeHref="/app/chat"
       title="Send Message"
       subtitle="Chat with Arjun Nair"
@@ -3282,7 +4100,7 @@ export function EngineerLogsMobileScreen() {
       activeHref="/app/engineer/logs"
       title="Quick Site Update"
       subtitle="Capture work logs, tasks and supporting files"
-      backHref="/app/engineer"
+      backHref={homeHrefForRole(currentUser.role)}
       leftMode="back"
       bottomNav={false}
     >
@@ -3291,7 +4109,7 @@ export function EngineerLogsMobileScreen() {
           <MobileSectionTitle title="Log Actions" />
           <div className="grid grid-cols-4 gap-2">
             <MobileActionTile href="/app/engineer/attendance" icon={<CalendarDays className="h-6 w-6" />} title="Attendance" subtitle="Check-in" />
-            <MobileActionTile href="/app/admin/staff/eng-arjun/assign-task" icon={<ListTodo className="h-6 w-6" />} title="Tasks" subtitle="Update" />
+            <MobileActionTile href="/app/engineer/tasks" icon={<ListTodo className="h-6 w-6" />} title="Tasks" subtitle="Update" />
             <MobileActionTile href="/app/engineer/shift-report" icon={<FileText className="h-6 w-6" />} title="Daily Report" subtitle="Upload" />
             <MobileActionTile href="/app/engineer/documents/new" icon={<Upload className="h-6 w-6" />} title="Documents" subtitle="Add File" />
           </div>

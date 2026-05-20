@@ -1,5 +1,5 @@
-import { ClientWorkProgressMobileScreen } from "@/components/mobile-screens";
+import { ClientReviewMobileScreen } from "@/components/mobile-screens";
 
 export default function ClientReviewPage() {
-  return <ClientWorkProgressMobileScreen />;
+  return <ClientReviewMobileScreen />;
 }
