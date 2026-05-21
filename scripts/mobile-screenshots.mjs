@@ -2,6 +2,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright-core";
 
+process.env.PW_TEST_SCREENSHOT_NO_FONTS_READY = "1";
+
 const chromePath = process.env.CHROME_PATH ?? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const baseUrl = process.env.TELGO_BASE_URL ?? "http://127.0.0.1:3000";
 const outDir = process.env.TELGO_SCREENSHOT_DIR
