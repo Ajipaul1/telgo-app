@@ -32,10 +32,10 @@ function useOnlineStatus() {
 
 export function LoginPanel() {
   const login = useOpsStore((state) => state.login);
-  const [role, setRole] = useState<Role>("engineer");
-  const [identifier, setIdentifier] = useState("engineer@telgo.test");
-  const [password, setPassword] = useState("TelgoEng#2026");
-  const [status, setStatus] = useState("Demo credentials route by signed-in role.");
+  const [role, setRole] = useState<Role>("supervisor");
+  const [identifier, setIdentifier] = useState("supervisor@telgo.test");
+  const [password, setPassword] = useState("1234");
+  const [status, setStatus] = useState("Enter your credentials or PIN to continue.");
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -45,11 +45,11 @@ export function LoginPanel() {
   function chooseRole(nextRole: Role) {
     setRole(nextRole);
     const defaults: Record<Role, [string, string]> = {
-      admin: ["admin@telgo.test", "TelgoAdmin#2026"],
-      engineer: ["engineer@telgo.test", "TelgoEng#2026"],
-      finance: ["finance@telgo.test", "TelgoFin#2026"],
-      client: ["client@telgo.test", "TelgoClient#2026"],
-      supervisor: ["admin@telgo.test", "TelgoAdmin#2026"]
+      admin: ["admin@telgo.test", "1234"],
+      supervisor: ["supervisor@telgo.test", "1234"],
+      finance: ["finance@telgo.test", "1234"],
+      client: ["client@telgo.test", "1234"],
+      engineer: ["supervisor@telgo.test", "1234"]
     };
     setIdentifier(defaults[nextRole][0]);
     setPassword(defaults[nextRole][1]);
@@ -57,27 +57,49 @@ export function LoginPanel() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setStatus("Checking secure session...");
-    let authError: unknown = null;
+    setStatus("Verifying credentials with secure control...");
+    
+    // Check if it's a live database login
     if (!identifier.endsWith("@telgo.test")) {
       try {
-        const result = await guardedSupabaseWrite(
-          supabase.auth.signInWithPassword({
-            email: identifier.includes("@") ? identifier : "demo@telgopower.com",
-            password: password || "demo-password"
-          })
-        );
-        authError = result.error;
+        const response = await fetch("/api/mobile/sign-in", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier, pin: password })
+        });
+        const resData = await response.json();
+        if (response.ok && resData.ok) {
+          setStatus("Success! Access granted.");
+          // Update the ops store to login as the verified user
+          const verifiedUser = resData.user;
+          // Set a session or login
+          login(verifiedUser.email, "valid-pin", verifiedUser.role);
+          
+          const target =
+            verifiedUser.role === "admin"
+              ? "/app/admin"
+              : verifiedUser.role === "finance"
+                ? "/app/admin/finance"
+                : verifiedUser.role === "client"
+                  ? "/app/client"
+                  : "/app/supervisor";
+          window.location.href = target;
+          return;
+        } else {
+          setStatus(resData.message || "Invalid Telgo ID/email or PIN.");
+          return;
+        }
       } catch (error) {
-        authError = error;
+        console.error("Live login connection error:", error);
+        setStatus("Network timeout or invalid credentials.");
+        return;
       }
     }
 
+    // Fallback to local demo workflow for @telgo.test accounts
     const user = login(identifier, password, role);
-    if (authError) {
-      setStatus("Supabase auth checked. Demo session active for local workflow testing.");
-    }
-
+    setStatus("Loading demo workspace...");
+    
     const target =
       user.role === "admin"
         ? "/app/admin"
@@ -85,88 +107,90 @@ export function LoginPanel() {
           ? "/app/admin/finance"
           : user.role === "client"
             ? "/app/client"
-            : "/app/engineer";
+            : "/app/supervisor";
     window.location.href = target;
   }
 
   return (
-    <GlassCard className="w-full max-w-[520px] p-5 sm:p-6">
-      <div className="mb-5">
-        <h2 className="text-2xl font-semibold">Welcome Back</h2>
-        <p className="text-slate-300">Sign in to continue</p>
+    <GlassCard className="w-full max-w-[520px] p-6 sm:p-8 border border-white/10 bg-gradient-to-b from-[#1c124c]/40 to-[#0c0628]/60 shadow-[0_25px_50px_-12px_rgba(139,92,246,0.3)] backdrop-blur-xl">
+      <div className="mb-6 text-center">
+        <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-telgo-cyan via-telgo-blue to-telgo-violet bg-clip-text text-transparent">TELGO HUB</h2>
+        <p className="text-slate-400 mt-2 text-sm">Enterprise Operations & Geofencing System</p>
       </div>
-      <div className="mb-5 grid grid-cols-4 gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-2">
-        {(["engineer", "admin", "finance", "client"] as const).map((item) => (
+      <div className="mb-6 grid grid-cols-4 gap-1.5 rounded-2xl border border-white/10 bg-white/[0.02] p-1.5">
+        {(["supervisor", "admin", "finance", "client"] as const).map((item) => (
           <button
             key={item}
             type="button"
             onClick={() => chooseRole(item)}
-            className={`rounded-xl px-2 py-3 text-xs capitalize transition ${
-              role === item ? "bg-telgo-cyan/15 text-telgo-cyan" : "text-slate-300"
+            className={`rounded-xl py-2.5 text-xs font-semibold capitalize transition-all duration-300 ${
+              role === item ? "bg-gradient-to-r from-telgo-cyan/20 to-telgo-blue/20 border border-telgo-cyan/30 text-telgo-cyan shadow-glow-sm" : "border border-transparent text-slate-400 hover:text-slate-200"
             }`}
           >
             {item}
           </button>
         ))}
       </div>
-      <form className="space-y-4" onSubmit={submit}>
+      <form className="space-y-5" onSubmit={submit}>
         <label className="block">
-          <span className="mb-2 block text-sm font-medium text-slate-200">User ID / Phone Number</span>
+          <span className="mb-2 block text-sm font-semibold text-slate-300">Registered Email / Telgo ID</span>
           <input
             value={identifier}
             onChange={(event) => setIdentifier(event.target.value)}
-            className="w-full rounded-xl border border-white/14 bg-ink-950/50 px-4 py-4 text-white outline-none transition placeholder:text-slate-500 focus:border-telgo-cyan"
-            placeholder="Enter user ID or phone"
+            className="w-full rounded-xl border border-white/10 bg-[#0f0831]/80 px-4 py-4 text-white outline-none transition-all placeholder:text-slate-600 focus:border-telgo-cyan focus:ring-1 focus:ring-telgo-cyan"
+            placeholder="e.g. ajipaul96@gmail.com"
+            required
           />
         </label>
         <label className="block">
-          <span className="mb-2 block text-sm font-medium text-slate-200">Password</span>
+          <span className="mb-2 block text-sm font-semibold text-slate-300">4-Digit PIN</span>
           <input
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="w-full rounded-xl border border-white/14 bg-ink-950/50 px-4 py-4 text-white outline-none transition placeholder:text-slate-500 focus:border-telgo-cyan"
-            placeholder="Enter password"
+            className="w-full rounded-xl border border-white/10 bg-[#0f0831]/80 px-4 py-4 text-white outline-none transition-all placeholder:text-slate-600 focus:border-telgo-cyan focus:ring-1 focus:ring-telgo-cyan text-center font-bold tracking-[0.4em]"
+            placeholder="••••"
             type="password"
+            maxLength={4}
+            pattern="\d{4}"
+            inputMode="numeric"
+            required
           />
         </label>
-        <div className="flex items-center justify-between gap-4 text-sm">
-          <label className="inline-flex items-center gap-2 text-slate-200">
-            <input type="checkbox" defaultChecked className="h-4 w-4 accent-telgo-cyan" />
-            Remember me
+        <div className="flex items-center justify-between gap-4 text-sm pt-1">
+          <label className="inline-flex items-center gap-2.5 text-slate-400 cursor-pointer">
+            <input type="checkbox" defaultChecked className="h-4.5 w-4.5 rounded-lg border-white/10 bg-[#0f0831] text-telgo-cyan accent-telgo-cyan cursor-pointer" />
+            Keep me signed in
           </label>
-          <a href="/forgot-password" className="text-telgo-cyan">
-            Forgot Password?
+          <a href="/forgot-password" className="text-telgo-cyan hover:underline transition-all">
+            Reset PIN
           </a>
         </div>
         <button
           type="submit"
           disabled={!hydrated}
-          className="flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-telgo-cyan via-telgo-blue to-telgo-violet text-lg font-semibold text-white shadow-glow disabled:opacity-60"
+          className="flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-telgo-cyan via-telgo-blue to-telgo-violet text-lg font-bold text-white shadow-glow transition-all hover:scale-[1.01] hover:brightness-110 disabled:opacity-50"
         >
-          {hydrated ? "Sign In" : "Loading..."}
+          {hydrated ? "Sign In securely" : "Authenticating..."}
           <Icon name="ChevronRight" />
         </button>
       </form>
-      <div className="my-5 flex items-center gap-4 text-sm text-slate-400">
+      <div className="my-6 flex items-center gap-4 text-sm text-slate-500">
         <span className="h-px flex-1 bg-white/10" />
-        or continue with
+        New User Onboarding
         <span className="h-px flex-1 bg-white/10" />
       </div>
       <a
         href="/request-access"
-        className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-telgo-cyan/50 text-telgo-cyan"
+        className="flex min-h-13 items-center justify-center gap-2.5 rounded-xl border border-telgo-cyan/30 bg-telgo-cyan/[0.03] text-telgo-cyan font-semibold hover:bg-telgo-cyan/[0.08] hover:border-telgo-cyan transition-all"
       >
-        <Icon name="ShieldCheck" />
-        Request Access
+        <Icon name="ShieldCheck" className="h-5 w-5" />
+        Request Enterprise Access
       </a>
-      <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.025] p-3 text-xs text-slate-300">
-        <p className="font-semibold text-white">Test IDs</p>
-        <p>Admin: admin@telgo.test</p>
-        <p>Engineer: engineer@telgo.test</p>
-        <p>Finance: finance@telgo.test</p>
-        <p>Client: client@telgo.test</p>
-      </div>
-      <p className="mt-4 text-sm text-slate-400">{status}</p>
+      {status && (
+        <div className="mt-5 rounded-xl border border-telgo-cyan/10 bg-telgo-cyan/[0.02] p-4 text-center text-sm text-slate-300 backdrop-blur-md">
+          {status}
+        </div>
+      )}
     </GlassCard>
   );
 }
@@ -174,6 +198,7 @@ export function LoginPanel() {
 export function RequestAccessForm() {
   const requestAccess = useOpsStore((state) => state.requestAccess);
   const [status, setStatus] = useState("ready");
+  const [errorMsg, setErrorMsg] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
@@ -185,128 +210,106 @@ export function RequestAccessForm() {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     setStatus("submitting");
+    setErrorMsg("");
 
-    let documentPath: string | null = null;
-    if (file) {
-      const path = `public/${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
-      const { error } = await guardedSupabaseWrite(supabase.storage.from("access-documents").upload(path, file, {
-        upsert: false
-      }));
-      if (!error) documentPath = path;
+    const fullName = String(form.get("full_name") ?? "").trim();
+    const email = String(form.get("email") ?? "").trim().toLowerCase();
+    const requestedRole = String(form.get("requested_role") ?? "supervisor");
+    const pin = String(form.get("pin") ?? "").trim();
+
+    if (!fullName || !email || !pin) {
+      setStatus("ready");
+      setErrorMsg("All fields are required.");
+      return;
     }
 
-    const fullName = String(form.get("full_name") ?? "");
-    const phone = String(form.get("phone") ?? "");
-    const email = String(form.get("email") ?? "");
-    const companyName = String(form.get("company_name") ?? "");
-    const site = String(form.get("site") ?? "Vadakkekotta to SN Junction UG Cable Laying");
-    const requestedRole = normalizeRole(String(form.get("requested_role") ?? "client"));
-    requestAccess({
-      fullName,
-      phone,
-      email,
-      companyName,
-      site,
-      requestedRole,
-      accessPurpose: String(form.get("access_purpose") ?? "project portal"),
-      documentPath
-    });
+    if (!/^\d{4}$/.test(pin)) {
+      setStatus("ready");
+      setErrorMsg("PIN must be exactly 4 digits.");
+      return;
+    }
 
-    const { error } = await guardedSupabaseWrite(supabase.from("access_requests").insert({
-      full_name: fullName,
-      phone,
-      email,
-      company_name: companyName,
-      gst_number: String(form.get("gst_number") ?? ""),
-      company_address: String(form.get("company_address") ?? ""),
-      site,
-      requested_role: requestedRole,
-      access_purpose: String(form.get("access_purpose") ?? "project_portal"),
-      document_path: documentPath,
-      status: "pending"
-    }));
+    try {
+      const response = await fetch("/api/mobile/request-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName,
+          email,
+          role: requestedRole,
+          pin
+        })
+      });
 
-    setStatus(error ? "saved-locally" : "submitted");
+      const resData = await response.json();
+      if (!response.ok || !resData.ok) {
+        throw new Error(resData.message || "Onboarding failed on server.");
+      }
+
+      setStatus("submitted");
+    } catch (err: any) {
+      console.error(err);
+      setStatus("ready");
+      setErrorMsg(err.message || "Onboarding failed. Please try again.");
+    }
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4">
-      <FormBlock icon="User" title="Personal Information" subtitle="Tell us about yourself">
-        <div className="grid gap-3 sm:grid-cols-2">
+    <form onSubmit={submit} className="space-y-6 max-w-[550px] mx-auto p-4">
+      <FormBlock icon="User" title="Access Onboarding" subtitle="Create your secure access profile">
+        <div className="space-y-4">
           <Field name="full_name" label="Full Name" placeholder="Enter your full name" required />
-          <Field name="phone" label="Phone Number" placeholder="Enter your phone number" required />
           <Field
             name="email"
             label="Email Address"
-            placeholder="Enter your email address"
+            placeholder="e.g. yourname@gmail.com"
             type="email"
-            className="sm:col-span-2"
             required
           />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SelectField
+              name="requested_role"
+              label="Select Access Role"
+              options={["supervisor", "finance", "client"]}
+            />
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold text-slate-300">Set 4-Digit Login PIN</span>
+              <input
+                name="pin"
+                className="w-full rounded-xl border border-white/10 bg-[#0f0831]/80 px-4 py-4 text-white outline-none transition-all placeholder:text-slate-600 focus:border-telgo-cyan focus:ring-1 focus:ring-telgo-cyan font-bold tracking-[0.4em] text-center"
+                placeholder="••••"
+                type="password"
+                maxLength={4}
+                pattern="\d{4}"
+                inputMode="numeric"
+                required
+              />
+            </label>
+          </div>
         </div>
       </FormBlock>
-      <FormBlock icon="Building2" title="Company Information" subtitle="Details about your organization">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field name="company_name" label="Company Name" placeholder="Enter company name" required />
-          <Field name="gst_number" label="GST Number" placeholder="Enter GST number" />
-          <Field name="site" label="Preferred Site / Project" placeholder="Vadakkekotta to SN Junction UG Cable Laying" required />
-          <Field
-            name="company_address"
-            label="Company Address"
-            placeholder="Enter company address"
-          />
+      
+      {errorMsg && (
+        <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-center text-sm text-red-400">
+          {errorMsg}
         </div>
-      </FormBlock>
-      <FormBlock icon="ShieldCheck" title="Role & Access" subtitle="Your role and access requirements">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <SelectField
-            name="requested_role"
-            label="Your Role"
-            options={["client", "site engineer", "supervisor", "finance"]}
-          />
-          <SelectField
-            name="access_purpose"
-            label="Access Required For"
-            options={["project portal", "finance approvals", "site monitoring", "client transparency"]}
-          />
-        </div>
-      </FormBlock>
-      <FormBlock icon="Upload" title="Document Upload" subtitle="Upload your ID / license for verification">
-        <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-telgo-cyan/45 bg-white/[0.025] px-4 py-5 text-center">
-          <Icon name="CloudUpload" className="mb-2 h-8 w-8 text-telgo-cyan" />
-          <span className="font-medium text-white">
-            {file ? file.name : "Upload ID / License / Registration Proof"}
-          </span>
-          <span className="text-sm text-slate-400">PDF, JPG, PNG (Max 5MB)</span>
-          <input
-            type="file"
-            className="sr-only"
-            accept=".pdf,.jpg,.jpeg,.png"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-          />
-        </label>
-      </FormBlock>
-      <label className="inline-flex items-center gap-3 text-sm text-slate-200">
-        <input type="checkbox" required defaultChecked className="h-5 w-5 accent-telgo-cyan" />
-        I confirm that the provided information is accurate and correct.
-      </label>
+      )}
+
       <button
         type="submit"
-        disabled={!hydrated}
-        className="flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-telgo-cyan via-telgo-blue to-telgo-violet text-lg font-semibold text-white shadow-glow disabled:opacity-60"
+        disabled={!hydrated || status === "submitting"}
+        className="flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-telgo-cyan via-telgo-blue to-telgo-violet text-lg font-bold text-white shadow-glow hover:brightness-110 hover:scale-[1.01] transition-all disabled:opacity-50"
       >
-        {hydrated ? "Submit Request" : "Loading..."}
+        {status === "submitting" ? "Requesting access..." : "Submit Registration"}
         <Icon name="Send" />
       </button>
-      <p className="text-center text-sm text-slate-300">
-        {status === "submitted"
-          ? "Request submitted to Supabase for admin review."
-          : status === "saved-locally"
-            ? "Supabase rejected the write. Please reconnect and submit again for admin review."
-            : status === "submitting"
-              ? "Submitting request..."
-              : "Need help? Contact Support +91 95443 65758"}
-      </p>
+
+      {status === "submitted" && (
+        <div className="rounded-xl border border-green-500/25 bg-green-500/10 p-5 text-center text-sm text-green-400 backdrop-blur-md">
+          <p className="font-semibold text-white mb-1">Registration Request Submitted Successfully!</p>
+          <p className="text-slate-300">Your profile has been created as <strong className="text-telgo-cyan">PENDING Approval</strong> and sent to the Admin Dashboard. You will receive a corporate email as soon as the Admin approves your account!</p>
+        </div>
+      )}
     </form>
   );
 }

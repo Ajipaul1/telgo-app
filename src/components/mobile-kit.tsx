@@ -23,7 +23,8 @@ import {
 } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import type { Role } from "@/lib/types";
-import { getCurrentUser, useOpsStore } from "@/store/ops-store";
+import { getCurrentUser, useOpsStore, type ManagedTask } from "@/store/ops-store";
+import { supabase } from "@/lib/supabase/client";
 
 type NavItem = {
   href: string;
@@ -41,11 +42,11 @@ const navByRole: Record<Role, NavItem[]> = {
     { href: "/app/admin/profile", label: "Profile", icon: UserRound }
   ],
   engineer: [
-    { href: "/app/engineer", label: "Dashboard", icon: Home },
-    { href: "/app/engineer/projects", label: "Projects", icon: Folder },
-    { href: "/app/engineer/logs", label: "Add", icon: Plus, highlight: true },
-    { href: "/app/engineer/reports", label: "Reports", icon: CalendarDays },
-    { href: "/app/engineer/profile", label: "Profile", icon: UserRound }
+    { href: "/app/supervisor", label: "Dashboard", icon: Home },
+    { href: "/app/supervisor/projects", label: "Projects", icon: Folder },
+    { href: "/app/supervisor/tracking", label: "Add", icon: Plus, highlight: true },
+    { href: "/app/chat", label: "Chats", icon: MessageCircle },
+    { href: "/app/supervisor/profile", label: "Profile", icon: UserRound }
   ],
   finance: [
     { href: "/app/admin/finance", label: "Dashboard", icon: Home },
@@ -72,7 +73,7 @@ const navByRole: Record<Role, NavItem[]> = {
 
 const homeHrefByRole: Record<Role, string> = {
   admin: "/app/admin",
-  engineer: "/app/engineer",
+  engineer: "/app/supervisor",
   finance: "/app/admin/finance",
   client: "/app/client",
   supervisor: "/app/supervisor"
@@ -80,7 +81,7 @@ const homeHrefByRole: Record<Role, string> = {
 
 const profileHrefByRole: Record<Role, string> = {
   admin: "/app/admin/profile",
-  engineer: "/app/engineer/profile",
+  engineer: "/app/supervisor/profile",
   finance: "/app/admin/profile",
   client: "/app/client/profile",
   supervisor: "/app/supervisor/profile"
@@ -88,7 +89,7 @@ const profileHrefByRole: Record<Role, string> = {
 
 const topUserByRole: Record<Role, { name: string; subtitle: string; avatar: string; status: string }> = {
   admin: { name: "Admin", subtitle: "Operations Lead", avatar: "", status: "Online" },
-  engineer: { name: "Arjun Nair", subtitle: "Site Engineer", avatar: "", status: "Online" },
+  engineer: { name: "Rajeev R", subtitle: "Supervisor", avatar: "", status: "Online" },
   finance: { name: "Anitha R", subtitle: "Finance Lead", avatar: "", status: "Online" },
   client: { name: "Reliable Infra Pvt. Ltd.", subtitle: "Client", avatar: "", status: "Active" },
   supervisor: { name: "Rajeev R", subtitle: "Supervisor", avatar: "", status: "Online" }
@@ -226,6 +227,178 @@ export function MobileShell({
       cancelled = true;
     };
   }, [taskSyncStatus, replaceTasks, setTaskSyncState]);
+
+  // Real-time Documents Sync Effect
+  const replaceProjectDocuments = useOpsStore((state) => state.replaceProjectDocuments);
+  useEffect(() => {
+    let active = true;
+
+    async function loadDocuments() {
+      const { data, error } = await supabase
+        .from("documents")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Failed to fetch documents:", error);
+        return;
+      }
+
+      if (active && data) {
+        const mappedDocs = data.map((doc: any) => {
+          let sizeLabel = "1.0 MB";
+          if (doc.file_size_bytes) {
+            sizeLabel = (doc.file_size_bytes / (1024 * 1024)).toFixed(1) + " MB";
+          }
+          let ext = "PDF";
+          if (doc.document_type) {
+            ext = String(doc.document_type).toUpperCase();
+          }
+          return {
+            id: String(doc.id),
+            name: String(doc.title),
+            projectId: String(doc.project_id),
+            type: ext as any,
+            category: "drawing" as const,
+            status: "approved" as const,
+            authorUserId: String(doc.uploaded_by),
+            uploadedAt: new Date(doc.created_at).toLocaleString("en-IN"),
+            sizeLabel,
+            description: "Uploaded via mobile app",
+            visibilityRoles: ["admin", "client", "engineer", "supervisor", "finance"] as Role[]
+          };
+        });
+        replaceProjectDocuments(mappedDocs);
+      }
+    }
+
+    void loadDocuments();
+
+    // Subscribe to real-time changes on documents
+    const docChannel = supabase
+      .channel("realtime-documents-sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "documents" },
+        () => {
+          void loadDocuments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+      void supabase.removeChannel(docChannel);
+    };
+  }, [replaceProjectDocuments]);
+
+  // Real-time Tasks Sync Effect
+  useEffect(() => {
+    let active = true;
+
+    async function loadTasks() {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Failed to fetch tasks realtime:", error);
+        return;
+      }
+
+      if (active && data) {
+        const mappedTasks = data.map((row: any) => {
+          let detail = "Task detail to be confirmed.";
+          let taskType = "Inspection";
+          let location = "";
+          let notes = "";
+          let attachmentName = "";
+          let assignedByUserId = "admin";
+
+          const text = String(row.description ?? "").trim();
+          if (text) {
+            if (text.startsWith("{")) {
+              try {
+                const parsed = JSON.parse(text);
+                detail = parsed.detail || detail;
+                taskType = parsed.taskType || taskType;
+                location = parsed.location || location;
+                notes = parsed.notes || notes;
+                attachmentName = parsed.attachmentName || attachmentName;
+                assignedByUserId = parsed.assignedByUserId || assignedByUserId;
+              } catch {
+                detail = text;
+              }
+            } else {
+              detail = text;
+            }
+          }
+
+          let status = "pending";
+          if (row.status === "completed") status = "completed";
+          else if (row.status === "in_progress") status = "in_progress";
+
+          let priority = "medium";
+          if (row.priority === "low") priority = "low";
+          else if (row.priority === "high") priority = "high";
+
+          let dueAt = "Due date pending";
+          if (row.due_at) {
+            const parsedDate = new Date(row.due_at);
+            if (!Number.isNaN(parsedDate.getTime())) {
+              dueAt = new Intl.DateTimeFormat("en-IN", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+              }).format(parsedDate);
+            }
+          }
+
+          return {
+            id: String(row.id),
+            title: String(row.title),
+            detail,
+            projectId: String(row.project_id),
+            assigneeUserId: String(row.assigned_to),
+            assignedByUserId,
+            priority: priority as ManagedTask["priority"],
+            status: status as ManagedTask["status"],
+            dueAt,
+            taskType,
+            location,
+            notes,
+            attachmentName,
+            createdAt: String(row.created_at)
+          };
+        });
+
+        replaceTasks(mappedTasks, "supabase");
+      }
+    }
+
+    if (taskSyncStatus === "supabase") {
+      void loadTasks();
+
+      const taskChannel = supabase
+        .channel("realtime-tasks-sync")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "tasks" },
+          () => {
+            void loadTasks();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        active = false;
+        void supabase.removeChannel(taskChannel);
+      };
+    }
+  }, [taskSyncStatus, replaceTasks]);
 
   function handleBack() {
     if (backHref) {

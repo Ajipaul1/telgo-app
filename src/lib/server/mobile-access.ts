@@ -16,9 +16,13 @@ export function normalizeLoginId(value: unknown) {
 }
 
 export function getMobileAccessClient() {
-  const secretKey = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const secretKey =
+    process.env.SUPABASE_SECRET_KEY ??
+    process.env.SUPABASE_SERVICE_ROLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
   if (!secretKey) {
-    throw new Error("Supabase server key is not configured.");
+    throw new Error("Supabase server or publishable key is not configured.");
   }
 
   return createClient(telgoConfig.supabaseUrl, secretKey, {

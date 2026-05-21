@@ -33,26 +33,44 @@ export async function POST(request: NextRequest) {
 
   const { data, error } = await supabase
     .from("mobile_app_users")
-    .select("id,email,full_name,role,login_id,user_folder_path,created_at,pin_hash")
+    .select("id,email,full_name,role,login_id,user_folder_path,created_at,pin_hash,access_status,blocked_at")
     .eq(normalizedEmail ? "email" : "login_id", normalizedEmail || loginId)
-    .eq("access_status", "active")
-    .is("blocked_at", null)
-    .not("pin_set_at", "is", null)
     .maybeSingle();
 
   if (error) {
     return NextResponse.json({ ok: false, message: error.message }, { status: 500 });
   }
 
-  const expectedPinHash = String(data?.pin_hash ?? "").trim().toLowerCase();
+  if (!data) {
+    return NextResponse.json(
+      { ok: false, message: "Invalid Telgo ID/email or PIN." },
+      { status: 401 }
+    );
+  }
+
+  if (data.blocked_at || data.access_status === "blocked") {
+    return NextResponse.json(
+      { ok: false, message: "This account is blocked. Contact Telgo operations." },
+      { status: 403 }
+    );
+  }
+
+  if (data.access_status === "pending") {
+    return NextResponse.json(
+      { ok: false, message: "Your access request is pending approval. You will receive an email once approved." },
+      { status: 403 }
+    );
+  }
+
+  const expectedPinHash = String(data.pin_hash ?? "").trim().toLowerCase();
   const resolvedPinHash =
     pinHash.length >= 32
       ? pinHash
       : createHash("sha256")
-          .update(`${normalizeLoginId(data?.login_id)}:${pin}`)
+          .update(`${normalizeLoginId(data.login_id)}:${pin}`)
           .digest("hex");
 
-  if (!data || !expectedPinHash || resolvedPinHash !== expectedPinHash) {
+  if (!expectedPinHash || resolvedPinHash !== expectedPinHash) {
     return NextResponse.json(
       { ok: false, message: "Invalid Telgo ID/email or PIN." },
       { status: 401 }

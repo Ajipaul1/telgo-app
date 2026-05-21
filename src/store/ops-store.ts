@@ -203,6 +203,8 @@ export type OpsState = {
     source?: Exclude<TaskSyncStatus, "syncing" | "error">
   ) => void;
   setTaskSyncState: (status: TaskSyncStatus, error?: string | null) => void;
+  replaceAccessRequests: (requests: AccessRequest[]) => void;
+  replaceProjectDocuments: (documents: ProjectDocument[]) => void;
   login: (identifier: string, password: string, fallbackRole: Role) => DemoUser;
   signOut: () => void;
   setForceOffline: (value: boolean) => void;
@@ -959,6 +961,14 @@ export const useOpsStore = create<OpsState>()(
         set(() => ({
           taskSyncStatus: status,
           taskSyncError: error
+        })),
+      replaceAccessRequests: (requests) =>
+        set(() => ({
+          accessRequests: requests
+        })),
+      replaceProjectDocuments: (documents) =>
+        set(() => ({
+          projectDocuments: documents
         })),
       login: (identifier, password, fallbackRole) => {
         const normalized = identifier.trim().toLowerCase();

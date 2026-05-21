@@ -39,16 +39,20 @@ const metrics = await page.evaluate(() => {
   const section = document.querySelector("#download-android");
   const link = document.querySelector('a[href="/downloads/telgo-hub.apk"]');
   const rect = section?.getBoundingClientRect();
+  const allTargets = Array.from(document.querySelectorAll("#download-android a, #download-android button"));
+  const smalls = allTargets.filter(
+    (element) => {
+      const target = element.getBoundingClientRect();
+      return target.width > 0 && target.height > 0 && (target.width < 44 || target.height < 44);
+    }
+  ).map(el => `${el.tagName}.${el.className.split(' ').join('.')} (${el.textContent}) [w=${el.getBoundingClientRect().width}, h=${el.getBoundingClientRect().height}]`);
+
   return {
     sectionVisible: Boolean(section && rect && rect.width > 0 && rect.height > 0),
     linkHref: link?.getAttribute("href") ?? null,
     overflowX: document.documentElement.scrollWidth - window.innerWidth,
-    smallTargets: Array.from(document.querySelectorAll("#download-android a, #download-android button")).filter(
-      (element) => {
-        const target = element.getBoundingClientRect();
-        return target.width > 0 && target.height > 0 && (target.width < 44 || target.height < 44);
-      }
-    ).length
+    smallTargets: smalls.length,
+    smallTargetsList: smalls.join(", ")
   };
 });
 

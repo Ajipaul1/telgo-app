@@ -75,6 +75,7 @@ import {
 } from "@/components/mobile-kit";
 import {
   getCurrentUser,
+  type AccessRequest,
   type DemoUser,
   type ManagedTask,
   type OpsState,
@@ -182,7 +183,7 @@ function getProjectsForUser(state: OpsState, user: DemoUser) {
     const allowedProjectIds = state.clientPermissions
       .filter((permission) => permission.clientUserId === user.id && permission.status === "approved")
       .map((permission) => permission.projectId);
-    return state.managedProjects.filter((project) => allowedProjectIds.includes(project.id));
+    return state.managedProjects.filter((project) => allowedProjectIds.includes(project.id) && user.projectIds.includes(project.id));
   }
   return state.managedProjects.filter((project) => user.projectIds.includes(project.id));
 }
@@ -242,7 +243,7 @@ function getDocumentRecords(state: OpsState, viewer: DemoUser, projectId?: strin
             permission.projectId === document.projectId &&
             permission.status === "approved" &&
             permission.canViewDocuments
-        );
+        ) && viewer.projectIds.includes(document.projectId);
       }
       return viewer.projectIds.includes(document.projectId);
     })
@@ -271,7 +272,7 @@ function getVisibleReports(state: OpsState, viewer: DemoUser) {
           permission.projectId === report.projectId &&
           permission.status === "approved" &&
           permission.canViewReports
-      );
+      ) && viewer.projectIds.includes(report.projectId);
     }
     return viewer.projectIds.includes(report.projectId);
   });
@@ -630,6 +631,108 @@ export function SupervisorDashboardMobileScreen() {
     teamMembers.some((worker) => worker.id === record.userId)
   );
 
+  const [checkingIn, setCheckingIn] = useState(false);
+  const [checkInStatus, setCheckInStatus] = useState<string | null>(null);
+  const [checkInError, setCheckInError] = useState<string | null>(null);
+  const online = useOnlineStatus();
+  const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
+  const supervisorCheckedInToday = useMemo(() => {
+    return ops.attendance.some(
+      (record) =>
+        record.userId === currentUser.id &&
+        record.checkInAt.startsWith(todayStr)
+    );
+  }, [ops.attendance, currentUser.id, todayStr]);
+
+  const project = getPrimaryProjectForUser(ops, currentUser);
+  const targetCoordinates = project?.corridor
+    ? { lat: project.corridor.startCoordinates[1], lng: project.corridor.startCoordinates[0] }
+    : project?.coordinates
+    ? { lat: project.coordinates[1], lng: project.coordinates[0] }
+    : { lat: 9.9538, lng: 76.3428 };
+  const geofenceMeters = project?.corridor?.geofenceMeters ?? 150;
+
+  async function handleSupervisorCheckIn() {
+    setCheckingIn(true);
+    setCheckInStatus("Acquiring GPS fix...");
+    setCheckInError(null);
+    try {
+      const location = await getCurrentPosition();
+      if (location.accuracy > 500) {
+        throw new Error(`GPS accuracy too weak (${Math.round(location.accuracy)}m). Try outdoors.`);
+      }
+
+      const distanceFromSiteM = Math.round(
+        distanceMeters(
+          location.lat,
+          location.lng,
+          targetCoordinates.lat,
+          targetCoordinates.lng
+        )
+      );
+      const withinGeofence = distanceFromSiteM <= geofenceMeters;
+
+      const localPayload = {
+        userId: currentUser.id,
+        projectId: project?.id ?? "unknown-project",
+        checkInAt: new Date().toISOString(),
+        latitude: location.lat,
+        longitude: location.lng,
+        accuracyM: location.accuracy,
+        distanceFromSiteM,
+        withinGeofence,
+        status: withinGeofence ? ("approved" as const) : ("pending_approval" as const)
+      };
+
+      if (!online) {
+        ops.markAttendance({
+          ...localPayload,
+          status: "queued"
+        });
+        setCheckInStatus("Checked In (Offline Saved)");
+      } else {
+        setCheckInStatus("Verifying geofence boundaries...");
+        const response = await fetch("/api/mobile/attendance", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            projectId: project?.id,
+            latitude: location.lat,
+            longitude: location.lng,
+            gpsAccuracyM: location.accuracy
+          })
+        });
+
+        const resData = await response.json();
+        if (!response.ok || !resData.ok) {
+          throw new Error(resData.message || "Attendance submission failed.");
+        }
+
+        const att = resData.attendance;
+        ops.markAttendance({
+          userId: currentUser.id,
+          projectId: project?.id ?? "unknown-project",
+          checkInAt: att.checkInAt || localPayload.checkInAt,
+          latitude: att.latitude ?? location.lat,
+          longitude: att.longitude ?? location.lng,
+          accuracyM: att.gpsAccuracyM ?? location.accuracy,
+          distanceFromSiteM: att.distanceFromSiteM ?? distanceFromSiteM,
+          withinGeofence: att.withinGeofence ?? withinGeofence,
+          status: att.status === "checked_in" ? "approved" : "pending_approval"
+        });
+
+        setCheckInStatus(att.status === "checked_in" ? "Checked In Successfully" : "Checked In (Awaiting Geofence Approval)");
+      }
+    } catch (err: any) {
+      console.error("Supervisor check-in error:", err);
+      setCheckInError(err.message || "Failed to mark attendance.");
+    } finally {
+      setCheckingIn(false);
+    }
+  }
+
   return (
     <MobileShell
       role="supervisor"
@@ -646,6 +749,73 @@ export function SupervisorDashboardMobileScreen() {
             <BigGradientStat label="Site Reports" value={String(ops.projectReports.filter((report) => currentUser.projectIds.includes(report.projectId)).length)} />
           </div>
         </MobileGradientCard>
+
+        {/* Supervisor Check-In Widget */}
+        <MobileCard className="relative overflow-hidden bg-gradient-to-br from-[#1b1437]/90 to-[#0e0a22]/90 border border-violet-500/20 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.37)] backdrop-blur">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <span className={cn("h-3 w-3 rounded-full animate-pulse", supervisorCheckedInToday ? "bg-cyan-450 text-cyan-400 bg-cyan-400" : "bg-orange-500")} />
+              <h3 className="text-lg font-bold text-white tracking-wide">Daily Geofenced Check-In</h3>
+            </div>
+            {supervisorCheckedInToday && (
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-cyan-400/10 text-cyan-400 border border-cyan-400/20">
+                ACTIVE ON SITE
+              </span>
+            )}
+          </div>
+
+          {supervisorCheckedInToday ? (
+            <div className="space-y-3">
+              <p className="text-sm text-slate-300">
+                You checked in successfully today. Your location and site log are active in the background.
+              </p>
+              <div className="flex items-center gap-3 bg-white/5 border border-white/5 rounded-2xl p-3">
+                <Clock3 className="h-5 w-5 text-cyan-400" />
+                <div>
+                  <p className="text-xs text-slate-400">Marked Attendance Status</p>
+                  <p className="text-sm font-semibold text-white">Checked In Today</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm text-slate-350 leading-relaxed">
+                Confirm your site presence. This records a secure, high-accuracy GPS background ping for project coordinator verification.
+              </p>
+              
+              {checkInError && (
+                <div className="text-xs font-medium text-rose-450 text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3">
+                  ⚠️ {checkInError}
+                </div>
+              )}
+
+              {checkInStatus && (
+                <div className="text-xs font-medium text-cyan-350 text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-3 animate-pulse">
+                  📡 {checkInStatus}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleSupervisorCheckIn}
+                disabled={checkingIn}
+                className="w-full inline-flex min-h-[52px] items-center justify-center rounded-2xl text-base font-bold tracking-wide transition-all shadow-[0_8px_20px_rgba(34,211,238,0.25)] bg-gradient-to-r from-cyan-500 to-violet-600 text-white hover:from-cyan-400 hover:to-violet-500 active:scale-[0.98] disabled:opacity-50"
+              >
+                {checkingIn ? (
+                  <span className="flex items-center gap-2">
+                    <CircleDot className="h-5 w-5 animate-spin" />
+                    Recording GPS...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <LocateFixed className="h-5 w-5" />
+                    Confirm Presence / Check In
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
+        </MobileCard>
 
         <MobileCard>
           <MobileSectionTitle title="Supervisor Actions" />
@@ -1011,12 +1181,77 @@ export function ApprovalsMobileScreen({
   const [tab, setTab] = useState(`All (${approvalQueue.length})`);
   const online = useOnlineStatus();
 
-  function handleDecision(item: EnterpriseApprovalItem, decision: "Approved" | "Rejected") {
+  useEffect(() => {
+    let active = true;
+    async function syncAccessRequests() {
+      try {
+        const { data, error } = await supabase
+          .from("mobile_app_users")
+          .select("*")
+          .eq("access_status", "pending");
+        if (error) throw error;
+        if (active && data) {
+          const mapped: AccessRequest[] = data.map((user: any) => ({
+            id: user.id,
+            fullName: user.full_name,
+            phone: user.phone || "+91 99999 99999",
+            email: user.email,
+            companyName: "Telgo Power Projects",
+            site: user.user_folder_path || "General Site",
+            requestedRole: user.role,
+            accessPurpose: "Onboarding Access Request",
+            status: "pending",
+            loginId: user.login_id,
+            createdAt: user.created_at
+              ? new Date(user.created_at).toLocaleString("en-IN", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit"
+                })
+              : new Date().toLocaleString("en-IN")
+          }));
+          ops.replaceAccessRequests(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to sync pending access requests:", err);
+      }
+    }
+    if (online) {
+      syncAccessRequests();
+      const interval = setInterval(syncAccessRequests, 10000);
+      return () => {
+        active = false;
+        clearInterval(interval);
+      };
+    }
+  }, [online, ops.replaceAccessRequests]);
+
+  async function handleDecision(item: EnterpriseApprovalItem, decision: "Approved" | "Rejected") {
     if (item.kind === "access") {
       if (decision === "Approved") {
         ops.approveAccessRequest(item.entityId, item.projectId ?? ops.managedProjects[0]!.id);
+        if (online) {
+          try {
+            await fetch("/api/mobile/approve-access", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: item.entityId })
+            });
+          } catch (err) {
+            console.error("Live user approval error:", err);
+          }
+        }
       } else {
         ops.rejectAccessRequest(item.entityId);
+        if (online) {
+          await guardedSupabaseWrite(
+            supabase.from("mobile_app_users")
+              .update({ access_status: "blocked" })
+              .eq("id", item.entityId)
+          );
+        }
       }
     }
     if (item.kind === "leave") {

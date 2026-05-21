@@ -5,7 +5,9 @@ import {
   toMobileAccessUser
 } from "@/lib/server/mobile-access";
 
-const allowedRoles = new Set(["engineer", "supervisor", "finance", "client", "admin"]);
+import { createHash } from "node:crypto";
+
+const allowedRoles = new Set(["supervisor", "finance", "client", "admin"]);
 
 function normalizeEmail(value: unknown) {
   const email = String(value ?? "").trim().toLowerCase();
@@ -13,8 +15,11 @@ function normalizeEmail(value: unknown) {
 }
 
 function normalizeRole(value: unknown) {
-  const role = String(value ?? "engineer").trim().toLowerCase();
-  return allowedRoles.has(role) ? role : "engineer";
+  const role = String(value ?? "supervisor").trim().toLowerCase();
+  if (role === "site engineer" || role === "engineer") {
+    return "supervisor";
+  }
+  return allowedRoles.has(role) ? role : "supervisor";
 }
 
 function makeTelgoId() {
@@ -23,15 +28,23 @@ function makeTelgoId() {
 
 export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => null)) as
-    | { fullName?: unknown; email?: unknown; role?: unknown }
+    | { fullName?: unknown; email?: unknown; role?: unknown; pin?: unknown }
     | null;
   const fullName = String(body?.fullName ?? "").trim();
   const email = normalizeEmail(body?.email);
   const role = normalizeRole(body?.role);
+  const pin = String(body?.pin ?? "").trim();
 
   if (fullName.length < 2 || !email) {
     return NextResponse.json(
       { ok: false, message: "Name and a valid email address are required." },
+      { status: 400 }
+    );
+  }
+
+  if (pin && !/^\d{4}$/.test(pin)) {
+    return NextResponse.json(
+      { ok: false, message: "PIN must be exactly 4 digits." },
       { status: 400 }
     );
   }
@@ -71,6 +84,13 @@ export async function POST(request: NextRequest) {
     existingUser?.user_folder_path && String(existingUser.user_folder_path).trim()
       ? String(existingUser.user_folder_path)
       : `mobile-users/${loginId}`;
+
+  const pinHash = pin
+    ? createHash("sha256")
+        .update(`${loginId}:${pin}`)
+        .digest("hex")
+    : null;
+
   const activatedAt = new Date().toISOString();
   const payload = {
     email,
@@ -78,10 +98,12 @@ export async function POST(request: NextRequest) {
     temp_password_hash: null,
     full_name: fullName,
     role,
-    access_status: "active",
+    access_status: "pending",
     blocked_at: null,
     blocked_reason: null,
-    activated_at: activatedAt,
+    activated_at: null,
+    pin_hash: pinHash,
+    pin_set_at: pinHash ? activatedAt : null,
     user_folder_path: folderPath,
     updated_at: activatedAt
   };
@@ -193,7 +215,7 @@ export async function POST(request: NextRequest) {
     email,
     fullName,
     role,
-    message: "Access approved. Request an email OTP to continue."
+    message: "Access request submitted. Your account is pending admin approval. You will receive an email once approved."
   });
 }
 

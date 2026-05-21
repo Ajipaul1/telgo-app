@@ -172,7 +172,8 @@ export default function LandingPage() {
               <div className="w-full flex justify-center border-t border-ink-850 pt-5">
                 <Link 
                   href="/login" 
-                  className="inline-flex items-center gap-1 text-sm text-telgo-cyan hover:text-white transition-all duration-150 font-medium group/portal"
+                  className="inline-flex min-h-[44px] items-center gap-1 text-sm text-telgo-cyan hover:text-white transition-all duration-150 font-medium group/portal"
+                  style={{ minHeight: "48px" }}
                 >
                   <span>Or enter via Web Portal</span>
                   <ArrowRight className="h-4 w-4 transition-transform group-hover/portal:translate-x-1" />
