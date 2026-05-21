@@ -30,7 +30,7 @@ const page = await browser.newPage({
 
 await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 45_000 });
 await page.locator("#download-android").scrollIntoViewIfNeeded();
-await page.getByRole("link", { name: "Download Android App" }).waitFor({
+await page.getByRole("link", { name: "Download Android APK" }).waitFor({
   state: "visible",
   timeout: 20_000
 });
