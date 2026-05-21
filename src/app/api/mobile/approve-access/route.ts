@@ -1,5 +1,16 @@
+import { createHash, randomBytes } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { getMobileAccessClient } from "@/lib/server/mobile-access";
+
+function generatePassword(length = 10) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  let pass = "";
+  const bytes = randomBytes(length);
+  for (let i = 0; i < length; i++) {
+    pass += chars[bytes[i] % chars.length];
+  }
+  return pass;
+}
 
 export async function POST(request: NextRequest) {
   let body;
@@ -18,11 +29,10 @@ export async function POST(request: NextRequest) {
   let supabase;
   try {
     supabase = getMobileAccessClient();
-  } catch (error) {
+  } catch {
     return NextResponse.json({ ok: false, message: "Database config error." }, { status: 500 });
   }
 
-  // 1. Fetch user information
   const { data: user, error: fetchError } = await supabase
     .from("mobile_app_users")
     .select("id, email, full_name, role, login_id")
@@ -36,15 +46,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const plainPassword = generatePassword();
+  const email = String(user.email ?? "").trim().toLowerCase();
+  const passwordHash = createHash("sha256")
+    .update(`${email}:${plainPassword}`)
+    .digest("hex");
+
   const activatedAt = new Date().toISOString();
 
-  // 2. Activate the user account
   const { error: updateError } = await supabase
     .from("mobile_app_users")
     .update({
       access_status: "active",
       activated_at: activatedAt,
       updated_at: activatedAt,
+      password_hash: passwordHash,
     })
     .eq("id", userId);
 
@@ -55,158 +71,54 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 3. Send email via Resend if credentials are present
   const resendApiKey = process.env.RESEND_API_KEY;
   const resendFromEmail = process.env.RESEND_FROM_EMAIL ?? "Telgo Hub <onboarding@resend.dev>";
 
   if (resendApiKey && user.email) {
     try {
-      const emailHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Access Approved - Telgo Hub</title>
-          <style>
-            body {
-              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-              background-color: #0b071e;
-              color: #e2e8f0;
-              margin: 0;
-              padding: 0;
-            }
-            .container {
-              max-width: 600px;
-              margin: 40px auto;
-              background: linear-gradient(135deg, #130c2c 0%, #070414 100%);
-              border: 1px solid rgba(139, 92, 246, 0.2);
-              border-radius: 24px;
-              padding: 40px;
-              box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-            }
-            .header {
-              text-align: center;
-              border-bottom: 1px solid rgba(139, 92, 246, 0.1);
-              padding-bottom: 24px;
-              margin-bottom: 30px;
-            }
-            .header h1 {
-              margin: 0;
-              font-size: 28px;
-              font-weight: 700;
-              background: linear-gradient(to right, #22d3ee, #8b5cf6);
-              -webkit-background-clip: text;
-              -webkit-text-fill-color: transparent;
-            }
-            .content {
-              line-height: 1.6;
-              font-size: 16px;
-              color: #cbd5e1;
-            }
-            .badge {
-              display: inline-block;
-              background: rgba(34, 211, 238, 0.1);
-              color: #22d3ee;
-              border: 1px solid rgba(34, 211, 238, 0.2);
-              border-radius: 12px;
-              padding: 6px 16px;
-              font-weight: 600;
-              font-size: 14px;
-              text-transform: capitalize;
-              margin-bottom: 20px;
-            }
-            .credential-box {
-              background: rgba(255, 255, 255, 0.03);
-              border: 1px solid rgba(255, 255, 255, 0.05);
-              border-radius: 16px;
-              padding: 24px;
-              margin: 30px 0;
-            }
-            .credential-row {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 12px;
-              font-size: 15px;
-            }
-            .credential-row:last-child {
-              margin-bottom: 0;
-            }
-            .label {
-              color: #94a3b8;
-              font-weight: 550;
-            }
-            .val {
-              color: #ffffff;
-              font-family: monospace;
-              font-size: 16px;
-              font-weight: 700;
-            }
-            .btn {
-              display: block;
-              text-align: center;
-              background: linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%);
-              color: #ffffff !important;
-              text-decoration: none;
-              padding: 16px 32px;
-              border-radius: 14px;
-              font-weight: 600;
-              font-size: 17px;
-              margin-top: 30px;
-              box-shadow: 0 8px 24px rgba(6, 182, 212, 0.25);
-            }
-            .footer {
-              text-align: center;
-              font-size: 13px;
-              color: #64748b;
-              margin-top: 40px;
-              border-top: 1px solid rgba(139, 92, 246, 0.1);
-              padding-top: 24px;
-            }
-          </style>
-        </head>
-        <body>
-          <div className="container">
-            <div className="header">
-              <h1>TELGO HUB</h1>
-            </div>
-            <div className="content">
-              <p>Hello <strong>${user.full_name}</strong>,</p>
-              <p>We are excited to inform you that your request for access to the <strong>Telgo Hub</strong> operations platform has been approved!</p>
-              
-              <div style="text-align: center;">
-                <span className="badge">${user.role} Account</span>
-              </div>
+      const emailHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Access Approved - Telgo Hub</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #060912; color: #e2e8f0; margin: 0; padding: 20px;">
+  <div style="max-width: 560px; margin: 0 auto; background: linear-gradient(135deg, #0e0829 0%, #060912 100%); border: 1px solid rgba(124,58,237,0.25); border-radius: 20px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+    <div style="text-align: center; padding-bottom: 28px; border-bottom: 1px solid rgba(124,58,237,0.15); margin-bottom: 32px;">
+      <div style="display: inline-block; background: linear-gradient(135deg, #7c3aed, #06b6d4); padding: 2px; border-radius: 14px; margin-bottom: 16px;">
+        <div style="background: #060912; border-radius: 12px; padding: 12px 24px;">
+          <h1 style="margin: 0; font-size: 24px; font-weight: 800; background: linear-gradient(90deg, #06b6d4, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 2px;">TELGO HUB</h1>
+        </div>
+      </div>
+      <p style="margin: 8px 0 0; color: #94a3b8; font-size: 14px;">Enterprise Operations Platform</p>
+    </div>
+    <p style="font-size: 16px; color: #cbd5e1; line-height: 1.6;">Hello <strong style="color: #f1f5f9;">${user.full_name}</strong>,</p>
+    <p style="font-size: 15px; color: #94a3b8; line-height: 1.7;">Your access to the <strong style="color: #f1f5f9;">Telgo Hub</strong> operations platform has been <strong style="color: #4ade80;">approved</strong>. You can now log in using the credentials below.</p>
+    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 24px; margin: 28px 0;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px;">
+          <td style="color: #94a3b8; font-size: 13px; padding: 10px 0;">Access Level</td>
+          <td style="text-align: right; color: #06b6d4; font-weight: 700; font-size: 14px; text-transform: uppercase;">${user.role}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <td style="color: #94a3b8; font-size: 13px; padding: 10px 0;">Login Email</td>
+          <td style="text-align: right; color: #f1f5f9; font-family: monospace; font-size: 14px;">${user.email}</td>
+        </tr>
+        <tr>
+          <td style="color: #94a3b8; font-size: 13px; padding: 10px 0;">Password</td>
+          <td style="text-align: right; color: #a78bfa; font-family: monospace; font-size: 18px; font-weight: 800; letter-spacing: 3px;">${plainPassword}</td>
+        </tr>
+      </table>
+    </div>
+    <p style="font-size: 13px; color: #64748b; text-align: center; background: rgba(255,165,0,0.05); border: 1px solid rgba(255,165,0,0.15); border-radius: 10px; padding: 12px;">⚠️ Save this password. You can change it after first login.</p>
+    <a href="https://telgo-app.vercel.app/login" style="display: block; text-align: center; background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: 700; font-size: 16px; margin-top: 28px;">Open Telgo Hub →</a>
+    <div style="text-align: center; font-size: 12px; color: #475569; margin-top: 36px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.05);">This is an automated notification from Telgo Power Projects Operations Control. © ${new Date().getFullYear()} Telgo Power Projects. All rights reserved.</div>
+  </div>
+</body>
+</html>`;
 
-              <div className="credential-box">
-                <div className="credential-row">
-                  <span className="label">Access Level</span>
-                  <span className="val" style="color: #22d3ee;">${user.role.toUpperCase()}</span>
-                </div>
-                <div className="credential-row">
-                  <span className="label">Registered Email</span>
-                  <span className="val">${user.email}</span>
-                </div>
-                <div className="credential-row">
-                  <span className="label">Your Telgo ID</span>
-                  <span className="val" style="color: #a78bfa;">${user.login_id}</span>
-                </div>
-              </div>
-
-              <p>You can now log in directly into the Telgo Hub mobile application using your registered Email (or Telgo ID) and the <strong>4-digit PIN</strong> you created during onboarding.</p>
-              
-              <a href="https://telgo-app.vercel.app/app" className="btn">Open Telgo Hub</a>
-            </div>
-            <div className="footer">
-              <p>This is an automated notification from Telgo Power Projects Operations Control Room.</p>
-              <p>&copy; ${new Date().getFullYear()} Telgo Power Projects. All rights reserved.</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
-
-      const emailResponse = await fetch("https://api.resend.com/emails", {
+      await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${resendApiKey}`,
@@ -215,22 +127,17 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           from: resendFromEmail,
           to: [user.email],
-          subject: "Your Telgo Hub Access is Approved!",
+          subject: "✅ Your Telgo Hub Access is Approved — Login Credentials Inside",
           html: emailHtml,
         }),
       });
-
-      if (!emailResponse.ok) {
-        const errorText = await emailResponse.text();
-        console.error("Resend API email transmission failed:", errorText);
-      }
     } catch (emailErr) {
-      console.error("Resend API communication error:", emailErr);
+      console.error("Resend email error:", emailErr);
     }
   }
 
   return NextResponse.json({
     ok: true,
-    message: "Access approved. Automated notification email dispatched successfully.",
+    message: "Access approved. Login credentials emailed to user.",
   });
 }

@@ -266,22 +266,6 @@ export function RequestAccessForm() {
             type="email"
             required
           />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <SelectField
-              name="requested_role"
-              label="Select Access Role"
-              options={["supervisor", "finance", "client"]}
-            />
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-slate-300">Set 4-Digit Login PIN</span>
-              <input
-                name="pin"
-                className="w-full rounded-xl border border-white/10 bg-[#0f0831]/80 px-4 py-4 text-white outline-none transition-all placeholder:text-slate-600 focus:border-telgo-cyan focus:ring-1 focus:ring-telgo-cyan font-bold tracking-[0.4em] text-center"
-                placeholder="••••"
-                type="password"
-                maxLength={4}
-                pattern="\d{4}"
-                inputMode="numeric"
                 required
               />
             </label>

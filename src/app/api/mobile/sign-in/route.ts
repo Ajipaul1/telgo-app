@@ -2,24 +2,21 @@ import { createHash } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import {
   getMobileAccessClient,
-  normalizeLoginId,
   toMobileAccessUser
 } from "@/lib/server/mobile-access";
 import { setMobileSession } from "@/lib/server/mobile-session";
 
 export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => null)) as
-    | { identifier?: unknown; loginId?: unknown; pinHash?: unknown; pin?: unknown }
+    | { identifier?: unknown; password?: unknown }
     | null;
-  const identifier = String(body?.identifier ?? body?.loginId ?? "").trim();
-  const normalizedEmail = normalizeEmail(identifier);
-  const loginId = normalizedEmail ? "" : normalizeLoginId(identifier);
-  const pinHash = String(body?.pinHash ?? "").trim().toLowerCase();
-  const pin = String(body?.pin ?? "").trim();
 
-  if (!identifier || (pinHash.length < 32 && !/^\d{4}$/.test(pin))) {
+  const identifier = String(body?.identifier ?? "").trim().toLowerCase();
+  const password = String(body?.password ?? "").trim();
+
+  if (!identifier || !password) {
     return NextResponse.json(
-      { ok: false, message: "Telgo ID or email and a 4-digit PIN are required." },
+      { ok: false, message: "Email and password are required." },
       { status: 400 }
     );
   }
@@ -31,10 +28,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message: getErrorMessage(error) }, { status: 500 });
   }
 
+  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
   const { data, error } = await supabase
     .from("mobile_app_users")
-    .select("id,email,full_name,role,login_id,user_folder_path,created_at,pin_hash,access_status,blocked_at")
-    .eq(normalizedEmail ? "email" : "login_id", normalizedEmail || loginId)
+    .select("id,email,full_name,role,login_id,user_folder_path,created_at,password_hash,access_status,blocked_at")
+    .eq(isEmail ? "email" : "login_id", isEmail ? identifier : identifier.toUpperCase())
     .maybeSingle();
 
   if (error) {
@@ -43,7 +41,7 @@ export async function POST(request: NextRequest) {
 
   if (!data) {
     return NextResponse.json(
-      { ok: false, message: "Invalid Telgo ID/email or PIN." },
+      { ok: false, message: "No account found with this email. Please request access first." },
       { status: 401 }
     );
   }
@@ -57,22 +55,19 @@ export async function POST(request: NextRequest) {
 
   if (data.access_status === "pending") {
     return NextResponse.json(
-      { ok: false, message: "Your access request is pending approval. You will receive an email once approved." },
+      { ok: false, message: "Your access request is pending admin approval. You will receive an email once approved." },
       { status: 403 }
     );
   }
 
-  const expectedPinHash = String(data.pin_hash ?? "").trim().toLowerCase();
-  const resolvedPinHash =
-    pinHash.length >= 32
-      ? pinHash
-      : createHash("sha256")
-          .update(`${normalizeLoginId(data.login_id)}:${pin}`)
-          .digest("hex");
+  const expectedHash = String(data.password_hash ?? "").trim().toLowerCase();
+  const providedHash = createHash("sha256")
+    .update(`${identifier}:${password}`)
+    .digest("hex");
 
-  if (!expectedPinHash || resolvedPinHash !== expectedPinHash) {
+  if (!expectedHash || providedHash !== expectedHash) {
     return NextResponse.json(
-      { ok: false, message: "Invalid Telgo ID/email or PIN." },
+      { ok: false, message: "Incorrect password. Please try again or contact Telgo admin." },
       { status: 401 }
     );
   }
@@ -90,9 +85,4 @@ export async function POST(request: NextRequest) {
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
   return "Server configuration is missing.";
-}
-
-function normalizeEmail(value: string) {
-  const email = value.trim().toLowerCase();
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
 }
