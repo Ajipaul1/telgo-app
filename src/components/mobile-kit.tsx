@@ -125,9 +125,63 @@ export function MobileShell({
 }) {
   const router = useRouter();
   const signOut = useOpsStore((state) => state.signOut);
-  const user = topUser ?? topUserByRole[role];
+  const currentUser = useOpsStore((state) => getCurrentUser(state));
+  const unreadNotifications = useOpsStore(
+    (state) =>
+      state.notifications.filter(
+        (item) => !item.read && (item.targetRole === role || item.targetRole === "all")
+      ).length
+  );
+  const projectSyncStatus = useOpsStore((state) => state.projectSyncStatus);
+  const replaceManagedProjects = useOpsStore((state) => state.replaceManagedProjects);
+  const setProjectSyncState = useOpsStore((state) => state.setProjectSyncState);
+  const user = topUser ?? {
+    name: currentUser.fullName || topUserByRole[role].name,
+    subtitle: currentUser.designation || topUserByRole[role].subtitle,
+    avatar: currentUser.avatar || topUserByRole[role].avatar,
+    status: topUserByRole[role].status
+  };
   const homeHref = homeHrefByRole[role];
   const fallbackBackHref = activeHref === homeHref ? "/" : homeHref;
+
+  useEffect(() => {
+    if (projectSyncStatus !== "demo") return;
+
+    let cancelled = false;
+    setProjectSyncState("syncing");
+
+    void fetch("/api/mobile/projects", { cache: "no-store" })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as
+          | { ok?: boolean; projects?: unknown; message?: unknown }
+          | null;
+        if (cancelled) return;
+
+        if (response.ok && Array.isArray(payload?.projects)) {
+          replaceManagedProjects(payload.projects as never[], "supabase");
+          if (payload?.message) {
+            setProjectSyncState("error", String(payload.message));
+          }
+          return;
+        }
+
+        setProjectSyncState(
+          "error",
+          String(payload?.message ?? "Project sync failed.")
+        );
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setProjectSyncState(
+          "error",
+          error instanceof Error ? error.message : "Project sync failed."
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectSyncStatus, replaceManagedProjects, setProjectSyncState]);
 
   function handleBack() {
     if (backHref) {
@@ -182,9 +236,11 @@ export function MobileShell({
                 className="relative grid h-10 w-10 place-items-center rounded-[12px] border border-[#eceef7] bg-white text-[#18214d] shadow-[0_6px_16px_rgba(35,46,92,0.05)]"
               >
                 <Bell className="h-[18px] w-[18px]" />
-                <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#ff3047] px-1 text-[9px] font-bold text-white">
-                  5
-                </span>
+                {unreadNotifications > 0 ? (
+                  <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#ff3047] px-1 text-[9px] font-bold text-white">
+                    {Math.min(unreadNotifications, 99)}
+                  </span>
+                ) : null}
               </Link>
             )}
             {!rightSlot ? (

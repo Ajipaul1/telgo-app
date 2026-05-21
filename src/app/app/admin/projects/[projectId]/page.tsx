@@ -1,4 +1,4 @@
-import { ProjectManagementMobileScreen } from "@/components/mobile-screens";
+import { AdminProjectEditorScreen } from "@/components/admin-project-editor";
 
 export default async function AdminProjectDetailPage({
   params
@@ -6,5 +6,5 @@ export default async function AdminProjectDetailPage({
   params: Promise<{ projectId: string }>;
 }) {
   const { projectId } = await params;
-  return <ProjectManagementMobileScreen projectId={projectId} />;
+  return <AdminProjectEditorScreen projectId={projectId} />;
 }
