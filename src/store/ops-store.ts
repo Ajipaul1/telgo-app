@@ -163,6 +163,7 @@ export type ClientPermission = {
 };
 
 export type ProjectSyncStatus = "demo" | "syncing" | "supabase" | "error";
+export type TaskSyncStatus = "demo" | "syncing" | "supabase" | "error";
 
 export type OpsState = {
   currentUserId: string;
@@ -179,6 +180,8 @@ export type OpsState = {
   chatMessages: ChatMessage[];
   notifications: AppNotification[];
   tasks: ManagedTask[];
+  taskSyncStatus: TaskSyncStatus;
+  taskSyncError: string | null;
   leaveRequests: LeaveRequest[];
   projectDocuments: ProjectDocument[];
   projectReports: ProjectReport[];
@@ -188,6 +191,11 @@ export type OpsState = {
     source?: Exclude<ProjectSyncStatus, "syncing" | "error">
   ) => void;
   setProjectSyncState: (status: ProjectSyncStatus, error?: string | null) => void;
+  replaceTasks: (
+    tasks: ManagedTask[],
+    source?: Exclude<TaskSyncStatus, "syncing" | "error">
+  ) => void;
+  setTaskSyncState: (status: TaskSyncStatus, error?: string | null) => void;
   login: (identifier: string, password: string, fallbackRole: Role) => DemoUser;
   signOut: () => void;
   setForceOffline: (value: boolean) => void;
@@ -915,6 +923,8 @@ export const useOpsStore = create<OpsState>()(
       ],
       notifications: seedNotifications,
       tasks: seedTasks,
+      taskSyncStatus: "demo",
+      taskSyncError: null,
       leaveRequests: seedLeaveRequests,
       projectDocuments: seedProjectDocuments,
       projectReports: seedProjectReports,
@@ -929,6 +939,17 @@ export const useOpsStore = create<OpsState>()(
         set(() => ({
           projectSyncStatus: status,
           projectSyncError: error
+        })),
+      replaceTasks: (tasks, source = "supabase") =>
+        set(() => ({
+          tasks,
+          taskSyncStatus: source,
+          taskSyncError: null
+        })),
+      setTaskSyncState: (status, error = null) =>
+        set(() => ({
+          taskSyncStatus: status,
+          taskSyncError: error
         })),
       login: (identifier, password, fallbackRole) => {
         const normalized = identifier.trim().toLowerCase();
