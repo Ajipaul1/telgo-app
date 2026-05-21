@@ -165,6 +165,12 @@ export type ClientPermission = {
 export type ProjectSyncStatus = "demo" | "syncing" | "supabase" | "error";
 export type TaskSyncStatus = "demo" | "syncing" | "supabase" | "error";
 
+export type GeolocationState = {
+  permission: "prompt" | "granted" | "denied";
+  position: GeolocationPosition | null;
+  error: GeolocationPositionError | null;
+};
+
 export type OpsState = {
   currentUserId: string;
   forceOffline: boolean;
@@ -186,6 +192,7 @@ export type OpsState = {
   projectDocuments: ProjectDocument[];
   projectReports: ProjectReport[];
   clientPermissions: ClientPermission[];
+  liveLocation: GeolocationState;
   replaceManagedProjects: (
     projects: Project[],
     source?: Exclude<ProjectSyncStatus, "syncing" | "error">
@@ -249,6 +256,7 @@ export type OpsState = {
   upsertClientPermission: (
     permission: Omit<ClientPermission, "id"> & { id?: string }
   ) => string;
+  setLiveLocation: (location: GeolocationState) => void;
   markNotificationRead: (id: string) => void;
 };
 
@@ -929,6 +937,7 @@ export const useOpsStore = create<OpsState>()(
       projectDocuments: seedProjectDocuments,
       projectReports: seedProjectReports,
       clientPermissions: seedClientPermissions,
+      liveLocation: { permission: "prompt", position: null, error: null },
       replaceManagedProjects: (projects, source = "supabase") =>
         set(() => ({
           managedProjects: projects.map((project) => normalizeProject(project)),
@@ -1482,6 +1491,7 @@ export const useOpsStore = create<OpsState>()(
         }));
         return id;
       },
+      setLiveLocation: (location) => set({ liveLocation: location }),
       markNotificationRead: (id) =>
         set((state) => ({
           notifications: state.notifications.map((item) =>
