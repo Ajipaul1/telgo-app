@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getMobileAccessClient } from "@/lib/server/mobile-access";
 import { readMobileSession } from "@/lib/server/mobile-session";
-import { listMobileTrackingSnapshot } from "@/lib/server/mobile-attendance";
+import { listMobileTrackingSnapshot, markMobileAttendance } from "@/lib/server/mobile-attendance";
 
 export async function GET(request: NextRequest) {
   const session = readMobileSession(request);
@@ -22,6 +22,31 @@ export async function GET(request: NextRequest) {
   try {
     const snapshot = await listMobileTrackingSnapshot(supabase, session);
     return NextResponse.json({ ok: true, ...snapshot });
+  } catch (error) {
+    return NextResponse.json({ ok: false, message: getErrorMessage(error) }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  const session = readMobileSession(request);
+  if (!session) {
+    return NextResponse.json(
+      { ok: false, message: "Sign in again to mark attendance." },
+      { status: 401 }
+    );
+  }
+
+  let supabase: ReturnType<typeof getMobileAccessClient>;
+  try {
+    supabase = getMobileAccessClient();
+  } catch (error) {
+    return NextResponse.json({ ok: false, message: getErrorMessage(error) }, { status: 500 });
+  }
+
+  try {
+    const body = await request.json();
+    const result = await markMobileAttendance(supabase, session, body);
+    return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     return NextResponse.json({ ok: false, message: getErrorMessage(error) }, { status: 500 });
   }

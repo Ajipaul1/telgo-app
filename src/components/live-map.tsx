@@ -88,6 +88,7 @@ export function LiveMap({
         userId: "", // This will be set on the server
         projectId: "", // This will be set on the server
         status: "queued",
+        checkInAt: new Date().toISOString(),
       });
     }
   }, [position, markAttendance]);
@@ -1049,7 +1050,7 @@ function escapeSvgText(value: string) {
     .replaceAll("&", "&")
     .replaceAll("<", "<")
     .replaceAll(">", ">")
-    .replaceAll('"', """)
+    .replaceAll('"', '"')
     .replaceAll("'", "'");
 }
 

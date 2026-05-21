@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json().catch(() => null)) as
-      | {
+    | {
         latitude?: unknown;
         longitude?: unknown;
         gpsAccuracyM?: unknown;
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         ok: false,
         message: `Location accuracy is too weak for live attendance tracking. Current device accuracy is about ${Math.round(
           Number.isFinite(gpsAccuracyM ?? NaN) ? gpsAccuracyM ?? 0 : 0
-        )} m. Move outdoors, enable precise location, or use the phone APK and try again.`
+        )} m. Move outdoors, enable precise location, or use the phone APK and try again.`,
       },
       { status: 400 }
     );
@@ -65,14 +65,14 @@ export async function POST(request: NextRequest) {
       latitude,
       longitude,
       gpsAccuracyM: Number.isFinite(gpsAccuracyM ?? NaN) ? gpsAccuracyM : null,
-      projectId: typeof body?.projectId === "string" ? body.projectId : null
+      projectId: typeof body?.projectId === "string" ? body.projectId : null,
     });
 
     return NextResponse.json({
       ok: true,
       attendance: result.attendance,
       location: result.location,
-      geofenceMeters: result.geofenceMeters
+      geofenceMeters: result.geofenceMeters,
     });
   } catch (error) {
     return NextResponse.json({ ok: false, message: getErrorMessage(error) }, { status: 500 });
