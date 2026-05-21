@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { telgoConfig } from "@/lib/config";
-import { engineers, projects } from "@/lib/demo-data";
+import { projects } from "@/lib/demo-data";
 import {
   formatMeters,
   getCorridorProgressPoint,
@@ -14,6 +14,8 @@ import {
 import type { Project } from "@/lib/types";
 import { Badge, GlassCard, Icon } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { useOpsStore } from "@/store/ops-store";
+import { useGeolocation } from "@/lib/use-geolocation";
 
 declare global {
   interface Window {
@@ -51,7 +53,7 @@ export function LiveMap({
   projectsData,
   compactProjectScope = "focus",
   compactActionLabel = "View Full Map",
-  onCompactAction
+  onCompactAction,
 }: {
   className?: string;
   compact?: boolean;
@@ -72,6 +74,23 @@ export function LiveMap({
   const [mapErrorDetail, setMapErrorDetail] = useState<string | null>(null);
   const safeTrackedPoints = trackedPoints ?? EMPTY_TRACKED_POINTS;
   const safeProjects = useMemo(() => (projectsData?.length ? projectsData : projects), [projectsData]);
+  const { position } = useGeolocation();
+  const markAttendance = useOpsStore((s) => s.markAttendance);
+
+  useEffect(() => {
+    if (position) {
+      markAttendance({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracyM: position.coords.accuracy,
+        distanceFromSiteM: 0, // This will be calculated on the server
+        withinGeofence: false, // This will be calculated on the server
+        userId: "", // This will be set on the server
+        projectId: "", // This will be set on the server
+        status: "queued",
+      });
+    }
+  }, [position, markAttendance]);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -113,7 +132,7 @@ export function LiveMap({
           streetViewControl: false,
           gestureHandling: "greedy",
           clickableIcons: false,
-          disableDefaultUI: compact
+          disableDefaultUI: compact,
         });
 
         mapRef.current = map;
@@ -137,38 +156,6 @@ export function LiveMap({
               addTrackedLocationLink(maps, map, point, relatedProject, overlayRefs.current);
             }
             addTrackedLocationMarker(maps, map, point, overlayRefs.current, infoWindowRef.current);
-          });
-        } else {
-          engineers.forEach((engineer, index) => {
-            const project = visibleProjects[index % visibleProjects.length] ?? focus;
-            const anchorPoint = getProjectAnchor(project);
-            const marker = new maps.Marker({
-              map,
-              position: { lat: anchorPoint[1] + 0.0005, lng: anchorPoint[0] + 0.0008 },
-              icon: {
-                path: maps.SymbolPath.CIRCLE,
-                scale: 8,
-                fillColor: engineer.status === "Moving" || engineer.status === "Active" ? "#22d3ee" : "#f59e0b",
-                fillOpacity: 0.92,
-                strokeColor: "#ffffff",
-                strokeWeight: 2
-              },
-              label: {
-                text: "E",
-                color: "#07122f",
-                fontSize: "11px",
-                fontWeight: "700"
-              }
-            });
-
-            marker.addListener("click", () => {
-              infoWindowRef.current?.setContent(
-                `<strong>${engineer.name}</strong><br/>${engineer.site}<br/>${engineer.status}`
-              );
-              infoWindowRef.current?.open({ anchor: marker, map });
-            });
-
-            overlayRefs.current.push(marker);
           });
         }
 
@@ -424,7 +411,9 @@ function addProjectMarker(
 ) {
   const anchor = getProjectAnchor(project);
   const popupBody = hasCorridor(project)
-    ? `${project.corridor.startLabel} to ${project.corridor.endLabel}<br/>${formatMeters(project.corridor.completedMeters)} of ${formatMeters(project.corridor.totalMeters)} completed`
+    ? `${project.corridor.startLabel} to ${project.corridor.endLabel}<br/>${formatMeters(
+        project.corridor.completedMeters
+      )} of ${formatMeters(project.corridor.totalMeters)} completed`
     : `${project.location}<br/>${project.progress}% complete`;
 
   const marker = new maps.Marker({
@@ -436,8 +425,8 @@ function addProjectMarker(
       fillColor: accentColor(project.accent),
       fillOpacity: 0.95,
       strokeColor: "#ffffff",
-      strokeWeight: 2
-    }
+      strokeWeight: 2,
+    },
   });
 
   marker.addListener("click", () => {
@@ -448,13 +437,7 @@ function addProjectMarker(
   overlays.push(marker);
 }
 
-function addCorridorLayers(
-  maps: any,
-  map: any,
-  project: Project,
-  overlays: any[],
-  emphasized: boolean
-) {
+function addCorridorLayers(maps: any, map: any, project: Project, overlays: any[], emphasized: boolean) {
   if (!hasCorridor(project)) return;
 
   const corridor = project.corridor;
@@ -464,36 +447,30 @@ function addCorridorLayers(
     map,
     path: [
       { lat: corridor.startCoordinates[1], lng: corridor.startCoordinates[0] },
-      { lat: corridor.endCoordinates[1], lng: corridor.endCoordinates[0] }
+      { lat: corridor.endCoordinates[1], lng: corridor.endCoordinates[0] },
     ],
     geodesic: true,
     strokeColor: accentColor(project.accent),
     strokeOpacity: 0.38,
-    strokeWeight: emphasized ? 8 : 6
+    strokeWeight: emphasized ? 8 : 6,
   });
 
   const progress = new maps.Polyline({
     map,
     path: [
       { lat: corridor.startCoordinates[1], lng: corridor.startCoordinates[0] },
-      { lat: progressPoint[1], lng: progressPoint[0] }
+      { lat: progressPoint[1], lng: progressPoint[0] },
     ],
     geodesic: true,
     strokeColor: "#22c55e",
     strokeOpacity: 0.95,
-    strokeWeight: emphasized ? 9 : 7
+    strokeWeight: emphasized ? 9 : 7,
   });
 
   overlays.push(route, progress);
 }
 
-function addCorridorMarkers(
-  maps: any,
-  map: any,
-  project: Project,
-  overlays: any[],
-  infoWindow: any
-) {
+function addCorridorMarkers(maps: any, map: any, project: Project, overlays: any[], infoWindow: any) {
   if (!hasCorridor(project)) return;
 
   const corridor = project.corridor;
@@ -504,20 +481,20 @@ function addCorridorMarkers(
       position: { lat: corridor.startCoordinates[1], lng: corridor.startCoordinates[0] },
       label: "S",
       color: "#22d3ee",
-      content: `<strong>${corridor.startLabel}</strong><br/>Corridor start`
+      content: `<strong>${corridor.startLabel}</strong><br/>Corridor start`,
     },
     {
       position: { lat: corridor.endCoordinates[1], lng: corridor.endCoordinates[0] },
       label: "E",
       color: "#8b5cf6",
-      content: `<strong>${corridor.endLabel}</strong><br/>Corridor end`
+      content: `<strong>${corridor.endLabel}</strong><br/>Corridor end`,
     },
     {
       position: { lat: progressPoint[1], lng: progressPoint[0] },
       label: "P",
       color: "#22c55e",
-      content: `<strong>Progress point</strong><br/>${formatMeters(corridor.completedMeters)} completed`
-    }
+      content: `<strong>Progress point</strong><br/>${formatMeters(corridor.completedMeters)} completed`,
+    },
   ];
 
   markers.forEach((item) => {
@@ -530,14 +507,14 @@ function addCorridorMarkers(
         fillColor: item.color,
         fillOpacity: 0.95,
         strokeColor: "#ffffff",
-        strokeWeight: 2
+        strokeWeight: 2,
       },
       label: {
         text: item.label,
         color: "#07122f",
         fontSize: "10px",
-        fontWeight: "700"
-      }
+        fontWeight: "700",
+      },
     });
 
     marker.addListener("click", () => {
@@ -565,14 +542,14 @@ function addCorridorMarkers(
         fillColor: "#f59e0b",
         fillOpacity: 0.95,
         strokeColor: "#ffffff",
-        strokeWeight: 2
+        strokeWeight: 2,
       },
       label: {
         text: "U",
         color: "#07122f",
         fontSize: "10px",
-        fontWeight: "700"
-      }
+        fontWeight: "700",
+      },
     });
 
     marker.addListener("click", () => {
@@ -599,14 +576,16 @@ function addTrackedLocationMarker(
     icon: {
       url: buildTrackedMarkerIcon(point.withinGeofence ? "#115cff" : "#f59e0b", point.userName),
       scaledSize: new maps.Size(158, 52),
-      anchor: new maps.Point(20, 45)
+      anchor: new maps.Point(20, 45),
     },
-    zIndex: point.withinGeofence ? 900 : 950
+    zIndex: point.withinGeofence ? 900 : 950,
   });
 
   marker.addListener("click", () => {
     infoWindow.setContent(
-      `<strong>${point.userName}</strong><br/>@${point.userLoginId}<br/>${point.projectName}<br/>${point.distanceFromSiteM} m from site start<br/>${new Date(point.recordedAt).toLocaleString("en-IN")}`
+      `<strong>${point.userName}</strong><br/>@${point.userLoginId}<br/>${point.projectName}<br/>${
+        point.distanceFromSiteM
+      } m from site start<br/>${new Date(point.recordedAt).toLocaleString("en-IN")}`
     );
     infoWindow.open({ anchor: marker, map });
   });
@@ -627,7 +606,7 @@ function addTrackedLocationLink(
     map,
     path: [
       { lat: anchor[1], lng: anchor[0] },
-      { lat: point.latitude, lng: point.longitude }
+      { lat: point.latitude, lng: point.longitude },
     ],
     geodesic: true,
     strokeColor: point.withinGeofence ? "#115cff" : "#f59e0b",
@@ -638,12 +617,12 @@ function addTrackedLocationLink(
         icon: {
           path: "M 0,-1 0,1",
           strokeOpacity: 1,
-          scale: 3
+          scale: 3,
         },
         offset: "0",
-        repeat: "14px"
-      }
-    ]
+        repeat: "14px",
+      },
+    ],
   });
 
   overlays.push(line);
@@ -693,7 +672,7 @@ function CompactMapOverlay({
   viewport,
   focusProjectId,
   actionLabel,
-  onAction
+  onAction,
 }: {
   projects: Project[];
   viewport: FallbackViewport;
@@ -726,7 +705,7 @@ function CompactMapOverlay({
             style={{
               left,
               top,
-              transform: "translate(-34%, -92%)"
+              transform: "translate(-34%, -92%)",
             }}
           >
             <div className="pointer-events-auto flex items-start gap-2">
@@ -767,7 +746,7 @@ function FallbackProjectMap({
   projects,
   trackedPoints,
   focusProjectId,
-  compact
+  compact,
 }: {
   projects: Project[];
   trackedPoints: LiveMapTrackedPoint[];
@@ -1009,7 +988,7 @@ function getFallbackViewport(projects: Project[], trackedPoints: LiveMapTrackedP
     minLng: Math.min(...lngs),
     maxLng: Math.max(...lngs),
     minLat: Math.min(...lats),
-    maxLat: Math.max(...lats)
+    maxLat: Math.max(...lats),
   };
 }
 
@@ -1035,7 +1014,7 @@ function accentColor(accent: Project["accent"], alpha?: number) {
     amber: alpha ? `rgba(245,158,11,${alpha})` : "#f59e0b",
     red: alpha ? `rgba(244,63,94,${alpha})` : "#f43f5e",
     violet: alpha ? `rgba(139,92,246,${alpha})` : "#8b5cf6",
-    slate: alpha ? `rgba(100,116,139,${alpha})` : "#64748b"
+    slate: alpha ? `rgba(100,116,139,${alpha})` : "#64748b",
   };
 
   return palette[accent];
@@ -1067,11 +1046,11 @@ function shortTrackedName(userName: string) {
 
 function escapeSvgText(value: string) {
   return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
+    .replaceAll("&", "&")
+    .replaceAll("<", "<")
+    .replaceAll(">", ">")
+    .replaceAll('"', """)
+    .replaceAll("'", "'");
 }
 
 function compactStatusChip(status: Project["status"]) {
