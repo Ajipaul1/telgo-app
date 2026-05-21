@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { useEffect, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import type { Role } from "@/lib/types";
-import { useOpsStore } from "@/store/ops-store";
+import { getCurrentUser, useOpsStore } from "@/store/ops-store";
 
 type NavItem = {
   href: string;

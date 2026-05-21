@@ -162,11 +162,15 @@ export type ClientPermission = {
   canChat: boolean;
 };
 
+export type ProjectSyncStatus = "demo" | "syncing" | "supabase" | "error";
+
 export type OpsState = {
   currentUserId: string;
   forceOffline: boolean;
   users: DemoUser[];
   managedProjects: Project[];
+  projectSyncStatus: ProjectSyncStatus;
+  projectSyncError: string | null;
   accessRequests: AccessRequest[];
   activeAssignments: Record<string, string>;
   attendance: AttendanceRecord[];
@@ -179,6 +183,11 @@ export type OpsState = {
   projectDocuments: ProjectDocument[];
   projectReports: ProjectReport[];
   clientPermissions: ClientPermission[];
+  replaceManagedProjects: (
+    projects: Project[],
+    source?: Exclude<ProjectSyncStatus, "syncing" | "error">
+  ) => void;
+  setProjectSyncState: (status: ProjectSyncStatus, error?: string | null) => void;
   login: (identifier: string, password: string, fallbackRole: Role) => DemoUser;
   signOut: () => void;
   setForceOffline: (value: boolean) => void;
@@ -867,6 +876,8 @@ export const useOpsStore = create<OpsState>()(
       forceOffline: false,
       users: seedUsers,
       managedProjects: demoProjects,
+      projectSyncStatus: "demo",
+      projectSyncError: null,
       accessRequests: seedAccessRequests,
       activeAssignments: {
         "admin-vishnu": "vadakkekotta-sn-cable",
@@ -908,6 +919,17 @@ export const useOpsStore = create<OpsState>()(
       projectDocuments: seedProjectDocuments,
       projectReports: seedProjectReports,
       clientPermissions: seedClientPermissions,
+      replaceManagedProjects: (projects, source = "supabase") =>
+        set(() => ({
+          managedProjects: projects.map((project) => normalizeProject(project)),
+          projectSyncStatus: source,
+          projectSyncError: null
+        })),
+      setProjectSyncState: (status, error = null) =>
+        set(() => ({
+          projectSyncStatus: status,
+          projectSyncError: error
+        })),
       login: (identifier, password, fallbackRole) => {
         const normalized = identifier.trim().toLowerCase();
         const user =
