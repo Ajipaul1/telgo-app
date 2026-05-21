@@ -135,6 +135,11 @@ export function MobileShell({
   const projectSyncStatus = useOpsStore((state) => state.projectSyncStatus);
   const replaceManagedProjects = useOpsStore((state) => state.replaceManagedProjects);
   const setProjectSyncState = useOpsStore((state) => state.setProjectSyncState);
+
+  const taskSyncStatus = useOpsStore((state) => state.taskSyncStatus);
+  const replaceTasks = useOpsStore((state) => state.replaceTasks);
+  const setTaskSyncState = useOpsStore((state) => state.setTaskSyncState);
+
   const user = topUser ?? {
     name: currentUser.fullName || topUserByRole[role].name,
     subtitle: currentUser.designation || topUserByRole[role].subtitle,
@@ -182,6 +187,45 @@ export function MobileShell({
       cancelled = true;
     };
   }, [projectSyncStatus, replaceManagedProjects, setProjectSyncState]);
+
+  useEffect(() => {
+    if (taskSyncStatus !== "demo") return;
+
+    let cancelled = false;
+    setTaskSyncState("syncing");
+
+    void fetch("/api/mobile/tasks", { cache: "no-store" })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as
+          | { ok?: boolean; tasks?: unknown; message?: unknown }
+          | null;
+        if (cancelled) return;
+
+        if (response.ok && Array.isArray(payload?.tasks)) {
+          replaceTasks(payload.tasks as never[], "supabase");
+          if (payload?.message) {
+            setTaskSyncState("error", String(payload.message));
+          }
+          return;
+        }
+
+        setTaskSyncState(
+          "error",
+          String(payload?.message ?? "Task sync failed.")
+        );
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setTaskSyncState(
+          "error",
+          error instanceof Error ? error.message : "Task sync failed."
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [taskSyncStatus, replaceTasks, setTaskSyncState]);
 
   function handleBack() {
     if (backHref) {
@@ -585,15 +629,34 @@ export function MobileTextArea({
   );
 }
 
-export function MobileUploadBox({ title, detail }: { title: string; detail: string }) {
+export function MobileUploadBox({
+  title,
+  detail,
+  onChange,
+  accept,
+  multiple
+}: {
+  title: string;
+  detail: string;
+  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  accept?: string;
+  multiple?: boolean;
+}) {
   return (
-    <div className="rounded-[14px] border border-dashed border-[#d7d2ff] bg-[#fbfaff] px-4 py-5 text-center">
+    <label className="block cursor-pointer rounded-[14px] border border-dashed border-[#d7d2ff] bg-[#fbfaff] px-4 py-5 text-center transition-colors hover:bg-[#f6f3ff]">
+      <input
+        type="file"
+        className="hidden"
+        onChange={onChange}
+        accept={accept}
+        multiple={multiple}
+      />
       <div className="mx-auto mb-2.5 grid h-10 w-10 place-items-center rounded-[10px] bg-[#f2efff] text-[#6a35ff]">
         <Plus className="h-6 w-6" />
       </div>
       <p className="text-[13px] font-bold text-[#5f34ff]">{title}</p>
       <p className="mt-1 text-[11px] text-[#9197be]">{detail}</p>
-    </div>
+    </label>
   );
 }
 

@@ -340,70 +340,87 @@ export function AttendanceAction() {
 
   async function checkIn() {
     setStatus("Verifying GPS...");
-    const fallback = targetCoordinates;
-    const location = await getCurrentPosition(fallback);
-    setCoords(location);
-    const distanceFromSiteM = Math.round(
-      distanceMeters(location.lat, location.lng, targetCoordinates.lat, targetCoordinates.lng)
-    );
-    const withinGeofence = distanceFromSiteM <= geofenceMeters;
+    try {
+      const location = await getCurrentPosition();
+      setCoords(location);
+      if (location.accuracy > 500) {
+        throw new Error(`GPS accuracy is too weak (${Math.round(location.accuracy)}m). Please move outdoors or to an open area.`);
+      }
 
-    const payload = {
-      user_id: currentUser.id,
-      project_id: project.id,
-      check_in_at: new Date().toISOString(),
-      latitude: location.lat,
-      longitude: location.lng,
-      gps_accuracy_m: 7,
-      distance_from_site_m: distanceFromSiteM,
-      within_geofence: withinGeofence,
-      status: "pending_approval"
-    };
+      const distanceFromSiteM = Math.round(
+        distanceMeters(location.lat, location.lng, targetCoordinates.lat, targetCoordinates.lng)
+      );
+      const withinGeofence = distanceFromSiteM <= geofenceMeters;
 
-    if (!online) {
+      const localPayload = {
+        user_id: currentUser.id,
+        project_id: project.id,
+        check_in_at: new Date().toISOString(),
+        latitude: location.lat,
+        longitude: location.lng,
+        gps_accuracy_m: location.accuracy,
+        distance_from_site_m: distanceFromSiteM,
+        within_geofence: withinGeofence,
+        status: withinGeofence ? "approved" : "pending_approval"
+      };
+
+      if (!online) {
+        ops.markAttendance({
+          userId: currentUser.id,
+          projectId: project.id,
+          checkInAt: localPayload.check_in_at,
+          latitude: location.lat,
+          longitude: location.lng,
+          accuracyM: location.accuracy,
+          distanceFromSiteM,
+          withinGeofence,
+          status: "queued"
+        });
+        addItem({
+          type: "attendance",
+          title: "GPS Attendance",
+          size: "0.2 MB",
+          payload: localPayload
+        });
+        setStatus("Saved Offline");
+        return;
+      }
+
+      const response = await fetch("/api/mobile/attendance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId: project.id,
+          latitude: location.lat,
+          longitude: location.lng,
+          gpsAccuracyM: location.accuracy,
+        }),
+      });
+
+      const resData = await response.json();
+      if (!response.ok || !resData.ok) {
+        throw new Error(resData.message || "Failed to mark attendance.");
+      }
+
+      const att = resData.attendance;
       ops.markAttendance({
         userId: currentUser.id,
         projectId: project.id,
-        checkInAt: payload.check_in_at,
-        latitude: location.lat,
-        longitude: location.lng,
-        accuracyM: 7,
-        distanceFromSiteM,
-        withinGeofence,
-        status: "queued"
+        checkInAt: att.checkInAt || localPayload.check_in_at,
+        latitude: att.latitude ?? location.lat,
+        longitude: att.longitude ?? location.lng,
+        accuracyM: att.gpsAccuracyM ?? location.accuracy,
+        distanceFromSiteM: att.distanceFromSiteM ?? distanceFromSiteM,
+        withinGeofence: att.withinGeofence ?? withinGeofence,
+        status: att.status === "checked_in" ? "approved" : "pending_approval"
       });
-      addItem({
-        type: "attendance",
-        title: "GPS Attendance",
-        size: "0.2 MB",
-        payload
-      });
-      setStatus("Saved Offline");
-      return;
-    }
 
-    const { error } = await guardedSupabaseWrite(supabase.from("attendance").insert(payload));
-    ops.markAttendance({
-      userId: currentUser.id,
-      projectId: project.id,
-      checkInAt: payload.check_in_at,
-      latitude: location.lat,
-      longitude: location.lng,
-      accuracyM: 7,
-      distanceFromSiteM,
-      withinGeofence,
-      status: error ? "queued" : "pending_approval"
-    });
-    if (error) {
-      addItem({
-        type: "attendance",
-        title: "GPS Attendance",
-        size: "0.2 MB",
-        payload
-      });
-      setStatus(withinGeofence ? "Checked In (Queued)" : "Queued for Approval");
-    } else {
-      setStatus(withinGeofence ? "Checked In" : "Needs Approval");
+      setStatus(att.status === "checked_in" ? "Checked In" : "Needs Approval");
+    } catch (err: any) {
+      console.error(err);
+      setStatus(err.message || "Failed to check in.");
     }
   }
 
@@ -1516,17 +1533,37 @@ function normalizeRole(value: string): Role {
   return "client";
 }
 
-function getCurrentPosition(fallback: { lat: number; lng: number }) {
-  if (!("geolocation" in navigator)) return Promise.resolve(fallback);
-  return new Promise<{ lat: number; lng: number }>((resolve) => {
+function getCurrentPosition(): Promise<{ lat: number; lng: number; accuracy: number }> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      reject(new Error("Your browser or device does not support geolocation. Please use a modern mobile browser or download the APK."));
+      return;
+    }
     navigator.geolocation.getCurrentPosition(
-      (position) =>
+      (position) => {
         resolve({
           lat: position.coords.latitude,
-          lng: position.coords.longitude
-        }),
-      () => resolve(fallback),
-      { enableHighAccuracy: true, timeout: 5000 }
+          lng: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+        });
+      },
+      (error) => {
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            reject(new Error("GPS Location access denied. Please enable location permissions for your browser or in your device settings."));
+            break;
+          case error.POSITION_UNAVAILABLE:
+            reject(new Error("GPS Location is unavailable. Please verify that your device GPS is turned on and you are outdoors."));
+            break;
+          case error.TIMEOUT:
+            reject(new Error("GPS Location request timed out. Please try again or move to an open area."));
+            break;
+          default:
+            reject(new Error(error.message || "An unknown GPS error occurred. Please try again."));
+            break;
+        }
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   });
 }

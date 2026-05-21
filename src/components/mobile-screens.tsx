@@ -1009,6 +1009,7 @@ export function ApprovalsMobileScreen({
   );
   const [decisions, setDecisions] = useState<Record<string, "Approved" | "Rejected" | undefined>>({});
   const [tab, setTab] = useState(`All (${approvalQueue.length})`);
+  const online = useOnlineStatus();
 
   function handleDecision(item: EnterpriseApprovalItem, decision: "Approved" | "Rejected") {
     if (item.kind === "access") {
@@ -1029,9 +1030,19 @@ export function ApprovalsMobileScreen({
     }
     if (item.kind === "report") {
       ops.reviewProjectReport(item.entityId, decision === "Approved" ? "approved" : "rejected");
+      if (online && decision === "Rejected") {
+        void guardedSupabaseWrite(
+          supabase.from("shift_reports").delete().eq("id", item.entityId)
+        );
+      }
     }
     if (item.kind === "document") {
       ops.reviewProjectDocument(item.entityId, decision === "Approved" ? "approved" : "rejected");
+      if (online && decision === "Rejected") {
+        void guardedSupabaseWrite(
+          supabase.from("documents").delete().eq("id", item.entityId)
+        );
+      }
     }
     setDecisions((state) => ({ ...state, [item.id]: decision }));
   }
@@ -1477,6 +1488,64 @@ export function WorkerAssignTaskMobileScreen({
   const [notes, setNotes] = useState("");
   const resolvedBackHref =
     backHref ?? (detailBasePath ? `${detailBasePath}/${worker.id}` : `/app/admin/staff/${worker.id}`);
+
+  const [busy, setBusy] = useState(false);
+  const [statusMsg, setStatusMsg] = useState("");
+  const online = useOnlineStatus();
+  const currentUser = getCurrentUser(ops);
+
+  async function handleAssignTask(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setStatusMsg("Assigning task...");
+
+    const taskPayload = {
+      title: taskTitle || "New assigned task",
+      detail: taskDescription || "Task detail to be confirmed.",
+      projectId: workerProject?.id ?? ops.managedProjects[0]!.id,
+      assigneeUserId: worker.id,
+      assignedByUserId: currentUser?.id || "admin",
+      priority: priority.toLowerCase() as ManagedTask["priority"],
+      status: "pending" as const,
+      dueAt: dueDate,
+      taskType,
+      notes,
+      location: workerProject?.location || ""
+    };
+
+    try {
+      if (online) {
+        const res = await fetch("/api/mobile/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(taskPayload)
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          throw new Error(data?.message || "Failed to create task on Supabase.");
+        }
+        if (data?.task) {
+          ops.replaceTasks([data.task, ...ops.tasks], "supabase");
+          setStatusMsg("Task assigned successfully on Supabase!");
+        } else {
+          throw new Error("Invalid server response.");
+        }
+      } else {
+        ops.assignTask(taskPayload);
+        setStatusMsg("Task draft saved locally (offline).");
+      }
+      setSaved(true);
+      setTaskTitle("");
+      setTaskDescription("");
+      setNotes("");
+    } catch (err: any) {
+      console.error(err);
+      setStatusMsg(err.message || "Failed to assign task.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <MobileShell
       role={role}
@@ -1498,22 +1567,7 @@ export function WorkerAssignTaskMobileScreen({
     >
       <form
         className="space-y-5"
-        onSubmit={(event) => {
-          event.preventDefault();
-          ops.assignTask({
-            title: taskTitle || "New assigned task",
-            detail: taskDescription || "Task detail to be confirmed.",
-            projectId: workerProject?.id ?? ops.managedProjects[0]!.id,
-            assigneeUserId: worker.id,
-            priority: priority.toLowerCase() as ManagedTask["priority"],
-            status: "pending",
-            dueAt: dueDate,
-            taskType,
-            notes,
-            location: workerProject?.location
-          });
-          setSaved(true);
-        }}
+        onSubmit={handleAssignTask}
       >
         <MobileCard>
           <div className="mb-5 flex items-center gap-3">
@@ -1604,14 +1658,18 @@ export function WorkerAssignTaskMobileScreen({
               <p className="mt-2 text-base text-[#7d85b0]">{workerUser?.employeeCode ?? "ENG-0000"}</p>
             </div>
           </div>
-          {saved ? <p className="mt-4 text-sm font-semibold text-[#18aa5d]">Task draft saved locally.</p> : null}
+          {statusMsg ? (
+            <p className={`mt-4 text-sm font-semibold ${statusMsg.includes("failed") || statusMsg.includes("Error") ? "text-[#ff4f63]" : "text-[#18aa5d]"}`}>
+              {statusMsg}
+            </p>
+          ) : null}
         </MobileCard>
 
         <div className="grid grid-cols-2 gap-3">
           <MobileSecondaryButton href={resolvedBackHref}>Cancel</MobileSecondaryButton>
-          <button type="submit" className="inline-flex min-h-[58px] items-center justify-center rounded-[20px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-[1.05rem] font-semibold text-white shadow-[0_18px_36px_rgba(92,45,255,0.26)]">
+          <button type="submit" disabled={busy} className="inline-flex min-h-[58px] items-center justify-center rounded-[20px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-[1.05rem] font-semibold text-white shadow-[0_18px_36px_rgba(92,45,255,0.26)] disabled:opacity-50">
             <Send className="mr-2 h-5 w-5" />
-            Assign Task
+            {busy ? "Assigning..." : "Assign Task"}
           </button>
         </div>
       </form>
@@ -2083,6 +2141,96 @@ export function ClientAddDocumentMobileScreen() {
   const [documentType, setDocumentType] = useState("PDF");
   const [documentName, setDocumentName] = useState("");
   const [description, setDescription] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [statusMsg, setStatusMsg] = useState("");
+  const online = useOnlineStatus();
+
+  async function handleUpload(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setStatusMsg("Uploading document...");
+    
+    try {
+      let filePath = "";
+      let sizeLabel = "1.0 MB";
+      
+      const projId = primaryProject?.id ?? ops.managedProjects[0]?.id;
+      if (!projId) {
+        throw new Error("No active project found for document upload.");
+      }
+
+      if (selectedFile) {
+        const sizeMb = selectedFile.size / (1024 * 1024);
+        sizeLabel = `${sizeMb.toFixed(1)} MB`;
+        
+        if (online) {
+          const fileExt = selectedFile.name.split('.').pop() || "pdf";
+          const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+          const bucketPath = `${projId}/${uniqueName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from("project-documents")
+            .upload(bucketPath, selectedFile);
+          
+          if (uploadError) {
+            throw new Error(`Storage upload failed: ${uploadError.message}`);
+          }
+          filePath = bucketPath;
+        }
+      }
+
+      const docPayload = {
+        name: documentName || selectedFile?.name || "New client document",
+        projectId: projId,
+        type: documentType as "PDF" | "DOC" | "XLS" | "JPG" | "ZIP",
+        category: "client" as const,
+        authorUserId: currentUser.id,
+        sizeLabel,
+        description,
+        visibilityRoles: ["admin", "client", "engineer", "supervisor"] as Role[],
+        status: "pending" as const
+      };
+
+      if (online) {
+        const { error: dbError } = await guardedSupabaseWrite(
+          supabase.from("documents").insert({
+            project_id: docPayload.projectId,
+            uploaded_by: docPayload.authorUserId,
+            title: docPayload.name,
+            document_type: docPayload.type,
+            storage_bucket: "project-documents",
+            file_path: filePath || `general/${Date.now()}.pdf`,
+            file_size_bytes: selectedFile?.size ?? 1024 * 1024
+          })
+        );
+
+        if (dbError) {
+          throw new Error(`Database record creation failed: ${(dbError as any).message}`);
+        }
+        
+        ops.addProjectDocument(docPayload);
+        setStatusMsg("Document uploaded to Supabase!");
+      } else {
+        ops.addProjectDocument({
+          ...docPayload,
+          status: "pending"
+        });
+        setStatusMsg("Document saved offline.");
+      }
+      
+      setSaved(true);
+      setDocumentName("");
+      setDescription("");
+      setSelectedFile(null);
+    } catch (err: any) {
+      console.error(err);
+      setStatusMsg(err.message || "Failed to upload document.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <MobileShell
       role="client"
@@ -2093,23 +2241,7 @@ export function ClientAddDocumentMobileScreen() {
       leftMode="back"
       bottomNav={false}
     >
-      <form
-        className="space-y-5"
-        onSubmit={(event) => {
-          event.preventDefault();
-          ops.addProjectDocument({
-            name: documentName || "New client document",
-            projectId: primaryProject?.id ?? ops.managedProjects[0]!.id,
-            type: documentType as "PDF" | "DOC" | "XLS" | "JPG" | "ZIP",
-            category: "client",
-            authorUserId: currentUser.id,
-            sizeLabel: "1.0 MB",
-            description,
-            visibilityRoles: ["admin", "client", "engineer", "supervisor"]
-          });
-          setSaved(true);
-        }}
-      >
+      <form className="space-y-5" onSubmit={handleUpload}>
         <MobileCard>
           <div className="space-y-4">
             <MobileSelect
@@ -2121,14 +2253,42 @@ export function ClientAddDocumentMobileScreen() {
                 )
               }
             />
-            <MobileInput label="Document Name" placeholder="Enter document name" value={documentName} onChange={(event) => setDocumentName(event.target.value)} />
-            <MobileUploadBox title="Upload File" detail="Drag & drop file here or choose file" />
-            <MobileTextArea label="Description (Optional)" placeholder="Enter description" rows={4} value={description} onChange={(event) => setDescription(event.target.value)} />
+            <MobileInput
+              label="Document Name"
+              placeholder="Enter document name"
+              value={documentName}
+              onChange={(event) => setDocumentName(event.target.value)}
+            />
+            <MobileUploadBox
+              title={selectedFile ? selectedFile.name : "Upload File"}
+              detail={selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : "Drag & drop file here or choose file"}
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  setSelectedFile(e.target.files[0]);
+                  setDocumentName(e.target.files[0].name.split('.').slice(0, -1).join('.'));
+                }
+              }}
+            />
+            <MobileTextArea
+              label="Description (Optional)"
+              placeholder="Enter description"
+              rows={4}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+            />
           </div>
         </MobileCard>
-        {saved ? <p className="text-sm font-semibold text-[#18aa5d]">Document draft saved locally.</p> : null}
-        <button type="submit" className="inline-flex min-h-[58px] w-full items-center justify-center rounded-[20px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-[1.05rem] font-semibold text-white shadow-[0_18px_36px_rgba(92,45,255,0.26)]">
-          Upload Document
+        {statusMsg ? (
+          <p className={`text-sm font-semibold ${statusMsg.includes("failed") || statusMsg.includes("Error") ? "text-[#ff4f63]" : "text-[#18aa5d]"}`}>
+            {statusMsg}
+          </p>
+        ) : null}
+        <button
+          type="submit"
+          disabled={busy}
+          className="inline-flex min-h-[58px] w-full items-center justify-center rounded-[20px] bg-[linear-gradient(135deg,#7138ff_0%,#5322ef_100%)] px-5 text-[1.05rem] font-semibold text-white shadow-[0_18px_36px_rgba(92,45,255,0.26)] disabled:opacity-50"
+        >
+          {busy ? "Uploading..." : "Upload Document"}
         </button>
       </form>
     </MobileShell>
@@ -2902,6 +3062,34 @@ export function ProjectManagementMobileScreen({
   const projectPermissions = ops.clientPermissions.filter((item) => item.projectId === project.id);
   const projectFinance = ops.financeRequests.filter((item) => item.projectId === project.id);
   const allowAdminControls = role === "admin";
+  const online = useOnlineStatus();
+
+  async function handleReviewDocument(docId: string, status: "approved" | "rejected") {
+    ops.reviewProjectDocument(docId, status);
+    if (online && status === "rejected") {
+      await guardedSupabaseWrite(
+        supabase.from("documents").delete().eq("id", docId)
+      );
+    }
+  }
+
+  async function handleRemoveDocument(docId: string) {
+    ops.removeProjectDocument(docId);
+    if (online) {
+      await guardedSupabaseWrite(
+        supabase.from("documents").delete().eq("id", docId)
+      );
+    }
+  }
+
+  async function handleReviewReport(reportId: string, status: "approved" | "rejected") {
+    ops.reviewProjectReport(reportId, status);
+    if (online && status === "rejected") {
+      await guardedSupabaseWrite(
+        supabase.from("shift_reports").delete().eq("id", reportId)
+      );
+    }
+  }
 
   return (
     <MobileShell
@@ -2982,9 +3170,9 @@ export function ProjectManagementMobileScreen({
                 <div className="mt-3 grid grid-cols-3 gap-2">
                   {allowAdminControls ? (
                     <>
-                      <button type="button" onClick={() => ops.reviewProjectDocument(document.id, "approved")} className="rounded-[12px] border border-[#cdebd7] px-3 py-2 text-sm font-semibold text-[#18aa5d]">Approve</button>
-                      <button type="button" onClick={() => ops.reviewProjectDocument(document.id, "rejected")} className="rounded-[12px] border border-[#ffd1d7] px-3 py-2 text-sm font-semibold text-[#ff4f63]">Reject</button>
-                      <button type="button" onClick={() => ops.removeProjectDocument(document.id)} className="rounded-[12px] border border-[#eceffa] px-3 py-2 text-sm font-semibold text-[#6b759f]">Remove</button>
+                      <button type="button" onClick={() => handleReviewDocument(document.id, "approved")} className="rounded-[12px] border border-[#cdebd7] px-3 py-2 text-sm font-semibold text-[#18aa5d]">Approve</button>
+                      <button type="button" onClick={() => handleReviewDocument(document.id, "rejected")} className="rounded-[12px] border border-[#ffd1d7] px-3 py-2 text-sm font-semibold text-[#ff4f63]">Reject</button>
+                      <button type="button" onClick={() => handleRemoveDocument(document.id)} className="rounded-[12px] border border-[#eceffa] px-3 py-2 text-sm font-semibold text-[#6b759f]">Remove</button>
                     </>
                   ) : (
                     <div className="col-span-3 text-xs text-[#8d96bc]">
@@ -3016,8 +3204,8 @@ export function ProjectManagementMobileScreen({
                 </div>
                 {allowAdminControls ? (
                   <div className="mt-3 grid grid-cols-2 gap-2">
-                    <button type="button" onClick={() => ops.reviewProjectReport(report.id, "approved")} className="rounded-[12px] border border-[#cdebd7] px-3 py-2 text-sm font-semibold text-[#18aa5d]">Approve</button>
-                    <button type="button" onClick={() => ops.reviewProjectReport(report.id, "rejected")} className="rounded-[12px] border border-[#ffd1d7] px-3 py-2 text-sm font-semibold text-[#ff4f63]">Reject</button>
+                    <button type="button" onClick={() => handleReviewReport(report.id, "approved")} className="rounded-[12px] border border-[#cdebd7] px-3 py-2 text-sm font-semibold text-[#18aa5d]">Approve</button>
+                    <button type="button" onClick={() => handleReviewReport(report.id, "rejected")} className="rounded-[12px] border border-[#ffd1d7] px-3 py-2 text-sm font-semibold text-[#ff4f63]">Reject</button>
                   </div>
                 ) : (
                   <p className="mt-3 text-xs text-[#8d96bc]">Admin review controls determine final report approval and client visibility.</p>
@@ -3150,11 +3338,23 @@ export function EngineerTasksMobileScreen() {
   const pending = myTasks.filter((task) => task.status === "pending" || task.status === "upcoming");
   const inProgress = myTasks.filter((task) => task.status === "in_progress");
   const completed = myTasks.filter((task) => task.status === "completed");
+  const online = useOnlineStatus();
 
   function nextStatus(task: ManagedTask) {
     if (task.status === "pending" || task.status === "upcoming") return "in_progress";
     if (task.status === "in_progress" || task.status === "blocked") return "completed";
     return "pending";
+  }
+
+  async function handleUpdateTaskStatus(task: ManagedTask) {
+    const nextSt = nextStatus(task);
+    ops.updateTask(task.id, { status: nextSt });
+    if (online) {
+      const dbStatus = nextSt === "completed" ? "completed" : nextSt === "in_progress" ? "in_progress" : "pending";
+      await guardedSupabaseWrite(
+        supabase.from("tasks").update({ status: dbStatus }).eq("id", task.id)
+      );
+    }
   }
 
   return (
@@ -3195,7 +3395,7 @@ export function EngineerTasksMobileScreen() {
                     </MobilePill>
                     <button
                       type="button"
-                      onClick={() => ops.updateTask(task.id, { status: nextStatus(task) })}
+                      onClick={() => handleUpdateTaskStatus(task)}
                       className="rounded-[12px] border border-[#cabdff] px-3 py-2 text-sm font-semibold text-[#5c2dff]"
                     >
                       {task.status === "completed" ? "Reopen" : task.status === "in_progress" ? "Mark Complete" : "Start Task"}
@@ -3738,59 +3938,89 @@ export function EngineerAttendanceMobileScreen() {
   async function markAttendance() {
     setBusy(true);
     setStatus("Checking location...");
-    const location = await getCurrentPosition(targetCoordinates);
-    setCoords(location);
-    const distanceFromSiteM = Math.round(distanceMeters(location.lat, location.lng, targetCoordinates.lat, targetCoordinates.lng));
-    const withinGeofence = distanceFromSiteM <= geofenceMeters;
-    const payload = {
-      user_id: currentUser.id,
-      project_id: project.id,
-      check_in_at: new Date().toISOString(),
-      latitude: location.lat,
-      longitude: location.lng,
-      gps_accuracy_m: 7,
-      distance_from_site_m: distanceFromSiteM,
-      within_geofence: withinGeofence,
-      status: "pending_approval"
-    };
+    try {
+      const location = await getCurrentPosition();
+      setCoords(location);
+      if (location.accuracy > 500) {
+        throw new Error(`GPS accuracy is too weak (${Math.round(location.accuracy)}m). Please move outdoors or to an open area.`);
+      }
 
-    if (!online) {
-      ops.markAttendance({
-        userId: currentUser.id,
-        projectId: project.id,
-        checkInAt: payload.check_in_at,
+      const distanceFromSiteM = Math.round(distanceMeters(location.lat, location.lng, targetCoordinates.lat, targetCoordinates.lng));
+      const withinGeofence = distanceFromSiteM <= geofenceMeters;
+
+      const localPayload = {
+        user_id: currentUser.id,
+        project_id: project.id,
+        check_in_at: new Date().toISOString(),
         latitude: location.lat,
         longitude: location.lng,
-        accuracyM: 7,
-        distanceFromSiteM,
-        withinGeofence,
-        status: "queued"
-      });
-      addItem({ type: "attendance", title: "GPS Attendance", size: "0.2 MB", payload });
-      setStatus("Saved Offline");
-    } else {
-      const { error } = await guardedSupabaseWrite(supabase.from("attendance").insert(payload));
-      ops.markAttendance({
-        userId: currentUser.id,
-        projectId: project.id,
-        checkInAt: payload.check_in_at,
-        latitude: location.lat,
-        longitude: location.lng,
-        accuracyM: 7,
-        distanceFromSiteM,
-        withinGeofence,
-        status: error ? "queued" : "pending_approval"
-      });
-      setStatus(error ? "Queued for Sync" : withinGeofence ? "On Time" : "Pending Approval");
+        gps_accuracy_m: location.accuracy,
+        distance_from_site_m: distanceFromSiteM,
+        within_geofence: withinGeofence,
+        status: withinGeofence ? "approved" : "pending_approval"
+      };
+
+      if (!online) {
+        ops.markAttendance({
+          userId: currentUser.id,
+          projectId: project.id,
+          checkInAt: localPayload.check_in_at,
+          latitude: location.lat,
+          longitude: location.lng,
+          accuracyM: location.accuracy,
+          distanceFromSiteM,
+          withinGeofence,
+          status: "queued"
+        });
+        addItem({ type: "attendance", title: "GPS Attendance", size: "0.2 MB", payload: localPayload });
+        setStatus("Saved Offline");
+      } else {
+        const response = await fetch("/api/mobile/attendance", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            projectId: project.id,
+            latitude: location.lat,
+            longitude: location.lng,
+            gpsAccuracyM: location.accuracy,
+          }),
+        });
+
+        const resData = await response.json();
+        if (!response.ok || !resData.ok) {
+          throw new Error(resData.message || "Failed to mark attendance.");
+        }
+
+        const att = resData.attendance;
+        ops.markAttendance({
+          userId: currentUser.id,
+          projectId: project.id,
+          checkInAt: att.checkInAt || localPayload.check_in_at,
+          latitude: att.latitude ?? location.lat,
+          longitude: att.longitude ?? location.lng,
+          accuracyM: att.gpsAccuracyM ?? location.accuracy,
+          distanceFromSiteM: att.distanceFromSiteM ?? distanceFromSiteM,
+          withinGeofence: att.withinGeofence ?? withinGeofence,
+          status: att.status === "checked_in" ? "approved" : "pending_approval"
+        });
+
+        setStatus(att.status === "checked_in" ? "On Time" : "Pending Approval");
+      }
+
+      setCheckInTime(
+        new Date().toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+      );
+    } catch (err: any) {
+      console.error(err);
+      setStatus(err.message || "Failed to mark attendance.");
+    } finally {
+      setBusy(false);
     }
-
-    setCheckInTime(
-      new Date().toLocaleTimeString("en-IN", {
-        hour: "2-digit",
-        minute: "2-digit"
-      })
-    );
-    setBusy(false);
   }
 
   return (
@@ -4745,16 +4975,37 @@ function useOnlineStatus() {
   return forceOffline ? false : online;
 }
 
-function getCurrentPosition(fallback: { lat: number; lng: number }) {
-  return new Promise<{ lat: number; lng: number }>((resolve) => {
-    if (!navigator.geolocation) {
-      resolve(fallback);
+function getCurrentPosition(): Promise<{ lat: number; lng: number; accuracy: number }> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      reject(new Error("Your browser or device does not support geolocation. Please use a modern mobile browser or download the APK."));
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (position) => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }),
-      () => resolve(fallback),
-      { enableHighAccuracy: true, timeout: 9000, maximumAge: 0 }
+      (position) => {
+        resolve({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+        });
+      },
+      (error) => {
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            reject(new Error("GPS Location access denied. Please enable location permissions for your browser or in your device settings."));
+            break;
+          case error.POSITION_UNAVAILABLE:
+            reject(new Error("GPS Location is unavailable. Please verify that your device GPS is turned on and you are outdoors."));
+            break;
+          case error.TIMEOUT:
+            reject(new Error("GPS Location request timed out. Please try again or move to an open area."));
+            break;
+          default:
+            reject(new Error(error.message || "An unknown GPS error occurred. Please try again."));
+            break;
+        }
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   });
 }
