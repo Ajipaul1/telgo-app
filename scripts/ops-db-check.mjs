@@ -1,3 +1,8 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+
+await loadLocalEnv();
+
 const accessToken = process.env.SUPABASE_ACCESS_TOKEN;
 const projectRef = process.env.SUPABASE_PROJECT_REF ?? "qujinbsslmyaltfgsjzb";
 
@@ -49,3 +54,15 @@ if (!response.ok) {
 
 console.table(result);
 if (result.some((row) => !row.ok)) process.exitCode = 1;
+
+async function loadLocalEnv() {
+  const envPath = path.join(process.cwd(), ".env.local");
+  const content = await fs.readFile(envPath, "utf8").catch(() => "");
+  for (const line of content.split(/\r?\n/)) {
+    const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+    if (!match) continue;
+    const [, key, rawValue] = match;
+    if (process.env[key]) continue;
+    process.env[key] = rawValue.replace(/^['"]|['"]$/g, "");
+  }
+}

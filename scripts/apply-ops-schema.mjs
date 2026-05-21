@@ -7,8 +7,7 @@ const accessToken = process.env.SUPABASE_ACCESS_TOKEN;
 const projectRef = process.env.SUPABASE_PROJECT_REF ?? "qujinbsslmyaltfgsjzb";
 const migrations = [
   "20260510134500_operational_workflow_extensions.sql",
-  "20260510180000_mobile_mvp_users.sql",
-  "20260512103000_mobile_access_gate.sql"
+  "20260521113000_live_mobile_alignment.sql"
 ].map((fileName) => path.join(process.cwd(), "supabase", "migrations", fileName));
 
 if (!accessToken) {

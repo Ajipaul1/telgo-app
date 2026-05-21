@@ -58,7 +58,6 @@ export async function POST(request: NextRequest) {
 
   try {
     const task = await createRealTask(supabase, {
-      id: body.id ?? "",
       title: body.title,
       detail: body.detail ?? "Task detail to be confirmed.",
       projectId: body.projectId,
@@ -70,8 +69,7 @@ export async function POST(request: NextRequest) {
       taskType: body.taskType ?? "Inspection",
       location: body.location,
       notes: body.notes,
-      attachmentName: body.attachmentName,
-      createdAt: body.createdAt ?? new Date().toISOString()
+      attachmentName: body.attachmentName
     });
     return NextResponse.json({ ok: true, task });
   } catch (error) {
