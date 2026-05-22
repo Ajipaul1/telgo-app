@@ -243,7 +243,9 @@ export default function AdminDashboard() {
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
             <h3 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", marginBottom: 8 }}>Credentials Active!</h3>
-            <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 20, lineHeight: 1.5 }}>Account is active. Since Resend trial emails only deliver to verified domain owners, copy these credentials to send manually:</p>
+            <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 20, lineHeight: 1.5 }}>
+              Account is active. The credentials have been sent via email from <strong style={{ color: "#06b6d4" }}>ajipaul96@gmail.com</strong>! You can also copy them below:
+            </p>
             
             <div style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: 18, marginBottom: 24, textAlign: "left", display: "flex", flexDirection: "column", gap: 12 }}>
               <div>
