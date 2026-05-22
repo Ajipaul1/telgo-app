@@ -44,10 +44,10 @@ const requestBody = {
   maskableIconUrl: null,
   monochromeIconUrl: null,
   name: "Telgo Hub",
-  navigationColor: "#0d0621",
-  navigationColorDark: "#0d0621",
-  navigationDividerColor: "#0d0621",
-  navigationDividerColorDark: "#0d0621",
+  navigationColor: "#060912",
+  navigationColorDark: "#060912",
+  navigationDividerColor: "#060912",
+  navigationDividerColorDark: "#060912",
   orientation: "default",
   packageId,
   serviceAccountJsonFile: null,
@@ -63,8 +63,8 @@ const requestBody = {
   signingMode: "new",
   splashScreenFadeOutDuration: 300,
   startUrl: "/",
-  themeColor: "#0d0621",
-  themeColorDark: "#0d0621",
+  themeColor: "#060912",
+  themeColorDark: "#060912",
   webManifestUrl: `${host}/manifest.webmanifest`
 };
 

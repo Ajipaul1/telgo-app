@@ -22,7 +22,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
 });
 
 // Try to insert a row to discover which columns exist
-const testId = "probe-" + Date.now();
+import { randomUUID } from "node:crypto";
+const testId = randomUUID();
 const { error: testInsert } = await supabase
   .from("mobile_app_users")
   .insert({ id: testId, full_name: "probe", role: "supervisor", email: "probe@test.test", password_hash: "x", login_id: "TLG-PROBE", access_status: "pending" });
