@@ -1,5 +1,0 @@
-import { NotificationsMobileScreen } from "@/components/mobile-screens";
-
-export default function AlertsPage() {
-  return <NotificationsMobileScreen />;
-}
