@@ -110,9 +110,25 @@ export default function LoginPage() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           Request Access
         </a>
+
+        {/* APK Download Area */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "24px 0 16px", color: "#334155" }}>
+          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
+          <span style={{ fontSize: 11, color: "#64748b", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>Native Mobile App</span>
+          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
+        </div>
+
+        <a href="/downloads/telgo-hub.apk" download="telgo-hub.apk" className="btn-primary" style={{ textDecoration: "none", background: "linear-gradient(135deg, #10b981, #06b6d4)", boxShadow: "0 8px 24px rgba(16,185,129,0.25)" }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" x2="12" y1="15" y2="3"/>
+          </svg>
+          Download Android APK
+        </a>
       </div>
 
-      <p style={{ marginTop: 24, fontSize: 11, color: "#1e293b", textAlign: "center" }}>© 2026 Telgo Power Projects. All rights reserved.</p>
+      <p style={{ marginTop: 24, fontSize: 11, color: "#475569", textAlign: "center" }}>© 2026 Telgo Power Projects. All rights reserved.</p>
     </main>
   );
 }
