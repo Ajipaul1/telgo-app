@@ -8,8 +8,16 @@ export default function LoginPage() {
   const [state, setState] = useState<"idle"|"loading"|"error"|"pending">("idle");
   const [msg, setMsg] = useState("");
   const [ready, setReady] = useState(false);
+  const [isWebView, setIsWebView] = useState(false);
 
-  useEffect(() => { setReady(true); }, []);
+  useEffect(() => {
+    setReady(true);
+    if (typeof window !== "undefined" && window.navigator) {
+      const ua = window.navigator.userAgent.toLowerCase();
+      const isUAWebView = ua.includes("; wv") || ua.includes("webview");
+      setIsWebView(isUAWebView);
+    }
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -112,20 +120,24 @@ export default function LoginPage() {
         </a>
 
         {/* APK Download Area */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "24px 0 16px", color: "#334155" }}>
-          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
-          <span style={{ fontSize: 11, color: "#64748b", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>Native Mobile App</span>
-          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
-        </div>
+        {!isWebView && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "24px 0 16px", color: "#334155" }}>
+              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
+              <span style={{ fontSize: 11, color: "#64748b", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>Native Mobile App</span>
+              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
+            </div>
 
-        <a href="/downloads/telgo-hub.apk" download="telgo-hub.apk" className="btn-primary" style={{ textDecoration: "none", background: "linear-gradient(135deg, #10b981, #06b6d4)", boxShadow: "0 8px 24px rgba(16,185,129,0.25)" }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" x2="12" y1="15" y2="3"/>
-          </svg>
-          Download Android APK
-        </a>
+            <a href="/downloads/telgo-hub.apk" download="telgo-hub.apk" className="btn-primary" style={{ textDecoration: "none", background: "linear-gradient(135deg, #10b981, #06b6d4)", boxShadow: "0 8px 24px rgba(16,185,129,0.25)" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" x2="12" y1="15" y2="3"/>
+              </svg>
+              Download Android APK
+            </a>
+          </>
+        )}
       </div>
 
       <p style={{ marginTop: 24, fontSize: 11, color: "#475569", textAlign: "center" }}>© 2026 Telgo Power Projects. All rights reserved.</p>
