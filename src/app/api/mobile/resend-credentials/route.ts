@@ -78,6 +78,14 @@ export async function POST(request: NextRequest) {
   }
 
   if (user.email) {
+    // Determine a professional theme color for the user's role
+    let roleColor = "#06b6d4"; // default teal
+    const roleUpper = String(user.role).toUpperCase();
+    if (roleUpper === "ADMIN") roleColor = "#c084fc"; // light purple
+    else if (roleUpper === "SUPERVISOR") roleColor = "#38bdf8"; // sky blue
+    else if (roleUpper === "FINANCE") roleColor = "#fb7185"; // rose pink
+    else if (roleUpper === "CLIENT") roleColor = "#34d399"; // emerald green
+
     const emailHtml = `<!DOCTYPE html>
 <html>
 <head>
@@ -90,16 +98,16 @@ export async function POST(request: NextRequest) {
     <tr>
       <td align="center" valign="top">
         <!-- Main Card Wrapper -->
-        <table border="0" cellspacing="0" cellpadding="0" style="max-width: 480px; width: 100%; background-color: #0b0f19; border: 1px solid #1f293d; border-radius: 20px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6); box-sizing: border-box; overflow: hidden;">
+        <table border="0" cellspacing="0" cellpadding="0" style="max-width: 460px; width: 100%; background-color: #0b0f19; border: 1px solid #1e293b; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); box-sizing: border-box; overflow: hidden;">
           <tr>
-            <td style="padding: 32px 20px; text-align: center;">
+            <td style="padding: 32px 24px;">
               
               <!-- Header Section -->
-              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; margin-bottom: 28px;">
+              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; text-align: center; margin-bottom: 28px;">
                 <tr>
                   <td align="center">
                     <h1 style="margin: 0; font-size: 26px; font-weight: 800; color: #06b6d4; letter-spacing: 3px; font-family: sans-serif; text-transform: uppercase;">TELGO HUB</h1>
-                    <p style="margin: 6px 0 0; color: #94a3b8; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">Enterprise Operations Platform</p>
+                    <p style="margin: 6px 0 0; color: #64748b; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;">Enterprise Operations Platform</p>
                   </td>
                 </tr>
               </table>
@@ -108,92 +116,125 @@ export async function POST(request: NextRequest) {
               <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; text-align: left; margin-bottom: 24px;">
                 <tr>
                   <td>
-                    <p style="font-size: 16px; color: #cbd5e1; line-height: 1.6; margin: 0 0 12px;">Hello <strong style="color: #f1f5f9;">${user.full_name}</strong>,</p>
-                    <p style="font-size: 14px; color: #94a3b8; line-height: 1.6; margin: 0;">A new secure password has been generated for your <strong style="color: #f1f5f9;">Telgo Hub</strong> account. Use these updated credentials to log in.</p>
+                    <p style="font-size: 16px; font-weight: 600; color: #cbd5e1; line-height: 1.5; margin: 0 0 12px; font-family: sans-serif;">Hello <strong style="color: #ffffff;">${user.full_name}</strong>,</p>
+                    <p style="font-size: 14px; color: #94a3b8; line-height: 1.6; margin: 0; font-family: sans-serif;">A new secure password has been generated for your <strong style="color: #cbd5e1;">Telgo Hub</strong> account. Use the updated credentials below to log in.</p>
                   </td>
                 </tr>
               </table>
 
-              <!-- Credentials Card (Mobile-Optimized Stacked Layout) -->
-              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color: #111625; border: 1px solid #1f293d; border-radius: 14px; margin-bottom: 24px; text-align: left;">
+              <!-- Credentials Card (Bulletproof Vertical Stacked Table) -->
+              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color: #0f172a; border: 1px solid #1e293b; border-radius: 12px; margin-bottom: 24px;">
+                <!-- Row 1: Access Level Label -->
                 <tr>
-                  <td style="padding: 20px;">
-                    
-                    <!-- Access Level -->
-                    <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; margin-bottom: 14px;">
-                      <tr>
-                        <td>
-                          <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 2px;">Access Level</span>
-                          <span style="font-size: 13px; font-weight: 800; color: #06b6d4; text-transform: uppercase; font-family: sans-serif;">${user.role}</span>
-                        </td>
-                      </tr>
+                  <td style="padding: 16px 20px 4px 20px; font-family: sans-serif; font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
+                    Access Level
+                  </td>
+                </tr>
+                <!-- Row 2: Access Level Value -->
+                <tr>
+                  <td style="padding: 0 20px 14px 20px; font-family: sans-serif; font-size: 14px; font-weight: 800; color: ${roleColor}; text-transform: uppercase;">
+                    ${user.role}
+                  </td>
+                </tr>
+                
+                <!-- Divider -->
+                <tr>
+                  <td style="padding: 0 20px;">
+                    <table border="0" cellspacing="0" cellpadding="0" style="width: 100%;">
+                      <tr><td style="height: 1px; background-color: #1e293b; font-size: 0; line-height: 0;"></td></tr>
                     </table>
-                    
-                    <div style="height: 1px; background-color: #1e293b; margin-bottom: 14px; font-size: 0; line-height: 0;"></div>
+                  </td>
+                </tr>
 
-                    <!-- Login Email -->
-                    <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; margin-bottom: 14px;">
-                      <tr>
-                        <td>
-                          <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 2px;">Login Email</span>
-                          <span style="font-size: 14px; font-weight: 600; color: #cbd5e1; font-family: monospace; word-break: break-all;">${user.email}</span>
-                        </td>
-                      </tr>
+                <!-- Row 3: Login Email Label -->
+                <tr>
+                  <td style="padding: 14px 20px 4px 20px; font-family: sans-serif; font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
+                    Login Email
+                  </td>
+                </tr>
+                <!-- Row 4: Login Email Value -->
+                <tr>
+                  <td style="padding: 0 20px 14px 20px; font-family: monospace; font-size: 14px; font-weight: 600; color: #f1f5f9; word-break: break-all;">
+                    ${user.email}
+                  </td>
+                </tr>
+
+                <!-- Divider -->
+                <tr>
+                  <td style="padding: 0 20px;">
+                    <table border="0" cellspacing="0" cellpadding="0" style="width: 100%;">
+                      <tr><td style="height: 1px; background-color: #1e293b; font-size: 0; line-height: 0;"></td></tr>
                     </table>
-                    
-                    <div style="height: 1px; background-color: #1e293b; margin-bottom: 14px; font-size: 0; line-height: 0;"></div>
+                  </td>
+                </tr>
 
-                    <!-- Unique Login ID -->
-                    <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; margin-bottom: 14px;">
-                      <tr>
-                        <td>
-                          <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 2px;">Unique Login ID</span>
-                          <span style="font-size: 15px; font-weight: 800; color: #06b6d4; font-family: monospace;">${user.login_id}</span>
-                        </td>
-                      </tr>
+                <!-- Row 5: Unique Login ID Label -->
+                <tr>
+                  <td style="padding: 14px 20px 4px 20px; font-family: sans-serif; font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
+                    Unique Login ID
+                  </td>
+                </tr>
+                <!-- Row 6: Unique Login ID Value -->
+                <tr>
+                  <td style="padding: 0 20px 14px 20px; font-family: monospace; font-size: 15px; font-weight: 700; color: #38bdf8;">
+                    ${user.login_id}
+                  </td>
+                </tr>
+
+                <!-- Divider -->
+                <tr>
+                  <td style="padding: 0 20px;">
+                    <table border="0" cellspacing="0" cellpadding="0" style="width: 100%;">
+                      <tr><td style="height: 1px; background-color: #1e293b; font-size: 0; line-height: 0;"></td></tr>
                     </table>
-                    
-                    <div style="height: 1px; background-color: #1e293b; margin-bottom: 14px; font-size: 0; line-height: 0;"></div>
+                  </td>
+                </tr>
 
-                    <!-- Temporary Password -->
+                <!-- Row 7: Temporary Password Label -->
+                <tr>
+                  <td style="padding: 14px 20px 6px 20px; font-family: sans-serif; font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
+                    New Password
+                  </td>
+                </tr>
+                <!-- Row 8: Temporary Password Value Box -->
+                <tr>
+                  <td style="padding: 0 20px 20px 20px;">
                     <table border="0" cellspacing="0" cellpadding="0" style="width: 100%;">
                       <tr>
-                        <td>
-                          <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px;">New Password</span>
-                          <span style="font-size: 18px; font-weight: 800; color: #a78bfa; font-family: monospace; letter-spacing: 2px;">${plainPassword}</span>
+                        <td style="padding: 12px 14px; background-color: #1e293b; border: 1px dashed #475569; border-radius: 8px; font-family: monospace; font-size: 20px; font-weight: bold; color: #c084fc; text-align: center; letter-spacing: 2px;">
+                          ${plainPassword}
                         </td>
                       </tr>
                     </table>
-
                   </td>
                 </tr>
               </table>
 
               <!-- Safety Warning Banner -->
-              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 12px; margin-bottom: 24px; text-align: left;">
+              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 10px; margin-bottom: 24px;">
                 <tr>
-                  <td style="padding: 12px 14px;">
+                  <td style="padding: 12px 16px; text-align: left;">
                     <p style="margin: 0; font-size: 12px; color: #fbbf24; line-height: 1.5; font-family: sans-serif;">
-                      ⚠️ <strong>Security Notice:</strong> Save this password securely. You can log in using either your Email address or your Unique Login ID.
+                      ⚠️ <strong>Security Notice:</strong> Keep this password confidential. You can log in using either your Email address or your Unique Login ID.
                     </p>
                   </td>
                 </tr>
               </table>
 
               <!-- Open App CTA Button -->
-              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; margin-bottom: 8px;">
+              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; text-align: center;">
                 <tr>
                   <td align="center">
-                    <a href="https://telgo-app.vercel.app/login" style="display: block; width: 100%; max-width: 280px; text-align: center; background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%); background-color: #7c3aed; color: #ffffff; text-decoration: none; padding: 14px 0; border-radius: 12px; font-weight: 700; font-size: 15px; font-family: sans-serif; box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);">Open Telgo Hub →</a>
+                    <a href="https://telgo-app.vercel.app/login" style="display: inline-block; width: 85%; max-width: 280px; text-align: center; background-color: #06b6d4; color: #ffffff; text-decoration: none; padding: 14px 0; border-radius: 8px; font-weight: 700; font-size: 14px; font-family: sans-serif; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.25);">Open Telgo Hub →</a>
                   </td>
                 </tr>
               </table>
 
               <!-- Footer Section -->
-              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; margin-top: 32px; padding-top: 24px; border-top: 1px solid #1f293d;">
+              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; margin-top: 32px; padding-top: 24px; border-top: 1px solid #1e293b; text-align: center;">
                 <tr>
-                  <td style="text-align: center; font-size: 11px; color: #475569; line-height: 1.5; font-family: sans-serif;">
-                    This is an automated notification from Telgo Power Projects Operations Control.<br />
+                  <td style="font-size: 11px; color: #475569; line-height: 1.6; font-family: sans-serif;">
+                    This is an automated operational transmission from Telgo Power Projects Operations Control.<br />
                     © ${new Date().getFullYear()} Telgo Power Projects. All rights reserved.
                   </td>
                 </tr>
