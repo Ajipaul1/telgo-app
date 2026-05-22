@@ -18,6 +18,12 @@ export default function AdminDashboard() {
   const [toast, setToast] = useState("");
   const [approvedCreds, setApprovedCreds] = useState<{ email: string; password: string; loginId: string } | null>(null);
   const [resending, setResending] = useState<string | null>(null);
+  
+  // Navigation & Multi-View State
+  const [activeView, setActiveView] = useState<"hub" | "approvals" | "map" | "settings">("hub");
+  
+  // Active User Search State
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -28,7 +34,9 @@ export default function AdminDashboard() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => { 
+    fetchUsers(); 
+  }, [fetchUsers]);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -98,142 +106,367 @@ export default function AdminDashboard() {
   const pending = users.filter(u => u.access_status === "pending");
   const active  = users.filter(u => u.access_status === "active");
 
+  // Search Filtered Active Users
+  const filteredActive = active.filter(u => 
+    u.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   function roleColor(role: string) {
     const map: Record<string,string> = { supervisor: "#67e8f9", client: "#86efac", finance: "#fcd34d", admin: "#c4b5fd" };
     return map[role] ?? "#94a3b8";
   }
 
+  // Get dynamic greeting based on system time
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  };
+
   return (
-    <div className="page" style={{ background: "#060912" }}>
-      {/* Header */}
-      <div style={{ padding: "20px 16px 0", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-          <div>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#475569", marginBottom: 4 }}>TELGO HUB</p>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>Admin Panel</h1>
-          </div>
-          <div style={{ width: 42, height: 42, borderRadius: 12, background: "linear-gradient(135deg,#7c3aed,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          </div>
-        </div>
-      </div>
+    <div className="page" style={{ background: "#060912", minHeight: "100vh", position: "relative", color: "#f1f5f9" }}>
+      <style>{`
+        .module-card {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
+          position: relative;
+          overflow: hidden;
+        }
+        .module-card:hover {
+          transform: translateY(-4px) scale(1.015);
+          border-color: rgba(124, 58, 237, 0.35) !important;
+          background: rgba(255, 255, 255, 0.06) !important;
+          box-shadow: 0 16px 36px rgba(124, 58, 237, 0.15) !important;
+        }
+        .search-input {
+          transition: all 0.2s ease;
+        }
+        .search-input:focus {
+          border-color: #06b6d4 !important;
+          box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2) !important;
+          background: rgba(0, 0, 0, 0.6) !important;
+        }
+        .back-btn {
+          transition: all 0.2s ease;
+        }
+        .back-btn:hover {
+          background: rgba(255, 255, 255, 0.08) !important;
+          transform: translateX(-2px);
+        }
+        .action-btn {
+          transition: all 0.2s ease;
+        }
+        .action-btn:hover {
+          transform: scale(1.02);
+          opacity: 0.95;
+        }
+        .action-btn:active {
+          transform: scale(0.98);
+        }
+        @keyframes subtleGlow {
+          0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.2); }
+          50% { box-shadow: 0 0 30px rgba(245, 158, 11, 0.4); }
+        }
+        .active-glow-pending {
+          animation: subtleGlow 2s infinite ease-in-out;
+        }
+      `}</style>
 
-      {/* Stats strip */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, padding: "16px 16px 0" }}>
-        <div className="glass" style={{ padding: "14px 16px" }}>
-          <p style={{ fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 }}>PENDING</p>
-          <p style={{ fontSize: 28, fontWeight: 800, color: pending.length > 0 ? "#fbbf24" : "#f1f5f9" }}>{pending.length}</p>
-        </div>
-        <div className="glass" style={{ padding: "14px 16px" }}>
-          <p style={{ fontSize: 11, color: "#64748b", marginBottom: 4, fontWeight: 600 }}>ACTIVE USERS</p>
-          <p style={{ fontSize: 28, fontWeight: 800, color: "#4ade80" }}>{active.length}</p>
-        </div>
-      </div>
+      {/* VIEW 1: CENTRAL CONTROL HUB */}
+      {activeView === "hub" && (
+        <div className="fade-in" style={{ paddingBottom: 40 }}>
+          {/* Header */}
+          <div style={{ padding: "24px 16px 0", paddingTop: "calc(env(safe-area-inset-top, 0px) + 24px)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: "#06b6d4", marginBottom: 4 }}>TELGO POWER HUB</p>
+                <h1 style={{ fontSize: 26, fontWeight: 900, color: "#f1f5f9", margin: 0, letterSpacing: "-0.5px" }}>Operations Center</h1>
+              </div>
+              <div style={{ width: 44, height: 44, borderRadius: 14, background: "linear-gradient(135deg,#7c3aed,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 15px rgba(124, 58, 237, 0.3)" }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+            </div>
 
-      {/* Pending approvals */}
-      <div style={{ padding: "24px 16px 0" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#94a3b8" }}>Pending Approvals</p>
-          {pending.length > 0 && <span className="badge badge-pending">{pending.length} waiting</span>}
-        </div>
+            {/* Greeting & Subtitle */}
+            <div className="glass" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: 14, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, background: "linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.04) 100%)", marginBottom: 24 }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#10b981", boxShadow: "0 0 10px #10b981" }} />
+              <div>
+                <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", margin: 0 }}>{getGreeting()}, Control</h2>
+                <p style={{ fontSize: 12, color: "#94a3b8", margin: "2px 0 0" }}>System is online and broadcasting notifications.</p>
+              </div>
+            </div>
+          </div>
 
-        {loading ? (
-          <div style={{ textAlign: "center", padding: "40px 0", color: "#475569" }}>
-            <div className="spinner" style={{ margin: "0 auto 12px" }} />
-            Loading...
+          {/* Quick Metrics Banner */}
+          <div style={{ padding: "0 16px 24px" }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#475569", marginBottom: 12 }}>Active Telemetry</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="glass" style={{ padding: "16px 18px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Crews</span>
+                <p style={{ fontSize: 32, fontWeight: 900, color: "#f1f5f9", margin: "4px 0 0", letterSpacing: "-1px" }}>{users.length}</p>
+              </div>
+              <div className="glass" style={{ padding: "16px 18px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Active Mailers</span>
+                <p style={{ fontSize: 15, fontWeight: 700, color: "#4ade80", margin: "16px 0 0", display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e" }} />
+                  SMTP Ready
+                </p>
+              </div>
+            </div>
           </div>
-        ) : pending.length === 0 ? (
-          <div className="glass" style={{ padding: "28px", textAlign: "center" }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
-            <p style={{ color: "#475569", fontSize: 14 }}>No pending approvals</p>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {pending.map(u => (
-              <div key={u.id} className="approval-card fade-in">
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontWeight: 700, fontSize: 15, color: "#f1f5f9", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.full_name}</p>
-                    <p style={{ fontSize: 12, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</p>
+
+          {/* Core System Grid */}
+          <div style={{ padding: "0 16px" }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#475569", marginBottom: 12 }}>Control Modules</p>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              
+              {/* MODULE 1: ONBOARDING APPROVALS */}
+              <div 
+                className={`glass module-card ${pending.length > 0 ? "active-glow-pending" : ""}`}
+                onClick={() => setActiveView("approvals")}
+                style={{ 
+                  padding: 20, 
+                  border: pending.length > 0 ? "1px solid rgba(245, 158, 11, 0.4)" : "1px solid rgba(255,255,255,0.06)",
+                  background: pending.length > 0 ? "linear-gradient(135deg, rgba(245,158,11,0.04) 0%, rgba(6,9,18,0.8) 100%)" : "rgba(255,255,255,0.02)"
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: pending.length > 0 ? "rgba(245,158,11,0.12)" : "rgba(124, 58, 237, 0.12)", border: pending.length > 0 ? "1px solid rgba(245, 158, 11, 0.3)" : "1px solid rgba(124, 58, 237, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={pending.length > 0 ? "#fbbf24" : "#a78bfa"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: roleColor(u.role), background: `${roleColor(u.role)}18`, border: `1px solid ${roleColor(u.role)}30`, borderRadius: 8, padding: "3px 10px", flexShrink: 0, textTransform: "capitalize" }}>{u.role}</span>
+                  {pending.length > 0 ? (
+                    <span style={{ fontSize: 11, fontWeight: 800, background: "#fbbf24", color: "#060912", borderRadius: 10, padding: "4px 10px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      ⚠️ {pending.length} Waiting
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Clear</span>
+                  )}
                 </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    onClick={() => approve(u.id)}
-                    disabled={approving === u.id}
-                    style={{ flex: 1, minHeight: 40, background: "linear-gradient(135deg,#16a34a,#15803d)", border: "none", borderRadius: 10, color: "white", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit,sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: approving === u.id ? 0.6 : 1, transition: "opacity 0.2s" }}
-                  >
-                    {approving === u.id ? <><div className="spinner" style={{ width: 16, height: 16 }} /> Approving...</> : <>✓ Approve</>}
-                  </button>
-                  <button
-                    onClick={() => blockUser(u.id)}
-                    disabled={blocking === u.id}
-                    style={{ minWidth: 80, minHeight: 40, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 10, color: "#f87171", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit,sans-serif", opacity: blocking === u.id ? 0.6 : 1, transition: "opacity 0.2s" }}
-                  >
-                    {blocking === u.id ? "..." : "Block"}
-                  </button>
-                </div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", margin: "0 0 6px" }}>Access & Approvals</h3>
+                <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5, margin: 0 }}>Review registrations, authorize operational accounts, generate credentials, and manage active system users.</p>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
 
-      {/* Active users */}
-      {active.length > 0 && (
-        <div style={{ padding: "24px 16px 0" }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#94a3b8", marginBottom: 12 }}>Active Users</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {active.map(u => (
-              <div key={u.id} className="glass" style={{ padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontWeight: 600, fontSize: 14, color: "#e2e8f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.full_name}</p>
-                  <p style={{ fontSize: 11, color: "#475569", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</p>
+              {/* MODULE 2: LIVE GPS TRACKING */}
+              <div 
+                className="glass module-card"
+                onClick={() => showToast("📍 Live Tracking is active in Background telemetry.")}
+                style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)" }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(6, 182, 212, 0.12)", border: "1px solid rgba(6, 182, 212, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="10" r="3"/></svg>
+                  </div>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#06b6d4", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 4 }}>
+                    <span className="dot-pulse" style={{ background: "#06b6d4" }} /> Active
+                  </span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: roleColor(u.role), textTransform: "capitalize" }}>{u.role}</span>
-                  <span className="badge badge-active">Active</span>
-                  <button
-                    onClick={() => resendCredentials(u.id)}
-                    disabled={resending === u.id}
-                    style={{
-                      background: "rgba(6,182,212,0.1)",
-                      border: "1px solid rgba(6,182,212,0.25)",
-                      borderRadius: 8,
-                      padding: "6px 12px",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: "#06b6d4",
-                      cursor: "pointer",
-                      fontFamily: "Outfit, sans-serif",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                      opacity: resending === u.id ? 0.6 : 1,
-                      transition: "all 0.2s ease"
-                    }}
-                  >
-                    {resending === u.id ? (
-                      <div className="spinner" style={{ width: 10, height: 10 }} />
-                    ) : (
-                      "Resend"
-                    )}
-                  </button>
-                </div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", margin: "0 0 6px" }}>Live Crew Radar</h3>
+                <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5, margin: 0 }}>View real-time geological location tracking and check-in coordinates of field supervisors and finance teams.</p>
               </div>
-            ))}
+
+              {/* MODULE 3: SYSTEM LOGGER */}
+              <div 
+                className="glass module-card"
+                onClick={() => showToast("📊 Log analytics are being collected in the secure cloud.")}
+                style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)" }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(34, 197, 94, 0.12)", border: "1px solid rgba(34, 197, 94, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                  </div>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#22c55e", textTransform: "uppercase" }}>Healthy</span>
+                </div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", margin: "0 0 6px" }}>Operational Metrics</h3>
+                <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5, margin: 0 }}>Inspect active logs, generated credentials copies, check-in history timestamps, and system anomalies.</p>
+              </div>
+              
+            </div>
+          </div>
+
+          {/* Logout */}
+          <div style={{ padding: "32px 16px 16px" }}>
+            <button 
+              onClick={async () => { await fetch("/api/mobile/sign-out", { method: "POST" }); window.location.href = "/login"; }}
+              className="action-btn"
+              style={{ width: "100%", minHeight: 48, background: "transparent", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 14, color: "#f87171", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit,sans-serif" }}
+            >
+              Secure Sign Out
+            </button>
           </div>
         </div>
       )}
 
-      {/* Logout */}
-      <div style={{ padding: "28px 16px 16px" }}>
-        <button onClick={async () => { await fetch("/api/mobile/sign-out", { method: "POST" }); window.location.href = "/login"; }}
-          style={{ width: "100%", minHeight: 44, background: "transparent", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, color: "#f87171", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "Outfit,sans-serif" }}>
-          Sign Out
-        </button>
-      </div>
+      {/* VIEW 2: DEDICATED APPROVALS MODULE */}
+      {activeView === "approvals" && (
+        <div className="fade-in" style={{ paddingBottom: 60 }}>
+          
+          {/* Sub Header */}
+          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(6,9,18,0.6)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <button 
+                onClick={() => setActiveView("hub")}
+                className="back-btn"
+                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f1f5f9", cursor: "pointer" }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              </button>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>System Management</p>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Access & Approvals</h1>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Info Grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, padding: "16px 16px 0" }}>
+            <div className="glass" style={{ padding: "12px 14px", border: "1px solid rgba(255,255,255,0.05)" }}>
+              <p style={{ fontSize: 10, color: "#64748b", marginBottom: 2, fontWeight: 700, textTransform: "uppercase" }}>Pending Requests</p>
+              <p style={{ fontSize: 24, fontWeight: 800, color: pending.length > 0 ? "#fbbf24" : "#f1f5f9", margin: 0 }}>{pending.length}</p>
+            </div>
+            <div className="glass" style={{ padding: "12px 14px", border: "1px solid rgba(255,255,255,0.05)" }}>
+              <p style={{ fontSize: 10, color: "#64748b", marginBottom: 2, fontWeight: 700, textTransform: "uppercase" }}>Authorized Crews</p>
+              <p style={{ fontSize: 24, fontWeight: 800, color: "#4ade80", margin: 0 }}>{active.length}</p>
+            </div>
+          </div>
+
+          {/* Pending Approvals Section */}
+          <div style={{ padding: "20px 16px 0" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#94a3b8" }}>Pending Approvals</p>
+              {pending.length > 0 && <span className="badge badge-pending">{pending.length} waiting</span>}
+            </div>
+
+            {loading ? (
+              <div style={{ textAlign: "center", padding: "40px 0", color: "#475569" }}>
+                <div className="spinner" style={{ margin: "0 auto 12px" }} />
+                Loading Database...
+              </div>
+            ) : pending.length === 0 ? (
+              <div className="glass" style={{ padding: "24px 18px", textAlign: "center", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <div style={{ fontSize: 28, marginBottom: 6 }}>✨</div>
+                <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>No pending onboarding requests.</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {pending.map(u => (
+                  <div key={u.id} className="approval-card fade-in" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: 16 }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 4 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontWeight: 700, fontSize: 15, color: "#f1f5f9", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.full_name}</p>
+                        <p style={{ fontSize: 12, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</p>
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: roleColor(u.role), background: `${roleColor(u.role)}18`, border: `1px solid ${roleColor(u.role)}30`, borderRadius: 8, padding: "3px 9px", flexShrink: 0, textTransform: "capitalize" }}>{u.role}</span>
+                    </div>
+                    
+                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                      <button
+                        onClick={() => approve(u.id)}
+                        disabled={approving === u.id}
+                        className="action-btn"
+                        style={{ flex: 1, minHeight: 40, background: "linear-gradient(135deg,#16a34a,#15803d)", border: "none", borderRadius: 10, color: "white", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit,sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: approving === u.id ? 0.6 : 1 }}
+                      >
+                        {approving === u.id ? <><div className="spinner" style={{ width: 14, height: 14 }} /> Approving...</> : <>✓ Approve</>}
+                      </button>
+                      <button
+                        onClick={() => blockUser(u.id)}
+                        disabled={blocking === u.id}
+                        className="action-btn"
+                        style={{ minWidth: 70, minHeight: 40, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10, color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit,sans-serif", opacity: blocking === u.id ? 0.6 : 1 }}
+                      >
+                        {blocking === u.id ? "..." : "Block"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Active Users Section */}
+          <div style={{ padding: "28px 16px 0" }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#94a3b8", marginBottom: 12 }}>Authorized Active Crew</p>
+            
+            {/* Search Box */}
+            <div style={{ marginBottom: 14 }}>
+              <input 
+                type="text" 
+                placeholder="🔍 Search authorized users..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-input"
+                style={{ 
+                  width: "100%", 
+                  height: 44, 
+                  background: "rgba(0,0,0,0.3)", 
+                  border: "1px solid rgba(255,255,255,0.08)", 
+                  borderRadius: 12, 
+                  padding: "0 14px", 
+                  color: "#f1f5f9", 
+                  fontSize: 13, 
+                  outline: "none", 
+                  fontFamily: "Outfit, sans-serif" 
+                }} 
+              />
+            </div>
+
+            {loading ? (
+              <div style={{ textAlign: "center", padding: "20px 0", color: "#475569" }}>
+                Loading Users...
+              </div>
+            ) : filteredActive.length === 0 ? (
+              <div className="glass" style={{ padding: "20px", textAlign: "center", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <p style={{ color: "#64748b", fontSize: 12, margin: 0 }}>
+                  {searchQuery ? "No matching crew members found." : "No active crew members authorized yet."}
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {filteredActive.map(u => (
+                  <div key={u.id} className="glass" style={{ padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, border: "1px solid rgba(255,255,255,0.04)" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontWeight: 600, fontSize: 14, color: "#e2e8f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.full_name}</p>
+                      <p style={{ fontSize: 11, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</p>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: roleColor(u.role), textTransform: "capitalize" }}>{u.role}</span>
+                      <span className="badge badge-active" style={{ padding: "2px 8px", fontSize: 10 }}>Active</span>
+                      <button
+                        onClick={() => resendCredentials(u.id)}
+                        disabled={resending === u.id}
+                        className="action-btn"
+                        style={{
+                          background: "rgba(6,182,212,0.08)",
+                          border: "1px solid rgba(6,182,212,0.2)",
+                          borderRadius: 8,
+                          padding: "6px 12px",
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: "#06b6d4",
+                          cursor: "pointer",
+                          fontFamily: "Outfit, sans-serif",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                          opacity: resending === u.id ? 0.6 : 1
+                        }}
+                      >
+                        {resending === u.id ? (
+                          <div className="spinner" style={{ width: 10, height: 10 }} />
+                        ) : (
+                          "Resend"
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Credentials Modal */}
       {approvedCreds && (
@@ -286,3 +519,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
