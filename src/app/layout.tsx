@@ -5,6 +5,15 @@ export const metadata: Metadata = {
   title: "Telgo Hub",
   description: "Telgo Power Projects — Enterprise Operations Platform",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/assets/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/assets/icon-512.png", sizes: "512x512", type: "image/png" }
+    ],
+    apple: [
+      { url: "/assets/icon-512.png", sizes: "512x512", type: "image/png" }
+    ]
+  },
   other: { "mobile-web-app-capable": "yes", "apple-mobile-web-app-capable": "yes", "apple-mobile-web-app-status-bar-style": "black-translucent" }
 };
 
@@ -13,7 +22,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#060912"
+  themeColor: "#0d0621"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

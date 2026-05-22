@@ -26,7 +26,12 @@ export default function LoginPage() {
         Boolean((window as any).JSInterface) || 
         Boolean((window as any).webkit?.messageHandlers);
 
-      setIsWebView(queryApk || isUAWebView || hasAndroidInterface);
+      const isStandalone = 
+        window.matchMedia("(display-mode: standalone)").matches || 
+        (window.navigator as any).standalone === true || 
+        (typeof document !== "undefined" && document.referrer.includes("android-app://"));
+
+      setIsWebView(queryApk || isUAWebView || hasAndroidInterface || isStandalone);
     }
   }, []);
 

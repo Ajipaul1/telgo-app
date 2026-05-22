@@ -4,11 +4,16 @@
   "description": "Internal operations platform for Telgo Power Projects",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#020915",
-  "theme_color": "#020915",
+  "background_color": "#060912",
+  "theme_color": "#0d0621",
   "icons": [
     {
-      "src": "/assets/telgo-logo-cropped.png",
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
