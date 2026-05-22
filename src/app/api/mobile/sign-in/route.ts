@@ -61,8 +61,9 @@ export async function POST(request: NextRequest) {
   }
 
   const expectedHash = String(data.password_hash ?? "").trim().toLowerCase();
+  const emailInDb = String(data.email ?? "").trim().toLowerCase();
   const providedHash = createHash("sha256")
-    .update(`${identifier}:${password}`)
+    .update(`${emailInDb}:${password}`)
     .digest("hex");
 
   if (!expectedHash || providedHash !== expectedHash) {

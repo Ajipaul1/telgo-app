@@ -16,6 +16,7 @@ export default function AdminDashboard() {
   const [approving, setApproving] = useState<string | null>(null);
   const [blocking, setBlocking] = useState<string | null>(null);
   const [toast, setToast] = useState("");
+  const [approvedCreds, setApprovedCreds] = useState<{ email: string; password: string; loginId: string } | null>(null);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -42,7 +43,13 @@ export default function AdminDashboard() {
         body: JSON.stringify({ userId })
       });
       const d = await r.json();
-      if (r.ok && d.ok) { showToast("✅ Approved — Login credentials emailed!"); fetchUsers(); }
+      if (r.ok && d.ok) { 
+        showToast("✅ Access approved successfully!"); 
+        if (d.password) {
+          setApprovedCreds({ email: d.email, password: d.password, loginId: d.loginId });
+        }
+        fetchUsers(); 
+      }
       else showToast("❌ " + (d.message || "Approval failed"));
     } catch { showToast("❌ Network error"); }
     setApproving(null);
@@ -176,6 +183,46 @@ export default function AdminDashboard() {
           Sign Out
         </button>
       </div>
+
+      {/* Credentials Modal */}
+      {approvedCreds && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(6,9,18,0.85)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1000, animation: "fadeIn 0.2s ease" }}>
+          <div className="glass glow-cyan" style={{ width: "100%", maxWidth: 400, padding: 30, background: "linear-gradient(135deg, #0e0829 0%, #060912 100%)", borderRadius: 24, textAlign: "center", border: "1px solid rgba(6,182,212,0.3)" }}>
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(6,182,212,0.15)", border: "1px solid rgba(6,182,212,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <h3 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", marginBottom: 8 }}>Access Activated!</h3>
+            <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 20, lineHeight: 1.5 }}>Account is active. Since Resend trial emails only deliver to verified domain owners, copy these credentials to send manually:</p>
+            
+            <div style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: 18, marginBottom: 24, textAlign: "left", display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" }}>Login Email</span>
+                <p style={{ fontSize: 14, fontFamily: "monospace", color: "#e2e8f0", margin: "2px 0 0" }}>{approvedCreds.email}</p>
+              </div>
+              <div style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" }}>Login ID</span>
+                  <p style={{ fontSize: 15, fontFamily: "monospace", fontWeight: 700, color: "#06b6d4", margin: "2px 0 0" }}>{approvedCreds.loginId}</p>
+                </div>
+                <button onClick={() => { navigator.clipboard.writeText(approvedCreds.loginId); showToast("📋 Login ID copied!"); }} style={{ background: "rgba(6,182,212,0.1)", border: "1px solid rgba(6,182,212,0.2)", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 600, color: "#06b6d4", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}>Copy</button>
+              </div>
+              <div style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" }}>Password</span>
+                  <p style={{ fontSize: 16, fontFamily: "monospace", fontWeight: 800, color: "#a78bfa", margin: "2px 0 0", letterSpacing: "1px" }}>{approvedCreds.password}</p>
+                </div>
+                <button onClick={() => { navigator.clipboard.writeText(approvedCreds.password); showToast("📋 Password copied!"); }} style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 600, color: "#a78bfa", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}>Copy</button>
+              </div>
+            </div>
+            
+            <button onClick={() => setApprovedCreds(null)} className="btn-primary" style={{ minHeight: 44, fontSize: 14 }}>
+              Done & Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Toast */}
       {toast && (

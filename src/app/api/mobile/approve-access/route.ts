@@ -81,8 +81,7 @@ export async function POST(request: NextRequest) {
   const resendFromEmail = process.env.RESEND_FROM_EMAIL ?? "Telgo Hub <onboarding@resend.dev>";
 
   if (resendApiKey && user.email) {
-    try {
-      const emailHtml = `<!DOCTYPE html>
+    const emailHtml = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -111,19 +110,25 @@ export async function POST(request: NextRequest) {
           <td style="color: #94a3b8; font-size: 13px; padding: 10px 0;">Login Email</td>
           <td style="text-align: right; color: #f1f5f9; font-family: monospace; font-size: 14px;">${user.email}</td>
         </tr>
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <td style="color: #94a3b8; font-size: 13px; padding: 10px 0;">Unique Login ID</td>
+          <td style="text-align: right; color: #06b6d4; font-family: monospace; font-size: 14px; font-weight: 700;">${user.login_id}</td>
+        </tr>
         <tr>
           <td style="color: #94a3b8; font-size: 13px; padding: 10px 0;">Password</td>
           <td style="text-align: right; color: #a78bfa; font-family: monospace; font-size: 18px; font-weight: 800; letter-spacing: 3px;">${plainPassword}</td>
         </tr>
       </table>
     </div>
-    <p style="font-size: 13px; color: #64748b; text-align: center; background: rgba(255,165,0,0.05); border: 1px solid rgba(255,165,0,0.15); border-radius: 10px; padding: 12px;">⚠️ Save this password. You can change it after first login.</p>
+    <p style="font-size: 13px; color: #64748b; text-align: center; background: rgba(255,165,0,0.05); border: 1px solid rgba(255,165,0,0.15); border-radius: 10px; padding: 12px;">⚠️ Save this password. You can log in using either your Email or your unique Login ID.</p>
     <a href="https://telgo-app.vercel.app/login" style="display: block; text-align: center; background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: 700; font-size: 16px; margin-top: 28px;">Open Telgo Hub →</a>
     <div style="text-align: center; font-size: 12px; color: #475569; margin-top: 36px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.05);">This is an automated notification from Telgo Power Projects Operations Control. © ${new Date().getFullYear()} Telgo Power Projects. All rights reserved.</div>
   </div>
 </body>
 </html>`;
 
+    // 1. Attempt primary email send to requested user
+    try {
       await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -137,13 +142,47 @@ export async function POST(request: NextRequest) {
           html: emailHtml,
         }),
       });
-    } catch (emailErr) {
-      console.error("Resend email error:", emailErr);
+    } catch (primaryErr) {
+      console.error("Resend primary send error:", primaryErr);
+    }
+
+    // 2. Sandbox testing fallback: Send a copy to the developer's registered testing email
+    const devEmail = "ajipaul96@gmail.com";
+    if (email !== devEmail) {
+      try {
+        const sandboxHtml = `
+          <div style="background: rgba(124,58,237,0.15); border: 2px solid #7c3aed; color: #c4b5fd; padding: 16px; border-radius: 12px; margin-bottom: 24px; font-family: sans-serif; font-size: 14px; line-height: 1.5;">
+            🔔 <strong>[Resend Sandbox Copy]</strong><br />
+            This is a testing copy of the onboarding email generated for <strong>${user.email}</strong>.<br />
+            Since the Resend sandbox restricts email delivery to verified accounts only, we've routed this copy to your inbox (<strong>ajipaul96@gmail.com</strong>) so you can retrieve their generated credentials instantly!
+          </div>
+          ${emailHtml}
+        `;
+        
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: resendFromEmail,
+            to: [devEmail],
+            subject: `🔔 [Testing Copy] Access Approved for ${user.email}`,
+            html: sandboxHtml,
+          }),
+        });
+      } catch (sandboxErr) {
+        console.error("Resend sandbox copy error:", sandboxErr);
+      }
     }
   }
 
   return NextResponse.json({
     ok: true,
     message: "Access approved. Login credentials emailed to user.",
+    password: plainPassword,
+    email: user.email,
+    loginId: user.login_id
   });
 }

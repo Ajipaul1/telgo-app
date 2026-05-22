@@ -51,17 +51,45 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { data: existingUser, error: existingUserError } = await supabase
-    .from("mobile_app_users")
-    .select("id,email,full_name,role,login_id,user_folder_path,created_at,auth_user_id,pin_set_at,access_status,blocked_at")
-    .eq("email", email)
-    .maybeSingle();
+  let targetEmail = email;
+  let existingUser = null;
+  const [base, domain] = email.split("@");
+  const cleanBase = base.split("+")[0];
 
-  if (existingUserError) {
-    return NextResponse.json(
-      { ok: false, message: `Access lookup failed: ${existingUserError.message}` },
-      { status: 500 }
-    );
+  // Scan through candidate email aliases to find the first available one
+  for (let i = 0; i < 20; i++) {
+    const candidate = i === 0 
+      ? `${cleanBase}@${domain}` 
+      : (i === 1 ? `${cleanBase}+${role}@${domain}` : `${cleanBase}+${role}${i}@${domain}`);
+
+    const { data, error } = await supabase
+      .from("mobile_app_users")
+      .select("id,email,full_name,role,login_id,user_folder_path,created_at,auth_user_id,pin_set_at,access_status,blocked_at")
+      .eq("email", candidate)
+      .maybeSingle();
+
+    if (error) {
+      return NextResponse.json(
+        { ok: false, message: `Access lookup failed: ${error.message}` },
+        { status: 500 }
+      );
+    }
+
+    if (!data) {
+      // Free email alias candidate found, we will create a new account!
+      targetEmail = candidate;
+      existingUser = null;
+      break;
+    }
+
+    // We can re-use/overwrite this candidate if it matches the role and is not active/blocked
+    if (data.role === role && data.access_status !== "active" && data.access_status !== "blocked") {
+      targetEmail = candidate;
+      existingUser = data;
+      break;
+    }
+
+    // Otherwise, this candidate is taken. Keep looping!
   }
 
   if (existingUser?.blocked_at || existingUser?.access_status === "blocked") {
@@ -79,7 +107,7 @@ export async function POST(request: NextRequest) {
 
   const activatedAt = new Date().toISOString();
   const payload = {
-    email,
+    email: targetEmail,
     login_id: loginId,
     temp_password_hash: null,
     full_name: fullName,
@@ -165,7 +193,7 @@ export async function POST(request: NextRequest) {
 
   if (profileError) {
     console.error("Mobile user file sync failed after access activation", {
-      email,
+      email: targetEmail,
       loginId: savedLoginId,
       message: profileError.message
     });
@@ -173,7 +201,7 @@ export async function POST(request: NextRequest) {
 
   if (!existingUser?.auth_user_id) {
     const { error: authUserError } = await supabase.auth.admin.createUser({
-      email,
+      email: targetEmail,
       email_confirm: true,
       user_metadata: {
         full_name: fullName,
@@ -188,7 +216,7 @@ export async function POST(request: NextRequest) {
       !/already registered|already exists|duplicate/i.test(authUserError.message)
     ) {
       console.error("Supabase Auth user provisioning failed", {
-        email,
+        email: targetEmail,
         loginId: savedLoginId,
         message: authUserError.message
       });
@@ -198,7 +226,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     ok: true,
     loginId: savedLoginId,
-    email,
+    email: targetEmail,
     fullName,
     role,
     message: "Access request submitted. Your account is pending admin approval. You will receive an email once approved."
