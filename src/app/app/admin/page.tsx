@@ -106,7 +106,7 @@ export default function AdminDashboard() {
   return (
     <div className="page" style={{ background: "#060912" }}>
       {/* Header */}
-      <div style={{ padding: "20px 16px 0", paddingTop: "env(safe-area-inset-top, 20px)" }}>
+      <div style={{ padding: "20px 16px 0", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
           <div>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#475569", marginBottom: 4 }}>TELGO HUB</p>

@@ -14,7 +14,12 @@ export const metadata: Metadata = {
       { url: "/assets/icon-512.png", sizes: "512x512", type: "image/png" }
     ]
   },
-  other: { "mobile-web-app-capable": "yes", "apple-mobile-web-app-capable": "yes", "apple-mobile-web-app-status-bar-style": "black-translucent" }
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
+    "theme-color": "#060912"
+  }
 };
 
 export const viewport: Viewport = {

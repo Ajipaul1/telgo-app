@@ -4,16 +4,29 @@ import { useState, FormEvent } from "react";
 const ROLES = ["supervisor", "client", "finance"] as const;
 type Role = typeof ROLES[number];
 
+function checkAndRequestLocation(): Promise<"granted" | "denied"> {
+  return new Promise((resolve) => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      resolve("denied");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      () => resolve("granted"),
+      () => resolve("denied"),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+    );
+  });
+}
+
 export default function RequestAccessPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role>("supervisor");
   const [state, setState] = useState<"idle"|"loading"|"done"|"error">("idle");
   const [msg, setMsg] = useState("");
+  const [showLocModal, setShowLocModal] = useState(false);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!name.trim() || !email.trim()) { setState("error"); setMsg("Please fill in all fields."); return; }
+  async function submitRequest() {
     setState("loading"); setMsg("");
     try {
       const r = await fetch("/api/mobile/request-access", {
@@ -25,6 +38,25 @@ export default function RequestAccessPage() {
       if (r.ok && d.ok) { setState("done"); return; }
       setState("error"); setMsg(d.message || "Request failed. Please try again.");
     } catch { setState("error"); setMsg("Connection error. Please try again."); }
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !email.trim()) { setState("error"); setMsg("Please fill in all fields."); return; }
+    
+    if (role === "supervisor" || role === "finance") {
+      setState("loading");
+      setMsg("Checking location permission...");
+      const permission = await checkAndRequestLocation();
+      if (permission !== "granted") {
+        setState("idle");
+        setMsg("");
+        setShowLocModal(true);
+        return;
+      }
+    }
+    
+    submitRequest();
   }
 
   if (state === "done") {
@@ -69,6 +101,13 @@ export default function RequestAccessPage() {
                 </button>
               ))}
             </div>
+            
+            {(role === "supervisor" || role === "finance") && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, fontSize: 12, color: "#06b6d4" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                <span>Location permission is required for this role.</span>
+              </div>
+            )}
           </div>
 
           {state === "error" && (
@@ -76,11 +115,69 @@ export default function RequestAccessPage() {
           )}
 
           <button className="btn-primary" type="submit" disabled={state === "loading"}>
-            {state === "loading" ? <><div className="spinner" /> Submitting...</> : <>Submit Request <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></>}
+            {state === "loading" ? <><div className="spinner" /> {msg || "Submitting..."}</> : <>Submit Request <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></>}
           </button>
         </form>
       </div>
       <a href="/login" style={{ marginTop: 20, fontSize: 13, color: "#475569", textDecoration: "none" }}>← Back to Login</a>
+
+      {/* Location Modal overlay */}
+      {showLocModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(6,9,18,0.92)", backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 10000, animation: "fadeIn 0.2s ease" }}>
+          <div className="glass glow-cyan" style={{ width: "100%", maxWidth: 400, padding: 32, background: "linear-gradient(135deg, #0e0829 0%, #060912 100%)", borderRadius: 24, textAlign: "center", border: "1px solid rgba(6,182,212,0.3)" }}>
+            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(6,182,212,0.15)", border: "1px solid rgba(6,182,212,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+            </div>
+            <h3 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", marginBottom: 12 }}>Location Required</h3>
+            <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 24, lineHeight: 1.6 }}>
+              Supervisors and Finance team members must enable location permissions to request platform access. This is mandatory for operational compliance and field activity auditing.
+            </p>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <button 
+                onClick={async () => {
+                  setShowLocModal(false);
+                  setState("loading");
+                  setMsg("Verifying location...");
+                  const permission = await checkAndRequestLocation();
+                  if (permission === "granted") {
+                    submitRequest();
+                  } else {
+                    setState("idle");
+                    setMsg("");
+                    setShowLocModal(true);
+                  }
+                }}
+                className="btn-primary" 
+                style={{ minHeight: 44, fontSize: 14 }}
+              >
+                Enable Location & Try Again
+              </button>
+              
+              <button 
+                onClick={() => {
+                  setRole("client");
+                  setShowLocModal(false);
+                }}
+                className="btn-ghost" 
+                style={{ minHeight: 44, fontSize: 14, borderColor: "rgba(255,255,255,0.08)", color: "#94a3b8" }}
+              >
+                Change Role to Client
+              </button>
+              
+              <button 
+                onClick={() => setShowLocModal(false)}
+                style={{ background: "none", border: "none", color: "#475569", fontSize: 13, fontWeight: 600, cursor: "pointer", marginTop: 8 }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
