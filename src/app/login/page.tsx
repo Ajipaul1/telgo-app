@@ -32,6 +32,15 @@ export default function LoginPage() {
   useEffect(() => {
     setReady(true);
     if (typeof window !== "undefined") {
+      // Dynamically update theme-color to match the purplish start of the gradient (#0d0621)
+      let meta = document.querySelector('meta[name="theme-color"]');
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('name', 'theme-color');
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', '#0d0621');
+
       const queryApk = window.location.search.includes("apk=true") || window.location.search.includes("platform=apk");
       
       const ua = window.navigator.userAgent ? window.navigator.userAgent.toLowerCase() : "";
@@ -52,6 +61,15 @@ export default function LoginPage() {
       
       setIsWebView(queryApk || isUAWebView || hasAndroidInterface || isStandalone);
     }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) {
+          meta.setAttribute('content', '#060912');
+        }
+      }
+    };
   }, []);
 
   async function handleSubmit(e: FormEvent) {
