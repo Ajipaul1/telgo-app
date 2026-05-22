@@ -4,7 +4,7 @@ import { readMobileSession } from "@/lib/server/mobile-session";
 import { listMobileTrackingSnapshot, markMobileAttendance } from "@/lib/server/mobile-attendance";
 
 export async function GET(request: NextRequest) {
-  const session = readMobileSession(request);
+  const session = await readMobileSession(request);
   if (!session) {
     return NextResponse.json(
       { ok: false, message: "Sign in again to load live map tracking." },
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = readMobileSession(request);
+  const session = await readMobileSession(request);
   if (!session) {
     return NextResponse.json(
       { ok: false, message: "Sign in again to mark attendance." },

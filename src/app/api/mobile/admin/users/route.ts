@@ -3,7 +3,7 @@ import { readMobileSession } from "@/lib/server/mobile-session";
 import { getMobileAccessClient } from "@/lib/server/mobile-access";
 
 export async function GET(request: NextRequest) {
-  const session = readMobileSession(request);
+  const session = await readMobileSession(request);
   if (!session || session.role !== "admin") {
     return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
   }

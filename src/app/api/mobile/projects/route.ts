@@ -5,7 +5,7 @@ import { createRealProject, listRealProjects } from "@/lib/server/mobile-project
 import type { Project } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
-  if (!canReadProjects(request)) {
+  if (!(await canReadProjects(request))) {
     return NextResponse.json(
       { ok: false, message: "Sign in to load real project data." },
       { status: 401 }
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = readMobileSession(request);
+  const session = await readMobileSession(request);
   if (!canWriteProjects(request, session?.role)) {
     return NextResponse.json(
       { ok: false, message: "Admin access is required to create projects." },
@@ -64,8 +64,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function canReadProjects(request: NextRequest) {
-  return Boolean(readMobileSession(request)) || isTrustedLocalRequest(request);
+async function canReadProjects(request: NextRequest) {
+  const session = await readMobileSession(request);
+  return Boolean(session) || isTrustedLocalRequest(request);
 }
 
 function canWriteProjects(request: NextRequest, role?: string) {

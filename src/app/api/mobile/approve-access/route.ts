@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { getMobileAccessClient } from "@/lib/server/mobile-access";
+import { readMobileSession } from "@/lib/server/mobile-session";
 
 function generatePassword(length = 10) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
@@ -13,6 +14,11 @@ function generatePassword(length = 10) {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await readMobileSession(request);
+  if (!session || session.role !== "admin") {
+    return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
+  }
+
   let body;
   try {
     body = await request.json();

@@ -6,7 +6,7 @@ import { markMobileAttendance } from "@/lib/server/mobile-attendance";
 const MAX_ATTENDANCE_ACCURACY_M = 500;
 
 export async function POST(request: NextRequest) {
-  const session = readMobileSession(request);
+  const session = await readMobileSession(request);
   if (!session) {
     return NextResponse.json(
       { ok: false, message: "Sign in again to mark attendance." },

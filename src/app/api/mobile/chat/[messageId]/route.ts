@@ -7,7 +7,7 @@ export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ messageId: string }> }
 ) {
-  const session = readMobileSession(request);
+  const session = await readMobileSession(request);
   if (!session) {
     return NextResponse.json({ ok: false, message: "Sign in again to manage chat." }, { status: 401 });
   }

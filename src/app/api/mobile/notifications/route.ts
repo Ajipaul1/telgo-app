@@ -7,7 +7,7 @@ import {
 import { readMobileSession } from "@/lib/server/mobile-session";
 
 export async function GET(request: NextRequest) {
-  const session = readMobileSession(request);
+  const session = await readMobileSession(request);
   if (!session) {
     return NextResponse.json({ ok: false, message: "Sign in again to load notifications." }, { status: 401 });
   }
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const session = readMobileSession(request);
+  const session = await readMobileSession(request);
   if (!session) {
     return NextResponse.json({ ok: false, message: "Sign in again to update notifications." }, { status: 401 });
   }

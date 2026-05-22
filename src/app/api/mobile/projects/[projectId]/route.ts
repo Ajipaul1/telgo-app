@@ -8,7 +8,7 @@ export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ projectId: string }> }
 ) {
-  const session = readMobileSession(request);
+  const session = await readMobileSession(request);
   if (!canWriteProjects(request, session?.role)) {
     return NextResponse.json(
       { ok: false, message: "Admin access is required to update projects." },

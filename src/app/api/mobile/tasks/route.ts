@@ -5,7 +5,7 @@ import { createRealTask, listRealTasks } from "@/lib/server/mobile-tasks";
 import type { ManagedTask } from "@/store/ops-store";
 
 export async function GET(request: NextRequest) {
-  if (!canReadTasks(request)) {
+  if (!(await canReadTasks(request))) {
     return NextResponse.json(
       { ok: false, message: "Sign in to load live task data." },
       { status: 401 }
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = readMobileSession(request);
+  const session = await readMobileSession(request);
   if (!canCreateTasks(request, session?.role)) {
     return NextResponse.json(
       { ok: false, message: "Admin or supervisor access is required to assign tasks." },
@@ -77,8 +77,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function canReadTasks(request: NextRequest) {
-  return Boolean(readMobileSession(request)) || isTrustedLocalRequest(request);
+async function canReadTasks(request: NextRequest) {
+  const session = await readMobileSession(request);
+  return Boolean(session) || isTrustedLocalRequest(request);
 }
 
 function canCreateTasks(request: NextRequest, role?: string) {

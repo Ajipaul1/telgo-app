@@ -4,7 +4,7 @@ import { readMobileSession } from "@/lib/server/mobile-session";
 import { createShiftReport } from "@/lib/server/mobile-reports";
 
 export async function POST(request: NextRequest) {
-  const session = readMobileSession(request);
+  const session = await readMobileSession(request);
   if (!session) {
     return NextResponse.json(
       { ok: false, message: "Sign in again to create a report." },
