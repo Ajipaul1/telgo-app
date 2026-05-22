@@ -1,4 +1,4 @@
 import { redirect } from "next/navigation";
-export default function AppIndexPage() {
+export default function HomePage() {
   redirect("/login");
 }

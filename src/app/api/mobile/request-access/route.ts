@@ -28,23 +28,15 @@ function makeTelgoId() {
 
 export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => null)) as
-    | { fullName?: unknown; email?: unknown; role?: unknown; pin?: unknown }
+    | { fullName?: unknown; email?: unknown; role?: unknown }
     | null;
   const fullName = String(body?.fullName ?? "").trim();
   const email = normalizeEmail(body?.email);
   const role = normalizeRole(body?.role);
-  const pin = String(body?.pin ?? "").trim();
 
   if (fullName.length < 2 || !email) {
     return NextResponse.json(
       { ok: false, message: "Name and a valid email address are required." },
-      { status: 400 }
-    );
-  }
-
-  if (pin && !/^\d{4}$/.test(pin)) {
-    return NextResponse.json(
-      { ok: false, message: "PIN must be exactly 4 digits." },
       { status: 400 }
     );
   }
@@ -85,12 +77,6 @@ export async function POST(request: NextRequest) {
       ? String(existingUser.user_folder_path)
       : `mobile-users/${loginId}`;
 
-  const pinHash = pin
-    ? createHash("sha256")
-        .update(`${loginId}:${pin}`)
-        .digest("hex")
-    : null;
-
   const activatedAt = new Date().toISOString();
   const payload = {
     email,
@@ -102,8 +88,8 @@ export async function POST(request: NextRequest) {
     blocked_at: null,
     blocked_reason: null,
     activated_at: null,
-    pin_hash: pinHash,
-    pin_set_at: pinHash ? activatedAt : null,
+    pin_hash: null,
+    pin_set_at: null,
     user_folder_path: folderPath,
     updated_at: activatedAt
   };
