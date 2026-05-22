@@ -17,6 +17,7 @@ export default function AdminDashboard() {
   const [blocking, setBlocking] = useState<string | null>(null);
   const [toast, setToast] = useState("");
   const [approvedCreds, setApprovedCreds] = useState<{ email: string; password: string; loginId: string } | null>(null);
+  const [resending, setResending] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -68,6 +69,30 @@ export default function AdminDashboard() {
       else showToast("❌ " + (d.message || "Block failed"));
     } catch { showToast("❌ Network error"); }
     setBlocking(null);
+  }
+
+  async function resendCredentials(userId: string) {
+    setResending(userId);
+    try {
+      const r = await fetch("/api/mobile/resend-credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId })
+      });
+      const d = await r.json();
+      if (r.ok && d.ok) {
+        showToast("🔑 Credentials reset and emailed!");
+        if (d.password) {
+          setApprovedCreds({ email: d.email, password: d.password, loginId: d.loginId });
+        }
+        fetchUsers();
+      } else {
+        showToast("❌ " + (d.message || "Reset failed"));
+      }
+    } catch {
+      showToast("❌ Network error");
+    }
+    setResending(null);
   }
 
   const pending = users.filter(u => u.access_status === "pending");
@@ -169,6 +194,32 @@ export default function AdminDashboard() {
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: roleColor(u.role), textTransform: "capitalize" }}>{u.role}</span>
                   <span className="badge badge-active">Active</span>
+                  <button
+                    onClick={() => resendCredentials(u.id)}
+                    disabled={resending === u.id}
+                    style={{
+                      background: "rgba(6,182,212,0.1)",
+                      border: "1px solid rgba(6,182,212,0.25)",
+                      borderRadius: 8,
+                      padding: "6px 12px",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: "#06b6d4",
+                      cursor: "pointer",
+                      fontFamily: "Outfit, sans-serif",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      opacity: resending === u.id ? 0.6 : 1,
+                      transition: "all 0.2s ease"
+                    }}
+                  >
+                    {resending === u.id ? (
+                      <div className="spinner" style={{ width: 10, height: 10 }} />
+                    ) : (
+                      "Resend"
+                    )}
+                  </button>
                 </div>
               </div>
             ))}
@@ -191,7 +242,7 @@ export default function AdminDashboard() {
             <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(6,182,212,0.15)", border: "1px solid rgba(6,182,212,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
-            <h3 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", marginBottom: 8 }}>Access Activated!</h3>
+            <h3 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", marginBottom: 8 }}>Credentials Active!</h3>
             <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 20, lineHeight: 1.5 }}>Account is active. Since Resend trial emails only deliver to verified domain owners, copy these credentials to send manually:</p>
             
             <div style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: 18, marginBottom: 24, textAlign: "left", display: "flex", flexDirection: "column", gap: 12 }}>

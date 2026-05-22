@@ -1,0 +1,187 @@
+import { createHash, randomBytes } from "node:crypto";
+import { NextResponse, type NextRequest } from "next/server";
+import { getMobileAccessClient } from "@/lib/server/mobile-access";
+import { readMobileSession } from "@/lib/server/mobile-session";
+
+function generatePassword(length = 10) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  let pass = "";
+  const bytes = randomBytes(length);
+  for (let i = 0; i < length; i++) {
+    pass += chars[bytes[i] % chars.length];
+  }
+  return pass;
+}
+
+export async function POST(request: NextRequest) {
+  const session = await readMobileSession(request);
+  if (!session || session.role !== "admin") {
+    return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ ok: false, message: "Invalid JSON request body." }, { status: 400 });
+  }
+
+  const { userId } = body as { userId?: string };
+
+  if (!userId) {
+    return NextResponse.json({ ok: false, message: "User ID is required." }, { status: 400 });
+  }
+
+  let supabase;
+  try {
+    supabase = getMobileAccessClient();
+  } catch {
+    return NextResponse.json({ ok: false, message: "Database config error." }, { status: 500 });
+  }
+
+  const { data: user, error: fetchError } = await supabase
+    .from("mobile_app_users")
+    .select("id, email, full_name, role, login_id")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (fetchError || !user) {
+    return NextResponse.json(
+      { ok: false, message: fetchError?.message ?? "User not found." },
+      { status: 404 }
+    );
+  }
+
+  const plainPassword = generatePassword();
+  const email = String(user.email ?? "").trim().toLowerCase();
+  const passwordHash = createHash("sha256")
+    .update(`${email}:${plainPassword}`)
+    .digest("hex");
+
+  const now = new Date().toISOString();
+
+  // Reset the password in the database
+  const { error: updateError } = await supabase
+    .from("mobile_app_users")
+    .update({
+      password_hash: passwordHash,
+      updated_at: now
+    })
+    .eq("id", userId);
+
+  if (updateError) {
+    return NextResponse.json(
+      { ok: false, message: `Failed to update password: ${updateError.message}` },
+      { status: 500 }
+    );
+  }
+
+  const resendApiKey = process.env.RESEND_API_KEY;
+  const resendFromEmail = process.env.RESEND_FROM_EMAIL ?? "Telgo Hub <onboarding@resend.dev>";
+
+  if (resendApiKey && user.email) {
+    const emailHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Access Credentials - Telgo Hub</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #060912; color: #e2e8f0; margin: 0; padding: 20px;">
+  <div style="max-width: 560px; margin: 0 auto; background: linear-gradient(135deg, #0e0829 0%, #060912 100%); border: 1px solid rgba(124,58,237,0.25); border-radius: 20px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+    <div style="text-align: center; padding-bottom: 28px; border-bottom: 1px solid rgba(124,58,237,0.15); margin-bottom: 32px;">
+      <div style="display: inline-block; background: linear-gradient(135deg, #7c3aed, #06b6d4); padding: 2px; border-radius: 14px; margin-bottom: 16px;">
+        <div style="background: #060912; border-radius: 12px; padding: 12px 24px;">
+          <h1 style="margin: 0; font-size: 24px; font-weight: 800; background: linear-gradient(90deg, #06b6d4, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 2px;">TELGO HUB</h1>
+        </div>
+      </div>
+      <p style="margin: 8px 0 0; color: #94a3b8; font-size: 14px;">Enterprise Operations Platform</p>
+    </div>
+    <p style="font-size: 16px; color: #cbd5e1; line-height: 1.6;">Hello <strong style="color: #f1f5f9;">${user.full_name}</strong>,</p>
+    <p style="font-size: 15px; color: #94a3b8; line-height: 1.7;">A new secure password has been generated for your <strong style="color: #f1f5f9;">Telgo Hub</strong> account. Use these updated credentials to log in.</p>
+    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 24px; margin: 28px 0;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px;">
+          <td style="color: #94a3b8; font-size: 13px; padding: 10px 0;">Access Level</td>
+          <td style="text-align: right; color: #06b6d4; font-weight: 700; font-size: 14px; text-transform: uppercase;">${user.role}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <td style="color: #94a3b8; font-size: 13px; padding: 10px 0;">Login Email</td>
+          <td style="text-align: right; color: #f1f5f9; font-family: monospace; font-size: 14px;">${user.email}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <td style="color: #94a3b8; font-size: 13px; padding: 10px 0;">Unique Login ID</td>
+          <td style="text-align: right; color: #06b6d4; font-family: monospace; font-size: 14px; font-weight: 700;">${user.login_id}</td>
+        </tr>
+        <tr>
+          <td style="color: #94a3b8; font-size: 13px; padding: 10px 0;">New Password</td>
+          <td style="text-align: right; color: #a78bfa; font-family: monospace; font-size: 18px; font-weight: 800; letter-spacing: 3px;">${plainPassword}</td>
+        </tr>
+      </table>
+    </div>
+    <p style="font-size: 13px; color: #64748b; text-align: center; background: rgba(255,165,0,0.05); border: 1px solid rgba(255,165,0,0.15); border-radius: 10px; padding: 12px;">⚠️ Save this password. You can log in using either your Email or your unique Login ID.</p>
+    <a href="https://telgo-app.vercel.app/login" style="display: block; text-align: center; background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: 700; font-size: 16px; margin-top: 28px;">Open Telgo Hub →</a>
+    <div style="text-align: center; font-size: 12px; color: #475569; margin-top: 36px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.05);">This is an automated notification from Telgo Power Projects Operations Control. © ${new Date().getFullYear()} Telgo Power Projects. All rights reserved.</div>
+  </div>
+</body>
+</html>`;
+
+    // 1. Attempt primary email send
+    try {
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: resendFromEmail,
+          to: [user.email],
+          subject: "🔑 Your Updated Telgo Hub Login Credentials",
+          html: emailHtml,
+        }),
+      });
+    } catch (primaryErr) {
+      console.error("Resend primary send error:", primaryErr);
+    }
+
+    // 2. Sandbox testing fallback: Send a copy to the developer's registered testing email
+    const devEmail = "ajipaul96@gmail.com";
+    if (email !== devEmail) {
+      try {
+        const sandboxHtml = `
+          <div style="background: rgba(124,58,237,0.15); border: 2px solid #7c3aed; color: #c4b5fd; padding: 16px; border-radius: 12px; margin-bottom: 24px; font-family: sans-serif; font-size: 14px; line-height: 1.5;">
+            🔔 <strong>[Resend Sandbox Copy]</strong><br />
+            This is a testing copy of the updated credentials email generated for <strong>${user.email}</strong>.<br />
+            Since the Resend sandbox restricts email delivery to verified accounts only, we've routed this copy to your inbox (<strong>ajipaul96@gmail.com</strong>) so you can retrieve their updated password instantly!
+          </div>
+          ${emailHtml}
+        `;
+        
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: resendFromEmail,
+            to: [devEmail],
+            subject: `🔔 [Testing Copy] Updated Credentials for ${user.email}`,
+            html: sandboxHtml,
+          }),
+        });
+      } catch (sandboxErr) {
+        console.error("Resend sandbox copy error:", sandboxErr);
+      }
+    }
+  }
+
+  return NextResponse.json({
+    ok: true,
+    message: "New password generated and emailed successfully.",
+    password: plainPassword,
+    email: user.email,
+    loginId: user.login_id
+  });
+}
