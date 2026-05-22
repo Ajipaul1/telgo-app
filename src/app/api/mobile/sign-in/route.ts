@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     .eq("id", data.id);
 
   const response = NextResponse.json({ ok: true, user: toMobileAccessUser(data) });
-  setMobileSession(response, toMobileAccessUser(data));
+  await setMobileSession(response, toMobileAccessUser(data));
   return response;
 }
 

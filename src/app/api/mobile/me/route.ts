@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { readMobileSession } from "@/lib/server/mobile-session";
 
 export async function GET(request: NextRequest) {
-  const session = readMobileSession(request);
+  const session = await readMobileSession(request);
   if (!session) {
     return NextResponse.json({ ok: false, user: null }, { status: 401 });
   }

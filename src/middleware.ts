@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { readMobileSession } from "@/lib/server/mobile-session";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const session = readMobileSession(request);
+  const session = await readMobileSession(request);
 
   // Protect /app/* routes
   if (pathname.startsWith("/app")) {

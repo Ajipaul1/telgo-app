@@ -1,4 +1,3 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
 import type { NextRequest, NextResponse } from "next/server";
 import type { MobileAccessUser } from "@/lib/server/mobile-access";
 
@@ -25,13 +24,13 @@ export function createMobileSession(user: MobileAccessUser): MobileSession {
   };
 }
 
-export function readMobileSession(request: NextRequest) {
+export async function readMobileSession(request: NextRequest) {
   const token = request.cookies.get(MOBILE_SESSION_COOKIE)?.value ?? "";
-  return verifyMobileSessionToken(token);
+  return await verifyMobileSessionToken(token);
 }
 
-export function setMobileSession(response: NextResponse, user: MobileAccessUser) {
-  const token = signMobileSessionToken(createMobileSession(user));
+export async function setMobileSession(response: NextResponse, user: MobileAccessUser) {
+  const token = await signMobileSessionToken(createMobileSession(user));
   response.cookies.set({
     name: MOBILE_SESSION_COOKIE,
     value: token,
@@ -55,29 +54,57 @@ export function clearMobileSession(response: NextResponse) {
   });
 }
 
-function signMobileSessionToken(session: MobileSession) {
-  const payload = Buffer.from(JSON.stringify(session)).toString("base64url");
-  const signature = createSignature(payload);
+function base64UrlEncode(str: string) {
+  const base64 = btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode(parseInt(p1, 16))));
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function base64UrlDecode(str: string) {
+  let decoded = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (decoded.length % 4) { decoded += '='; }
+  return decodeURIComponent(atob(decoded).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+}
+
+async function getCryptoKey() {
+  const secret = getSessionSecret();
+  const enc = new TextEncoder();
+  return crypto.subtle.importKey(
+    "raw",
+    enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign", "verify"]
+  );
+}
+
+async function createSignature(payload: string) {
+  const key = await getCryptoKey();
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
+  const uint8 = new Uint8Array(signature);
+  let str = "";
+  for (let i = 0; i < uint8.byteLength; i++) {
+    str += String.fromCharCode(uint8[i]);
+  }
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function signMobileSessionToken(session: MobileSession) {
+  const payload = base64UrlEncode(JSON.stringify(session));
+  const signature = await createSignature(payload);
   return `${payload}.${signature}`;
 }
 
-function verifyMobileSessionToken(token: string): MobileSession | null {
-  const [payload, signature] = token.split(".");
+async function verifyMobileSessionToken(token: string): Promise<MobileSession | null> {
+  const parts = token.split(".");
+  if (parts.length !== 2) return null;
+  const [payload, signature] = parts;
   if (!payload || !signature) return null;
 
-  const expected = createSignature(payload);
-  const actualBuffer = Buffer.from(signature);
-  const expectedBuffer = Buffer.from(expected);
-
-  if (
-    actualBuffer.length !== expectedBuffer.length ||
-    !timingSafeEqual(actualBuffer, expectedBuffer)
-  ) {
-    return null;
-  }
-
   try {
-    const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as MobileSession;
+    const expected = await createSignature(payload);
+    if (signature !== expected) return null;
+    
+    const session = JSON.parse(base64UrlDecode(payload)) as MobileSession;
     if (!session?.userId || !session.loginId || !session.exp) return null;
     if (session.exp <= Math.floor(Date.now() / 1000)) return null;
     return session;
@@ -86,17 +113,10 @@ function verifyMobileSessionToken(token: string): MobileSession | null {
   }
 }
 
-function createSignature(payload: string) {
-  return createHmac("sha256", getSessionSecret()).update(payload).digest("base64url");
-}
-
 function getSessionSecret() {
-  const secret =
-    process.env.MOBILE_SESSION_SECRET ??
+  return process.env.MOBILE_SESSION_SECRET ??
     process.env.SUPABASE_SECRET_KEY ??
     process.env.SUPABASE_SERVICE_ROLE_KEY ??
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
     "telgo-fallback-session-secret-hash-key-2026";
-
-  return secret;
 }
