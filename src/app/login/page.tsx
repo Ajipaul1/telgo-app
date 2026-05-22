@@ -12,10 +12,21 @@ export default function LoginPage() {
 
   useEffect(() => {
     setReady(true);
-    if (typeof window !== "undefined" && window.navigator) {
-      const ua = window.navigator.userAgent.toLowerCase();
-      const isUAWebView = ua.includes("; wv") || ua.includes("webview");
-      setIsWebView(isUAWebView);
+    if (typeof window !== "undefined") {
+      const queryApk = window.location.search.includes("apk=true") || window.location.search.includes("platform=apk");
+      
+      const ua = window.navigator.userAgent ? window.navigator.userAgent.toLowerCase() : "";
+      const isUAWebView = 
+        ua.includes("; wv") || 
+        ua.includes("webview") || 
+        (ua.includes("android") && ua.includes("version/"));
+      
+      const hasAndroidInterface = 
+        Boolean((window as any).Android) || 
+        Boolean((window as any).JSInterface) || 
+        Boolean((window as any).webkit?.messageHandlers);
+
+      setIsWebView(queryApk || isUAWebView || hasAndroidInterface);
     }
   }, []);
 
