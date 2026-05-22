@@ -3,6 +3,6 @@
       "target": {
         "namespace": "android_app",
         "package_name": "com.telgopower.telgohub",
-        "sha256_cert_fingerprints": ["FC:AF:44:87:D0:4C:AE:9E:01:47:F3:2D:B7:08:74:0F:AF:9F:67:5B:C7:04:40:6C:87:5E:BF:1C:74:EA:8C:CF"]
+        "sha256_cert_fingerprints": ["FE:0D:57:8C:D6:92:53:75:39:BD:9E:EE:45:68:47:B2:AF:6A:7C:DB:20:49:4E:A6:8C:7D:ED:6E:5B:E2:B7:C6"]
       }
     }]
