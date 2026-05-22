@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { getMobileAccessClient } from "@/lib/server/mobile-access";
 import { readMobileSession } from "@/lib/server/mobile-session";
+import { sendEmail } from "@/lib/server/email";
 
 function generatePassword(length = 10) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
@@ -76,10 +77,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const resendFromEmail = process.env.RESEND_FROM_EMAIL ?? "Telgo Hub <onboarding@resend.dev>";
-
-  if (resendApiKey && user.email) {
+  if (user.email) {
     const emailHtml = `<!DOCTYPE html>
 <html>
 <head>
@@ -128,21 +126,13 @@ export async function POST(request: NextRequest) {
 
     // 1. Attempt primary email send
     try {
-      await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: resendFromEmail,
-          to: [user.email],
-          subject: "🔑 Your Updated Telgo Hub Login Credentials",
-          html: emailHtml,
-        }),
+      await sendEmail({
+        to: user.email,
+        subject: "🔑 Your Updated Telgo Hub Login Credentials",
+        html: emailHtml,
       });
     } catch (primaryErr) {
-      console.error("Resend primary send error:", primaryErr);
+      console.error("SMTP/Resend primary send error:", primaryErr);
     }
 
     // 2. Sandbox testing fallback: Send a copy to the developer's registered testing email
@@ -158,21 +148,13 @@ export async function POST(request: NextRequest) {
           ${emailHtml}
         `;
         
-        await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${resendApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: resendFromEmail,
-            to: [devEmail],
-            subject: `🔔 [Testing Copy] Updated Credentials for ${user.email}`,
-            html: sandboxHtml,
-          }),
+        await sendEmail({
+          to: devEmail,
+          subject: `🔔 [Testing Copy] Updated Credentials for ${user.email}`,
+          html: sandboxHtml,
         });
       } catch (sandboxErr) {
-        console.error("Resend sandbox copy error:", sandboxErr);
+        console.error("SMTP/Resend sandbox copy error:", sandboxErr);
       }
     }
   }
