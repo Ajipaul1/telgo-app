@@ -27,7 +27,7 @@ export default function AdminDashboard() {
   const [mapAnimateProgress, setMapAnimateProgress] = useState(0);
   
   // Navigation & Multi-View State
-  const [activeView, setActiveView] = useState<"hub" | "approvals" | "map" | "settings" | "attendance">("hub");
+  const [activeView, setActiveView] = useState<"hub" | "approvals" | "map" | "settings" | "attendance" | "projects">("hub");
 
   // Real Database Attendance History States
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
@@ -50,6 +50,164 @@ export default function AdminDashboard() {
   const [editRole, setEditRole] = useState("");
   const [editStatus, setEditStatus] = useState("");
   const [savingUser, setSavingUser] = useState(false);
+
+  // Real Projects States
+  const [projectsList, setProjectsList] = useState<any[]>([]);
+  const [selectedProjectItem, setSelectedProjectItem] = useState<any | null>(null);
+  const [editingProjectItem, setEditingProjectItem] = useState<any | null>(null);
+  
+  // Edit Project fields
+  const [projName, setProjName] = useState("");
+  const [projCode, setProjCode] = useState("");
+  const [projDistrict, setProjDistrict] = useState("");
+  const [projDistance, setProjDistance] = useState("");
+  const [projDesc, setProjDesc] = useState("");
+  const [projStartLabel, setProjStartLabel] = useState("");
+  const [projStartLat, setProjStartLat] = useState("");
+  const [projStartLng, setProjStartLng] = useState("");
+  const [projEndLabel, setProjEndLabel] = useState("");
+  const [projEndLat, setProjEndLat] = useState("");
+  const [projEndLng, setProjEndLng] = useState("");
+
+  const DEFAULT_PROJECTS = [
+    {
+      id: "PRV-EDP-001",
+      name: "Palarivattom–Edappally Highway Utility Shift",
+      code: "PRV-EDP-001",
+      district: "Ernakulam",
+      distance: "2.3 km",
+      description: "A standard highway corridor project involving HDD drilling and cable laying along the busy NH 66 bypass stretch.",
+      startLabel: "Palarivattom Bypass Junction",
+      startCoords: [10.0055, 76.3082],
+      endLabel: "Edappally Toll Junction",
+      endCoords: [10.0261, 76.3084]
+    },
+    {
+      id: "INF-SMC-002",
+      name: "IT Expressway OFC Expansion",
+      code: "INF-SMC-002",
+      district: "Ernakulam",
+      distance: "1.8 km",
+      description: "An optical fiber cable (OFC) expansion project connecting major tech parks, primarily utilizing open trenching and straight-through joining.",
+      startLabel: "Kakkanad Infopark Phase 1",
+      startCoords: [10.0094, 76.3594],
+      endLabel: "SmartCity Kochi",
+      endCoords: [10.0135, 76.3725]
+    },
+    {
+      id: "CHT-ALP-003",
+      name: "Coastal Bypass Power Grid Routing",
+      code: "CHT-ALP-003",
+      district: "Alappuzha",
+      distance: "18.5 km",
+      description: "A longer stretch involving heavy RMU transformer foundation work and underground power cable mounding along the coastal route.",
+      startLabel: "Cherthala X-Ray Junction",
+      startCoords: [9.6845, 76.3355],
+      endLabel: "Alappuzha Bypass Starting Point",
+      endCoords: [9.5312, 76.3268]
+    },
+    {
+      id: "MNR-DVK-004",
+      name: "High-Range Telecom Link",
+      code: "MNR-DVK-004",
+      district: "Idukki",
+      distance: "5.5 km",
+      description: "A challenging terrain project requiring specialized HDD drilling through rocky elevations.",
+      startLabel: "Munnar Town Center",
+      startCoords: [10.0889, 77.0595],
+      endLabel: "Devikulam Town",
+      endCoords: [10.0617, 77.0863]
+    },
+    {
+      id: "TCR-KUT-005",
+      name: "Urban Ring Road Gas Pipeline (GAIL)",
+      code: "TCR-KUT-005",
+      district: "Thrissur",
+      distance: "4.2 km",
+      description: "A city-center trenching project requiring heavy coordination with local traffic police and municipal authorities.",
+      startLabel: "Sakthan Thampuran Bus Stand",
+      startCoords: [10.5167, 76.2167],
+      endLabel: "Kuttanellur Junction",
+      endCoords: [10.4900, 76.2415]
+    }
+  ];
+
+  useEffect(() => {
+    const saved = localStorage.getItem("telgo_custom_projects");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setProjectsList(parsed);
+        if (parsed.length > 0) setSelectedProjectItem(parsed[0]);
+      } catch {
+        setProjectsList(DEFAULT_PROJECTS);
+        setSelectedProjectItem(DEFAULT_PROJECTS[0]);
+      }
+    } else {
+      setProjectsList(DEFAULT_PROJECTS);
+      setSelectedProjectItem(DEFAULT_PROJECTS[0]);
+    }
+  }, []);
+
+  const resetToDefaults = () => {
+    if (confirm("Are you sure you want to reset all projects and coordinates to their real default parameters?")) {
+      setProjectsList(DEFAULT_PROJECTS);
+      setSelectedProjectItem(DEFAULT_PROJECTS[0]);
+      localStorage.removeItem("telgo_custom_projects");
+      showToast("🔄 Reset to default coordinates and metadata.");
+    }
+  };
+
+  useEffect(() => {
+    if (editingProjectItem) {
+      setProjName(editingProjectItem.name);
+      setProjCode(editingProjectItem.code);
+      setProjDistrict(editingProjectItem.district);
+      setProjDistance(editingProjectItem.distance);
+      setProjDesc(editingProjectItem.description);
+      setProjStartLabel(editingProjectItem.startLabel);
+      setProjStartLat(String(editingProjectItem.startCoords[0]));
+      setProjStartLng(String(editingProjectItem.startCoords[1]));
+      setProjEndLabel(editingProjectItem.endLabel);
+      setProjEndLat(String(editingProjectItem.endCoords[0]));
+      setProjEndLng(String(editingProjectItem.endCoords[1]));
+    }
+  }, [editingProjectItem]);
+
+  const handleUpdateProject = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProjectItem) return;
+
+    const lat1 = parseFloat(projStartLat);
+    const lng1 = parseFloat(projStartLng);
+    const lat2 = parseFloat(projEndLat);
+    const lng2 = parseFloat(projEndLng);
+
+    if (isNaN(lat1) || isNaN(lng1) || isNaN(lat2) || isNaN(lng2)) {
+      showToast("❌ Latitude and Longitude must be valid decimal numbers!");
+      return;
+    }
+
+    const updated = {
+      ...editingProjectItem,
+      name: projName,
+      code: projCode,
+      district: projDistrict,
+      distance: projDistance,
+      description: projDesc,
+      startLabel: projStartLabel,
+      startCoords: [lat1, lng1] as [number, number],
+      endLabel: projEndLabel,
+      endCoords: [lat2, lng2] as [number, number]
+    };
+
+    const nextList = projectsList.map(p => p.id === editingProjectItem.id ? updated : p);
+    setProjectsList(nextList);
+    setSelectedProjectItem(updated);
+    setEditingProjectItem(null);
+    localStorage.setItem("telgo_custom_projects", JSON.stringify(nextList));
+    showToast("✅ Corridor parameters updated successfully!");
+  };
 
   // Fetch admin self profile
   useEffect(() => {
@@ -651,6 +809,31 @@ export default function AdminDashboard() {
                 <div>
                   <h4 style={{ fontSize: 14, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>Metrics Hub</h4>
                   <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 700, textTransform: "uppercase" }}>Operations logs</span>
+                </div>
+              </div>
+
+              {/* MODULE 5: PROJECTS DIRECTORY */}
+              <div 
+                className="glass module-card"
+                onClick={() => { setActiveView("projects"); if (projectsList.length > 0) setSelectedProjectItem(projectsList[0]); }}
+                style={{ 
+                  padding: "18px 14px", 
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.05)",
+                  background: "rgba(255,255,255,0.01)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: 10
+                }}
+              >
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(167, 139, 250, 0.1)", border: "1px solid rgba(167, 139, 250, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>Projects Hub</h4>
+                  <span style={{ fontSize: 10, color: "#a78bfa", fontWeight: 700, textTransform: "uppercase" }}>Corridor mapping</span>
                 </div>
               </div>
               
@@ -1488,6 +1671,367 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW 5: PROJECTS DIRECTORY MODULE */}
+      {activeView === "projects" && (
+        <div className="fade-in" style={{ paddingBottom: 60 }}>
+          {/* Header */}
+          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(6,9,18,0.6)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <button 
+                onClick={() => { setActiveView("hub"); setSelectedProjectItem(null); }}
+                className="back-btn"
+                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f1f5f9", cursor: "pointer" }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              </button>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 10, fontWeight: 800, color: "#a78bfa", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Telgo Power Corridors</p>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Projects Directory</h1>
+              </div>
+              <button
+                onClick={resetToDefaults}
+                style={{
+                  background: "rgba(239, 68, 68, 0.08)",
+                  border: "1px solid rgba(239, 68, 68, 0.2)",
+                  borderRadius: 10,
+                  padding: "6px 12px",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#fca5a5",
+                  cursor: "pointer",
+                  fontFamily: "Outfit, sans-serif"
+                }}
+              >
+                🔄 Reset
+              </button>
+            </div>
+          </div>
+
+          <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Project List */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
+              {projectsList.map(p => {
+                const isSelected = selectedProjectItem?.id === p.id;
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => setSelectedProjectItem(p)}
+                    className="glass module-card"
+                    style={{
+                      padding: "14px 16px",
+                      borderRadius: 16,
+                      background: isSelected ? "rgba(124, 58, 237, 0.08)" : "rgba(255,255,255,0.01)",
+                      border: isSelected ? "1px solid rgba(124, 58, 237, 0.3)" : "1px solid rgba(255,255,255,0.04)",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 6,
+                      transition: "all 0.2s ease"
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                      <h3 style={{ fontSize: 14, fontWeight: 800, color: isSelected ? "#c4b5fd" : "#f1f5f9", margin: 0 }}>{p.name}</h3>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "#67e8f9", background: "rgba(6, 182, 212, 0.12)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 6, padding: "2px 6px", textTransform: "uppercase", fontFamily: "monospace", flexShrink: 0 }}>
+                        {p.code}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#94a3b8" }}>
+                      <span>📍 District: <b>{p.district}</b></span>
+                      <span>📏 Est: <b>{p.distance}</b></span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Selected Project Detailed Corridor View & Map */}
+            {selectedProjectItem && (
+              <div className="glass fade-in" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 24, background: "rgba(255,255,255,0.01)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 16 }}>
+                  <div>
+                    <h2 style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", margin: 0 }}>{selectedProjectItem.name}</h2>
+                    <p style={{ fontSize: 12, color: "#94a3b8", margin: "4px 0 0" }}>{selectedProjectItem.description}</p>
+                  </div>
+                  <button
+                    onClick={() => setEditingProjectItem(selectedProjectItem)}
+                    style={{
+                      background: "rgba(124, 58, 237, 0.12)",
+                      border: "1px solid rgba(124, 58, 237, 0.3)",
+                      borderRadius: 10,
+                      padding: "8px 14px",
+                      fontSize: 12,
+                      fontWeight: 750,
+                      color: "#c4b5fd",
+                      cursor: "pointer",
+                      fontFamily: "Outfit, sans-serif",
+                      flexShrink: 0
+                    }}
+                  >
+                    ✏️ Edit Corridor
+                  </button>
+                </div>
+
+                {/* Map Display Card */}
+                <div className="glass" style={{ padding: 0, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, overflow: "hidden", background: "#080b13", marginBottom: 20 }}>
+                  <div style={{ position: "relative", height: 260, width: "100%" }}>
+                    <iframe
+                      title="Project Corridor Map"
+                      style={{ width: "100%", height: "100%", border: "none" }}
+                      srcDoc={`
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                          <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                          <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                          <style>
+                            html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #060912; }
+                            .leaflet-control-attribution { display: none !important; }
+                            .leaflet-container { background: #060912 !important; }
+                            .leaflet-bar a { background-color: #0b0f19 !important; color: #fff !important; border-color: rgba(255,255,255,0.15) !important; }
+                            .leaflet-bar a:hover { background-color: #121826 !important; }
+                            
+                            .start-pulse {
+                              background: #22c55e;
+                              border: 2px solid #ffffff;
+                              border-radius: 50%;
+                              box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+                              animation: pulse-green 1.8s infinite;
+                            }
+                            .end-pulse {
+                              background: #ef4444;
+                              border: 2px solid #ffffff;
+                              border-radius: 50%;
+                              box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+                              animation: pulse-red 1.8s infinite;
+                            }
+                            @keyframes pulse-green {
+                              0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+                              70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+                              100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+                            }
+                            @keyframes pulse-red {
+                              0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+                              70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+                              100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+                            }
+                          </style>
+                        </head>
+                        <body>
+                          <div id="map"></div>
+                          <script>
+                            const start = [${selectedProjectItem.startCoords[0]}, ${selectedProjectItem.startCoords[1]}];
+                            const end = [${selectedProjectItem.endCoords[0]}, ${selectedProjectItem.endCoords[1]}];
+                            const map = L.map('map').setView([(start[0] + end[0]) / 2, (start[1] + end[1]) / 2], 14);
+                            
+                            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                              maxZoom: 20
+                            }).addTo(map);
+
+                            const path = [start, end];
+                            L.polyline(path, { color: '#a78bfa', weight: 8, opacity: 0.25, lineJoin: 'round' }).addTo(map);
+                            const mainLine = L.polyline(path, { color: '#a78bfa', weight: 3.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                            
+                            const startIcon = L.divIcon({ className: 'start-pulse', iconSize: [12, 12] });
+                            L.marker(start, { icon: startIcon }).addTo(map).bindPopup('<b>Start:</b> ${selectedProjectItem.startLabel}');
+                            
+                            const endIcon = L.divIcon({ className: 'end-pulse', iconSize: [12, 12] });
+                            L.marker(end, { icon: endIcon }).addTo(map).bindPopup('<b>End:</b> ${selectedProjectItem.endLabel}');
+                            
+                            try {
+                              map.fitBounds(mainLine.getBounds(), { padding: [30, 30] });
+                            } catch(e) {}
+                          </script>
+                        </body>
+                        </html>
+                      `}
+                    />
+                  </div>
+                </div>
+
+                {/* Corridor Coords Details Card */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.04)", padding: 16, borderRadius: 16 }}>
+                  <div>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Start Position</span>
+                    <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 750, color: "#4ade80" }}>{selectedProjectItem.startLabel}</p>
+                    <span style={{ fontSize: 10, fontFamily: "monospace", color: "#64748b" }}>{selectedProjectItem.startCoords[0]}° N, {selectedProjectItem.startCoords[1]}° E</span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>End Position</span>
+                    <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 750, color: "#f87171" }}>{selectedProjectItem.endLabel}</p>
+                    <span style={{ fontSize: 10, fontFamily: "monospace", color: "#64748b" }}>{selectedProjectItem.endCoords[0]}° N, {selectedProjectItem.endCoords[1]}° E</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ADMINISTRATIVE PROJECT EDITING MODAL */}
+      {editingProjectItem && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(6,9,18,0.85)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1100, animation: "fadeIn 0.2s ease" }}>
+          <div className="glass" style={{ width: "100%", maxWidth: 440, maxHeight: "90vh", overflowY: "auto", padding: "28px 24px", background: "linear-gradient(135deg, #0f082e 0%, #060912 100%)", borderRadius: 24, border: "1px solid rgba(255, 255, 255, 0.08)", boxShadow: "0 24px 64px rgba(0, 0, 0, 0.7)", color: "#f1f5f9" }}>
+            
+            {/* Modal Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 900, letterSpacing: "-0.02em", margin: 0 }}>Edit Corridor parameters</h3>
+              <button onClick={() => setEditingProjectItem(null)} style={{ background: "rgba(255, 255, 255, 0.04)", border: "1px solid rgba(255, 255, 255, 0.08)", width: 32, height: 32, borderRadius: "50%", color: "#94a3b8", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateProject} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {/* Project Name */}
+              <div>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Project Name</label>
+                <input
+                  type="text"
+                  value={projName}
+                  onChange={(e) => setProjName(e.target.value)}
+                  required
+                  style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
+                />
+              </div>
+
+              {/* Code & District & Distance */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Corridor ID</label>
+                  <input
+                    type="text"
+                    value={projCode}
+                    onChange={(e) => setProjCode(e.target.value)}
+                    required
+                    style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "monospace", outline: "none" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>District</label>
+                  <input
+                    type="text"
+                    value={projDistrict}
+                    onChange={(e) => setProjDistrict(e.target.value)}
+                    required
+                    style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Estimated Distance</label>
+                  <input
+                    type="text"
+                    value={projDistance}
+                    onChange={(e) => setProjDistance(e.target.value)}
+                    required
+                    style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
+                  />
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Description</label>
+                <textarea
+                  value={projDesc}
+                  onChange={(e) => setProjDesc(e.target.value)}
+                  required
+                  rows={2}
+                  style={{ width: "100%", background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "10px 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none", resize: "none" }}
+                />
+              </div>
+
+              {/* Start Location Parameters */}
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: "#4ade80", textTransform: "uppercase" }}>Start Position Parameters</span>
+                <div style={{ marginTop: 8 }}>
+                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>Junction/Station Label</label>
+                  <input
+                    type="text"
+                    value={projStartLabel}
+                    onChange={(e) => setProjStartLabel(e.target.value)}
+                    required
+                    style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, outline: "none" }}
+                  />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8 }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>Latitude</label>
+                    <input
+                      type="text"
+                      value={projStartLat}
+                      onChange={(e) => setProjStartLat(e.target.value)}
+                      required
+                      placeholder="e.g. 10.0055"
+                      style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>Longitude</label>
+                    <input
+                      type="text"
+                      value={projStartLng}
+                      onChange={(e) => setProjStartLng(e.target.value)}
+                      required
+                      placeholder="e.g. 76.3082"
+                      style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* End Location Parameters */}
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: "#f87171", textTransform: "uppercase" }}>End Position Parameters</span>
+                <div style={{ marginTop: 8 }}>
+                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>Junction/Station Label</label>
+                  <input
+                    type="text"
+                    value={projEndLabel}
+                    onChange={(e) => setProjEndLabel(e.target.value)}
+                    required
+                    style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, outline: "none" }}
+                  />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8 }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>Latitude</label>
+                    <input
+                      type="text"
+                      value={projEndLat}
+                      onChange={(e) => setProjEndLat(e.target.value)}
+                      required
+                      placeholder="e.g. 10.0261"
+                      style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>Longitude</label>
+                    <input
+                      type="text"
+                      value={projEndLng}
+                      onChange={(e) => setProjEndLng(e.target.value)}
+                      required
+                      placeholder="e.g. 76.3084"
+                      style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Submit Buttons */}
+              <button
+                type="submit"
+                style={{ width: "100%", minHeight: 42, marginTop: 14, background: "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)", border: "none", borderRadius: 12, color: "white", fontSize: 14, fontWeight: 750, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 15px rgba(6, 182, 212, 0.2)" }}
+              >
+                ✓ Apply Map & Info Changes
+              </button>
+            </form>
           </div>
         </div>
       )}
