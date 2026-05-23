@@ -131,6 +131,56 @@ export default function SupervisorDashboard() {
     }
   }
 
+  async function handleReRegisterAttendance() {
+    if (!user) return;
+    setCheckingIn(true);
+    
+    if (!navigator.geolocation) {
+      showToast("❌ Geolocation is not supported by your device.");
+      setCheckingIn(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const res = await fetch("/api/mobile/attendance", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              gpsAccuracyM: position.coords.accuracy,
+              projectId: "vadakkekotta-sn-cable"
+            })
+          });
+          const data = await res.json();
+          if (res.ok && data.ok) {
+            const now = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+            localStorage.setItem(`telgo_shift_active_${user.userId}`, "true");
+            localStorage.setItem(`telgo_shift_time_${user.userId}`, now);
+            setIsShiftActive(true);
+            setCheckInTime(now);
+            setIsTrackingActiveThisSession(true);
+            showToast("🔄 Location coordinates updated & re-registered!");
+            setIsAttendanceOpen(false);
+          } else {
+            showToast(`❌ ${data.message || "Re-registration failed."}`);
+          }
+        } catch {
+          showToast("❌ Network error. Please try again.");
+        } finally {
+          setCheckingIn(false);
+        }
+      },
+      (error) => {
+        showToast(`❌ GPS access error: ${error.message}`);
+        setCheckingIn(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }
+
   return (
     <div style={{ minHeight: "100dvh", background: "#060912", display: "flex", flexDirection: "column", color: "#f1f5f9", fontFamily: "Outfit, sans-serif" }}>
       {/* Immersive Header */}
@@ -220,6 +270,53 @@ export default function SupervisorDashboard() {
               </div>
             </div>
 
+            {/* RE-REGISTER ATTENDANCE MODULE CARD */}
+            <div 
+              onClick={handleReRegisterAttendance}
+              style={{
+                background: "rgba(255,255,255,0.01)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: 20,
+                padding: "24px 20px",
+                cursor: checkingIn ? "not-allowed" : "pointer",
+                textAlign: "left",
+                transition: "all 0.25s ease",
+                display: "flex",
+                alignItems: "center",
+                gap: 16
+              }}
+              className="glass"
+            >
+              <div style={{
+                width: 48,
+                height: 48,
+                borderRadius: 14,
+                background: "rgba(167, 139, 250, 0.08)",
+                border: "1px solid rgba(167, 139, 250, 0.2)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0
+              }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h3 style={{ fontSize: 15, fontWeight: 800, margin: "0 0 3px", color: "#f1f5f9" }}>Re-Register Attendance</h3>
+                <p style={{ fontSize: 12, color: "#64748b", margin: 0, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+                  {checkingIn ? "Registering updated coordinates..." : "Update GPS & log shift reattendance"}
+                </p>
+              </div>
+              <div style={{ flexShrink: 0 }}>
+                {checkingIn ? (
+                  <div className="spinner" style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.1)", borderTop: "2px solid #a78bfa" }} />
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                )}
+              </div>
+            </div>
+
             {/* PROJECT ASSIGNMENT DETAILS CARD */}
             <div 
               style={{
@@ -274,6 +371,33 @@ export default function SupervisorDashboard() {
             }}
           >
             ⚙️ Edit Profile Credentials
+          </button>
+
+          {/* Secure Sign Out Button */}
+          <button 
+            onClick={async () => {
+              if (confirm("Are you sure you want to sign out securely from Telgo Hub?")) {
+                await fetch("/api/mobile/sign-out", { method: "POST" });
+                localStorage.removeItem("telgo_saved_email");
+                localStorage.removeItem("telgo_saved_password");
+                window.location.href = "/login";
+              }
+            }}
+            style={{
+              width: "100%",
+              minHeight: 46,
+              background: "rgba(239, 68, 68, 0.06)",
+              border: "1px solid rgba(239, 68, 68, 0.2)",
+              borderRadius: 14,
+              color: "#f87171",
+              fontSize: 13,
+              fontWeight: 750,
+              cursor: "pointer",
+              fontFamily: "Outfit, sans-serif",
+              marginTop: 12
+            }}
+          >
+            🚪 Secure Sign Out
           </button>
         </div>
 
@@ -362,6 +486,40 @@ export default function SupervisorDashboard() {
                   Click below to sign in and mark your daily attendance. The system will securely verify your device coordinates and synchronize background logs.
                 </p>
               </div>
+            )}
+
+            {/* Re-Register Attendance Coordinate Refresh Button */}
+            {isShiftActive && (
+              <button
+                onClick={handleReRegisterAttendance}
+                disabled={checkingIn}
+                style={{
+                  width: "100%",
+                  minHeight: 46,
+                  background: "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)",
+                  border: "none",
+                  borderRadius: 12,
+                  color: "white",
+                  fontSize: 14,
+                  fontWeight: 800,
+                  cursor: checkingIn ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  boxShadow: "0 4px 15px rgba(6, 182, 212, 0.25)",
+                  marginBottom: 10
+                }}
+              >
+                {checkingIn ? (
+                  <>
+                    <div className="spinner" style={{ width: 14, height: 14 }} />
+                    Updating location...
+                  </>
+                ) : (
+                  <>🔄 Refresh Coordinates / Re-Register</>
+                )}
+              </button>
             )}
 
             {/* Check-In / Check-Out Action Button */}

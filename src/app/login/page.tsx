@@ -13,6 +13,36 @@ export default function LoginPage() {
   useEffect(() => {
     setReady(true);
     if (typeof window !== "undefined") {
+      // Auto-login from localStorage to fix WebView resets
+      const savedEmail = localStorage.getItem("telgo_saved_email");
+      const savedPw = localStorage.getItem("telgo_saved_password");
+      if (savedEmail && savedPw) {
+        setState("loading");
+        fetch("/api/mobile/sign-in", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: savedEmail, password: savedPw })
+        })
+        .then(r => r.json())
+        .then(d => {
+          if (d.ok) {
+            const role = d.user?.role ?? "supervisor";
+            window.location.href =
+              role === "admin" ? "/app/admin" :
+              role === "finance" ? "/app/finance" :
+              role === "client" ? "/app/client" :
+              "/app/supervisor";
+          } else {
+            localStorage.removeItem("telgo_saved_email");
+            localStorage.removeItem("telgo_saved_password");
+            setState("idle");
+          }
+        })
+        .catch(() => {
+          setState("idle");
+        });
+      }
+
       // Dynamically update theme-color to match the purplish start of the gradient (#0d0621)
       let meta = document.querySelector('meta[name="theme-color"]');
       if (!meta) {
@@ -67,6 +97,10 @@ export default function LoginPage() {
       if (r.ok && d.ok) {
         const role = d.user?.role ?? "supervisor";
         
+        // Save verified credentials in local storage for WebView session persistence
+        localStorage.setItem("telgo_saved_email", email.trim().toLowerCase());
+        localStorage.setItem("telgo_saved_password", password);
+
         // Redirect immediately to their dashboards
         window.location.href =
           role === "admin" ? "/app/admin" :

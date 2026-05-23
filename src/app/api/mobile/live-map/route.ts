@@ -21,7 +21,25 @@ export async function GET(request: NextRequest) {
 
   try {
     const snapshot = await listMobileTrackingSnapshot(supabase, session);
-    return NextResponse.json({ ok: true, ...snapshot });
+    
+    // Fetch all active operational crew members from database
+    const { data: crewData } = await supabase
+      .from("mobile_app_users")
+      .select("id,email,full_name,role,login_id")
+      .in("role", ["supervisor", "finance"])
+      .eq("access_status", "active")
+      .is("blocked_at", null);
+
+    const crew = (crewData ?? []).map(row => ({
+      userId: row.id,
+      fullName: row.full_name,
+      email: row.email,
+      role: row.role,
+      loginId: row.login_id
+    }));
+
+    return NextResponse.json({ ok: true, ...snapshot, crew });
+  }
   } catch (error) {
     return NextResponse.json({ ok: false, message: getErrorMessage(error) }, { status: 500 });
   }

@@ -27,7 +27,12 @@ export default function AdminDashboard() {
   const [mapAnimateProgress, setMapAnimateProgress] = useState(0);
   
   // Navigation & Multi-View State
-  const [activeView, setActiveView] = useState<"hub" | "approvals" | "map" | "settings">("hub");
+  const [activeView, setActiveView] = useState<"hub" | "approvals" | "map" | "settings" | "attendance">("hub");
+
+  // Real Database Attendance History States
+  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
+  const [selectedAttendanceWorker, setSelectedAttendanceWorker] = useState<any | null>(null);
   
   // Active User Search State
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,17 +69,10 @@ export default function AdminDashboard() {
         const res = await fetch("/api/mobile/live-map");
         const data = await res.json();
         if (res.ok && data.ok) {
-          const seedRoster = [
-            { userId: "eng-arjun", fullName: "Arjun Nair", email: "engineer@telgo.test", role: "supervisor" },
-            { userId: "eng-rajeev", fullName: "Rajeev R", email: "supervisor@telgo.test", role: "supervisor" },
-            { userId: "eng-divya", fullName: "Divya S", email: "finance@telgo.test", role: "finance" },
-            { userId: "eng-vishnu", fullName: "Vishnu P", email: "vishnu.p@company.com", role: "supervisor" },
-          ];
-
           const activeLocations = data.locations ?? [];
 
           // Dynamic roster populated from database active users (supervisor and finance)
-          const databaseRoster = users
+          const combinedRoster = users
             .filter(u => u.access_status === "active" && (u.role === "supervisor" || u.role === "finance"))
             .map(u => ({
               userId: u.id,
@@ -82,12 +80,6 @@ export default function AdminDashboard() {
               email: u.email,
               role: u.role
             }));
-
-          // Merge database active crew with seed fallbacks to avoid duplicates
-          const rosterMap = new Map();
-          seedRoster.forEach(item => rosterMap.set(item.email, item));
-          databaseRoster.forEach(item => rosterMap.set(item.email, item));
-          const combinedRoster = Array.from(rosterMap.values());
 
           const mapped = combinedRoster.map(item => {
             const liveLoc = activeLocations.find((loc: any) => loc.mobileUserId === item.userId);
@@ -97,9 +89,10 @@ export default function AdminDashboard() {
                 status: "active" as const,
                 latitude: liveLoc.latitude,
                 longitude: liveLoc.longitude,
-                projectName: liveLoc.projectName || "Kottayam Utility Expansion",
-                distanceFromSiteM: liveLoc.distanceFromSiteM ?? 42,
+                projectName: liveLoc.projectName || "Vadakkekotta Sn-Cable Corridor",
+                distanceFromSiteM: liveLoc.distanceFromSiteM ?? 0,
                 withinGeofence: liveLoc.withinGeofence ?? true,
+                recordedAt: liveLoc.recordedAt,
               };
             }
             return {
@@ -107,9 +100,10 @@ export default function AdminDashboard() {
               status: "offline" as const,
               latitude: 9.9538,
               longitude: 76.3428,
-              projectName: "Kottayam Utility Expansion",
+              projectName: "Vadakkekotta Sn-Cable Corridor",
               distanceFromSiteM: 0,
               withinGeofence: false,
+              recordedAt: null,
             };
           });
 
@@ -153,14 +147,7 @@ export default function AdminDashboard() {
   // Synchronously initialize radar roster directory on map view mount
   useEffect(() => {
     if (activeView === "map") {
-      const seedRoster = [
-        { userId: "eng-arjun", fullName: "Arjun Nair", email: "engineer@telgo.test", role: "supervisor" },
-        { userId: "eng-rajeev", fullName: "Rajeev R", email: "supervisor@telgo.test", role: "supervisor" },
-        { userId: "eng-divya", fullName: "Divya S", email: "finance@telgo.test", role: "finance" },
-        { userId: "eng-vishnu", fullName: "Vishnu P", email: "vishnu.p@company.com", role: "supervisor" },
-      ];
-
-      const databaseRoster = users
+      const combinedRoster = users
         .filter(u => u.access_status === "active" && (u.role === "supervisor" || u.role === "finance"))
         .map(u => ({
           userId: u.id,
@@ -169,19 +156,15 @@ export default function AdminDashboard() {
           role: u.role
         }));
 
-      const rosterMap = new Map();
-      seedRoster.forEach(item => rosterMap.set(item.email, item));
-      databaseRoster.forEach(item => rosterMap.set(item.email, item));
-      const combinedRoster = Array.from(rosterMap.values());
-
       const mapped = combinedRoster.map(item => ({
         ...item,
         status: "offline" as const, // default to offline until live telemetry polling resolves
         latitude: 9.9538,
         longitude: 76.3428,
-        projectName: "Kottayam Utility Expansion",
+        projectName: "Vadakkekotta Sn-Cable Corridor",
         distanceFromSiteM: 0,
         withinGeofence: false,
+        recordedAt: null,
       }));
 
       setRadarWorkers(mapped);
@@ -568,6 +551,22 @@ export default function AdminDashboard() {
                 <h3 style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", margin: "0 0 6px" }}>Operational Metrics</h3>
                 <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5, margin: 0 }}>Inspect active logs, generated credentials copies, check-in history timestamps, and system anomalies.</p>
               </div>
+
+              {/* MODULE 4: REAL DATABASE ATTENDANCE HISTORY */}
+              <div 
+                className="glass module-card"
+                onClick={() => setActiveView("attendance")}
+                style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)" }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(167, 139, 250, 0.12)", border: "1px solid rgba(167, 139, 250, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  </div>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", textTransform: "uppercase" }}>Database History</span>
+                </div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", margin: "0 0 6px" }}>Attendance Ledger</h3>
+                <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5, margin: 0 }}>Inspect full monthly check-in history records, coordinates, geofence metrics, and drift telemetry for all registered crew members.</p>
+              </div>
               
             </div>
           </div>
@@ -887,11 +886,18 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
                           {isActive ? (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(34,197,94,0.15)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 6, padding: "2px 6px", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>
-                              <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} /> Active
-                            </span>
+                            <>
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(34,197,94,0.15)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 6, padding: "2px 6px", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>
+                                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} /> Active
+                              </span>
+                              {w.recordedAt && (
+                                <span style={{ fontSize: 9, color: "#a78bfa", fontFamily: "monospace", fontWeight: 700 }}>
+                                  In: {new Date(w.recordedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                                </span>
+                              )}
+                            </>
                           ) : (
                             <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.02)", color: "#64748b", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 6, padding: "2px 6px", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>
                               Offline
@@ -907,92 +913,84 @@ export default function AdminDashboard() {
               {/* Map Tactical Module */}
               <div className="glass glow-cyan" style={{ padding: 0, border: "1px solid rgba(6,182,212,0.15)", borderRadius: 24, overflow: "hidden", background: "#080b13" }}>
                 
-                {/* Visual SVG Map Container */}
-                <div style={{ position: "relative", height: 280, width: "100%", background: "radial-gradient(circle at center, #0e1220 0%, #060912 100%)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                  
-                  {/* Grid Lines Overlay */}
-                  <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.015) 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
-                  
+                {/* Visual Leaflet Map Container */}
+                <div style={{ position: "relative", height: 280, width: "100%", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                   {radarSelectedWorker ? (
                     <div style={{ width: "100%", height: "100%", position: "relative" }}>
                       
-                      {/* Active Live Radar Circular Sweep */}
-                      {radarSelectedWorker.status === "active" && (
-                        <div style={{
-                          position: "absolute",
-                          left: animCoords.x - 50,
-                          top: animCoords.y - 50,
-                          width: 100,
-                          height: 100,
-                          borderRadius: "50%",
-                          border: "1px dashed rgba(6, 182, 212, 0.2)",
-                          background: "radial-gradient(circle, rgba(6, 182, 212, 0.04) 0%, transparent 70%)",
-                          pointerEvents: "none",
-                        }} />
-                      )}
+                      {/* Leaflet Iframe for Interactive Map */}
+                      <iframe
+                        title="Live Tracking Map"
+                        style={{ width: "100%", height: "100%", border: "none" }}
+                        srcDoc={`
+                          <!DOCTYPE html>
+                          <html>
+                          <head>
+                            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                            <style>
+                              html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #060912; }
+                              .leaflet-control-attribution { display: none !important; }
+                              .leaflet-container { background: #060912 !important; }
+                              .leaflet-bar a { background-color: #0b0f19 !important; color: #fff !important; border-color: rgba(255,255,255,0.15) !important; }
+                              .leaflet-bar a:hover { background-color: #121826 !important; }
+                              
+                              /* Pulsing glow animation for active marker pin */
+                              .live-pulse {
+                                background: #06b6d4;
+                                border: 2px solid #ffffff;
+                                border-radius: 50%;
+                                box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7);
+                                animation: pulse-glow 1.5s infinite;
+                              }
+                              .live-pulse-offline {
+                                background: #64748b;
+                                border: 2px solid #ffffff;
+                                border-radius: 50%;
+                              }
+                              @keyframes pulse-glow {
+                                0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7); }
+                                70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(6, 182, 212, 0); }
+                                100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+                              }
+                            </style>
+                          </head>
+                          <body>
+                            <div id="map"></div>
+                            <script>
+                              const map = L.map('map').setView([${radarSelectedWorker.latitude}, ${radarSelectedWorker.longitude}], 15);
+                              
+                              // Dark-themed premium street tiles (no API key required)
+                              L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                                maxZoom: 20
+                              }).addTo(map);
 
-                      {/* SVG Canvas */}
-                      <svg width="100%" height="100%" style={{ position: "absolute", inset: 0 }}>
-                        <defs>
-                          <linearGradient id="pathGradient" x1="0%" y1="100%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.4" />
-                            <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.8" />
-                          </linearGradient>
-                          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                            <feGaussianBlur stdDeviation="3" result="blur" />
-                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                          </filter>
-                        </defs>
+                              // Add circular geofence boundary (150 meters)
+                              L.circle([${radarSelectedWorker.latitude}, ${radarSelectedWorker.longitude}], {
+                                color: '${radarSelectedWorker.status === "active" ? "#06b6d4" : "#64748b"}',
+                                fillColor: '${radarSelectedWorker.status === "active" ? "#06b6d4" : "#64748b"}',
+                                fillOpacity: 0.1,
+                                weight: 1.5,
+                                radius: 150
+                              }).addTo(map);
 
-                        {/* Pipeline Path corridor */}
-                        <path 
-                          d="M 60 220 L 130 170 L 190 190 L 260 110" 
-                          fill="none" 
-                          stroke="url(#pathGradient)" 
-                          strokeWidth="3.5" 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round"
-                          strokeDasharray="4 3"
-                        />
+                              // Custom pulsing HTML marker icon
+                              const pulseIcon = L.divIcon({
+                                className: '${radarSelectedWorker.status === "active" ? "live-pulse" : "live-pulse-offline"}',
+                                iconSize: [14, 14],
+                                iconAnchor: [7, 7]
+                              });
 
-                        {/* Geofence target boundaries */}
-                        <circle cx="260" cy="110" r="32" fill="rgba(6, 182, 212, 0.03)" stroke="rgba(6, 182, 212, 0.2)" strokeWidth="1" strokeDasharray="3 3" />
-                        <circle cx="130" cy="170" r="28" fill="rgba(124, 58, 237, 0.03)" stroke="rgba(124, 58, 237, 0.15)" strokeWidth="1" />
-
-                        {/* Project marker hubs */}
-                        <circle cx="60" cy="220" r="5" fill="#7c3aed" filter="url(#glow)" />
-                        <circle cx="260" cy="110" r="5" fill="#06b6d4" filter="url(#glow)" />
-
-                        {/* Animated pulsing marker */}
-                        {radarSelectedWorker.status === "active" ? (
-                          <>
-                            {/* Outer pulsing ripple */}
-                            <circle 
-                              cx={animCoords.x} 
-                              cy={animCoords.y} 
-                              r={8 + Math.sin(mapAnimateProgress * Math.PI * 4) * 6} 
-                              fill="none" 
-                              stroke={roleColor(radarSelectedWorker.role)} 
-                              strokeWidth="1.5" 
-                              strokeOpacity={0.6 - (Math.sin(mapAnimateProgress * Math.PI * 4) * 0.4)}
-                            />
-                            {/* Inner dot */}
-                            <circle 
-                              cx={animCoords.x} 
-                              cy={animCoords.y} 
-                              r="6" 
-                              fill={roleColor(radarSelectedWorker.role)} 
-                              filter="url(#glow)"
-                            />
-                          </>
-                        ) : (
-                          /* Standby static marker */
-                          <circle cx="130" cy="170" r="6" fill="#64748b" />
-                        )}
-                      </svg>
+                              const marker = L.marker([${radarSelectedWorker.latitude}, ${radarSelectedWorker.longitude}], { icon: pulseIcon }).addTo(map);
+                              marker.bindPopup("<b>${radarSelectedWorker.fullName}</b><br/>${radarSelectedWorker.role.toUpperCase()}<br/>${radarSelectedWorker.status === 'active' ? '🟢 Checked In' : '⚫ Offline'}").openPopup();
+                            </script>
+                          </body>
+                          </html>
+                        `}
+                      />
 
                       {/* Map Hub Info Tag Overlay */}
-                      <div style={{ position: "absolute", top: 12, left: 12, padding: "6px 12px", background: "rgba(6,9,18,0.75)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                      <div style={{ position: "absolute", top: 12, left: 12, padding: "6px 12px", background: "rgba(6,9,18,0.75)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, display: "flex", alignItems: "center", gap: 6, zIndex: 1000 }}>
                         <span className="dot-pulse" style={{ background: radarSelectedWorker.status === "active" ? "#06b6d4" : "#64748b" }} />
                         <span style={{ fontSize: 10, fontWeight: 700, fontFamily: "monospace", color: "#94a3b8" }}>
                           {radarSelectedWorker.status === "active" ? "RADAR LIVE: SCANNING" : "OFFLINE: HISTORICAL"}
@@ -1000,19 +998,16 @@ export default function AdminDashboard() {
                       </div>
 
                       {/* Map Coordinate telemetry readouts Overlay */}
-                      <div style={{ position: "absolute", bottom: 12, right: 12, padding: "6px 10px", background: "rgba(6,9,18,0.75)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, textAlign: "right" }}>
+                      <div style={{ position: "absolute", bottom: 12, right: 12, padding: "6px 10px", background: "rgba(6,9,18,0.75)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, textAlign: "right", zIndex: 1000 }}>
                         <p style={{ fontSize: 9, fontFamily: "monospace", color: "#64748b", margin: 0 }}>COORDINATES</p>
                         <p style={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, color: "#cbd5e1", margin: 0 }}>
-                          {radarSelectedWorker.status === "active" 
-                            ? `${radarSelectedWorker.latitude.toFixed(5)}° N, ${radarSelectedWorker.longitude.toFixed(5)}° E`
-                            : "Standby Link"
-                          }
+                          {`${radarSelectedWorker.latitude.toFixed(5)}° N, ${radarSelectedWorker.longitude.toFixed(5)}° E`}
                         </p>
                       </div>
                     </div>
                   ) : (
                     /* Circular Radar Sweep Placeholder */
-                    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, boxSizing: "border-box" }}>
+                    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, boxSizing: "border-box", background: "#060912" }}>
                       <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(6, 182, 212, 0.05)", border: "1.5px dashed rgba(6, 182, 212, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16.2 7.8-2.9 2.9-2.9-2.9"/></svg>
                       </div>
@@ -1088,6 +1083,213 @@ export default function AdminDashboard() {
 
               </div>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW 4: MONTHLY DATABASE ATTENDANCE LEDGER */}
+      {activeView === "attendance" && (
+        <div className="fade-in" style={{ paddingBottom: 60 }}>
+          {/* Header */}
+          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(6,9,18,0.6)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <button 
+                onClick={() => { setActiveView("hub"); setSelectedAttendanceWorker(null); setAttendanceRecords([]); }}
+                className="back-btn"
+                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f1f5f9", cursor: "pointer" }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              </button>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 800, color: "#a78bfa", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>On-Site Registry Ledger</p>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Crew Attendance Logs</h1>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ padding: "16px", display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
+            {/* Roster Selection Panel */}
+            <div className="glass" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
+              <h2 style={{ fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8", margin: "0 0 14px" }}>Operational Crew Members</h2>
+              
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {active
+                  .filter(u => u.role === "supervisor" || u.role === "finance")
+                  .map(u => {
+                    const isSelected = selectedAttendanceWorker?.id === u.id;
+                    return (
+                      <div
+                        key={u.id}
+                        onClick={async () => {
+                          setSelectedAttendanceWorker(u);
+                          setLoadingAttendance(true);
+                          setAttendanceRecords([]);
+                          try {
+                            const res = await fetch(`/api/mobile/attendance?userId=${u.id}`);
+                            const data = await res.json();
+                            if (res.ok && data.ok) {
+                              setAttendanceRecords(data.records ?? []);
+                            }
+                          } catch { /* ignore */ }
+                          setLoadingAttendance(false);
+                        }}
+                        style={{
+                          padding: "12px 14px",
+                          borderRadius: 14,
+                          background: isSelected ? "rgba(167, 139, 250, 0.08)" : "rgba(255,255,255,0.01)",
+                          border: isSelected ? "1px solid rgba(167, 139, 250, 0.3)" : "1px solid rgba(255,255,255,0.04)",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                          <div style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: "50%",
+                            background: "linear-gradient(135deg, #1e293b, #0f172a)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 12,
+                            fontWeight: 800,
+                            color: roleColor(u.role),
+                            border: `1.5px solid ${roleColor(u.role)}30`,
+                            textTransform: "uppercase"
+                          }}>
+                            {u.full_name.charAt(0)}
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <p style={{ fontSize: 13, fontWeight: 750, color: isSelected ? "#a78bfa" : "#f1f5f9", margin: 0 }}>{u.full_name}</p>
+                            <span style={{ fontSize: 9, color: "#64748b", fontFamily: "monospace" }}>{u.login_id}</span>
+                          </div>
+                        </div>
+                        <span style={{ fontSize: 9, fontWeight: 800, color: roleColor(u.role), textTransform: "uppercase", background: `${roleColor(u.role)}12`, padding: "2px 6px", borderRadius: 4 }}>{u.role}</span>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* Attendance Logs Details Table */}
+            <div className="glass" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
+              {selectedAttendanceWorker ? (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                    <div>
+                      <h3 style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", margin: 0 }}>{selectedAttendanceWorker.full_name}</h3>
+                      <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0" }}>Monthly Duty check-ins (100% Real Database logs)</p>
+                    </div>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 6, padding: "3px 8px" }}>
+                      {attendanceRecords.length} Check-ins
+                    </span>
+                  </div>
+
+                  {loadingAttendance ? (
+                    <div style={{ textAlign: "center", padding: "40px 0", color: "#64748b" }}>
+                      <div className="spinner" style={{ margin: "0 auto 12px", borderColor: "#a78bfa", borderTopColor: "transparent" }} />
+                      Retrieving Database Ledger...
+                    </div>
+                  ) : attendanceRecords.length === 0 ? (
+                    <div style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: "32px 20px", textAlign: "center" }}>
+                      <span style={{ fontSize: 24, display: "block", marginBottom: 8 }}>📅</span>
+                      <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>No active check-in history found in the database for this user in the current month.</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      {/* Timeline List of Check-ins */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 400, overflowY: "auto", paddingRight: 4 }}>
+                        {attendanceRecords.map((rec) => {
+                          const dateObj = new Date(rec.checkInAt);
+                          const dateStr = dateObj.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+                          const timeStr = dateObj.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+                          
+                          return (
+                            <div 
+                              key={rec.id}
+                              style={{
+                                background: "rgba(0,0,0,0.25)",
+                                border: "1px solid rgba(255,255,255,0.05)",
+                                borderRadius: 14,
+                                padding: 14,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 8
+                              }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <span style={{ fontSize: 12, fontWeight: 800, color: "#e2e8f0" }}>{dateStr} — {timeStr}</span>
+                                <span style={{ 
+                                  fontSize: 9, 
+                                  fontWeight: 800, 
+                                  background: rec.withinGeofence ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)", 
+                                  color: rec.withinGeofence ? "#4ade80" : "#f87171", 
+                                  border: rec.withinGeofence ? "1px solid rgba(34,197,94,0.2)" : "1px solid rgba(239,68,68,0.2)",
+                                  padding: "2px 6px",
+                                  borderRadius: 4,
+                                  textTransform: "uppercase" 
+                                }}>
+                                  {rec.withinGeofence ? "WITHIN SITE GEOFENCE" : "OUTSIDE GEOFENCE"}
+                                </span>
+                              </div>
+
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, background: "rgba(255,255,255,0.01)", padding: 10, borderRadius: 10, border: "1px solid rgba(255,255,255,0.02)" }}>
+                                <div>
+                                  <span style={{ fontSize: 8, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>GPS Position Coordinates</span>
+                                  <p style={{ fontSize: 11, fontFamily: "monospace", color: "#cbd5e1", margin: "2px 0 0" }}>{rec.latitude.toFixed(5)}° N, {rec.longitude.toFixed(5)}° E</p>
+                                </div>
+                                <div>
+                                  <span style={{ fontSize: 8, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Corridor Drift Telemetry</span>
+                                  <p style={{ fontSize: 11, fontFamily: "monospace", color: "#a78bfa", margin: "2px 0 0" }}>{rec.distanceFromSiteM} meters from start</p>
+                                </div>
+                              </div>
+
+                              {/* Small map link preview */}
+                              <div style={{ height: 160, borderRadius: 10, overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", position: "relative" }}>
+                                <iframe
+                                  title={`Check-in Map ${rec.id}`}
+                                  style={{ width: "100%", height: "100%", border: "none" }}
+                                  srcDoc={`
+                                    <!DOCTYPE html>
+                                    <html>
+                                    <head>
+                                      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                                      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                                      <style>
+                                        html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #060912; }
+                                        .leaflet-control-attribution { display: none !important; }
+                                        .leaflet-container { background: #060912 !important; }
+                                      </style>
+                                    </head>
+                                    <body>
+                                      <div id="map"></div>
+                                      <script>
+                                        const map = L.map('map', { zoomControl: false }).setView([${rec.latitude}, ${rec.longitude}], 15);
+                                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 18 }).addTo(map);
+                                        L.circle([${rec.latitude}, ${rec.longitude}], { color: '${rec.withinGeofence ? "#06b6d4" : "#f87171"}', fillColor: '${rec.withinGeofence ? "#06b6d4" : "#f87171"}', fillOpacity: 0.15, radius: 100 }).addTo(map);
+                                        L.marker([${rec.latitude}, ${rec.longitude}]).addTo(map);
+                                      </script>
+                                    </body>
+                                    </html>
+                                  `}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ textAlign: "center", color: "#64748b", padding: "20px 0" }}>
+                  <p style={{ fontSize: 13, margin: 0 }}>Select a crew member from the directory above to display their monthly database check-in history records.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

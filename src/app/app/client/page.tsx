@@ -45,19 +45,13 @@ export default function ClientDashboard() {
       const data = await res.json();
       
       if (res.ok && data.ok) {
-        // Construct the roster list
-        // Base seed roster of our core operational supervisors & finance crew
-        const seedRoster: Omit<ActiveWorker, "latitude" | "longitude" | "projectName" | "distanceFromSiteM" | "withinGeofence" | "status">[] = [
-          { userId: "eng-arjun", fullName: "Arjun Nair", email: "engineer@telgo.test", role: "supervisor" },
-          { userId: "eng-rajeev", fullName: "Rajeev R", email: "supervisor@telgo.test", role: "supervisor" },
-          { userId: "eng-divya", fullName: "Divya S", email: "finance@telgo.test", role: "finance" },
-          { userId: "eng-vishnu", fullName: "Vishnu P", email: "vishnu.p@company.com", role: "supervisor" },
-        ];
+        // Dynamic crew roster list loaded from registered database users
+        const dbCrew = data.crew ?? [];
 
         // Map live locations from API rows
         const activeLocations = data.locations ?? [];
         
-        const mappedWorkers = seedRoster.map((item) => {
+        const mappedWorkers = dbCrew.map((item: any) => {
           const liveLoc = activeLocations.find((loc: any) => loc.mobileUserId === item.userId);
           
           if (liveLoc) {
@@ -66,8 +60,8 @@ export default function ClientDashboard() {
               status: "active" as const,
               latitude: liveLoc.latitude,
               longitude: liveLoc.longitude,
-              projectName: liveLoc.projectName || "Kottayam Utility Expansion",
-              distanceFromSiteM: liveLoc.distanceFromSiteM ?? 42,
+              projectName: liveLoc.projectName || "Vadakkekotta Sn-Cable Corridor",
+              distanceFromSiteM: liveLoc.distanceFromSiteM ?? 0,
               withinGeofence: liveLoc.withinGeofence ?? true,
             };
           }
@@ -78,7 +72,7 @@ export default function ClientDashboard() {
             status: "offline" as const,
             latitude: 9.9538,
             longitude: 76.3428,
-            projectName: "Kottayam Utility Expansion",
+            projectName: "Vadakkekotta Sn-Cable Corridor",
             distanceFromSiteM: 0,
             withinGeofence: false,
           };
