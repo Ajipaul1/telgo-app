@@ -51,6 +51,9 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+    const currentUser = user;
+    if (!currentUser) return;
+
     if (!fullName.trim()) {
       setMessage("Full Name is required.");
       setIsSuccess(false);
@@ -71,10 +74,10 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
 
       if (response.ok && data.ok) {
         // Save avatar locally
-        localStorage.setItem(`telgo_avatar_${user.userId}`, selectedAvatar);
+        localStorage.setItem(`telgo_avatar_${currentUser.userId}`, selectedAvatar);
         
         onUpdate({
-          ...user,
+          ...currentUser,
           fullName: fullName.trim(),
         });
 
