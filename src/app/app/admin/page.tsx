@@ -117,7 +117,7 @@ export default function AdminDashboard() {
 
           // Auto-select the first worker if none is selected yet!
           if (mapped.length > 0) {
-            setRadarSelectedWorker(prev => {
+            setRadarSelectedWorker((prev: any) => {
               if (prev) {
                 const updated = mapped.find(w => w.userId === prev.userId);
                 return updated ?? prev;
