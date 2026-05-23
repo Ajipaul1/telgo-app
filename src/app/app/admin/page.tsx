@@ -2876,15 +2876,7 @@ export default function AdminDashboard() {
             </div>
           </div>
         );
-      })()}Save Project & GIS
-                  </button>
-                </div>
-              </form>
-
-            </div>
-          </div>
-        </div>
-      )}
+      })()}
 
       {/* Credentials Modal */}
       {approvedCreds && (
