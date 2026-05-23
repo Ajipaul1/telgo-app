@@ -380,25 +380,25 @@ export default function SupervisorDashboard() {
                               background: #22c55e;
                               border: 2px solid #ffffff;
                               border-radius: 50%;
-                              box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
-                              animation: pulse-green 1.8s infinite;
+                              box-shadow: 0 0 10px rgba(34, 197, 94, 0.7);
                             }
                             .end-pulse {
                               background: #ef4444;
                               border: 2px solid #ffffff;
                               border-radius: 50%;
-                              box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-                              animation: pulse-red 1.8s infinite;
+                              box-shadow: 0 0 10px rgba(239, 68, 68, 0.7);
                             }
-                            @keyframes pulse-green {
-                              0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-                              70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
-                              100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+                            .hdd-dot {
+                              background: #eab308;
+                              border: 1.5px solid #ffffff;
+                              border-radius: 50%;
+                              box-shadow: 0 0 8px rgba(234, 179, 8, 0.6);
                             }
-                            @keyframes pulse-red {
-                              0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-                              70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
-                              100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+                            .term-dot {
+                              background: #2563eb;
+                              border: 1.5px solid #ffffff;
+                              border-radius: 3px;
+                              box-shadow: 0 0 8px rgba(37, 99, 235, 0.6);
                             }
                           </style>
                         </head>
@@ -413,9 +413,40 @@ export default function SupervisorDashboard() {
                               maxZoom: 20
                             }).addTo(map);
 
-                            const path = [start, end];
-                            L.polyline(path, { color: '#06b6d4', weight: 8, opacity: 0.25, lineJoin: 'round' }).addTo(map);
-                            const mainLine = L.polyline(path, { color: '#06b6d4', weight: 3.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                            // Primary Route (Purple utilityPath if present, else Teal line)
+                            const customUtility = ${JSON.stringify(selectedProjectItem.utilityPath ?? [])};
+                            if (customUtility && customUtility.length >= 2) {
+                              L.polyline(customUtility, { color: '#a855f7', weight: 4, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                            } else {
+                              L.polyline([start, end], { color: '#06b6d4', weight: 4, opacity: 0.8, lineJoin: 'round' }).addTo(map);
+                            }
+
+                            // Plot HDD Points
+                            const hddPts = ${JSON.stringify(selectedProjectItem.hddPoints ?? [])};
+                            const hddIcon = L.divIcon({ className: 'hdd-dot', iconSize: [10, 10] });
+                            if (hddPts && hddPts.length > 0) {
+                              hddPts.forEach((pt, idx) => {
+                                L.marker(pt, { icon: hddIcon }).addTo(map).bindPopup("<b>HDD Location " + (idx + 1) + "</b>");
+                              });
+                            }
+
+                            // Plot Terminations
+                            const termPts = ${JSON.stringify(selectedProjectItem.terminationPoints ?? [])};
+                            const termIcon = L.divIcon({ className: 'term-dot', iconSize: [10, 10] });
+                            if (termPts && termPts.length > 0) {
+                              termPts.forEach((pt, idx) => {
+                                L.marker(pt, { icon: termIcon }).addTo(map).bindPopup("<b>Grid Termination " + (idx + 1) + "</b>");
+                              });
+                            }
+
+                            // Plot Trenching Lines
+                            const trenchLine = ${JSON.stringify(selectedProjectItem.trenchingLine ?? [])};
+                            if (trenchLine && trenchLine.length >= 2) {
+                              L.polyline(trenchLine, { color: '#f97316', dashArray: '5, 5', weight: 3, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                              trenchLine.forEach(pt => {
+                                L.circle(pt, { color: '#f97316', fillColor: '#f97316', fillOpacity: 0.8, radius: 3 }).addTo(map);
+                              });
+                            }
                             
                             const startIcon = L.divIcon({ className: 'start-pulse', iconSize: [12, 12] });
                             L.marker(start, { icon: startIcon }).addTo(map).bindPopup('<b>Start:</b> ${selectedProjectItem.startLabel}');
@@ -423,8 +454,15 @@ export default function SupervisorDashboard() {
                             const endIcon = L.divIcon({ className: 'end-pulse', iconSize: [12, 12] });
                             L.marker(end, { icon: endIcon }).addTo(map).bindPopup('<b>End:</b> ${selectedProjectItem.endLabel}');
                             
+                            // Auto zoom to all markers
+                            const bounds = [start, end];
+                            if (trenchLine && trenchLine.length > 0) trenchLine.forEach(pt => bounds.push(pt));
+                            if (customUtility && customUtility.length > 0) customUtility.forEach(pt => bounds.push(pt));
+                            if (hddPts && hddPts.length > 0) hddPts.forEach(pt => bounds.push(pt));
+                            if (termPts && termPts.length > 0) termPts.forEach(pt => bounds.push(pt));
+
                             try {
-                              map.fitBounds(mainLine.getBounds(), { padding: [30, 30] });
+                              map.fitBounds(bounds, { padding: [30, 30] });
                             } catch(e) {}
                           </script>
                         </body>

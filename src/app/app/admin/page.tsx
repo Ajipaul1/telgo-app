@@ -69,6 +69,53 @@ export default function AdminDashboard() {
   const [projEndLat, setProjEndLat] = useState("");
   const [projEndLng, setProjEndLng] = useState("");
 
+  // Upgraded GIS Marks & Drawing State parameters
+  const [activePinMode, setActivePinMode] = useState<"start" | "end" | "hdd" | "termination" | "trench" | "utility">("start");
+  const [hddPoints, setHddPoints] = useState<[number, number][]>([]);
+  const [terminationPoints, setTerminationPoints] = useState<[number, number][]>([]);
+  const [trenchingLine, setTrenchingLine] = useState<[number, number][]>([]);
+  const [utilityPath, setUtilityPath] = useState<[number, number][]>([]);
+
+  // Great-Circle Haversine Formula for distance calculations
+  const calculateHaversineDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371; // Earth radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // returns distance in km
+  };
+
+  const updateCalculatedDistance = (
+    sLat: string,
+    sLng: string,
+    eLat: string,
+    eLng: string,
+    tLine: [number, number][]
+  ) => {
+    if (tLine && tLine.length >= 2) {
+      let total = 0;
+      for (let i = 0; i < tLine.length - 1; i++) {
+        total += calculateHaversineDistance(tLine[i][0], tLine[i][1], tLine[i + 1][0], tLine[i + 1][1]);
+      }
+      setProjDistance(`${total.toFixed(2)} km`);
+    } else {
+      const lat1 = parseFloat(sLat);
+      const lng1 = parseFloat(sLng);
+      const lat2 = parseFloat(eLat);
+      const lng2 = parseFloat(eLng);
+      if (!isNaN(lat1) && !isNaN(lng1) && !isNaN(lat2) && !isNaN(lng2)) {
+        const dist = calculateHaversineDistance(lat1, lng1, lat2, lng2);
+        setProjDistance(`${dist.toFixed(2)} km`);
+      } else {
+        setProjDistance("0.00 km");
+      }
+    }
+  };
+
   const DEFAULT_PROJECTS = [
     {
       id: "PRV-EDP-001",
@@ -80,7 +127,11 @@ export default function AdminDashboard() {
       startLabel: "Palarivattom Bypass Junction",
       startCoords: [10.0055, 76.3082],
       endLabel: "Edappally Toll Junction",
-      endCoords: [10.0261, 76.3084]
+      endCoords: [10.0261, 76.3084],
+      hddPoints: [[10.0120, 76.3083], [10.0190, 76.3083]] as [number, number][],
+      terminationPoints: [[10.0060, 76.3082], [10.0255, 76.3084]] as [number, number][],
+      trenchingLine: [[10.0055, 76.3082], [10.0100, 76.3083], [10.0150, 76.3083], [10.0200, 76.3083], [10.0261, 76.3084]] as [number, number][],
+      utilityPath: [[10.0055, 76.3082], [10.0080, 76.3082], [10.0180, 76.3083], [10.0261, 76.3084]] as [number, number][]
     },
     {
       id: "INF-SMC-002",
@@ -92,7 +143,11 @@ export default function AdminDashboard() {
       startLabel: "Kakkanad Infopark Phase 1",
       startCoords: [10.0094, 76.3594],
       endLabel: "SmartCity Kochi",
-      endCoords: [10.0135, 76.3725]
+      endCoords: [10.0135, 76.3725],
+      hddPoints: [[10.0110, 76.3650]] as [number, number][],
+      terminationPoints: [[10.0095, 76.3595], [10.0130, 76.3720]] as [number, number][],
+      trenchingLine: [[10.0094, 76.3594], [10.0110, 76.3650], [10.0135, 76.3725]] as [number, number][],
+      utilityPath: [[10.0094, 76.3594], [10.0135, 76.3725]] as [number, number][]
     },
     {
       id: "CHT-ALP-003",
@@ -104,7 +159,11 @@ export default function AdminDashboard() {
       startLabel: "Cherthala X-Ray Junction",
       startCoords: [9.6845, 76.3355],
       endLabel: "Alappuzha Bypass Starting Point",
-      endCoords: [9.5312, 76.3268]
+      endCoords: [9.5312, 76.3268],
+      hddPoints: [[9.6200, 76.3300], [9.5800, 76.3280]] as [number, number][],
+      terminationPoints: [[9.6845, 76.3355], [9.5312, 76.3268]] as [number, number][],
+      trenchingLine: [[9.6845, 76.3355], [9.6200, 76.3300], [9.5800, 76.3280], [9.5312, 76.3268]] as [number, number][],
+      utilityPath: [[9.6845, 76.3355], [9.5312, 76.3268]] as [number, number][]
     },
     {
       id: "MNR-DVK-004",
@@ -116,7 +175,11 @@ export default function AdminDashboard() {
       startLabel: "Munnar Town Center",
       startCoords: [10.0889, 77.0595],
       endLabel: "Devikulam Town",
-      endCoords: [10.0617, 77.0863]
+      endCoords: [10.0617, 77.0863],
+      hddPoints: [[10.0750, 77.0720]] as [number, number][],
+      terminationPoints: [[10.0889, 77.0595], [10.0617, 77.0863]] as [number, number][],
+      trenchingLine: [[10.0889, 77.0595], [10.0750, 77.0720], [10.0617, 77.0863]] as [number, number][],
+      utilityPath: [[10.0889, 77.0595], [10.0617, 77.0863]] as [number, number][]
     },
     {
       id: "TCR-KUT-005",
@@ -128,7 +191,11 @@ export default function AdminDashboard() {
       startLabel: "Sakthan Thampuran Bus Stand",
       startCoords: [10.5167, 76.2167],
       endLabel: "Kuttanellur Junction",
-      endCoords: [10.4900, 76.2415]
+      endCoords: [10.4900, 76.2415],
+      hddPoints: [[10.5010, 76.2280]] as [number, number][],
+      terminationPoints: [[10.5167, 76.2167], [10.4900, 76.2415]] as [number, number][],
+      trenchingLine: [[10.5167, 76.2167], [10.5050, 76.2250], [10.4900, 76.2415]] as [number, number][],
+      utilityPath: [[10.5167, 76.2167], [10.4900, 76.2415]] as [number, number][]
     }
   ];
 
@@ -158,6 +225,57 @@ export default function AdminDashboard() {
     }
   };
 
+  // Real-time postMessage listener to capture pins from interactive iframe map editor
+  useEffect(() => {
+    const handleMapMessage = (e: MessageEvent) => {
+      if (e.data && e.data.type === "MAP_CLICK") {
+        const { lat, lng } = e.data;
+        const latStr = lat.toFixed(6);
+        const lngStr = lng.toFixed(6);
+
+        if (activePinMode === "start") {
+          setProjStartLat(latStr);
+          setProjStartLng(lngStr);
+          updateCalculatedDistance(latStr, projStartLng, projEndLat, projEndLng, trenchingLine);
+          showToast(`🟢 Start Coordinate updated: [${latStr}, ${lngStr}]`);
+        } else if (activePinMode === "end") {
+          setProjEndLat(latStr);
+          setProjEndLng(lngStr);
+          updateCalculatedDistance(projStartLat, projStartLng, latStr, projEndLng, trenchingLine);
+          showToast(`🔴 End Coordinate updated: [${latStr}, ${lngStr}]`);
+        } else if (activePinMode === "hdd") {
+          setHddPoints(prev => {
+            const next = [...prev, [lat, lng] as [number, number]];
+            showToast(`🟡 HDD Drilling location marked.`);
+            return next;
+          });
+        } else if (activePinMode === "termination") {
+          setTerminationPoints(prev => {
+            const next = [...prev, [lat, lng] as [number, number]];
+            showToast(`🔵 Grid Termination location marked.`);
+            return next;
+          });
+        } else if (activePinMode === "trench") {
+          setTrenchingLine(prev => {
+            const next = [...prev, [lat, lng] as [number, number]];
+            updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
+            showToast(`🟠 Trench segment coordinate appended.`);
+            return next;
+          });
+        } else if (activePinMode === "utility") {
+          setUtilityPath(prev => {
+            const next = [...prev, [lat, lng] as [number, number]];
+            showToast(`🟣 Utility shift path coordinate appended.`);
+            return next;
+          });
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMapMessage);
+    return () => window.removeEventListener("message", handleMapMessage);
+  }, [activePinMode, projStartLat, projStartLng, projEndLat, projEndLng, trenchingLine, utilityPath]);
+
   useEffect(() => {
     if (editingProjectItem) {
       setProjName(editingProjectItem.name);
@@ -171,6 +289,13 @@ export default function AdminDashboard() {
       setProjEndLabel(editingProjectItem.endLabel);
       setProjEndLat(String(editingProjectItem.endCoords[0]));
       setProjEndLng(String(editingProjectItem.endCoords[1]));
+
+      // Load additional dynamic GIS markings
+      setHddPoints(editingProjectItem.hddPoints ?? []);
+      setTerminationPoints(editingProjectItem.terminationPoints ?? []);
+      setTrenchingLine(editingProjectItem.trenchingLine ?? []);
+      setUtilityPath(editingProjectItem.utilityPath ?? []);
+      setActivePinMode("start"); // default active mode
     }
   }, [editingProjectItem]);
 
@@ -198,7 +323,11 @@ export default function AdminDashboard() {
       startLabel: projStartLabel,
       startCoords: [lat1, lng1] as [number, number],
       endLabel: projEndLabel,
-      endCoords: [lat2, lng2] as [number, number]
+      endCoords: [lat2, lng2] as [number, number],
+      hddPoints,
+      terminationPoints,
+      trenchingLine,
+      utilityPath
     };
 
     const nextList = projectsList.map(p => p.id === editingProjectItem.id ? updated : p);
@@ -620,6 +749,44 @@ export default function AdminDashboard() {
           .admin-grid {
             grid-template-columns: repeat(4, 1fr);
           }
+        }
+        
+        /* GIS Integrated Editor Styles */
+        .editor-container {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+        @media (min-width: 900px) {
+          .editor-container {
+            grid-template-columns: 1.25fr 1fr !important;
+          }
+        }
+        .tool-btn {
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
+          font-family: Outfit, sans-serif;
+          font-size: 11px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          border-radius: 12px;
+          min-height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          border: 1px solid rgba(255,255,255,0.08);
+          background: rgba(255,255,255,0.02);
+          color: #94a3b8;
+        }
+        .tool-btn:hover {
+          transform: translateY(-2px);
+          background: rgba(255,255,255,0.06);
+          border-color: rgba(255,255,255,0.15);
+        }
+        .tool-btn:active {
+          transform: translateY(0);
         }
       `}</style>
 
@@ -1798,25 +1965,25 @@ export default function AdminDashboard() {
                               background: #22c55e;
                               border: 2px solid #ffffff;
                               border-radius: 50%;
-                              box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
-                              animation: pulse-green 1.8s infinite;
+                              box-shadow: 0 0 10px rgba(34, 197, 94, 0.7);
                             }
                             .end-pulse {
                               background: #ef4444;
                               border: 2px solid #ffffff;
                               border-radius: 50%;
-                              box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-                              animation: pulse-red 1.8s infinite;
+                              box-shadow: 0 0 10px rgba(239, 68, 68, 0.7);
                             }
-                            @keyframes pulse-green {
-                              0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-                              70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
-                              100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+                            .hdd-dot {
+                              background: #eab308;
+                              border: 1.5px solid #ffffff;
+                              border-radius: 50%;
+                              box-shadow: 0 0 8px rgba(234, 179, 8, 0.6);
                             }
-                            @keyframes pulse-red {
-                              0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-                              70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
-                              100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+                            .term-dot {
+                              background: #2563eb;
+                              border: 1.5px solid #ffffff;
+                              border-radius: 3px;
+                              box-shadow: 0 0 8px rgba(37, 99, 235, 0.6);
                             }
                           </style>
                         </head>
@@ -1831,9 +1998,40 @@ export default function AdminDashboard() {
                               maxZoom: 20
                             }).addTo(map);
 
-                            const path = [start, end];
-                            L.polyline(path, { color: '#a78bfa', weight: 8, opacity: 0.25, lineJoin: 'round' }).addTo(map);
-                            const mainLine = L.polyline(path, { color: '#a78bfa', weight: 3.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                            // Primary Route (Purple utilityPath if present, else straight line)
+                            const customUtility = ${JSON.stringify(selectedProjectItem.utilityPath ?? [])};
+                            if (customUtility && customUtility.length >= 2) {
+                              L.polyline(customUtility, { color: '#a855f7', weight: 4, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                            } else {
+                              L.polyline([start, end], { color: '#a855f7', weight: 4, opacity: 0.8, lineJoin: 'round' }).addTo(map);
+                            }
+
+                            // Plot HDD Points
+                            const hddPts = ${JSON.stringify(selectedProjectItem.hddPoints ?? [])};
+                            const hddIcon = L.divIcon({ className: 'hdd-dot', iconSize: [10, 10] });
+                            if (hddPts && hddPts.length > 0) {
+                              hddPts.forEach((pt, idx) => {
+                                L.marker(pt, { icon: hddIcon }).addTo(map).bindPopup("<b>HDD Location " + (idx + 1) + "</b>");
+                              });
+                            }
+
+                            // Plot Terminations
+                            const termPts = ${JSON.stringify(selectedProjectItem.terminationPoints ?? [])};
+                            const termIcon = L.divIcon({ className: 'term-dot', iconSize: [10, 10] });
+                            if (termPts && termPts.length > 0) {
+                              termPts.forEach((pt, idx) => {
+                                L.marker(pt, { icon: termIcon }).addTo(map).bindPopup("<b>Grid Termination " + (idx + 1) + "</b>");
+                              });
+                            }
+
+                            // Plot Trenching Lines
+                            const trenchLine = ${JSON.stringify(selectedProjectItem.trenchingLine ?? [])};
+                            if (trenchLine && trenchLine.length >= 2) {
+                              L.polyline(trenchLine, { color: '#f97316', dashArray: '5, 5', weight: 3, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                              trenchLine.forEach(pt => {
+                                L.circle(pt, { color: '#f97316', fillColor: '#f97316', fillOpacity: 0.8, radius: 3 }).addTo(map);
+                              });
+                            }
                             
                             const startIcon = L.divIcon({ className: 'start-pulse', iconSize: [12, 12] });
                             L.marker(start, { icon: startIcon }).addTo(map).bindPopup('<b>Start:</b> ${selectedProjectItem.startLabel}');
@@ -1841,8 +2039,15 @@ export default function AdminDashboard() {
                             const endIcon = L.divIcon({ className: 'end-pulse', iconSize: [12, 12] });
                             L.marker(end, { icon: endIcon }).addTo(map).bindPopup('<b>End:</b> ${selectedProjectItem.endLabel}');
                             
+                            // Auto zoom to all markers
+                            const bounds = [start, end];
+                            if (trenchLine && trenchLine.length > 0) trenchLine.forEach(pt => bounds.push(pt));
+                            if (customUtility && customUtility.length > 0) customUtility.forEach(pt => bounds.push(pt));
+                            if (hddPts && hddPts.length > 0) hddPts.forEach(pt => bounds.push(pt));
+                            if (termPts && termPts.length > 0) termPts.forEach(pt => bounds.push(pt));
+
                             try {
-                              map.fitBounds(mainLine.getBounds(), { padding: [30, 30] });
+                              map.fitBounds(bounds, { padding: [30, 30] });
                             } catch(e) {}
                           </script>
                         </body>
@@ -1874,164 +2079,476 @@ export default function AdminDashboard() {
       {/* ADMINISTRATIVE PROJECT EDITING MODAL */}
       {editingProjectItem && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(6,9,18,0.85)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1100, animation: "fadeIn 0.2s ease" }}>
-          <div className="glass" style={{ width: "100%", maxWidth: 440, maxHeight: "90vh", overflowY: "auto", padding: "28px 24px", background: "linear-gradient(135deg, #0f082e 0%, #060912 100%)", borderRadius: 24, border: "1px solid rgba(255, 255, 255, 0.08)", boxShadow: "0 24px 64px rgba(0, 0, 0, 0.7)", color: "#f1f5f9" }}>
+          <div className="glass glow-cyan" style={{ width: "100%", maxWidth: "1000px", maxHeight: "95vh", overflowY: "auto", padding: "28px 24px", background: "linear-gradient(135deg, #0d0621 0%, #060912 100%)", borderRadius: 24, border: "1px solid rgba(255, 255, 255, 0.08)", boxShadow: "0 24px 64px rgba(0, 0, 0, 0.75)", color: "#f1f5f9" }}>
             
             {/* Modal Header */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 900, letterSpacing: "-0.02em", margin: 0 }}>Edit Corridor parameters</h3>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 14 }}>
+              <div>
+                <h3 style={{ fontSize: 20, fontWeight: 900, letterSpacing: "-0.5px", margin: 0, background: "linear-gradient(90deg, #c4b5fd, #06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Corridor GIS Editor</h3>
+                <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Operational Map & Project Parameters</p>
+              </div>
               <button onClick={() => setEditingProjectItem(null)} style={{ background: "rgba(255, 255, 255, 0.04)", border: "1px solid rgba(255, 255, 255, 0.08)", width: 32, height: 32, borderRadius: "50%", color: "#94a3b8", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
 
-            <form onSubmit={handleUpdateProject} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {/* Project Name */}
-              <div>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Project Name</label>
-                <input
-                  type="text"
-                  value={projName}
-                  onChange={(e) => setProjName(e.target.value)}
-                  required
-                  style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
-                />
+            <div className="editor-container">
+              
+              {/* LEFT COLUMN: INTERACTIVE GIS MAP & DRAWING TOOLBAR */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>Interactive GIS Tools</span>
+                  <span style={{ fontSize: 10, color: "#fbbf24", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 6, padding: "2px 6px", fontWeight: 700 }}>
+                    Click Map to Draw
+                  </span>
+                </div>
+
+                {/* Grid of operational drawing tools */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => setActivePinMode("start")}
+                    className="tool-btn"
+                    style={{
+                      borderColor: activePinMode === "start" ? "#22c55e" : "rgba(255,255,255,0.08)",
+                      background: activePinMode === "start" ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.01)",
+                      color: activePinMode === "start" ? "#4ade80" : "#94a3b8"
+                    }}
+                  >
+                    🟢 Pin Start
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePinMode("end")}
+                    className="tool-btn"
+                    style={{
+                      borderColor: activePinMode === "end" ? "#ef4444" : "rgba(255,255,255,0.08)",
+                      background: activePinMode === "end" ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.01)",
+                      color: activePinMode === "end" ? "#f87171" : "#94a3b8"
+                    }}
+                  >
+                    🔴 Pin End
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePinMode("hdd")}
+                    className="tool-btn"
+                    style={{
+                      borderColor: activePinMode === "hdd" ? "#eab308" : "rgba(255,255,255,0.08)",
+                      background: activePinMode === "hdd" ? "rgba(234,179,8,0.12)" : "rgba(255,255,255,0.01)",
+                      color: activePinMode === "hdd" ? "#fcd34d" : "#94a3b8"
+                    }}
+                  >
+                    🟡 HDD Pin
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePinMode("termination")}
+                    className="tool-btn"
+                    style={{
+                      borderColor: activePinMode === "termination" ? "#2563eb" : "rgba(255,255,255,0.08)",
+                      background: activePinMode === "termination" ? "rgba(37,99,235,0.12)" : "rgba(255,255,255,0.01)",
+                      color: activePinMode === "termination" ? "#60a5fa" : "#94a3b8"
+                    }}
+                  >
+                    🔵 Grid Term
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePinMode("trench")}
+                    className="tool-btn"
+                    style={{
+                      borderColor: activePinMode === "trench" ? "#f97316" : "rgba(255,255,255,0.08)",
+                      background: activePinMode === "trench" ? "rgba(249,115,22,0.12)" : "rgba(255,255,255,0.01)",
+                      color: activePinMode === "trench" ? "#ff9d5c" : "#94a3b8"
+                    }}
+                  >
+                    🟠 Trench Line
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePinMode("utility")}
+                    className="tool-btn"
+                    style={{
+                      borderColor: activePinMode === "utility" ? "#a855f7" : "rgba(255,255,255,0.08)",
+                      background: activePinMode === "utility" ? "rgba(168,85,247,0.12)" : "rgba(255,255,255,0.01)",
+                      color: activePinMode === "utility" ? "#c084fc" : "#94a3b8"
+                    }}
+                  >
+                    🟣 Utility Link
+                  </button>
+                </div>
+
+                {/* Large Interactive Iframe Map */}
+                <div className="glass" style={{ padding: 0, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, overflow: "hidden", background: "#080b13" }}>
+                  <div style={{ position: "relative", height: "350px", width: "100%" }}>
+                    <iframe
+                      title="Interactive GIS Corridor Editor"
+                      style={{ width: "100%", height: "100%", border: "none" }}
+                      srcDoc={`
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                          <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                          <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                          <style>
+                            html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #060912; cursor: crosshair; }
+                            .leaflet-control-attribution { display: none !important; }
+                            .leaflet-container { background: #060912 !important; }
+                            .leaflet-bar a { background-color: #0b0f19 !important; color: #fff !important; border-color: rgba(255,255,255,0.15) !important; }
+                            .leaflet-bar a:hover { background-color: #121826 !important; }
+                            
+                            .start-marker {
+                              background: #22c55e;
+                              border: 2.5px solid #ffffff;
+                              border-radius: 50%;
+                              box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+                            }
+                            .end-marker {
+                              background: #ef4444;
+                              border: 2.5px solid #ffffff;
+                              border-radius: 50%;
+                              box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+                            }
+                            .hdd-marker {
+                              background: #eab308;
+                              border: 2px solid #ffffff;
+                              border-radius: 50%;
+                              box-shadow: 0 0 10px rgba(234, 179, 8, 0.6);
+                            }
+                            .term-marker {
+                              background: #2563eb;
+                              border: 2px solid #ffffff;
+                              border-radius: 4px;
+                              box-shadow: 0 0 10px rgba(37, 99, 235, 0.6);
+                            }
+                          </style>
+                        </head>
+                        <body>
+                          <div id="map"></div>
+                          <script>
+                            const startLat = parseFloat("${projStartLat}");
+                            const startLng = parseFloat("${projStartLng}");
+                            const endLat = parseFloat("${projEndLat}");
+                            const endLng = parseFloat("${projEndLng}");
+
+                            const hasStart = !isNaN(startLat) && !isNaN(startLng);
+                            const hasEnd = !isNaN(endLat) && !isNaN(endLng);
+
+                            let center = [10.0055, 76.3082];
+                            if (hasStart) center = [startLat, startLng];
+                            else if (hasEnd) center = [endLat, endLng];
+
+                            const map = L.map('map').setView(center, 14);
+                            
+                            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                              maxZoom: 20
+                            }).addTo(map);
+
+                            // Send map clicks to parent React view
+                            map.on('click', function(e) {
+                              window.parent.postMessage({
+                                type: 'MAP_CLICK',
+                                lat: e.latlng.lat,
+                                lng: e.latlng.lng
+                              }, '*');
+                            });
+
+                            const startIcon = L.divIcon({ className: 'start-marker', iconSize: [14, 14] });
+                            const endIcon = L.divIcon({ className: 'end-marker', iconSize: [14, 14] });
+                            const hddIcon = L.divIcon({ className: 'hdd-marker', iconSize: [12, 12] });
+                            const termIcon = L.divIcon({ className: 'term-marker', iconSize: [12, 12] });
+
+                            // Plot Start Coordinates
+                            if (hasStart) {
+                              L.marker([startLat, startLng], { icon: startIcon }).addTo(map).bindPopup("<b>Start Position</b>");
+                            }
+
+                            // Plot End Coordinates
+                            if (hasEnd) {
+                              L.marker([endLat, endLng], { icon: endIcon }).addTo(map).bindPopup("<b>End Position</b>");
+                            }
+
+                            // Primary Route (Purple utilityPath if present, else straight line)
+                            const customUtilityPath = ${JSON.stringify(utilityPath)};
+                            if (customUtilityPath && customUtilityPath.length >= 2) {
+                              L.polyline(customUtilityPath, { color: '#a855f7', weight: 4.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                            } else if (hasStart && hasEnd) {
+                              L.polyline([[startLat, startLng], [endLat, endLng]], { color: '#a855f7', weight: 4.5, opacity: 0.8, lineJoin: 'round' }).addTo(map);
+                            }
+
+                            // Plot HDD Points
+                            const hddPts = ${JSON.stringify(hddPoints)};
+                            if (hddPts && hddPts.length > 0) {
+                              hddPts.forEach((pt, idx) => {
+                                L.marker(pt, { icon: hddIcon }).addTo(map).bindPopup("<b>HDD Location " + (idx + 1) + "</b>");
+                              });
+                            }
+
+                            // Plot Grid Terminations
+                            const termPts = ${JSON.stringify(terminationPoints)};
+                            if (termPts && termPts.length > 0) {
+                              termPts.forEach((pt, idx) => {
+                                L.marker(pt, { icon: termIcon }).addTo(map).bindPopup("<b>Grid Termination " + (idx + 1) + "</b>");
+                              });
+                            }
+
+                            // Plot Trenching Lines
+                            const trenchLine = ${JSON.stringify(trenchingLine)};
+                            if (trenchLine && trenchLine.length >= 2) {
+                              L.polyline(trenchLine, { color: '#f97316', dashArray: '6, 6', weight: 3.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                              trenchLine.forEach(pt => {
+                                L.circle(pt, { color: '#f97316', fillColor: '#f97316', fillOpacity: 0.8, radius: 4 }).addTo(map);
+                              });
+                            }
+
+                            // Autozoom to bounds of markers
+                            const bounds = [];
+                            if (hasStart) bounds.push([startLat, startLng]);
+                            if (hasEnd) bounds.push([endLat, endLng]);
+                            if (trenchLine && trenchLine.length > 0) trenchLine.forEach(pt => bounds.push(pt));
+                            if (customUtilityPath && customUtilityPath.length > 0) customUtilityPath.forEach(pt => bounds.push(pt));
+                            if (hddPts && hddPts.length > 0) hddPts.forEach(pt => bounds.push(pt));
+                            if (termPts && termPts.length > 0) termPts.forEach(pt => bounds.push(pt));
+
+                            if (bounds.length > 1) {
+                              try {
+                                map.fitBounds(bounds, { padding: [30, 30] });
+                              } catch(e) {}
+                            }
+                          </script>
+                        </body>
+                        </html>
+                      `}
+                    />
+                  </div>
+                </div>
+
+                {/* Visual guidelines */}
+                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 14, padding: "10px 14px", fontSize: 11, color: "#64748b", lineHeight: 1.5, display: "flex", gap: 8, alignItems: "flex-start" }}>
+                  <span style={{ fontSize: 14 }}>💡</span>
+                  <span>Select any drawing mode button above, then click directly on the dark-theme map on the left to set junctions, drop yellow HDD pins, blue square terminations, or draw polylines. Physical distance calculates in real-time.</span>
+                </div>
+
+                {/* Drawing Actions & Clear buttons */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHddPoints([]);
+                      showToast("🧹 HDD Pins cleared!");
+                    }}
+                    style={{ background: "rgba(239, 68, 68, 0.05)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#fca5a5", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                  >
+                    Clear HDD Pins
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTerminationPoints([]);
+                      showToast("🧹 Grid Terminations cleared!");
+                    }}
+                    style={{ background: "rgba(239, 68, 68, 0.05)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#fca5a5", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                  >
+                    Clear Terminations
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTrenchingLine([]);
+                      updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, []);
+                      showToast("🧹 Trenching path cleared!");
+                    }}
+                    style={{ background: "rgba(249, 115, 22, 0.08)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#ffb07a", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                  >
+                    Clear Trench Path
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUtilityPath([]);
+                      showToast("🧹 Utility Shift path cleared!");
+                    }}
+                    style={{ background: "rgba(168, 85, 247, 0.08)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#d8b4fe", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                  >
+                    Clear Utility Path
+                  </button>
+                </div>
               </div>
 
-              {/* Code & District & Distance */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {/* RIGHT COLUMN: PARAMETERS EDITOR FORM */}
+              <form onSubmit={handleUpdateProject} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>Project parameters</span>
+
+                {/* Project Name */}
                 <div>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Corridor ID</label>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Project Name</label>
                   <input
                     type="text"
-                    value={projCode}
-                    onChange={(e) => setProjCode(e.target.value)}
-                    required
-                    style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "monospace", outline: "none" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>District</label>
-                  <input
-                    type="text"
-                    value={projDistrict}
-                    onChange={(e) => setProjDistrict(e.target.value)}
+                    value={projName}
+                    onChange={(e) => setProjName(e.target.value)}
                     required
                     style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
                   />
                 </div>
-              </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {/* Code & District */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Corridor ID</label>
+                    <input
+                      type="text"
+                      value={projCode}
+                      onChange={(e) => setProjCode(e.target.value)}
+                      required
+                      style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "monospace", outline: "none" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>District</label>
+                    <input
+                      type="text"
+                      value={projDistrict}
+                      onChange={(e) => setProjDistrict(e.target.value)}
+                      required
+                      style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
+                    />
+                  </div>
+                </div>
+
+                {/* Distance calculation display */}
                 <div>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Estimated Distance</label>
-                  <input
-                    type="text"
-                    value={projDistance}
-                    onChange={(e) => setProjDistance(e.target.value)}
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Calculated Corridor Distance</label>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <input
+                      type="text"
+                      value={projDistance}
+                      readOnly
+                      style={{ flex: 1, height: 40, background: "rgba(0,0,0,0.4)", border: "1px solid rgba(6,182,212,0.2)", borderRadius: 12, padding: "0 14px", color: "#06b6d4", fontSize: 14, fontWeight: 800, fontFamily: "monospace", outline: "none" }}
+                    />
+                    <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", width: 110, lineHeight: 1.2 }}>
+                      📏 Great-Circle spherical calc
+                    </span>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Description</label>
+                  <textarea
+                    value={projDesc}
+                    onChange={(e) => setProjDesc(e.target.value)}
                     required
-                    style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
+                    rows={2}
+                    style={{ width: "100%", background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "10px 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none", resize: "none" }}
                   />
                 </div>
-              </div>
 
-              {/* Description */}
-              <div>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Description</label>
-                <textarea
-                  value={projDesc}
-                  onChange={(e) => setProjDesc(e.target.value)}
-                  required
-                  rows={2}
-                  style={{ width: "100%", background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "10px 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none", resize: "none" }}
-                />
-              </div>
-
-              {/* Start Location Parameters */}
-              <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 12 }}>
-                <span style={{ fontSize: 11, fontWeight: 800, color: "#4ade80", textTransform: "uppercase" }}>Start Position Parameters</span>
-                <div style={{ marginTop: 8 }}>
-                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>Junction/Station Label</label>
-                  <input
-                    type="text"
-                    value={projStartLabel}
-                    onChange={(e) => setProjStartLabel(e.target.value)}
-                    required
-                    style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, outline: "none" }}
-                  />
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8 }}>
-                  <div>
-                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>Latitude</label>
+                {/* Start Location Parameters */}
+                <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: "#4ade80", textTransform: "uppercase" }}>Start Position Parameters</span>
+                  <div style={{ marginTop: 6 }}>
+                    <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Junction/Station Label</label>
                     <input
                       type="text"
-                      value={projStartLat}
-                      onChange={(e) => setProjStartLat(e.target.value)}
+                      value={projStartLabel}
+                      onChange={(e) => setProjStartLabel(e.target.value)}
                       required
-                      placeholder="e.g. 10.0055"
-                      style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                      style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, outline: "none" }}
                     />
                   </div>
-                  <div>
-                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>Longitude</label>
-                    <input
-                      type="text"
-                      value={projStartLng}
-                      onChange={(e) => setProjStartLng(e.target.value)}
-                      required
-                      placeholder="e.g. 76.3082"
-                      style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
-                    />
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Latitude</label>
+                      <input
+                        type="text"
+                        value={projStartLat}
+                        onChange={(e) => {
+                          setProjStartLat(e.target.value);
+                          updateCalculatedDistance(e.target.value, projStartLng, projEndLat, projEndLng, trenchingLine);
+                        }}
+                        required
+                        style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Longitude</label>
+                      <input
+                        type="text"
+                        value={projStartLng}
+                        onChange={(e) => {
+                          setProjStartLng(e.target.value);
+                          updateCalculatedDistance(projStartLat, e.target.value, projEndLat, projEndLng, trenchingLine);
+                        }}
+                        required
+                        style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* End Location Parameters */}
-              <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 12 }}>
-                <span style={{ fontSize: 11, fontWeight: 800, color: "#f87171", textTransform: "uppercase" }}>End Position Parameters</span>
-                <div style={{ marginTop: 8 }}>
-                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>Junction/Station Label</label>
-                  <input
-                    type="text"
-                    value={projEndLabel}
-                    onChange={(e) => setProjEndLabel(e.target.value)}
-                    required
-                    style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, outline: "none" }}
-                  />
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8 }}>
-                  <div>
-                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>Latitude</label>
+                {/* End Location Parameters */}
+                <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: "#f87171", textTransform: "uppercase" }}>End Position Parameters</span>
+                  <div style={{ marginTop: 6 }}>
+                    <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Junction/Station Label</label>
                     <input
                       type="text"
-                      value={projEndLat}
-                      onChange={(e) => setProjEndLat(e.target.value)}
+                      value={projEndLabel}
+                      onChange={(e) => setProjEndLabel(e.target.value)}
                       required
-                      placeholder="e.g. 10.0261"
-                      style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                      style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, outline: "none" }}
                     />
                   </div>
-                  <div>
-                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>Longitude</label>
-                    <input
-                      type="text"
-                      value={projEndLng}
-                      onChange={(e) => setProjEndLng(e.target.value)}
-                      required
-                      placeholder="e.g. 76.3084"
-                      style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
-                    />
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Latitude</label>
+                      <input
+                        type="text"
+                        value={projEndLat}
+                        onChange={(e) => {
+                          setProjEndLat(e.target.value);
+                          updateCalculatedDistance(projStartLat, projStartLng, e.target.value, projEndLng, trenchingLine);
+                        }}
+                        required
+                        style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Longitude</label>
+                      <input
+                        type="text"
+                        value={projEndLng}
+                        onChange={(e) => {
+                          setProjEndLng(e.target.value);
+                          updateCalculatedDistance(projStartLat, projStartLng, projEndLat, e.target.value, trenchingLine);
+                        }}
+                        required
+                        style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Submit Buttons */}
-              <button
-                type="submit"
-                style={{ width: "100%", minHeight: 42, marginTop: 14, background: "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)", border: "none", borderRadius: 12, color: "white", fontSize: 14, fontWeight: 750, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 15px rgba(6, 182, 212, 0.2)" }}
-              >
-                ✓ Apply Map & Info Changes
-              </button>
-            </form>
+                {/* Submit Action Buttons */}
+                <div style={{ display: "flex", gap: 12, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 14, marginTop: 6 }}>
+                  <button
+                    type="button"
+                    onClick={() => setEditingProjectItem(null)}
+                    style={{ flex: 0.8, minHeight: 44, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#94a3b8", fontSize: 13, fontWeight: 750, cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    style={{ flex: 1.2, minHeight: 44, background: "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)", border: "none", borderRadius: 12, color: "white", fontSize: 13, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 15px rgba(6, 182, 212, 0.25)" }}
+                  >
+                    ✓ Save Project & GIS
+                  </button>
+                </div>
+              </form>
+
+            </div>
           </div>
         </div>
       )}
