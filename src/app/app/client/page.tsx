@@ -246,6 +246,33 @@ export default function ClientDashboard() {
             >
               ⚙️ Manage Profile Settings
             </button>
+
+            {/* Secure Sign Out Button */}
+            <button 
+              onClick={async () => {
+                if (confirm("Are you sure you want to sign out securely from Telgo Hub?")) {
+                  await fetch("/api/mobile/sign-out", { method: "POST" });
+                  localStorage.removeItem("telgo_saved_email");
+                  localStorage.removeItem("telgo_saved_password");
+                  window.location.href = "/login";
+                }
+              }}
+              style={{
+                width: "100%",
+                minHeight: 44,
+                background: "rgba(239, 68, 68, 0.06)",
+                border: "1px solid rgba(239, 68, 68, 0.2)",
+                borderRadius: 12,
+                color: "#f87171",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "Outfit, sans-serif",
+                marginTop: 10
+              }}
+            >
+              🚪 Secure Sign Out
+            </button>
           </div>
         </div>
       </main>

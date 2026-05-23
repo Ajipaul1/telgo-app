@@ -574,7 +574,14 @@ export default function AdminDashboard() {
           {/* Logout */}
           <div style={{ padding: "32px 16px 16px" }}>
             <button 
-              onClick={async () => { await fetch("/api/mobile/sign-out", { method: "POST" }); window.location.href = "/login"; }}
+              onClick={async () => {
+                if (confirm("Are you sure you want to sign out securely from Telgo Hub?")) {
+                  await fetch("/api/mobile/sign-out", { method: "POST" });
+                  localStorage.removeItem("telgo_saved_email");
+                  localStorage.removeItem("telgo_saved_password");
+                  window.location.href = "/login";
+                }
+              }}
               className="action-btn"
               style={{ width: "100%", minHeight: 48, background: "transparent", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 14, color: "#f87171", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit,sans-serif" }}
             >
