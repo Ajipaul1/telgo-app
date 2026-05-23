@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
         longitude?: unknown;
         gpsAccuracyM?: unknown;
         projectId?: unknown;
+        status?: unknown;
       }
     | null;
 
@@ -120,6 +121,7 @@ export async function POST(request: NextRequest) {
       longitude,
       gpsAccuracyM: Number.isFinite(gpsAccuracyM ?? NaN) ? gpsAccuracyM : null,
       projectId: typeof body?.projectId === "string" ? body.projectId : null,
+      status: typeof body?.status === "string" ? body.status : null,
     });
 
     return NextResponse.json({

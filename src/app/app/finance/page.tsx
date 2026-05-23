@@ -71,67 +71,7 @@ export default function FinanceDashboard() {
     };
   }, [isShiftActive, user, isTrackingActiveThisSession]);
 
-  async function handleToggleShift() {
-    if (!user) return;
-    
-    if (isShiftActive) {
-      if (!confirm("Are you sure you want to conclude your active shift and stop location telemetry?")) return;
-      localStorage.removeItem(`telgo_shift_active_${user.userId}`);
-      localStorage.removeItem(`telgo_shift_time_${user.userId}`);
-      setIsShiftActive(false);
-      setCheckInTime("");
-      showToast("🔴 Shift concluded. Background telemetry stopped.");
-    } else {
-      setCheckingIn(true);
-      
-      if (!navigator.geolocation) {
-        showToast("❌ Geolocation is not supported by your device.");
-        setCheckingIn(false);
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            const res = await fetch("/api/mobile/attendance", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-                gpsAccuracyM: position.coords.accuracy,
-                projectId: "vadakkekotta-sn-cable"
-              })
-            });
-            const data = await res.json();
-            if (res.ok && data.ok) {
-              const now = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
-              localStorage.setItem(`telgo_shift_active_${user.userId}`, "true");
-              localStorage.setItem(`telgo_shift_time_${user.userId}`, now);
-              setIsShiftActive(true);
-              setCheckInTime(now);
-              setIsTrackingActiveThisSession(true);
-              showToast("🚀 Shift Active! Daily attendance registered.");
-              setIsAttendanceOpen(false);
-            } else {
-              showToast(`❌ ${data.message || "Attendance marking failed."}`);
-            }
-          } catch {
-            showToast("❌ Network error. Please try again.");
-          } finally {
-            setCheckingIn(false);
-          }
-        },
-        (error) => {
-          showToast(`❌ GPS access error: ${error.message}`);
-          setCheckingIn(false);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    }
-  }
-
-  async function handleReRegisterAttendance() {
+  async function performAttendanceMarking(isReRegister: boolean) {
     if (!user) return;
     setCheckingIn(true);
     
@@ -141,44 +81,108 @@ export default function FinanceDashboard() {
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
+    const handleSuccess = async (position: GeolocationPosition) => {
+      try {
+        const res = await fetch("/api/mobile/attendance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            gpsAccuracyM: position.coords.accuracy,
+            projectId: "vadakkekotta-sn-cable"
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          const now = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+          localStorage.setItem(`telgo_shift_active_${user.userId}`, "true");
+          localStorage.setItem(`telgo_shift_time_${user.userId}`, now);
+          setIsShiftActive(true);
+          setCheckInTime(now);
+          setIsTrackingActiveThisSession(true);
+          showToast(isReRegister ? "🔄 Location coordinates updated & re-registered!" : "🚀 Shift Active! Daily attendance registered.");
+          setIsAttendanceOpen(false);
+        } else {
+          showToast(`❌ ${data.message || "Attendance marking failed."}`);
+        }
+      } catch {
+        showToast("❌ Network error. Please try again.");
+      } finally {
+        setCheckingIn(false);
+      }
+    };
+
+    const handleError = (error: GeolocationPositionError) => {
+      if (error.code === error.TIMEOUT) {
+        showToast("⚠️ Precise GPS timed out. Retrying in network mode...");
+        navigator.geolocation.getCurrentPosition(
+          handleSuccess,
+          (err2) => {
+            showToast(`❌ GPS access error: ${err2.message}`);
+            setCheckingIn(false);
+          },
+          { enableHighAccuracy: false, timeout: 20000, maximumAge: 30000 }
+        );
+      } else {
+        showToast(`❌ GPS access error: ${error.message}`);
+        setCheckingIn(false);
+      }
+    };
+
+    navigator.geolocation.getCurrentPosition(handleSuccess, handleError, {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 10000
+    });
+  }
+
+  async function handleToggleShift() {
+    if (!user) return;
+    
+    if (isShiftActive) {
+      if (!confirm("Are you sure you want to conclude your active shift and stop location telemetry?")) return;
+      setCheckingIn(true);
+      
+      const proceedCheckout = async (position: GeolocationPosition | null) => {
         try {
-          const res = await fetch("/api/mobile/attendance", {
+          await fetch("/api/mobile/attendance", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              gpsAccuracyM: position.coords.accuracy,
-              projectId: "vadakkekotta-sn-cable"
+              latitude: position ? position.coords.latitude : 9.9538,
+              longitude: position ? position.coords.longitude : 76.3428,
+              gpsAccuracyM: position ? position.coords.accuracy : null,
+              projectId: "vadakkekotta-sn-cable",
+              status: "checked_out"
             })
           });
-          const data = await res.json();
-          if (res.ok && data.ok) {
-            const now = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
-            localStorage.setItem(`telgo_shift_active_${user.userId}`, "true");
-            localStorage.setItem(`telgo_shift_time_${user.userId}`, now);
-            setIsShiftActive(true);
-            setCheckInTime(now);
-            setIsTrackingActiveThisSession(true);
-            showToast("🔄 Location coordinates updated & re-registered!");
-            setIsAttendanceOpen(false);
-          } else {
-            showToast(`❌ ${data.message || "Re-registration failed."}`);
-          }
-        } catch {
-          showToast("❌ Network error. Please try again.");
-        } finally {
-          setCheckingIn(false);
-        }
-      },
-      (error) => {
-        showToast(`❌ GPS access error: ${error.message}`);
+        } catch { /* ignore */ }
+        
+        localStorage.removeItem(`telgo_shift_active_${user.userId}`);
+        localStorage.removeItem(`telgo_shift_time_${user.userId}`);
+        setIsShiftActive(false);
+        setCheckInTime("");
         setCheckingIn(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
+        showToast("🔴 Shift concluded. Background telemetry stopped.");
+      };
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => proceedCheckout(pos),
+          () => proceedCheckout(null),
+          { enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 }
+        );
+      } else {
+        proceedCheckout(null);
+      }
+    } else {
+      performAttendanceMarking(false);
+    }
+  }
+
+  async function handleReRegisterAttendance() {
+    performAttendanceMarking(true);
   }
 
   return (

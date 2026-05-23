@@ -208,6 +208,18 @@ export default function LoginPage() {
             </a>
           </>
         )}
+
+        {/* PWA Fullscreen Installation Guidance */}
+        {!isWebView && (
+          <div className="glass" style={{ marginTop: 24, padding: "12px 14px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, background: "rgba(255,255,255,0.01)", textAlign: "left" }}>
+            <span style={{ fontSize: 9, color: "#a78bfa", textTransform: "uppercase", fontWeight: 800, display: "block", marginBottom: 4 }}>💡 Run in Fullscreen App Mode</span>
+            <p style={{ margin: 0, fontSize: 11, color: "#94a3b8", lineHeight: 1.4 }}>
+              To hide the browser address bar and run Telgo Hub in complete fullscreen PWA mode:<br/>
+              • <strong>Android</strong>: Tap the 3-dots menu on Chrome and select <strong>'Add to Home screen'</strong>.<br/>
+              • <strong>iOS</strong>: Tap Safari's Share button and select <strong>'Add to Home Screen'</strong>.
+            </p>
+          </div>
+        )}
       </div>
 
       <p style={{ marginTop: 24, fontSize: 11, color: "#475569", textAlign: "center" }}>© 2026 Telgo Power Projects. All rights reserved.</p>

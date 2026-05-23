@@ -15,6 +15,7 @@ export type MarkMobileAttendanceInput = {
   longitude: number;
   gpsAccuracyM?: number | null;
   projectId?: string | null;
+  status?: string | null;
 };
 
 export async function markMobileAttendance(
@@ -48,7 +49,7 @@ export async function markMobileAttendance(
       gps_accuracy_m: input.gpsAccuracyM ?? null,
       distance_from_site_m: distanceFromSiteM,
       within_geofence: withinGeofence,
-      status: withinGeofence ? "checked_in" : "outside_geofence",
+      status: input.status ?? (withinGeofence ? "checked_in" : "outside_geofence"),
     })
     .select("*")
     .single();

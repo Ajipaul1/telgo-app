@@ -1177,115 +1177,149 @@ export default function AdminDashboard() {
 
             {/* Attendance Logs Details Table */}
             <div className="glass" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
-              {selectedAttendanceWorker ? (
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                    <div>
-                      <h3 style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", margin: 0 }}>{selectedAttendanceWorker.full_name}</h3>
-                      <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0" }}>Monthly Duty check-ins (100% Real Database logs)</p>
-                    </div>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 6, padding: "3px 8px" }}>
-                      {attendanceRecords.length} Check-ins
-                    </span>
-                  </div>
+              {selectedAttendanceWorker ? (() => {
+                const getProcessedDailyLogs = () => {
+                  const dailyMap: Record<string, {
+                    dateStr: string;
+                    signInTime: string;
+                    signOutTime: string;
+                    withinGeofence: boolean;
+                    distanceFromSiteM: number;
+                    latitude: number;
+                    longitude: number;
+                    records: any[];
+                  }> = {};
 
-                  {loadingAttendance ? (
-                    <div style={{ textAlign: "center", padding: "40px 0", color: "#64748b" }}>
-                      <div className="spinner" style={{ margin: "0 auto 12px", borderColor: "#a78bfa", borderTopColor: "transparent" }} />
-                      Retrieving Database Ledger...
-                    </div>
-                  ) : attendanceRecords.length === 0 ? (
-                    <div style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: "32px 20px", textAlign: "center" }}>
-                      <span style={{ fontSize: 24, display: "block", marginBottom: 8 }}>📅</span>
-                      <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>No active check-in history found in the database for this user in the current month.</p>
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                      {/* Timeline List of Check-ins */}
-                      <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 400, overflowY: "auto", paddingRight: 4 }}>
-                        {attendanceRecords.map((rec) => {
-                          const dateObj = new Date(rec.checkInAt);
-                          const dateStr = dateObj.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-                          const timeStr = dateObj.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
-                          
-                          return (
-                            <div 
-                              key={rec.id}
-                              style={{
-                                background: "rgba(0,0,0,0.25)",
-                                border: "1px solid rgba(255,255,255,0.05)",
-                                borderRadius: 14,
-                                padding: 14,
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 8
-                              }}
-                            >
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <span style={{ fontSize: 12, fontWeight: 800, color: "#e2e8f0" }}>{dateStr} — {timeStr}</span>
-                                <span style={{ 
-                                  fontSize: 9, 
-                                  fontWeight: 800, 
-                                  background: rec.withinGeofence ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)", 
-                                  color: rec.withinGeofence ? "#4ade80" : "#f87171", 
-                                  border: rec.withinGeofence ? "1px solid rgba(34,197,94,0.2)" : "1px solid rgba(239,68,68,0.2)",
-                                  padding: "2px 6px",
-                                  borderRadius: 4,
-                                  textTransform: "uppercase" 
-                                }}>
-                                  {rec.withinGeofence ? "WITHIN SITE GEOFENCE" : "OUTSIDE GEOFENCE"}
-                                </span>
-                              </div>
+                  [...attendanceRecords].reverse().forEach((rec) => {
+                    const dateObj = new Date(rec.checkInAt);
+                    const key = dateObj.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+                    const timeStr = dateObj.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 
-                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, background: "rgba(255,255,255,0.01)", padding: 10, borderRadius: 10, border: "1px solid rgba(255,255,255,0.02)" }}>
-                                <div>
-                                  <span style={{ fontSize: 8, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>GPS Position Coordinates</span>
-                                  <p style={{ fontSize: 11, fontFamily: "monospace", color: "#cbd5e1", margin: "2px 0 0" }}>{rec.latitude.toFixed(5)}° N, {rec.longitude.toFixed(5)}° E</p>
-                                </div>
-                                <div>
-                                  <span style={{ fontSize: 8, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Corridor Drift Telemetry</span>
-                                  <p style={{ fontSize: 11, fontFamily: "monospace", color: "#a78bfa", margin: "2px 0 0" }}>{rec.distanceFromSiteM} meters from start</p>
-                                </div>
-                              </div>
+                    if (!dailyMap[key]) {
+                      dailyMap[key] = {
+                        dateStr: key,
+                        signInTime: rec.status !== "checked_out" ? timeStr : "--",
+                        signOutTime: rec.status === "checked_out" ? timeStr : "--",
+                        withinGeofence: rec.withinGeofence,
+                        distanceFromSiteM: rec.distanceFromSiteM,
+                        latitude: rec.latitude,
+                        longitude: rec.longitude,
+                        records: [rec]
+                      };
+                    } else {
+                      dailyMap[key].records.push(rec);
+                      
+                      const checkins = dailyMap[key].records.filter(r => r.status !== "checked_out");
+                      if (checkins.length > 0) {
+                        const firstCheckin = new Date(checkins[0].checkInAt);
+                        dailyMap[key].signInTime = firstCheckin.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+                        dailyMap[key].withinGeofence = checkins[0].withinGeofence;
+                        dailyMap[key].distanceFromSiteM = checkins[0].distanceFromSiteM;
+                      }
+                      
+                      const checkouts = dailyMap[key].records.filter(r => r.status === "checked_out");
+                      if (checkouts.length > 0) {
+                        const lastCheckout = new Date(checkouts[checkouts.length - 1].checkInAt);
+                        dailyMap[key].signOutTime = lastCheckout.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+                      }
+                    }
+                  });
 
-                              {/* Small map link preview */}
-                              <div style={{ height: 160, borderRadius: 10, overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", position: "relative" }}>
-                                <iframe
-                                  title={`Check-in Map ${rec.id}`}
-                                  style={{ width: "100%", height: "100%", border: "none" }}
-                                  srcDoc={`
-                                    <!DOCTYPE html>
-                                    <html>
-                                    <head>
-                                      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-                                      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-                                      <style>
-                                        html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #060912; }
-                                        .leaflet-control-attribution { display: none !important; }
-                                        .leaflet-container { background: #060912 !important; }
-                                      </style>
-                                    </head>
-                                    <body>
-                                      <div id="map"></div>
-                                      <script>
-                                        const map = L.map('map', { zoomControl: false }).setView([${rec.latitude}, ${rec.longitude}], 15);
-                                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 18 }).addTo(map);
-                                        L.circle([${rec.latitude}, ${rec.longitude}], { color: '${rec.withinGeofence ? "#06b6d4" : "#f87171"}', fillColor: '${rec.withinGeofence ? "#06b6d4" : "#f87171"}', fillOpacity: 0.15, radius: 100 }).addTo(map);
-                                        L.marker([${rec.latitude}, ${rec.longitude}]).addTo(map);
-                                      </script>
-                                    </body>
-                                    </html>
-                                  `}
-                                />
-                              </div>
-                            </div>
-                          );
-                        })}
+                  return Object.values(dailyMap).reverse();
+                };
+
+                const processedLogs = getProcessedDailyLogs();
+                const totalDays = processedLogs.length;
+                const onSiteDays = processedLogs.filter(d => d.withinGeofence).length;
+                const onSiteRate = totalDays > 0 ? Math.round((onSiteDays / totalDays) * 100) : 100;
+                
+                return (
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                      <div>
+                        <h3 style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", margin: 0 }}>{selectedAttendanceWorker.full_name}</h3>
+                        <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0" }}>Monthly Duty summary (100% Real Database logs)</p>
                       </div>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 6, padding: "3px 8px" }}>
+                        {attendanceRecords.length} Raw Logs
+                      </span>
                     </div>
-                  )}
-                </div>
-              ) : (
+
+                    {loadingAttendance ? (
+                      <div style={{ textAlign: "center", padding: "40px 0", color: "#64748b" }}>
+                        <div className="spinner" style={{ margin: "0 auto 12px", borderColor: "#a78bfa", borderTopColor: "transparent" }} />
+                        Retrieving Database Ledger...
+                      </div>
+                    ) : processedLogs.length === 0 ? (
+                      <div style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: "32px 20px", textAlign: "center" }}>
+                        <span style={{ fontSize: 24, display: "block", marginBottom: 8 }}>📅</span>
+                        <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>No active check-in history found in the database for this user in the current month.</p>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                        {/* Premium Stats Grid */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                          <div className="glass" style={{ padding: "12px 14px", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 12, background: "rgba(255,255,255,0.01)" }}>
+                            <span style={{ fontSize: 8, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Days Present</span>
+                            <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#cbd5e1" }}>{totalDays} <span style={{ fontSize: 10, fontWeight: 650, color: "#64748b" }}>Days</span></p>
+                          </div>
+                          <div className="glass" style={{ padding: "12px 14px", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 12, background: "rgba(255,255,255,0.01)" }}>
+                            <span style={{ fontSize: 8, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>On-Site Rating</span>
+                            <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: onSiteRate >= 80 ? "#4ade80" : "#fbbf24" }}>{onSiteRate}%</p>
+                          </div>
+                          <div className="glass" style={{ padding: "12px 14px", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 12, background: "rgba(255,255,255,0.01)" }}>
+                            <span style={{ fontSize: 8, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Total Shifts</span>
+                            <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#a78bfa" }}>
+                              {attendanceRecords.filter(r => r.status !== "checked_out").length} <span style={{ fontSize: 10, fontWeight: 650, color: "#64748b" }}>Runs</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Highly Organized Table Layout */}
+                        <div style={{ overflowX: "auto" }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 12 }}>
+                            <thead>
+                              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", color: "#64748b", textTransform: "uppercase", fontSize: 10, fontWeight: 800 }}>
+                                <th style={{ padding: "10px 8px" }}>Date</th>
+                                <th style={{ padding: "10px 8px" }}>Sign In</th>
+                                <th style={{ padding: "10px 8px" }}>Sign Out</th>
+                                <th style={{ padding: "10px 8px" }}>Geofence</th>
+                                <th style={{ padding: "10px 8px" }}>Drift</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {processedLogs.map((log, index) => (
+                                <tr key={index} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", color: "#cbd5e1" }}>
+                                  <td style={{ padding: "12px 8px", fontWeight: 700 }}>{log.dateStr}</td>
+                                  <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#4ade80" }}>{log.signInTime}</td>
+                                  <td style={{ padding: "12px 8px", fontFamily: "monospace", color: log.signOutTime !== "--" ? "#f87171" : "#64748b" }}>{log.signOutTime}</td>
+                                  <td style={{ padding: "12px 8px" }}>
+                                    <span style={{
+                                      fontSize: 9,
+                                      fontWeight: 800,
+                                      background: log.withinGeofence ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
+                                      color: log.withinGeofence ? "#4ade80" : "#f87171",
+                                      border: `1px solid ${log.withinGeofence ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)"}`,
+                                      padding: "2px 6px",
+                                      borderRadius: 4,
+                                      textTransform: "uppercase"
+                                    }}>
+                                      {log.withinGeofence ? "On-Site" : "Off-Site"}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#a78bfa" }}>
+                                    {log.distanceFromSiteM}m
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })() : (
                 <div style={{ textAlign: "center", color: "#64748b", padding: "20px 0" }}>
                   <p style={{ fontSize: 13, margin: 0 }}>Select a crew member from the directory above to display their monthly database check-in history records.</p>
                 </div>
