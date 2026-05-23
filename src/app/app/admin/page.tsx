@@ -644,6 +644,288 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* VIEW 3: LIVE TELEMETRY RADAR MAP */}
+      {activeView === "map" && (
+        <div className="fade-in" style={{ paddingBottom: 60 }}>
+          {/* Header */}
+          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(6,9,18,0.6)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <button 
+                onClick={() => { setActiveView("hub"); setRadarSelectedWorker(null); }}
+                className="back-btn"
+                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f1f5f9", cursor: "pointer" }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              </button>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Operations tactical map</p>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Field Crew Radar</h1>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ padding: "16px", display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
+            {/* Split Grid for Large Screens, Stacked on Mobile */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              
+              {/* Roster Section */}
+              <div className="glass" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                  <h2 style={{ fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8", margin: 0 }}>Operational Crew Roster</h2>
+                  <span style={{ fontSize: 11, color: "#64748b", fontWeight: 650 }}>Polling: 5s</span>
+                </div>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {radarWorkers.map(w => {
+                    const isSelected = radarSelectedWorker?.userId === w.userId;
+                    const isActive = w.status === "active";
+                    
+                    return (
+                      <div 
+                        key={w.userId}
+                        onClick={() => setRadarSelectedWorker(w)}
+                        style={{
+                          padding: "12px 14px",
+                          borderRadius: 14,
+                          background: isSelected ? "rgba(6, 182, 212, 0.08)" : "rgba(255,255,255,0.01)",
+                          border: isSelected ? "1px solid rgba(6, 182, 212, 0.3)" : "1px solid rgba(255,255,255,0.04)",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                          <div style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: "50%",
+                            background: "linear-gradient(135deg, #1e293b, #0f172a)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 12,
+                            fontWeight: 800,
+                            color: roleColor(w.role),
+                            border: `1.5px solid ${roleColor(w.role)}30`,
+                            textTransform: "uppercase"
+                          }}>
+                            {w.fullName.charAt(0)}
+                          </div>
+                          
+                          <div style={{ minWidth: 0 }}>
+                            <p style={{ fontSize: 13, fontWeight: 750, color: isSelected ? "#06b6d4" : "#f1f5f9", margin: 0 }}>{w.fullName}</p>
+                            <span style={{ fontSize: 10, color: roleColor(w.role), fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em" }}>{w.role}</span>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          {isActive ? (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(34,197,94,0.15)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 6, padding: "2px 6px", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>
+                              <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} /> Active
+                            </span>
+                          ) : (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.02)", color: "#64748b", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 6, padding: "2px 6px", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>
+                              Offline
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Map Tactical Module */}
+              <div className="glass glow-cyan" style={{ padding: 0, border: "1px solid rgba(6,182,212,0.15)", borderRadius: 24, overflow: "hidden", background: "#080b13" }}>
+                
+                {/* Visual SVG Map Container */}
+                <div style={{ position: "relative", height: 280, width: "100%", background: "radial-gradient(circle at center, #0e1220 0%, #060912 100%)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                  
+                  {/* Grid Lines Overlay */}
+                  <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.015) 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
+                  
+                  {radarSelectedWorker ? (
+                    <div style={{ width: "100%", height: "100%", position: "relative" }}>
+                      
+                      {/* Active Live Radar Circular Sweep */}
+                      {radarSelectedWorker.status === "active" && (
+                        <div style={{
+                          position: "absolute",
+                          left: animCoords.x - 50,
+                          top: animCoords.y - 50,
+                          width: 100,
+                          height: 100,
+                          borderRadius: "50%",
+                          border: "1px dashed rgba(6, 182, 212, 0.2)",
+                          background: "radial-gradient(circle, rgba(6, 182, 212, 0.04) 0%, transparent 70%)",
+                          pointerEvents: "none",
+                        }} />
+                      )}
+
+                      {/* SVG Canvas */}
+                      <svg width="100%" height="100%" style={{ position: "absolute", inset: 0 }}>
+                        <defs>
+                          <linearGradient id="pathGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.4" />
+                            <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.8" />
+                          </linearGradient>
+                          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="3" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                          </filter>
+                        </defs>
+
+                        {/* Pipeline Path corridor */}
+                        <path 
+                          d="M 60 220 L 130 170 L 190 190 L 260 110" 
+                          fill="none" 
+                          stroke="url(#pathGradient)" 
+                          strokeWidth="3.5" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                          strokeDasharray="4 3"
+                        />
+
+                        {/* Geofence target boundaries */}
+                        <circle cx="260" cy="110" r="32" fill="rgba(6, 182, 212, 0.03)" stroke="rgba(6, 182, 212, 0.2)" strokeWidth="1" strokeDasharray="3 3" />
+                        <circle cx="130" cy="170" r="28" fill="rgba(124, 58, 237, 0.03)" stroke="rgba(124, 58, 237, 0.15)" strokeWidth="1" />
+
+                        {/* Project marker hubs */}
+                        <circle cx="60" cy="220" r="5" fill="#7c3aed" filter="url(#glow)" />
+                        <circle cx="260" cy="110" r="5" fill="#06b6d4" filter="url(#glow)" />
+
+                        {/* Animated pulsing marker */}
+                        {radarSelectedWorker.status === "active" ? (
+                          <>
+                            {/* Outer pulsing ripple */}
+                            <circle 
+                              cx={animCoords.x} 
+                              cy={animCoords.y} 
+                              r={8 + Math.sin(mapAnimateProgress * Math.PI * 4) * 6} 
+                              fill="none" 
+                              stroke={roleColor(radarSelectedWorker.role)} 
+                              strokeWidth="1.5" 
+                              strokeOpacity={0.6 - (Math.sin(mapAnimateProgress * Math.PI * 4) * 0.4)}
+                            />
+                            {/* Inner dot */}
+                            <circle 
+                              cx={animCoords.x} 
+                              cy={animCoords.y} 
+                              r="6" 
+                              fill={roleColor(radarSelectedWorker.role)} 
+                              filter="url(#glow)"
+                            />
+                          </>
+                        ) : (
+                          /* Standby static marker */
+                          <circle cx="130" cy="170" r="6" fill="#64748b" />
+                        )}
+                      </svg>
+
+                      {/* Map Hub Info Tag Overlay */}
+                      <div style={{ position: "absolute", top: 12, left: 12, padding: "6px 12px", background: "rgba(6,9,18,0.75)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                        <span className="dot-pulse" style={{ background: radarSelectedWorker.status === "active" ? "#06b6d4" : "#64748b" }} />
+                        <span style={{ fontSize: 10, fontWeight: 700, fontFamily: "monospace", color: "#94a3b8" }}>
+                          {radarSelectedWorker.status === "active" ? "RADAR LIVE: SCANNING" : "OFFLINE: HISTORICAL"}
+                        </span>
+                      </div>
+
+                      {/* Map Coordinate telemetry readouts Overlay */}
+                      <div style={{ position: "absolute", bottom: 12, right: 12, padding: "6px 10px", background: "rgba(6,9,18,0.75)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, textAlign: "right" }}>
+                        <p style={{ fontSize: 9, fontFamily: "monospace", color: "#64748b", margin: 0 }}>COORDINATES</p>
+                        <p style={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, color: "#cbd5e1", margin: 0 }}>
+                          {radarSelectedWorker.status === "active" 
+                            ? `${radarSelectedWorker.latitude.toFixed(5)}° N, ${radarSelectedWorker.longitude.toFixed(5)}° E`
+                            : "Standby Link"
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Circular Radar Sweep Placeholder */
+                    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, boxSizing: "border-box" }}>
+                      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(6, 182, 212, 0.05)", border: "1.5px dashed rgba(6, 182, 212, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16.2 7.8-2.9 2.9-2.9-2.9"/></svg>
+                      </div>
+                      <h4 style={{ fontSize: 13, fontWeight: 800, color: "#cbd5e1", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Operational Radar Standby</h4>
+                      <p style={{ fontSize: 11, color: "#64748b", margin: 0, textAlign: "center", maxWidth: 280, lineHeight: 1.4 }}>Select an active worker from the roster above to trace real-time tactical operations telemetry.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* HUD Telemetry Panel */}
+                <div style={{ padding: 20 }}>
+                  {radarSelectedWorker ? (
+                    <div>
+                      {/* Worker & Status Row */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                        <div>
+                          <h3 style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", margin: 0 }}>{radarSelectedWorker.fullName}</h3>
+                          <p style={{ fontSize: 11, color: roleColor(radarSelectedWorker.role), fontWeight: 700, margin: "2px 0 0", textTransform: "uppercase" }}>{radarSelectedWorker.role}</p>
+                        </div>
+                        {radarSelectedWorker.status === "active" ? (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(34,197,94,0.12)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, padding: "4px 10px", fontSize: 11, fontWeight: 800, textTransform: "uppercase" }}>
+                            🟢 Connected
+                          </span>
+                        ) : (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.03)", color: "#64748b", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "4px 10px", fontSize: 11, fontWeight: 800, textTransform: "uppercase" }}>
+                            Offline
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Monospace telemetry data block */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: 14 }}>
+                        <div>
+                          <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Associated Project</span>
+                          <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 750, color: "#e2e8f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{radarSelectedWorker.projectName}</p>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Geofence Check</span>
+                          <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 800, color: radarSelectedWorker.withinGeofence ? "#4ade80" : "#fbbf24" }}>
+                            {radarSelectedWorker.withinGeofence ? "WITHIN RANGE" : "OUTSIDE RANGE"}
+                          </p>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Duty Status</span>
+                          <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 750, color: radarSelectedWorker.status === "active" ? "#06b6d4" : "#94a3b8" }}>
+                            {radarSelectedWorker.status === "active" ? "ACTIVE / WATCH" : "STANDBY"}
+                          </p>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Drift telemetry</span>
+                          <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 700, fontFamily: "monospace", color: "#a78bfa" }}>
+                            {radarSelectedWorker.status === "active" ? `${radarSelectedWorker.distanceFromSiteM} meters` : "0.00m"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Zomato-style active tracking trace banner */}
+                      {radarSelectedWorker.status === "active" && (
+                        <div style={{ marginTop: 14, background: "rgba(6,182,212,0.04)", border: "1px solid rgba(6,182,212,0.12)", borderRadius: 12, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10 }}>
+                          <div className="dot-pulse" style={{ background: "#06b6d4", flexShrink: 0 }} />
+                          <span style={{ fontSize: 11, color: "#06b6d4", fontWeight: 700, lineHeight: 1.4 }}>
+                            Trace active. Pulsing dot is moving smoothly along the sn-cable pipeline project site path in Kottayam.
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: "center", color: "#475569", fontSize: 12, padding: "10px 0" }}>
+                      No active telemetry feed.
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Credentials Modal */}
       {approvedCreds && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(6,9,18,0.85)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1000, animation: "fadeIn 0.2s ease" }}>
