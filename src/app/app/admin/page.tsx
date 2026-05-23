@@ -657,17 +657,12 @@ export default function AdminDashboard() {
             </p>
             
             <div style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: 18, marginBottom: 24, textAlign: "left", display: "flex", flexDirection: "column", gap: 12 }}>
-              <div>
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" }}>Login Email</span>
-                <p style={{ fontSize: 14, fontFamily: "monospace", color: "#e2e8f0", margin: "2px 0 0" }}>{approvedCreds.email}</p>
-              </div>
-              <div style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" }}>Login ID</span>
-                  <p style={{ fontSize: 15, fontFamily: "monospace", fontWeight: 700, color: "#06b6d4", margin: "2px 0 0" }}>{approvedCreds.loginId}</p>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" }}>Login Email</span>
+                  <p style={{ fontSize: 14, fontFamily: "monospace", color: "#e2e8f0", margin: "2px 0 0" }}>{approvedCreds.email}</p>
                 </div>
-                <button onClick={() => { navigator.clipboard.writeText(approvedCreds.loginId); showToast("📋 Login ID copied!"); }} style={{ background: "rgba(6,182,212,0.1)", border: "1px solid rgba(6,182,212,0.2)", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 600, color: "#06b6d4", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}>Copy</button>
+                <button onClick={() => { navigator.clipboard.writeText(approvedCreds.email); showToast("📋 Email copied!"); }} style={{ background: "rgba(6,182,212,0.1)", border: "1px solid rgba(6,182,212,0.2)", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 600, color: "#06b6d4", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}>Copy</button>
               </div>
               <div style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

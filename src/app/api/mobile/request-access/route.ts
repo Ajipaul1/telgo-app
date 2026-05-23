@@ -51,52 +51,36 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let targetEmail = email;
+  const targetEmail = email;
   let existingUser = null;
-  const [base, domain] = email.split("@");
-  const cleanBase = base.split("+")[0];
 
-  // Scan through candidate email aliases to find the first available one
-  for (let i = 0; i < 20; i++) {
-    const candidate = i === 0 
-      ? `${cleanBase}@${domain}` 
-      : (i === 1 ? `${cleanBase}+${role}@${domain}` : `${cleanBase}+${role}${i}@${domain}`);
+  const { data: foundUser, error: checkError } = await supabase
+    .from("mobile_app_users")
+    .select("id,email,full_name,role,login_id,user_folder_path,created_at,auth_user_id,pin_set_at,access_status,blocked_at")
+    .eq("email", targetEmail)
+    .maybeSingle();
 
-    const { data, error } = await supabase
-      .from("mobile_app_users")
-      .select("id,email,full_name,role,login_id,user_folder_path,created_at,auth_user_id,pin_set_at,access_status,blocked_at")
-      .eq("email", candidate)
-      .maybeSingle();
-
-    if (error) {
-      return NextResponse.json(
-        { ok: false, message: `Access lookup failed: ${error.message}` },
-        { status: 500 }
-      );
-    }
-
-    if (!data) {
-      // Free email alias candidate found, we will create a new account!
-      targetEmail = candidate;
-      existingUser = null;
-      break;
-    }
-
-    // We can re-use/overwrite this candidate if it matches the role and is not active/blocked
-    if (data.role === role && data.access_status !== "active" && data.access_status !== "blocked") {
-      targetEmail = candidate;
-      existingUser = data;
-      break;
-    }
-
-    // Otherwise, this candidate is taken. Keep looping!
+  if (checkError) {
+    return NextResponse.json(
+      { ok: false, message: `Access lookup failed: ${checkError.message}` },
+      { status: 500 }
+    );
   }
 
-  if (existingUser?.blocked_at || existingUser?.access_status === "blocked") {
-    return NextResponse.json(
-      { ok: false, message: "This account is blocked. Contact Telgo operations." },
-      { status: 403 }
-    );
+  if (foundUser) {
+    if (foundUser.blocked_at || foundUser.access_status === "blocked") {
+      return NextResponse.json(
+        { ok: false, message: "This account is blocked. Contact Telgo operations." },
+        { status: 403 }
+      );
+    }
+    if (foundUser.access_status === "active") {
+      return NextResponse.json(
+        { ok: false, message: "An active account already exists with this email address. Please log in directly." },
+        { status: 400 }
+      );
+    }
+    existingUser = foundUser;
   }
 
   const loginId = existingUser?.login_id ? String(existingUser.login_id) : makeTelgoId();
@@ -199,29 +183,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  if (!existingUser?.auth_user_id) {
-    const { error: authUserError } = await supabase.auth.admin.createUser({
-      email: targetEmail,
-      email_confirm: true,
-      user_metadata: {
-        full_name: fullName,
-        role,
-        login_id: savedLoginId,
-        mobile_access_id: savedUser.id
-      }
-    });
 
-    if (
-      authUserError &&
-      !/already registered|already exists|duplicate/i.test(authUserError.message)
-    ) {
-      console.error("Supabase Auth user provisioning failed", {
-        email: targetEmail,
-        loginId: savedLoginId,
-        message: authUserError.message
-      });
-    }
-  }
 
   return NextResponse.json({
     ok: true,

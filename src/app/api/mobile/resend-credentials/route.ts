@@ -168,35 +168,13 @@ export async function POST(request: NextRequest) {
                   </td>
                 </tr>
 
-                <!-- Row 5: Unique Login ID Label -->
-                <tr>
-                  <td style="padding: 14px 20px 4px 20px; font-family: sans-serif; font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
-                    Unique Login ID
-                  </td>
-                </tr>
-                <!-- Row 6: Unique Login ID Value -->
-                <tr>
-                  <td style="padding: 0 20px 14px 20px; font-family: monospace; font-size: 15px; font-weight: 700; color: #38bdf8;">
-                    ${user.login_id}
-                  </td>
-                </tr>
-
-                <!-- Divider -->
-                <tr>
-                  <td style="padding: 0 20px;">
-                    <table border="0" cellspacing="0" cellpadding="0" style="width: 100%;">
-                      <tr><td style="height: 1px; background-color: #1e293b; font-size: 0; line-height: 0;"></td></tr>
-                    </table>
-                  </td>
-                </tr>
-
-                <!-- Row 7: Temporary Password Label -->
+                <!-- Row 5: Temporary Password Label -->
                 <tr>
                   <td style="padding: 14px 20px 6px 20px; font-family: sans-serif; font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
                     New Password
                   </td>
                 </tr>
-                <!-- Row 8: Temporary Password Value Box -->
+                <!-- Row 6: Temporary Password Value Box -->
                 <tr>
                   <td style="padding: 0 20px 20px 20px;">
                     <table border="0" cellspacing="0" cellpadding="0" style="width: 100%;">
@@ -215,7 +193,7 @@ export async function POST(request: NextRequest) {
                 <tr>
                   <td style="padding: 12px 16px; text-align: left;">
                     <p style="margin: 0; font-size: 12px; color: #fbbf24; line-height: 1.5; font-family: sans-serif;">
-                      ⚠️ <strong>Security Notice:</strong> Keep this password confidential. You can log in using either your Email address or your Unique Login ID.
+                      ⚠️ <strong>Security Notice:</strong> Keep this password confidential. You can log in using your Email address as your username.
                     </p>
                   </td>
                 </tr>
