@@ -128,18 +128,85 @@ export default function FinanceDashboard() {
     );
   }
 
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   return (
-    <div style={{ minHeight:"100dvh", background:"#060912", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px" }}>
-      <div className="glass fade-in" style={{ width:"100%", maxWidth:420, padding:"36px 28px", textAlign:"center" }}>
-        <div style={{ width:64, height:64, borderRadius:"50%", background:"linear-gradient(135deg,#ca8a04,#facc15)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    <div style={{ minHeight: "100dvh", background: "#060912", display: "flex", flexDirection: "column", color: "#f1f5f9", fontFamily: "Outfit, sans-serif" }}>
+      {/* Immersive Header with Circular Avatar Profile Pic */}
+      <ProfileHeaderWidget 
+        user={user} 
+        onOpenSettings={() => setIsSettingsOpen(true)} 
+        dashboardTitle="Finance Control" 
+      />
+
+      <main style={{ flex: 1, padding: "24px 20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        <div className="glass fade-in" style={{ width: "100%", maxWidth: 420, padding: "40px 28px", textAlign: "center", borderRadius: 20, border: "1px solid rgba(255, 255, 255, 0.05)", background: "rgba(255, 255, 255, 0.01)" }}>
+          <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg,#ca8a04,#facc15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", boxShadow: "0 8px 24px rgba(250, 204, 21, 0.25)" }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: "#f1f5f9", marginBottom: 6 }}>Welcome, {user?.fullName}!</h2>
+          <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>{user?.email}</p>
+          
+          <span style={{ display: "inline-block", background: "rgba(250,204,21,0.15)", color: "#fcd34d", border: "1px solid rgba(250,204,21,0.25)", borderRadius: 8, padding: "4px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", marginBottom: 28 }}>
+            Finance
+          </span>
+          
+          <p style={{ fontSize: 14, color: "#94a3b8", lineHeight: 1.6, marginBottom: 32 }}>
+            Your operations dashboard is currently active. Financial metrics, expense claims, and reporting utilities are loading.
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <button 
+              onClick={() => setIsSettingsOpen(true)}
+              style={{
+                width: "100%",
+                minHeight: 46,
+                background: "linear-gradient(135deg, #facc15 0%, #7c3aed 100%)",
+                border: "none",
+                borderRadius: 12,
+                color: "black",
+                fontSize: 14,
+                fontWeight: 750,
+                cursor: "pointer",
+                fontFamily: "Outfit, sans-serif",
+                boxShadow: "0 4px 15px rgba(250, 204, 21, 0.2)"
+              }}
+            >
+              ⚙️ Manage Profile Settings
+            </button>
+
+            <button 
+              onClick={async () => { 
+                await fetch("/api/mobile/sign-out", { method: "POST" }); 
+                window.location.href = "/login"; 
+              }} 
+              style={{ 
+                width: "100%", 
+                minHeight: 44, 
+                background: "transparent", 
+                border: "1px solid rgba(239,68,68,0.2)", 
+                borderRadius: 12, 
+                color: "#f87171", 
+                fontSize: 14, 
+                fontWeight: 600, 
+                cursor: "pointer", 
+                fontFamily: "Outfit,sans-serif" 
+              }}
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
-        <h2 style={{ fontSize:22, fontWeight:800, color:"#f1f5f9", marginBottom:8 }}>Welcome, {user?.fullName ?? "Finance"}!</h2>
-        <p style={{ fontSize:13, color:"#64748b", marginBottom:6 }}>{user?.email}</p>
-        <span style={{ display:"inline-block", background:"rgba(250,204,21,0.15)", color:"#fcd34d", border:"1px solid rgba(250,204,21,0.25)", borderRadius:8, padding:"4px 14px", fontSize:12, fontWeight:700, textTransform:"uppercase", marginBottom:28 }}>Finance</span>
-        <p style={{ fontSize:14, color:"#475569", marginBottom:32 }}>The financial reporting and approvals module is under construction.</p>
-        <button onClick={async()=>{ await fetch("/api/mobile/sign-out",{method:"POST"}); window.location.href="/login"; }} style={{ width:"100%", minHeight:44, background:"transparent", border:"1px solid rgba(239,68,68,0.2)", borderRadius:12, color:"#f87171", fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"Outfit,sans-serif" }}>Sign Out</button>
-      </div>
+      </main>
+
+      {/* Account Settings Editor Modal */}
+      <ProfileModal 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+        user={user} 
+        onUpdate={(updated) => setUser(updated)} 
+      />
     </div>
   );
 }

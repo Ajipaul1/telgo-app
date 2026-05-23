@@ -79,13 +79,13 @@ export async function POST(request: NextRequest) {
   }
 
   if (user.email) {
-    // Determine a professional theme color for the user's role
-    let roleColor = "#06b6d4"; // default teal
+    // Determine a professional formal theme color for the user's role
+    let roleColor = "#0284c7"; // default blue
     const roleUpper = String(user.role).toUpperCase();
-    if (roleUpper === "ADMIN") roleColor = "#c084fc"; // light purple
-    else if (roleUpper === "SUPERVISOR") roleColor = "#38bdf8"; // sky blue
-    else if (roleUpper === "FINANCE") roleColor = "#fb7185"; // rose pink
-    else if (roleUpper === "CLIENT") roleColor = "#34d399"; // emerald green
+    if (roleUpper === "ADMIN") roleColor = "#7c3aed"; // violet
+    else if (roleUpper === "SUPERVISOR") roleColor = "#0284c7"; // sky blue
+    else if (roleUpper === "FINANCE") roleColor = "#db2777"; // rose pink
+    else if (roleUpper === "CLIENT") roleColor = "#059669"; // emerald green
 
     const emailHtml = `<!DOCTYPE html>
 <html>
@@ -94,40 +94,48 @@ export async function POST(request: NextRequest) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Access Approved - Telgo Hub</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #060912; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #060912; margin: 0; padding: 24px 12px; width: 100% !important;">
+<body style="margin: 0; padding: 0; background-color: #f4f6f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f6f9; margin: 0; padding: 36px 12px; width: 100% !important;">
     <tr>
       <td align="center" valign="top">
         <!-- Main Card Wrapper -->
-        <table border="0" cellspacing="0" cellpadding="0" style="max-width: 460px; width: 100%; background-color: #0b0f19; border: 1px solid #1e293b; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); box-sizing: border-box; overflow: hidden;">
+        <table border="0" cellspacing="0" cellpadding="0" style="max-width: 480px; width: 100%; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); box-sizing: border-box; overflow: hidden;">
           <tr>
-            <td style="padding: 32px 24px;">
+            <td style="padding: 40px 32px;">
               
-              <!-- Header Section -->
-              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; text-align: center; margin-bottom: 28px;">
+              <!-- Header Brand Logo Badge -->
+              <table border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto 16px auto; background-color: #0f172a; border-radius: 8px;">
                 <tr>
-                  <td align="center">
-                    <h1 style="margin: 0; font-size: 26px; font-weight: 800; color: #06b6d4; letter-spacing: 3px; font-family: sans-serif; text-transform: uppercase;">TELGO HUB</h1>
-                    <p style="margin: 6px 0 0; color: #64748b; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;">Enterprise Operations Platform</p>
+                  <td style="padding: 10px 20px; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 20px; font-weight: 900; color: #ffffff; letter-spacing: 2px; text-align: center; text-transform: uppercase;">
+                    TELGO HUB
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Header Subtext -->
+              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; text-align: center; margin-bottom: 32px;">
+                <tr>
+                  <td>
+                    <p style="margin: 0; color: #64748b; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; font-family: sans-serif;">Enterprise Operations Platform</p>
                   </td>
                 </tr>
               </table>
 
               <!-- Body Message -->
-              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; text-align: left; margin-bottom: 24px;">
+              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; text-align: left; margin-bottom: 28px;">
                 <tr>
-                  <td>
-                    <p style="font-size: 16px; font-weight: 600; color: #cbd5e1; line-height: 1.5; margin: 0 0 12px; font-family: sans-serif;">Hello <strong style="color: #ffffff;">${user.full_name}</strong>,</p>
-                    <p style="font-size: 14px; color: #94a3b8; line-height: 1.6; margin: 0; font-family: sans-serif;">Your access request to the <strong style="color: #cbd5e1;">Telgo Hub</strong> operations dashboard has been <strong style="color: #34d399;">approved</strong>. Use the secure credentials below to access your account.</p>
+                  <td style="font-family: sans-serif;">
+                    <p style="font-size: 16px; font-weight: bold; color: #0f172a; line-height: 1.5; margin: 0 0 12px;">Hello ${user.full_name},</p>
+                    <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0;">Your access to the <strong style="color: #0f172a;">Telgo Hub</strong> operations console has been successfully <strong style="color: #059669;">approved</strong>. Below are your official credential details for logging in.</p>
                   </td>
                 </tr>
               </table>
 
-              <!-- Credentials Card (Bulletproof Vertical Stacked Table) -->
-              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color: #0f172a; border: 1px solid #1e293b; border-radius: 12px; margin-bottom: 24px;">
+              <!-- Credentials Card (Professional Vertical Rows) -->
+              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 28px;">
                 <!-- Row 1: Access Level Label -->
                 <tr>
-                  <td style="padding: 16px 20px 4px 20px; font-family: sans-serif; font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
+                  <td style="padding: 18px 20px 4px 20px; font-family: sans-serif; font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
                     Access Level
                   </td>
                 </tr>
@@ -142,7 +150,7 @@ export async function POST(request: NextRequest) {
                 <tr>
                   <td style="padding: 0 20px;">
                     <table border="0" cellspacing="0" cellpadding="0" style="width: 100%;">
-                      <tr><td style="height: 1px; background-color: #1e293b; font-size: 0; line-height: 0;"></td></tr>
+                      <tr><td style="height: 1px; background-color: #e2e8f0; font-size: 0; line-height: 0;"></td></tr>
                     </table>
                   </td>
                 </tr>
@@ -155,7 +163,7 @@ export async function POST(request: NextRequest) {
                 </tr>
                 <!-- Row 4: Login Email Value -->
                 <tr>
-                  <td style="padding: 0 20px 14px 20px; font-family: monospace; font-size: 14px; font-weight: 600; color: #f1f5f9; word-break: break-all;">
+                  <td style="padding: 0 20px 14px 20px; font-family: monospace; font-size: 14px; font-weight: 600; color: #0f172a; word-break: break-all;">
                     ${user.email}
                   </td>
                 </tr>
@@ -164,7 +172,7 @@ export async function POST(request: NextRequest) {
                 <tr>
                   <td style="padding: 0 20px;">
                     <table border="0" cellspacing="0" cellpadding="0" style="width: 100%;">
-                      <tr><td style="height: 1px; background-color: #1e293b; font-size: 0; line-height: 0;"></td></tr>
+                      <tr><td style="height: 1px; background-color: #e2e8f0; font-size: 0; line-height: 0;"></td></tr>
                     </table>
                   </td>
                 </tr>
@@ -177,7 +185,7 @@ export async function POST(request: NextRequest) {
                 </tr>
                 <!-- Row 6: Unique Login ID Value -->
                 <tr>
-                  <td style="padding: 0 20px 14px 20px; font-family: monospace; font-size: 15px; font-weight: 700; color: #38bdf8;">
+                  <td style="padding: 0 20px 14px 20px; font-family: monospace; font-size: 15px; font-weight: bold; color: #0284c7;">
                     ${user.login_id}
                   </td>
                 </tr>
@@ -186,7 +194,7 @@ export async function POST(request: NextRequest) {
                 <tr>
                   <td style="padding: 0 20px;">
                     <table border="0" cellspacing="0" cellpadding="0" style="width: 100%;">
-                      <tr><td style="height: 1px; background-color: #1e293b; font-size: 0; line-height: 0;"></td></tr>
+                      <tr><td style="height: 1px; background-color: #e2e8f0; font-size: 0; line-height: 0;"></td></tr>
                     </table>
                   </td>
                 </tr>
@@ -202,7 +210,7 @@ export async function POST(request: NextRequest) {
                   <td style="padding: 0 20px 20px 20px;">
                     <table border="0" cellspacing="0" cellpadding="0" style="width: 100%;">
                       <tr>
-                        <td style="padding: 12px 14px; background-color: #1e293b; border: 1px dashed #475569; border-radius: 8px; font-family: monospace; font-size: 20px; font-weight: bold; color: #c084fc; text-align: center; letter-spacing: 2px;">
+                        <td style="padding: 12px 14px; background-color: #f1f5f9; border: 1px dashed #cbd5e1; border-radius: 6px; font-family: monospace; font-size: 20px; font-weight: bold; color: #7c3aed; text-align: center; letter-spacing: 2px;">
                           ${plainPassword}
                         </td>
                       </tr>
@@ -212,10 +220,10 @@ export async function POST(request: NextRequest) {
               </table>
 
               <!-- Safety Warning Banner -->
-              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 10px; margin-bottom: 24px;">
+              <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; margin-bottom: 28px;">
                 <tr>
                   <td style="padding: 12px 16px; text-align: left;">
-                    <p style="margin: 0; font-size: 12px; color: #fbbf24; line-height: 1.5; font-family: sans-serif;">
+                    <p style="margin: 0; font-size: 12px; color: #b45309; line-height: 1.5; font-family: sans-serif;">
                       ⚠️ <strong>Security Notice:</strong> Keep this password confidential. You can log in using either your Email address or your Unique Login ID.
                     </p>
                   </td>
@@ -226,7 +234,7 @@ export async function POST(request: NextRequest) {
               <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; text-align: center;">
                 <tr>
                   <td align="center">
-                    <a href="https://telgo-app.vercel.app/login" style="display: inline-block; width: 85%; max-width: 280px; text-align: center; background-color: #06b6d4; color: #ffffff; text-decoration: none; padding: 14px 0; border-radius: 8px; font-weight: 700; font-size: 14px; font-family: sans-serif; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.25);">Open Telgo Hub →</a>
+                    <a href="https://telgo-app.vercel.app/login" style="display: inline-block; width: 100%; max-width: 280px; text-align: center; background-color: #0f172a; color: #ffffff; text-decoration: none; padding: 14px 0; border-radius: 8px; font-weight: 700; font-size: 14px; font-family: sans-serif; text-transform: uppercase; letter-spacing: 1px;">Open Telgo Hub</a>
                   </td>
                 </tr>
               </table>
