@@ -212,6 +212,24 @@ export default function AdminDashboard() {
     fetchUsers(); 
   }, [fetchUsers]);
 
+  // Poll database attendance records for the selected worker when in attendance view
+  useEffect(() => {
+    if (activeView !== "attendance" || !selectedAttendanceWorker) return;
+
+    const fetchRecords = async () => {
+      try {
+        const res = await fetch(`/api/mobile/attendance?userId=${selectedAttendanceWorker.id}`);
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          setAttendanceRecords(data.records ?? []);
+        }
+      } catch { /* ignore */ }
+    };
+
+    const interval = setInterval(fetchRecords, 5000);
+    return () => clearInterval(interval);
+  }, [activeView, selectedAttendanceWorker?.id]);
+
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(""), 3500);
@@ -1282,7 +1300,7 @@ export default function AdminDashboard() {
             <div className="glass" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
               {selectedAttendanceWorker ? (() => {
                 const getProcessedDailyLogs = () => {
-                  const dailyMap: Record<string, {
+                  const shifts: {
                     dateStr: string;
                     signInTime: string;
                     signOutTime: string;
@@ -1291,49 +1309,67 @@ export default function AdminDashboard() {
                     latitude: number;
                     longitude: number;
                     records: any[];
-                  }> = {};
+                  }[] = [];
 
-                  [...attendanceRecords].reverse().forEach((rec) => {
+                  // Sort raw records chronologically ascending to pair check-in/outs
+                  const sortedRecs = [...attendanceRecords].sort(
+                    (a, b) => new Date(a.checkInAt).getTime() - new Date(b.checkInAt).getTime()
+                  );
+
+                  let currentShift: any = null;
+
+                  sortedRecs.forEach((rec) => {
                     const dateObj = new Date(rec.checkInAt);
-                    const key = dateObj.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-                    const timeStr = dateObj.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+                    const dateLabel = dateObj.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+                    const timeLabel = dateObj.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 
-                    if (!dailyMap[key]) {
-                      dailyMap[key] = {
-                        dateStr: key,
-                        signInTime: rec.status !== "checked_out" ? timeStr : "--",
-                        signOutTime: rec.status === "checked_out" ? timeStr : "--",
+                    if (rec.status === "checked_out") {
+                      if (currentShift) {
+                        currentShift.signOutTime = timeLabel;
+                        currentShift.records.push(rec);
+                        shifts.push(currentShift);
+                        currentShift = null;
+                      } else {
+                        shifts.push({
+                          dateStr: dateLabel,
+                          signInTime: "--",
+                          signOutTime: timeLabel,
+                          withinGeofence: rec.withinGeofence,
+                          distanceFromSiteM: rec.distanceFromSiteM,
+                          latitude: rec.latitude,
+                          longitude: rec.longitude,
+                          records: [rec]
+                        });
+                      }
+                    } else {
+                      if (currentShift) {
+                        shifts.push(currentShift);
+                      }
+                      currentShift = {
+                        dateStr: dateLabel,
+                        signInTime: timeLabel,
+                        signOutTime: "--",
                         withinGeofence: rec.withinGeofence,
                         distanceFromSiteM: rec.distanceFromSiteM,
                         latitude: rec.latitude,
                         longitude: rec.longitude,
                         records: [rec]
                       };
-                    } else {
-                      dailyMap[key].records.push(rec);
-                      
-                      const checkins = dailyMap[key].records.filter(r => r.status !== "checked_out");
-                      if (checkins.length > 0) {
-                        const firstCheckin = new Date(checkins[0].checkInAt);
-                        dailyMap[key].signInTime = firstCheckin.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
-                        dailyMap[key].withinGeofence = checkins[0].withinGeofence;
-                        dailyMap[key].distanceFromSiteM = checkins[0].distanceFromSiteM;
-                      }
-                      
-                      const checkouts = dailyMap[key].records.filter(r => r.status === "checked_out");
-                      if (checkouts.length > 0) {
-                        const lastCheckout = new Date(checkouts[checkouts.length - 1].checkInAt);
-                        dailyMap[key].signOutTime = lastCheckout.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
-                      }
                     }
                   });
 
-                  return Object.values(dailyMap).reverse();
+                  if (currentShift) {
+                    shifts.push(currentShift);
+                  }
+
+                  // Sort shift runs newest first
+                  return shifts.reverse();
                 };
 
                 const processedLogs = getProcessedDailyLogs();
-                const totalDays = processedLogs.length;
-                const onSiteDays = processedLogs.filter(d => d.withinGeofence).length;
+                const uniqueDays = Array.from(new Set(processedLogs.map(l => l.dateStr)));
+                const totalDays = uniqueDays.length;
+                const onSiteDays = Array.from(new Set(processedLogs.filter(l => l.withinGeofence).map(l => l.dateStr))).length;
                 const onSiteRate = totalDays > 0 ? Math.round((onSiteDays / totalDays) * 100) : 100;
                 
                 return (

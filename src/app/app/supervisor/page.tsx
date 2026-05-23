@@ -186,7 +186,29 @@ export default function SupervisorDashboard() {
   }
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#060912", display: "flex", flexDirection: "column", color: "#f1f5f9", fontFamily: "Outfit, sans-serif" }}>
+    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", background: "#060912", color: "#e2e8f0" }}>
+      <style>{`
+        .menu-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+          margin-bottom: 24px;
+        }
+        @media (min-width: 480px) {
+          .menu-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+        .module-card {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
+        }
+        .module-card:hover {
+          transform: translateY(-4px) scale(1.02);
+          border-color: rgba(6, 182, 212, 0.3) !important;
+          background: rgba(255, 255, 255, 0.04) !important;
+        }
+      `}</style>
       {/* Immersive Header */}
       <ProfileHeaderWidget 
         user={user} 
@@ -223,30 +245,30 @@ export default function SupervisorDashboard() {
           </div>
 
           {/* GRID OF MODULES */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16, marginBottom: 28 }}>
+          <div className="menu-grid">
             
-            {/* ATTENDANCE SHIFT MODULE CARD */}
+            {/* MODULE 1: ATTENDANCE SHIFT (Interactive) */}
             <div 
               onClick={() => setIsAttendanceOpen(true)}
               style={{
-                background: "rgba(255,255,255,0.01)",
+                background: isShiftActive ? "rgba(167, 139, 250, 0.02)" : "rgba(255,255,255,0.01)",
                 border: isShiftActive ? "1px solid rgba(167, 139, 250, 0.25)" : "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 20,
-                padding: "24px 20px",
+                borderRadius: 18,
+                padding: "18px 14px",
                 cursor: "pointer",
-                textAlign: "left",
-                transition: "all 0.25s ease",
-                boxShadow: isShiftActive ? "0 10px 30px rgba(167, 139, 250, 0.05)" : "none",
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
-                gap: 16
+                textAlign: "center",
+                gap: 8,
+                boxShadow: isShiftActive ? "0 8px 24px rgba(167, 139, 250, 0.05)" : "none",
               }}
-              className="glass"
+              className="glass module-card"
             >
               <div style={{
-                width: 48,
-                height: 48,
-                borderRadius: 14,
+                width: 44,
+                height: 44,
+                borderRadius: 12,
                 background: isShiftActive ? "rgba(167, 139, 250, 0.12)" : "rgba(6, 182, 212, 0.08)",
                 border: isShiftActive ? "1px solid rgba(167, 139, 250, 0.3)" : "1px solid rgba(6, 182, 212, 0.2)",
                 display: "flex",
@@ -254,47 +276,40 @@ export default function SupervisorDashboard() {
                 justifyContent: "center",
                 flexShrink: 0
               }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={isShiftActive ? "#a78bfa" : "#06b6d4"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isShiftActive ? "#a78bfa" : "#06b6d4"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                   <circle cx="12" cy="10" r="3"/>
                 </svg>
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 800, margin: "0 0 3px", color: "#f1f5f9" }}>Duty Attendance</h3>
-                <p style={{ fontSize: 12, color: "#64748b", margin: 0, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
-                  {isShiftActive ? `Completed ✓ (${checkInTime})` : "Pending — click to sign in"}
-                </p>
-              </div>
-              <div style={{ flexShrink: 0 }}>
-                {isShiftActive ? (
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#a78bfa", background: "rgba(167,139,250,0.15)", borderRadius: 8, padding: "4px 8px" }}>ACTIVE</span>
-                ) : (
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#64748b", background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "4px 8px" }}>PENDING</span>
-                )}
+              <div>
+                <h4 style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", margin: "0 0 2px" }}>Attendance</h4>
+                <span style={{ fontSize: 9, color: isShiftActive ? "#a78bfa" : "#64748b", fontWeight: 700 }}>
+                  {isShiftActive ? `Active (${checkInTime})` : "Pending Sign In"}
+                </span>
               </div>
             </div>
 
-            {/* RE-REGISTER ATTENDANCE MODULE CARD */}
+            {/* MODULE 2: RE-REGISTER ATTENDANCE */}
             <div 
               onClick={handleReRegisterAttendance}
               style={{
                 background: "rgba(255,255,255,0.01)",
                 border: "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 20,
-                padding: "24px 20px",
+                borderRadius: 18,
+                padding: "18px 14px",
                 cursor: checkingIn ? "not-allowed" : "pointer",
-                textAlign: "left",
-                transition: "all 0.25s ease",
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
-                gap: 16
+                textAlign: "center",
+                gap: 8,
               }}
-              className="glass"
+              className="glass module-card"
             >
               <div style={{
-                width: 48,
-                height: 48,
-                borderRadius: 14,
+                width: 44,
+                height: 44,
+                borderRadius: 12,
                 background: "rgba(167, 139, 250, 0.08)",
                 border: "1px solid rgba(167, 139, 250, 0.2)",
                 display: "flex",
@@ -302,43 +317,41 @@ export default function SupervisorDashboard() {
                 justifyContent: "center",
                 flexShrink: 0
               }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-                </svg>
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 800, margin: "0 0 3px", color: "#f1f5f9" }}>Re-Register Attendance</h3>
-                <p style={{ fontSize: 12, color: "#64748b", margin: 0, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
-                  {checkingIn ? "Registering updated coordinates..." : "Update GPS & log shift reattendance"}
-                </p>
-              </div>
-              <div style={{ flexShrink: 0 }}>
                 {checkingIn ? (
-                  <div className="spinner" style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.1)", borderTop: "2px solid #a78bfa" }} />
+                  <div className="spinner" style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.1)", borderTop: "2px solid #a78bfa" }} />
                 ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                  </svg>
                 )}
+              </div>
+              <div>
+                <h4 style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", margin: "0 0 2px" }}>Re-Register</h4>
+                <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700 }}>
+                  {checkingIn ? "Updating GPS..." : "Refresh Location"}
+                </span>
               </div>
             </div>
 
-            {/* PROJECT ASSIGNMENT DETAILS CARD */}
+            {/* MODULE 3: PROJECT ASSIGNMENT DETAILS */}
             <div 
               style={{
                 background: "rgba(255,255,255,0.01)",
                 border: "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 20,
-                padding: "20px 20px",
-                textAlign: "left",
+                borderRadius: 18,
+                padding: "18px 14px",
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
-                gap: 16
+                textAlign: "center",
+                gap: 8,
               }}
               className="glass"
             >
               <div style={{
-                width: 48,
-                height: 48,
-                borderRadius: 14,
+                width: 44,
+                height: 44,
+                borderRadius: 12,
                 background: "rgba(6, 182, 212, 0.08)",
                 border: "1px solid rgba(6, 182, 212, 0.2)",
                 display: "flex",
@@ -346,13 +359,13 @@ export default function SupervisorDashboard() {
                 justifyContent: "center",
                 flexShrink: 0
               }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                 </svg>
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 800, margin: "0 0 3px", color: "#f1f5f9" }}>Assigned Corridor</h3>
-                <p style={{ fontSize: 12, color: "#94a3b8", margin: 0, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>Vadakkekotta Sn-Cable Corridor</p>
+              <div>
+                <h4 style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", margin: "0 0 2px" }}>Corridor</h4>
+                <span style={{ fontSize: 9, color: "#06b6d4", fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100, display: "block" }}>Vadakkekotta</span>
               </div>
             </div>
 
