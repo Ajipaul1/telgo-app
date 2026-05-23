@@ -112,21 +112,27 @@ export default function AdminDashboard() {
       const lat2 = parseFloat(eLat);
       const lng2 = parseFloat(eLng);
       if (!isNaN(lat1) && !isNaN(lng1) && !isNaN(lat2) && !isNaN(lng2)) {
-        // Asynchronously fetch driving distance along actual roads
-        fetch(`https://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=false`)
+        // Fetch driving distance AND coordinates snapped to actual roads
+        fetch(`https://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=full&geometries=geojson`)
           .then(r => r.json())
           .then(data => {
             if (data.code === "Ok" && data.routes && data.routes.length > 0) {
               const routeDistanceKm = data.routes[0].distance / 1000;
               setProjDistance(`${routeDistanceKm.toFixed(2)} km`);
+              
+              // Dynamically set utility path to follow the road network
+              const routeCoords = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
+              setUtilityPath(routeCoords);
             } else {
               const dist = calculateHaversineDistance(lat1, lng1, lat2, lng2);
               setProjDistance(`${dist.toFixed(2)} km`);
+              setUtilityPath([[lat1, lng1], [lat2, lng2]]);
             }
           })
           .catch(() => {
             const dist = calculateHaversineDistance(lat1, lng1, lat2, lng2);
             setProjDistance(`${dist.toFixed(2)} km`);
+            setUtilityPath([[lat1, lng1], [lat2, lng2]]);
           });
       } else {
         setProjDistance("0.00 km");
@@ -135,69 +141,58 @@ export default function AdminDashboard() {
   };
 
   const appendSnappedTrenchPoint = async (lat: number, lng: number) => {
-    setTrenchingLine(prev => {
-      if (prev.length === 0) {
-        return [[lat, lng] as [number, number]];
+    if (trenchingLine.length === 0) {
+      const next = [[lat, lng] as [number, number]];
+      setTrenchingLine(next);
+      updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
+      return;
+    }
+    
+    const lastPoint = trenchingLine[trenchingLine.length - 1];
+    try {
+      const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${lastPoint[1]},${lastPoint[0]};${lng},${lat}?overview=full&geometries=geojson`);
+      const data = await r.json();
+      if (data.code === "Ok" && data.routes && data.routes.length > 0) {
+        const routeCoords = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
+        const newSegment = routeCoords.slice(1);
+        const next = [...trenchingLine, ...newSegment];
+        setTrenchingLine(next);
+        updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
+        showToast("🛣️ Trench segment conformed perfectly along the road turns!");
+      } else {
+        const next = [...trenchingLine, [lat, lng] as [number, number]];
+        setTrenchingLine(next);
+        updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
       }
-      
-      const lastPoint = prev[prev.length - 1];
-      fetch(`https://router.project-osrm.org/route/v1/driving/${lastPoint[1]},${lastPoint[0]};${lng},${lat}?overview=full&geometries=geojson`)
-        .then(r => r.json())
-        .then(data => {
-          if (data.code === "Ok" && data.routes && data.routes.length > 0) {
-            const routeCoords = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
-            const newSegment = routeCoords.slice(1);
-            setTrenchingLine(old => {
-              const next = [...old, ...newSegment];
-              updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
-              return next;
-            });
-            showToast("🛣️ Trench segment conformed perfectly along the road turns!");
-          } else {
-            setTrenchingLine(old => {
-              const next = [...old, [lat, lng] as [number, number]];
-              updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
-              return next;
-            });
-          }
-        })
-        .catch(() => {
-          setTrenchingLine(old => {
-            const next = [...old, [lat, lng] as [number, number]];
-            updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
-            return next;
-          });
-        });
-        
-      return prev;
-    });
+    } catch {
+      const next = [...trenchingLine, [lat, lng] as [number, number]];
+      setTrenchingLine(next);
+      updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
+    }
   };
 
   const appendSnappedUtilityPoint = async (lat: number, lng: number) => {
-    setUtilityPath(prev => {
-      if (prev.length === 0) {
-        return [[lat, lng] as [number, number]];
+    if (utilityPath.length === 0) {
+      setUtilityPath([[lat, lng] as [number, number]]);
+      return;
+    }
+    
+    const lastPoint = utilityPath[utilityPath.length - 1];
+    try {
+      const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${lastPoint[1]},${lastPoint[0]};${lng},${lat}?overview=full&geometries=geojson`);
+      const data = await r.json();
+      if (data.code === "Ok" && data.routes && data.routes.length > 0) {
+        const routeCoords = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
+        const newSegment = routeCoords.slice(1);
+        const next = [...utilityPath, ...newSegment];
+        setUtilityPath(next);
+        showToast("🟣 Utility link conformed perfectly along the road turns!");
+      } else {
+        setUtilityPath([...utilityPath, [lat, lng] as [number, number]]);
       }
-      
-      const lastPoint = prev[prev.length - 1];
-      fetch(`https://router.project-osrm.org/route/v1/driving/${lastPoint[1]},${lastPoint[0]};${lng},${lat}?overview=full&geometries=geojson`)
-        .then(r => r.json())
-        .then(data => {
-          if (data.code === "Ok" && data.routes && data.routes.length > 0) {
-            const routeCoords = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
-            const newSegment = routeCoords.slice(1);
-            setUtilityPath(old => [...old, ...newSegment]);
-            showToast("🟣 Utility link conformed perfectly along the road turns!");
-          } else {
-            setUtilityPath(old => [...old, [lat, lng] as [number, number]]);
-          }
-        })
-        .catch(() => {
-          setUtilityPath(old => [...old, [lat, lng] as [number, number]]);
-        });
-        
-      return prev;
-    });
+    } catch {
+      setUtilityPath([...utilityPath, [lat, lng] as [number, number]]);
+    }
   };
 
   const DEFAULT_PROJECTS = [
@@ -503,12 +498,19 @@ export default function AdminDashboard() {
       utilityPath
     };
 
-    const nextList = projectsList.map(p => p.id === editingProjectItem.id ? updated : p);
+    const isNew = !projectsList.some(p => p.id === editingProjectItem.id);
+    let nextList;
+    if (isNew) {
+      nextList = [...projectsList, updated];
+      showToast("✅ New Corridor Project created successfully!");
+    } else {
+      nextList = projectsList.map(p => p.id === editingProjectItem.id ? updated : p);
+      showToast("✅ Corridor parameters updated successfully!");
+    }
     setProjectsList(nextList);
     setSelectedProjectItem(updated);
     setEditingProjectItem(null);
     localStorage.setItem("telgo_custom_projects", JSON.stringify(nextList));
-    showToast("✅ Corridor parameters updated successfully!");
   };
 
   // Fetch admin self profile
@@ -2032,22 +2034,59 @@ export default function AdminDashboard() {
                 <p style={{ fontSize: 10, fontWeight: 800, color: "#a78bfa", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Telgo Power Corridors</p>
                 <h1 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Projects Directory</h1>
               </div>
-              <button
-                onClick={resetToDefaults}
-                style={{
-                  background: "rgba(239, 68, 68, 0.08)",
-                  border: "1px solid rgba(239, 68, 68, 0.2)",
-                  borderRadius: 10,
-                  padding: "6px 12px",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: "#fca5a5",
-                  cursor: "pointer",
-                  fontFamily: "Outfit, sans-serif"
-                }}
-              >
-                🔄 Reset
-              </button>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <button
+                  onClick={() => {
+                    const newId = "PRJ-" + Math.floor(1000 + Math.random() * 9000);
+                    const blankProject = {
+                      id: newId,
+                      name: "New Power Grid Corridor",
+                      code: "PRJ-" + Math.floor(100 + Math.random() * 900),
+                      district: "Ernakulam",
+                      distance: "0.00 km",
+                      description: "Enter a brief description of the new corridor shift project.",
+                      startLabel: "Start Junction",
+                      startCoords: [10.0055, 76.3082] as [number, number],
+                      endLabel: "End Junction",
+                      endCoords: [10.0261, 76.3084] as [number, number],
+                      hddPoints: [] as [number, number][],
+                      terminationPoints: [] as [number, number][],
+                      trenchingLine: [] as [number, number][],
+                      utilityPath: [] as [number, number][]
+                    };
+                    setEditingProjectItem(blankProject);
+                  }}
+                  style={{
+                    background: "rgba(6, 182, 212, 0.12)",
+                    border: "1px solid rgba(6, 182, 212, 0.3)",
+                    borderRadius: 10,
+                    padding: "6px 12px",
+                    fontSize: 11,
+                    fontWeight: 750,
+                    color: "#67e8f9",
+                    cursor: "pointer",
+                    fontFamily: "Outfit, sans-serif"
+                  }}
+                >
+                  ➕ Add Project
+                </button>
+                <button
+                  onClick={resetToDefaults}
+                  style={{
+                    background: "rgba(239, 68, 68, 0.08)",
+                    border: "1px solid rgba(239, 68, 68, 0.2)",
+                    borderRadius: 10,
+                    padding: "6px 12px",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "#fca5a5",
+                    cursor: "pointer",
+                    fontFamily: "Outfit, sans-serif"
+                  }}
+                >
+                  🔄 Reset
+                </button>
+              </div>
             </div>
           </div>
 
@@ -2086,6 +2125,48 @@ export default function AdminDashboard() {
                   </div>
                 );
               })}
+
+              {/* Add New Project Prominent Dashed Card */}
+              <div
+                onClick={() => {
+                  const newId = "PRJ-" + Math.floor(1000 + Math.random() * 9000);
+                  const blankProject = {
+                    id: newId,
+                    name: "New Power Grid Corridor",
+                    code: "PRJ-" + Math.floor(100 + Math.random() * 900),
+                    district: "Ernakulam",
+                    distance: "0.00 km",
+                    description: "Enter a brief description of the new corridor shift project.",
+                    startLabel: "Start Junction",
+                    startCoords: [10.0055, 76.3082] as [number, number],
+                    endLabel: "End Junction",
+                    endCoords: [10.0261, 76.3084] as [number, number],
+                    hddPoints: [] as [number, number][],
+                    terminationPoints: [] as [number, number][],
+                    trenchingLine: [] as [number, number][],
+                    utilityPath: [] as [number, number][]
+                  };
+                  setEditingProjectItem(blankProject);
+                }}
+                className="glass module-card"
+                style={{
+                  padding: "16px",
+                  borderRadius: 16,
+                  background: "rgba(6, 182, 212, 0.05)",
+                  border: "1px dashed rgba(6, 182, 212, 0.4)",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                  transition: "all 0.2s ease",
+                  minHeight: 60,
+                  marginTop: 4
+                }}
+              >
+                <span style={{ fontSize: 18, color: "#67e8f9" }}>➕</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: "#67e8f9", letterSpacing: "0.05em", textTransform: "uppercase" }}>Add New Corridor Project</span>
+              </div>
             </div>
 
             {/* Selected Project Detailed Corridor View & Map */}
