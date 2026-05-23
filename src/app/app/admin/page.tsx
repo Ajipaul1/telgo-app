@@ -76,6 +76,10 @@ export default function AdminDashboard() {
   const [trenchingLine, setTrenchingLine] = useState<[number, number][]>([]);
   const [utilityPath, setUtilityPath] = useState<[number, number][]>([]);
 
+  // Upgraded Geocoding Search States
+  const [searchQueryMap, setSearchQueryMap] = useState("");
+  const [searchingMap, setSearchingMap] = useState(false);
+
   // Great-Circle Haversine Formula for distance calculations
   const calculateHaversineDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 6371; // Earth radius in kilometers
@@ -228,7 +232,9 @@ export default function AdminDashboard() {
   // Real-time postMessage listener to capture pins from interactive iframe map editor
   useEffect(() => {
     const handleMapMessage = (e: MessageEvent) => {
-      if (e.data && e.data.type === "MAP_CLICK") {
+      if (!e.data) return;
+      
+      if (e.data.type === "MAP_CLICK") {
         const { lat, lng } = e.data;
         const latStr = lat.toFixed(6);
         const lngStr = lng.toFixed(6);
@@ -269,12 +275,108 @@ export default function AdminDashboard() {
             return next;
           });
         }
+      } else if (e.data.type === "MARKER_DRAG") {
+        const { target, lat, lng } = e.data;
+        const latStr = lat.toFixed(6);
+        const lngStr = lng.toFixed(6);
+        
+        if (target === "start") {
+          setProjStartLat(latStr);
+          setProjStartLng(lngStr);
+          updateCalculatedDistance(latStr, projStartLng, projEndLat, projEndLng, trenchingLine);
+          showToast(`🟢 Start Coordinate dragged to: [${latStr}, ${lngStr}]`);
+        } else if (target === "end") {
+          setProjEndLat(latStr);
+          setProjEndLng(lngStr);
+          updateCalculatedDistance(projStartLat, projStartLng, latStr, projEndLng, trenchingLine);
+          showToast(`🔴 End Coordinate dragged to: [${latStr}, ${lngStr}]`);
+        }
       }
     };
 
     window.addEventListener("message", handleMapMessage);
     return () => window.removeEventListener("message", handleMapMessage);
   }, [activePinMode, projStartLat, projStartLng, projEndLat, projEndLng, trenchingLine, utilityPath]);
+
+  // Bi-directional state transmitter to iframe map frame
+  useEffect(() => {
+    if (!editingProjectItem) return;
+    const sLat = parseFloat(projStartLat);
+    const sLng = parseFloat(projStartLng);
+    const eLat = parseFloat(projEndLat);
+    const eLng = parseFloat(projEndLng);
+    
+    const timer = setTimeout(() => {
+      const iframe = document.getElementById("gis-editor-iframe") as HTMLIFrameElement | null;
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({
+          type: 'UPDATE_MARKERS',
+          startLat: isNaN(sLat) ? null : sLat,
+          startLng: isNaN(sLng) ? null : sLng,
+          endLat: isNaN(eLat) ? null : eLat,
+          endLng: isNaN(eLng) ? null : eLng,
+          hddPoints,
+          terminationPoints,
+          trenchingLine,
+          utilityPath
+        }, '*');
+      }
+    }, 50); // slight debounce for fluent text typing and dragging updates
+
+    return () => clearTimeout(timer);
+  }, [projStartLat, projStartLng, projEndLat, projEndLng, hddPoints, terminationPoints, trenchingLine, utilityPath, editingProjectItem]);
+
+  // OSM Location Nominatim Geocoder
+  const handleSearchMap = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQueryMap.trim()) return;
+    setSearchingMap(true);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQueryMap.trim())}+Kerala+India`);
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const first = data[0];
+        const lat = parseFloat(first.lat);
+        const lng = parseFloat(first.lon);
+        
+        const iframe = document.getElementById("gis-editor-iframe") as HTMLIFrameElement | null;
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage({
+            type: 'FLY_TO',
+            lat,
+            lng
+          }, '*');
+          showToast(`📍 Centered: ${first.display_name.split(",")[0]}`);
+        }
+      } else {
+        showToast("❌ Location not found. Please verify search query.");
+      }
+    } catch {
+      showToast("❌ Connection error on geocoder lookup.");
+    } finally {
+      setSearchingMap(false);
+    }
+  };
+
+  // Undo Drawing segment utilities
+  const handleUndoTrenchPoint = () => {
+    setTrenchingLine(prev => {
+      if (prev.length === 0) return prev;
+      const next = prev.slice(0, -1);
+      updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
+      showToast("⏪ Removed last trench coordinate point.");
+      return next;
+    });
+  };
+
+  const handleUndoUtilityPoint = () => {
+    setUtilityPath(prev => {
+      if (prev.length === 0) return prev;
+      const next = prev.slice(0, -1);
+      showToast("⏪ Removed last utility shift coordinate point.");
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (editingProjectItem) {
@@ -2077,473 +2179,704 @@ export default function AdminDashboard() {
       )}
 
       {/* ADMINISTRATIVE PROJECT EDITING MODAL */}
-      {editingProjectItem && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(6,9,18,0.85)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1100, animation: "fadeIn 0.2s ease" }}>
-          <div className="glass glow-cyan" style={{ width: "100%", maxWidth: "1000px", maxHeight: "95vh", overflowY: "auto", padding: "28px 24px", background: "linear-gradient(135deg, #0d0621 0%, #060912 100%)", borderRadius: 24, border: "1px solid rgba(255, 255, 255, 0.08)", boxShadow: "0 24px 64px rgba(0, 0, 0, 0.75)", color: "#f1f5f9" }}>
-            
-            {/* Modal Header */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 14 }}>
-              <div>
-                <h3 style={{ fontSize: 20, fontWeight: 900, letterSpacing: "-0.5px", margin: 0, background: "linear-gradient(90deg, #c4b5fd, #06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Corridor GIS Editor</h3>
-                <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Operational Map & Project Parameters</p>
-              </div>
-              <button onClick={() => setEditingProjectItem(null)} style={{ background: "rgba(255, 255, 255, 0.04)", border: "1px solid rgba(255, 255, 255, 0.08)", width: 32, height: 32, borderRadius: "50%", color: "#94a3b8", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </div>
+      {editingProjectItem && (() => {
+        // Dynamic banner aesthetics based on active drawing tool selection
+        const getBannerStyle = () => {
+          switch (activePinMode) {
+            case "start": return { border: "1px solid rgba(34, 197, 94, 0.3)", background: "rgba(34, 197, 94, 0.08)", color: "#4ade80" };
+            case "end": return { border: "1px solid rgba(239, 68, 68, 0.3)", background: "rgba(239, 68, 68, 0.08)", color: "#f87171" };
+            case "hdd": return { border: "1px solid rgba(251, 191, 36, 0.3)", background: "rgba(251, 191, 36, 0.08)", color: "#fcd34d" };
+            case "termination": return { border: "1px solid rgba(37, 99, 235, 0.3)", background: "rgba(37, 99, 235, 0.08)", color: "#60a5fa" };
+            case "trench": return { border: "1px solid rgba(249, 115, 22, 0.3)", background: "rgba(249, 115, 22, 0.08)", color: "#ff9d5c" };
+            case "utility": return { border: "1px solid rgba(168, 85, 247, 0.3)", background: "rgba(168, 85, 247, 0.08)", color: "#c084fc" };
+            default: return { border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)", color: "#94a3b8" };
+          }
+        };
 
-            <div className="editor-container">
+        const getBannerText = () => {
+          switch (activePinMode) {
+            case "start": return "🟢 Pin Start: Click any location on the map to set the Start Junction. You can also drag the green marker with your mouse/hand directly.";
+            case "end": return "🔴 Pin End: Click any location on the map to set the End Junction. You can also drag the red marker with your mouse/hand directly.";
+            case "hdd": return "🟡 HDD Drilling: Click on the map to add yellow HDD points at locations requiring horizontal directional drilling.";
+            case "termination": return "🔵 Grid Termination: Click on the map to place blue square termination boxes at substation interfaces.";
+            case "trench": return "🟠 Trench Line: Click sequential locations on the map to draw the dashed trenching line path. Estimated distance accumulates in real-time.";
+            case "utility": return "🟣 Utility Link: Click sequential locations on the map to draw the custom purple utility cable routing path.";
+            default: return "";
+          }
+        };
+
+        return (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(6,9,18,0.85)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1100, animation: "fadeIn 0.2s ease" }}>
+            <div className="glass glow-cyan" style={{ width: "100%", maxWidth: "1000px", maxHeight: "95vh", overflowY: "auto", padding: "28px 24px", background: "linear-gradient(135deg, #0d0621 0%, #060912 100%)", borderRadius: 24, border: "1px solid rgba(255, 255, 255, 0.08)", boxShadow: "0 24px 64px rgba(0, 0, 0, 0.75)", color: "#f1f5f9" }}>
               
-              {/* LEFT COLUMN: INTERACTIVE GIS MAP & DRAWING TOOLBAR */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>Interactive GIS Tools</span>
-                  <span style={{ fontSize: 10, color: "#fbbf24", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 6, padding: "2px 6px", fontWeight: 700 }}>
-                    Click Map to Draw
-                  </span>
+              {/* Modal Header */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 14 }}>
+                <div>
+                  <h3 style={{ fontSize: 20, fontWeight: 900, letterSpacing: "-0.5px", margin: 0, background: "linear-gradient(90deg, #c4b5fd, #06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Corridor GIS Editor</h3>
+                  <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Operational Map & Project Parameters</p>
                 </div>
-
-                {/* Grid of operational drawing tools */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-                  <button
-                    type="button"
-                    onClick={() => setActivePinMode("start")}
-                    className="tool-btn"
-                    style={{
-                      borderColor: activePinMode === "start" ? "#22c55e" : "rgba(255,255,255,0.08)",
-                      background: activePinMode === "start" ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.01)",
-                      color: activePinMode === "start" ? "#4ade80" : "#94a3b8"
-                    }}
-                  >
-                    🟢 Pin Start
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActivePinMode("end")}
-                    className="tool-btn"
-                    style={{
-                      borderColor: activePinMode === "end" ? "#ef4444" : "rgba(255,255,255,0.08)",
-                      background: activePinMode === "end" ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.01)",
-                      color: activePinMode === "end" ? "#f87171" : "#94a3b8"
-                    }}
-                  >
-                    🔴 Pin End
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActivePinMode("hdd")}
-                    className="tool-btn"
-                    style={{
-                      borderColor: activePinMode === "hdd" ? "#eab308" : "rgba(255,255,255,0.08)",
-                      background: activePinMode === "hdd" ? "rgba(234,179,8,0.12)" : "rgba(255,255,255,0.01)",
-                      color: activePinMode === "hdd" ? "#fcd34d" : "#94a3b8"
-                    }}
-                  >
-                    🟡 HDD Pin
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActivePinMode("termination")}
-                    className="tool-btn"
-                    style={{
-                      borderColor: activePinMode === "termination" ? "#2563eb" : "rgba(255,255,255,0.08)",
-                      background: activePinMode === "termination" ? "rgba(37,99,235,0.12)" : "rgba(255,255,255,0.01)",
-                      color: activePinMode === "termination" ? "#60a5fa" : "#94a3b8"
-                    }}
-                  >
-                    🔵 Grid Term
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActivePinMode("trench")}
-                    className="tool-btn"
-                    style={{
-                      borderColor: activePinMode === "trench" ? "#f97316" : "rgba(255,255,255,0.08)",
-                      background: activePinMode === "trench" ? "rgba(249,115,22,0.12)" : "rgba(255,255,255,0.01)",
-                      color: activePinMode === "trench" ? "#ff9d5c" : "#94a3b8"
-                    }}
-                  >
-                    🟠 Trench Line
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActivePinMode("utility")}
-                    className="tool-btn"
-                    style={{
-                      borderColor: activePinMode === "utility" ? "#a855f7" : "rgba(255,255,255,0.08)",
-                      background: activePinMode === "utility" ? "rgba(168,85,247,0.12)" : "rgba(255,255,255,0.01)",
-                      color: activePinMode === "utility" ? "#c084fc" : "#94a3b8"
-                    }}
-                  >
-                    🟣 Utility Link
-                  </button>
-                </div>
-
-                {/* Large Interactive Iframe Map */}
-                <div className="glass" style={{ padding: 0, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, overflow: "hidden", background: "#080b13" }}>
-                  <div style={{ position: "relative", height: "350px", width: "100%" }}>
-                    <iframe
-                      title="Interactive GIS Corridor Editor"
-                      style={{ width: "100%", height: "100%", border: "none" }}
-                      srcDoc={`
-                        <!DOCTYPE html>
-                        <html>
-                        <head>
-                          <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-                          <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-                          <style>
-                            html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #060912; cursor: crosshair; }
-                            .leaflet-control-attribution { display: none !important; }
-                            .leaflet-container { background: #060912 !important; }
-                            .leaflet-bar a { background-color: #0b0f19 !important; color: #fff !important; border-color: rgba(255,255,255,0.15) !important; }
-                            .leaflet-bar a:hover { background-color: #121826 !important; }
-                            
-                            .start-marker {
-                              background: #22c55e;
-                              border: 2.5px solid #ffffff;
-                              border-radius: 50%;
-                              box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
-                            }
-                            .end-marker {
-                              background: #ef4444;
-                              border: 2.5px solid #ffffff;
-                              border-radius: 50%;
-                              box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
-                            }
-                            .hdd-marker {
-                              background: #eab308;
-                              border: 2px solid #ffffff;
-                              border-radius: 50%;
-                              box-shadow: 0 0 10px rgba(234, 179, 8, 0.6);
-                            }
-                            .term-marker {
-                              background: #2563eb;
-                              border: 2px solid #ffffff;
-                              border-radius: 4px;
-                              box-shadow: 0 0 10px rgba(37, 99, 235, 0.6);
-                            }
-                          </style>
-                        </head>
-                        <body>
-                          <div id="map"></div>
-                          <script>
-                            const startLat = parseFloat("${projStartLat}");
-                            const startLng = parseFloat("${projStartLng}");
-                            const endLat = parseFloat("${projEndLat}");
-                            const endLng = parseFloat("${projEndLng}");
-
-                            const hasStart = !isNaN(startLat) && !isNaN(startLng);
-                            const hasEnd = !isNaN(endLat) && !isNaN(endLng);
-
-                            let center = [10.0055, 76.3082];
-                            if (hasStart) center = [startLat, startLng];
-                            else if (hasEnd) center = [endLat, endLng];
-
-                            const map = L.map('map').setView(center, 14);
-                            
-                            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                              maxZoom: 20
-                            }).addTo(map);
-
-                            // Send map clicks to parent React view
-                            map.on('click', function(e) {
-                              window.parent.postMessage({
-                                type: 'MAP_CLICK',
-                                lat: e.latlng.lat,
-                                lng: e.latlng.lng
-                              }, '*');
-                            });
-
-                            const startIcon = L.divIcon({ className: 'start-marker', iconSize: [14, 14] });
-                            const endIcon = L.divIcon({ className: 'end-marker', iconSize: [14, 14] });
-                            const hddIcon = L.divIcon({ className: 'hdd-marker', iconSize: [12, 12] });
-                            const termIcon = L.divIcon({ className: 'term-marker', iconSize: [12, 12] });
-
-                            // Plot Start Coordinates
-                            if (hasStart) {
-                              L.marker([startLat, startLng], { icon: startIcon }).addTo(map).bindPopup("<b>Start Position</b>");
-                            }
-
-                            // Plot End Coordinates
-                            if (hasEnd) {
-                              L.marker([endLat, endLng], { icon: endIcon }).addTo(map).bindPopup("<b>End Position</b>");
-                            }
-
-                            // Primary Route (Purple utilityPath if present, else straight line)
-                            const customUtilityPath = ${JSON.stringify(utilityPath)};
-                            if (customUtilityPath && customUtilityPath.length >= 2) {
-                              L.polyline(customUtilityPath, { color: '#a855f7', weight: 4.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
-                            } else if (hasStart && hasEnd) {
-                              L.polyline([[startLat, startLng], [endLat, endLng]], { color: '#a855f7', weight: 4.5, opacity: 0.8, lineJoin: 'round' }).addTo(map);
-                            }
-
-                            // Plot HDD Points
-                            const hddPts = ${JSON.stringify(hddPoints)};
-                            if (hddPts && hddPts.length > 0) {
-                              hddPts.forEach((pt, idx) => {
-                                L.marker(pt, { icon: hddIcon }).addTo(map).bindPopup("<b>HDD Location " + (idx + 1) + "</b>");
-                              });
-                            }
-
-                            // Plot Grid Terminations
-                            const termPts = ${JSON.stringify(terminationPoints)};
-                            if (termPts && termPts.length > 0) {
-                              termPts.forEach((pt, idx) => {
-                                L.marker(pt, { icon: termIcon }).addTo(map).bindPopup("<b>Grid Termination " + (idx + 1) + "</b>");
-                              });
-                            }
-
-                            // Plot Trenching Lines
-                            const trenchLine = ${JSON.stringify(trenchingLine)};
-                            if (trenchLine && trenchLine.length >= 2) {
-                              L.polyline(trenchLine, { color: '#f97316', dashArray: '6, 6', weight: 3.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
-                              trenchLine.forEach(pt => {
-                                L.circle(pt, { color: '#f97316', fillColor: '#f97316', fillOpacity: 0.8, radius: 4 }).addTo(map);
-                              });
-                            }
-
-                            // Autozoom to bounds of markers
-                            const bounds = [];
-                            if (hasStart) bounds.push([startLat, startLng]);
-                            if (hasEnd) bounds.push([endLat, endLng]);
-                            if (trenchLine && trenchLine.length > 0) trenchLine.forEach(pt => bounds.push(pt));
-                            if (customUtilityPath && customUtilityPath.length > 0) customUtilityPath.forEach(pt => bounds.push(pt));
-                            if (hddPts && hddPts.length > 0) hddPts.forEach(pt => bounds.push(pt));
-                            if (termPts && termPts.length > 0) termPts.forEach(pt => bounds.push(pt));
-
-                            if (bounds.length > 1) {
-                              try {
-                                map.fitBounds(bounds, { padding: [30, 30] });
-                              } catch(e) {}
-                            }
-                          </script>
-                        </body>
-                        </html>
-                      `}
-                    />
-                  </div>
-                </div>
-
-                {/* Visual guidelines */}
-                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 14, padding: "10px 14px", fontSize: 11, color: "#64748b", lineHeight: 1.5, display: "flex", gap: 8, alignItems: "flex-start" }}>
-                  <span style={{ fontSize: 14 }}>💡</span>
-                  <span>Select any drawing mode button above, then click directly on the dark-theme map on the left to set junctions, drop yellow HDD pins, blue square terminations, or draw polylines. Physical distance calculates in real-time.</span>
-                </div>
-
-                {/* Drawing Actions & Clear buttons */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHddPoints([]);
-                      showToast("🧹 HDD Pins cleared!");
-                    }}
-                    style={{ background: "rgba(239, 68, 68, 0.05)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#fca5a5", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
-                  >
-                    Clear HDD Pins
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTerminationPoints([]);
-                      showToast("🧹 Grid Terminations cleared!");
-                    }}
-                    style={{ background: "rgba(239, 68, 68, 0.05)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#fca5a5", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
-                  >
-                    Clear Terminations
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTrenchingLine([]);
-                      updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, []);
-                      showToast("🧹 Trenching path cleared!");
-                    }}
-                    style={{ background: "rgba(249, 115, 22, 0.08)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#ffb07a", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
-                  >
-                    Clear Trench Path
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUtilityPath([]);
-                      showToast("🧹 Utility Shift path cleared!");
-                    }}
-                    style={{ background: "rgba(168, 85, 247, 0.08)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#d8b4fe", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
-                  >
-                    Clear Utility Path
-                  </button>
-                </div>
+                <button onClick={() => setEditingProjectItem(null)} style={{ background: "rgba(255, 255, 255, 0.04)", border: "1px solid rgba(255, 255, 255, 0.08)", width: 32, height: 32, borderRadius: "50%", color: "#94a3b8", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
               </div>
 
-              {/* RIGHT COLUMN: PARAMETERS EDITOR FORM */}
-              <form onSubmit={handleUpdateProject} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <span style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>Project parameters</span>
+              <div className="editor-container">
+                
+                {/* LEFT COLUMN: INTERACTIVE GIS MAP, GEOLOCATION SEARCH, TOOLBAR */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>Interactive GIS Tools</span>
+                    <span style={{ fontSize: 10, color: "#fbbf24", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 6, padding: "2px 6px", fontWeight: 700 }}>
+                      Live Drag & Placement Mode
+                    </span>
+                  </div>
 
-                {/* Project Name */}
-                <div>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Project Name</label>
-                  <input
-                    type="text"
-                    value={projName}
-                    onChange={(e) => setProjName(e.target.value)}
-                    required
-                    style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
-                  />
+                  {/* OSM Nominatim Search Widget */}
+                  <form onSubmit={handleSearchMap} style={{ display: "flex", gap: 10 }}>
+                    <div style={{ position: "relative", flex: 1 }}>
+                      <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 13 }}>🔍</span>
+                      <input
+                        type="text"
+                        placeholder="Search Kerala locations (e.g. Kakkanad, Munnar, Cherthala)..."
+                        value={searchQueryMap}
+                        onChange={(e) => setSearchQueryMap(e.target.value)}
+                        style={{ width: "100%", height: 38, background: "rgba(0, 0, 0, 0.4)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px 0 34px", color: "#f1f5f9", fontSize: 12, outline: "none", fontFamily: "Outfit, sans-serif" }}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={searchingMap}
+                      style={{ minWidth: 90, background: "rgba(6, 182, 212, 0.15)", border: "1px solid rgba(6, 182, 212, 0.3)", borderRadius: 10, color: "#67e8f9", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                    >
+                      {searchingMap ? "Searching..." : "Center Map"}
+                    </button>
+                  </form>
+
+                  {/* Active-Tool Guidance Banner */}
+                  <div style={{
+                    padding: "10px 14px",
+                    borderRadius: 12,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    lineHeight: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    transition: "all 0.2s ease",
+                    ...getBannerStyle()
+                  }}>
+                    <span>{getBannerText()}</span>
+                  </div>
+
+                  {/* Grid of operational drawing tools */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => setActivePinMode("start")}
+                      className="tool-btn"
+                      style={{
+                        borderColor: activePinMode === "start" ? "#22c55e" : "rgba(255,255,255,0.08)",
+                        background: activePinMode === "start" ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.01)",
+                        color: activePinMode === "start" ? "#4ade80" : "#94a3b8"
+                      }}
+                    >
+                      🟢 Pin Start
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActivePinMode("end")}
+                      className="tool-btn"
+                      style={{
+                        borderColor: activePinMode === "end" ? "#ef4444" : "rgba(255,255,255,0.08)",
+                        background: activePinMode === "end" ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.01)",
+                        color: activePinMode === "end" ? "#f87171" : "#94a3b8"
+                      }}
+                    >
+                      🔴 Pin End
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActivePinMode("hdd")}
+                      className="tool-btn"
+                      style={{
+                        borderColor: activePinMode === "hdd" ? "#eab308" : "rgba(255,255,255,0.08)",
+                        background: activePinMode === "hdd" ? "rgba(234,179,8,0.12)" : "rgba(255,255,255,0.01)",
+                        color: activePinMode === "hdd" ? "#fcd34d" : "#94a3b8"
+                      }}
+                    >
+                      🟡 HDD Pin
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActivePinMode("termination")}
+                      className="tool-btn"
+                      style={{
+                        borderColor: activePinMode === "termination" ? "#2563eb" : "rgba(255,255,255,0.08)",
+                        background: activePinMode === "termination" ? "rgba(37,99,235,0.12)" : "rgba(255,255,255,0.01)",
+                        color: activePinMode === "termination" ? "#60a5fa" : "#94a3b8"
+                      }}
+                    >
+                      🔵 Grid Term
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActivePinMode("trench")}
+                      className="tool-btn"
+                      style={{
+                        borderColor: activePinMode === "trench" ? "#f97316" : "rgba(255,255,255,0.08)",
+                        background: activePinMode === "trench" ? "rgba(249,115,22,0.12)" : "rgba(255,255,255,0.01)",
+                        color: activePinMode === "trench" ? "#ff9d5c" : "#94a3b8"
+                      }}
+                    >
+                      🟠 Trench Line
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActivePinMode("utility")}
+                      className="tool-btn"
+                      style={{
+                        borderColor: activePinMode === "utility" ? "#a855f7" : "rgba(255,255,255,0.08)",
+                        background: activePinMode === "utility" ? "rgba(168,85,247,0.12)" : "rgba(255,255,255,0.01)",
+                        color: activePinMode === "utility" ? "#c084fc" : "#94a3b8"
+                      }}
+                    >
+                      🟣 Utility Link
+                    </button>
+                  </div>
+
+                  {/* Large Interactive Iframe Map */}
+                  <div className="glass" style={{ padding: 0, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, overflow: "hidden", background: "#080b13" }}>
+                    <div style={{ position: "relative", height: "350px", width: "100%" }}>
+                      <iframe
+                        id="gis-editor-iframe"
+                        title="Interactive GIS Corridor Editor"
+                        style={{ width: "100%", height: "100%", border: "none" }}
+                        srcDoc={`
+                          <!DOCTYPE html>
+                          <html>
+                          <head>
+                            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                            <style>
+                              html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #060912; cursor: crosshair; }
+                              .leaflet-control-attribution { display: none !important; }
+                              .leaflet-container { background: #060912 !important; }
+                              .leaflet-bar a { background-color: #0b0f19 !important; color: #fff !important; border-color: rgba(255,255,255,0.15) !important; }
+                              .leaflet-bar a:hover { background-color: #121826 !important; }
+                              
+                              .start-marker {
+                                background: #22c55e;
+                                border: 2.5px solid #ffffff;
+                                border-radius: 50%;
+                                box-shadow: 0 0 12px rgba(34, 197, 94, 0.7);
+                              }
+                              .end-marker {
+                                background: #ef4444;
+                                border: 2.5px solid #ffffff;
+                                border-radius: 50%;
+                                box-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
+                              }
+                              .hdd-marker {
+                                background: #eab308;
+                                border: 2px solid #ffffff;
+                                border-radius: 50%;
+                                box-shadow: 0 0 10px rgba(234, 179, 8, 0.6);
+                              }
+                              .term-marker {
+                                background: #2563eb;
+                                border: 2px solid #ffffff;
+                                border-radius: 4px;
+                                box-shadow: 0 0 10px rgba(37, 99, 235, 0.6);
+                              }
+                            </style>
+                          </head>
+                          <body>
+                            <div id="map"></div>
+                            <script>
+                              const startLat = parseFloat("${projStartLat}");
+                              const startLng = parseFloat("${projStartLng}");
+                              const endLat = parseFloat("${projEndLat}");
+                              const endLng = parseFloat("${projEndLng}");
+
+                              const hasStart = !isNaN(startLat) && !isNaN(startLng);
+                              const hasEnd = !isNaN(endLat) && !isNaN(endLng);
+
+                              let center = [10.0055, 76.3082];
+                              if (hasStart) center = [startLat, startLng];
+                              else if (hasEnd) center = [endLat, endLng];
+
+                              const map = L.map('map').setView(center, 14);
+                              
+                              L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                                maxZoom: 20
+                              }).addTo(map);
+
+                              // Send map clicks to parent React view
+                              map.on('click', function(e) {
+                                window.parent.postMessage({
+                                  type: 'MAP_CLICK',
+                                  lat: e.latlng.lat,
+                                  lng: e.latlng.lng
+                                }, '*');
+                              });
+
+                              const startIcon = L.divIcon({ className: 'start-marker', iconSize: [14, 14] });
+                              const endIcon = L.divIcon({ className: 'end-marker', iconSize: [14, 14] });
+                              const hddIcon = L.divIcon({ className: 'hdd-marker', iconSize: [12, 12] });
+                              const termIcon = L.divIcon({ className: 'term-marker', iconSize: [12, 12] });
+
+                              let startMarker = null;
+                              let endMarker = null;
+                              let utilityPolyline = null;
+                              let trenchPolyline = null;
+                              let trenchCircles = [];
+                              let hddMarkers = [];
+                              let termMarkers = [];
+
+                              // Plot Start Coordinates
+                              if (hasStart) {
+                                startMarker = L.marker([startLat, startLng], { icon: startIcon, draggable: true }).addTo(map).bindPopup("<b>Start Position</b><br/>Drag to reposition.");
+                                startMarker.on('dragend', function() {
+                                  const position = startMarker.getLatLng();
+                                  window.parent.postMessage({ type: 'MARKER_DRAG', target: 'start', lat: position.lat, lng: position.lng }, '*');
+                                });
+                              }
+
+                              // Plot End Coordinates
+                              if (hasEnd) {
+                                endMarker = L.marker([endLat, endLng], { icon: endIcon, draggable: true }).addTo(map).bindPopup("<b>End Position</b><br/>Drag to reposition.");
+                                endMarker.on('dragend', function() {
+                                  const position = endMarker.getLatLng();
+                                  window.parent.postMessage({ type: 'MARKER_DRAG', target: 'end', lat: position.lat, lng: position.lng }, '*');
+                                });
+                              }
+
+                              // Plot Utility Path
+                              const customUtilityPath = ${JSON.stringify(utilityPath)};
+                              if (customUtilityPath && customUtilityPath.length >= 2) {
+                                utilityPolyline = L.polyline(customUtilityPath, { color: '#a855f7', weight: 4.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                              } else if (hasStart && hasEnd) {
+                                utilityPolyline = L.polyline([[startLat, startLng], [endLat, endLng]], { color: '#a855f7', weight: 4.5, opacity: 0.8, lineJoin: 'round' }).addTo(map);
+                              }
+
+                              // Plot HDD Points
+                              const hddPts = ${JSON.stringify(hddPoints)};
+                              if (hddPts && hddPts.length > 0) {
+                                hddPts.forEach((pt, idx) => {
+                                  const m = L.marker(pt, { icon: hddIcon }).addTo(map).bindPopup("<b>HDD Location " + (idx + 1) + "</b>");
+                                  hddMarkers.push(m);
+                                });
+                              }
+
+                              // Plot Grid Terminations
+                              const termPts = ${JSON.stringify(terminationPoints)};
+                              if (termPts && termPts.length > 0) {
+                                termPts.forEach((pt, idx) => {
+                                  const m = L.marker(pt, { icon: termIcon }).addTo(map).bindPopup("<b>Grid Termination " + (idx + 1) + "</b>");
+                                  termMarkers.push(m);
+                                });
+                              }
+
+                              // Plot Trenching Lines
+                              const trenchLine = ${JSON.stringify(trenchingLine)};
+                              if (trenchLine && trenchLine.length >= 2) {
+                                trenchPolyline = L.polyline(trenchLine, { color: '#f97316', dashArray: '6, 6', weight: 3.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                                trenchLine.forEach(pt => {
+                                  const c = L.circle(pt, { color: '#f97316', fillColor: '#f97316', fillOpacity: 0.8, radius: 4 }).addTo(map);
+                                  trenchCircles.push(c);
+                                });
+                              }
+
+                              // Message handler for updates and geocoding zooms
+                              window.addEventListener('message', function(e) {
+                                if (!e.data) return;
+                                
+                                if (e.data.type === 'UPDATE_MARKERS') {
+                                  const { startLat, startLng, endLat, endLng, hddPoints, terminationPoints, trenchingLine, utilityPath } = e.data;
+                                  
+                                  // 1. Start marker
+                                  if (startLat && startLng) {
+                                    const newLatLng = new L.LatLng(startLat, startLng);
+                                    if (startMarker) {
+                                      startMarker.setLatLng(newLatLng);
+                                    } else {
+                                      startMarker = L.marker(newLatLng, { icon: startIcon, draggable: true }).addTo(map).bindPopup("<b>Start Position</b><br/>Drag to reposition.");
+                                      startMarker.on('dragend', function() {
+                                        const position = startMarker.getLatLng();
+                                        window.parent.postMessage({ type: 'MARKER_DRAG', target: 'start', lat: position.lat, lng: position.lng }, '*');
+                                      });
+                                    }
+                                  } else if (startMarker) {
+                                    map.removeLayer(startMarker);
+                                    startMarker = null;
+                                  }
+
+                                  // 2. End marker
+                                  if (endLat && endLng) {
+                                    const newLatLng = new L.LatLng(endLat, endLng);
+                                    if (endMarker) {
+                                      endMarker.setLatLng(newLatLng);
+                                    } else {
+                                      endMarker = L.marker(newLatLng, { icon: endIcon, draggable: true }).addTo(map).bindPopup("<b>End Position</b><br/>Drag to reposition.");
+                                      endMarker.on('dragend', function() {
+                                        const position = endMarker.getLatLng();
+                                        window.parent.postMessage({ type: 'MARKER_DRAG', target: 'end', lat: position.lat, lng: position.lng }, '*');
+                                      });
+                                    }
+                                  } else if (endMarker) {
+                                    map.removeLayer(endMarker);
+                                    endMarker = null;
+                                  }
+
+                                  // 3. Utility path polyline
+                                  if (utilityPolyline) {
+                                    map.removeLayer(utilityPolyline);
+                                    utilityPolyline = null;
+                                  }
+                                  if (utilityPath && utilityPath.length >= 2) {
+                                    utilityPolyline = L.polyline(utilityPath, { color: '#a855f7', weight: 4.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                                  } else if (startLat && startLng && endLat && endLng) {
+                                    utilityPolyline = L.polyline([[startLat, startLng], [endLat, endLng]], { color: '#a855f7', weight: 4.5, opacity: 0.8, lineJoin: 'round' }).addTo(map);
+                                  }
+
+                                  // 4. Trench polyline
+                                  if (trenchPolyline) {
+                                    map.removeLayer(trenchPolyline);
+                                    trenchPolyline = null;
+                                  }
+                                  trenchCircles.forEach(c => map.removeLayer(c));
+                                  trenchCircles = [];
+                                  if (trenchingLine && trenchingLine.length >= 2) {
+                                    trenchPolyline = L.polyline(trenchingLine, { color: '#f97316', dashArray: '6, 6', weight: 3.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                                    trenchingLine.forEach(pt => {
+                                      const c = L.circle(pt, { color: '#f97316', fillColor: '#f97316', fillOpacity: 0.8, radius: 4 }).addTo(map);
+                                      trenchCircles.push(c);
+                                    });
+                                  }
+
+                                  // 5. HDD markers
+                                  hddMarkers.forEach(m => map.removeLayer(m));
+                                  hddMarkers = [];
+                                  if (hddPoints && hddPoints.length > 0) {
+                                    hddPoints.forEach((pt, idx) => {
+                                      const m = L.marker(pt, { icon: hddIcon }).addTo(map).bindPopup("<b>HDD Location " + (idx + 1) + "</b>");
+                                      hddMarkers.push(m);
+                                    });
+                                  }
+
+                                  // 6. Grid terminations
+                                  termMarkers.forEach(m => map.removeLayer(m));
+                                  termMarkers = [];
+                                  if (terminationPoints && terminationPoints.length > 0) {
+                                    terminationPoints.forEach((pt, idx) => {
+                                      const m = L.marker(pt, { icon: termIcon }).addTo(map).bindPopup("<b>Grid Termination " + (idx + 1) + "</b>");
+                                      termMarkers.push(m);
+                                    });
+                                  }
+                                } else if (e.data.type === 'FLY_TO') {
+                                  const { lat, lng } = e.data;
+                                  map.setView([lat, lng], 15, { animate: true });
+                                  const tempCircle = L.circle([lat, lng], { color: '#06b6d4', fillColor: '#06b6d4', fillOpacity: 0.15, radius: 150 }).addTo(map);
+                                  setTimeout(() => { map.removeLayer(tempCircle); }, 3000);
+                                }
+                              });
+
+                              // Auto zoom
+                              const bounds = [];
+                              if (hasStart) bounds.push([startLat, startLng]);
+                              if (hasEnd) bounds.push([endLat, endLng]);
+                              if (trenchLine && trenchLine.length > 0) trenchLine.forEach(pt => bounds.push(pt));
+                              if (customUtilityPath && customUtilityPath.length > 0) customUtilityPath.forEach(pt => bounds.push(pt));
+                              
+                              if (bounds.length > 1) {
+                                try {
+                                  map.fitBounds(bounds, { padding: [30, 30] });
+                                } catch(e) {}
+                              }
+                            </script>
+                          </body>
+                          </html>
+                        `}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Drawing Actions & Clear/Undo buttons */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHddPoints([]);
+                          showToast("🧹 HDD Pins cleared!");
+                        }}
+                        style={{ width: "100%", background: "rgba(239, 68, 68, 0.05)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#fca5a5", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                      >
+                        Clear HDD Pins
+                      </button>
+                    </div>
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTerminationPoints([]);
+                          showToast("🧹 Grid Terminations cleared!");
+                        }}
+                        style={{ width: "100%", background: "rgba(239, 68, 68, 0.05)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#fca5a5", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                      >
+                        Clear Terminations
+                      </button>
+                    </div>
+
+                    {/* Trench Controls with Undo */}
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTrenchingLine([]);
+                          updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, []);
+                          showToast("🧹 Trenching path cleared!");
+                        }}
+                        style={{ flex: 1.2, background: "rgba(249, 115, 22, 0.08)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#ffb07a", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                      >
+                        Clear Trench
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleUndoTrenchPoint}
+                        disabled={trenchingLine.length === 0}
+                        style={{ flex: 0.8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: trenchingLine.length > 0 ? "#cbd5e1" : "#475569", cursor: trenchingLine.length > 0 ? "pointer" : "default" }}
+                      >
+                        ⏪ Undo
+                      </button>
+                    </div>
+
+                    {/* Utility Controls with Undo */}
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUtilityPath([]);
+                          showToast("🧹 Utility Shift path cleared!");
+                        }}
+                        style={{ flex: 1.2, background: "rgba(168, 85, 247, 0.08)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#d8b4fe", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                      >
+                        Clear Utility
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleUndoUtilityPoint}
+                        disabled={utilityPath.length === 0}
+                        style={{ flex: 0.8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: utilityPath.length > 0 ? "#cbd5e1" : "#475569", cursor: utilityPath.length > 0 ? "pointer" : "default" }}
+                      >
+                        ⏪ Undo
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Upgraded "How-To GIS Guide" instructional widget */}
+                  <div className="glass" style={{ padding: "16px", borderRadius: 16, border: "1px solid rgba(255,255,255,0.06)", background: "rgba(255, 255, 255, 0.01)", marginTop: 4 }}>
+                    <h4 style={{ fontSize: 12, fontWeight: 800, color: "#a78bfa", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 10px", display: "flex", alignItems: "center", gap: 6 }}>
+                      <span>📖 Interactive Map Quick Guide</span>
+                    </h4>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 11, color: "#94a3b8", lineHeight: 1.5 }}>
+                      <div>
+                        <strong style={{ color: "#f1f5f9", display: "block", marginBottom: 2 }}>📍 Drag & Change Locations:</strong>
+                        Grab the <span style={{ color: "#4ade80" }}>Green Start Pin</span> or <span style={{ color: "#f87171" }}>Red End Pin</span> directly on the map with your hand/mouse and drag to change coordinates. Input fields sync automatically!
+                      </div>
+                      <div>
+                        <strong style={{ color: "#f1f5f9", display: "block", marginBottom: 2 }}>⚡ Place HDD & Terminations:</strong>
+                        Select <b>HDD PIN</b> or <b>GRID TERM</b> above, then click anywhere on the map to add yellow dots or blue squares.
+                      </div>
+                      <div>
+                        <strong style={{ color: "#f1f5f9", display: "block", marginBottom: 2 }}>🛣️ Draw Trenching & Utility Paths:</strong>
+                        Select <b>TRENCH LINE</b> or <b>UTILITY LINK</b>, and click step-by-step on the map. They will join together into beautiful, professional lines.
+                      </div>
+                      <div>
+                        <strong style={{ color: "#f1f5f9", display: "block", marginBottom: 2 }}>⏪ Undo & Clear (Delete Lines):</strong>
+                        Use <b>Undo Last Point</b> buttons to erase the last clicked point on a line. Use the red <b>Clear</b> buttons to delete whole paths/pins instantly.
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Code & District */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {/* RIGHT COLUMN: PARAMETERS EDITOR FORM */}
+                <form onSubmit={handleUpdateProject} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>Project parameters</span>
+
+                  {/* Project Name */}
                   <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Corridor ID</label>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Project Name</label>
                     <input
                       type="text"
-                      value={projCode}
-                      onChange={(e) => setProjCode(e.target.value)}
-                      required
-                      style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "monospace", outline: "none" }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>District</label>
-                    <input
-                      type="text"
-                      value={projDistrict}
-                      onChange={(e) => setProjDistrict(e.target.value)}
+                      value={projName}
+                      onChange={(e) => setProjName(e.target.value)}
                       required
                       style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
                     />
                   </div>
-                </div>
 
-                {/* Distance calculation display */}
-                <div>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Calculated Corridor Distance</label>
-                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <input
-                      type="text"
-                      value={projDistance}
-                      readOnly
-                      style={{ flex: 1, height: 40, background: "rgba(0,0,0,0.4)", border: "1px solid rgba(6,182,212,0.2)", borderRadius: 12, padding: "0 14px", color: "#06b6d4", fontSize: 14, fontWeight: 800, fontFamily: "monospace", outline: "none" }}
-                    />
-                    <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", width: 110, lineHeight: 1.2 }}>
-                      📏 Great-Circle spherical calc
-                    </span>
+                  {/* Code & District */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Corridor ID</label>
+                      <input
+                        type="text"
+                        value={projCode}
+                        onChange={(e) => setProjCode(e.target.value)}
+                        required
+                        style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "monospace", outline: "none" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>District</label>
+                      <input
+                        type="text"
+                        value={projDistrict}
+                        onChange={(e) => setProjDistrict(e.target.value)}
+                        required
+                        style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                {/* Description */}
-                <div>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Description</label>
-                  <textarea
-                    value={projDesc}
-                    onChange={(e) => setProjDesc(e.target.value)}
-                    required
-                    rows={2}
-                    style={{ width: "100%", background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "10px 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none", resize: "none" }}
-                  />
-                </div>
+                  {/* Distance calculation display */}
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Calculated Corridor Distance</label>
+                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                      <input
+                        type="text"
+                        value={projDistance}
+                        readOnly
+                        style={{ flex: 1, height: 40, background: "rgba(0,0,0,0.4)", border: "1px solid rgba(6,182,212,0.2)", borderRadius: 12, padding: "0 14px", color: "#06b6d4", fontSize: 14, fontWeight: 800, fontFamily: "monospace", outline: "none" }}
+                      />
+                      <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", width: 110, lineHeight: 1.2 }}>
+                        📏 Great-Circle spherical calc
+                      </span>
+                    </div>
+                  </div>
 
-                {/* Start Location Parameters */}
-                <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#4ade80", textTransform: "uppercase" }}>Start Position Parameters</span>
-                  <div style={{ marginTop: 6 }}>
-                    <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Junction/Station Label</label>
-                    <input
-                      type="text"
-                      value={projStartLabel}
-                      onChange={(e) => setProjStartLabel(e.target.value)}
+                  {/* Description */}
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Description</label>
+                    <textarea
+                      value={projDesc}
+                      onChange={(e) => setProjDesc(e.target.value)}
                       required
-                      style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, outline: "none" }}
+                      rows={2}
+                      style={{ width: "100%", background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "10px 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none", resize: "none" }}
                     />
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Latitude</label>
-                      <input
-                        type="text"
-                        value={projStartLat}
-                        onChange={(e) => {
-                          setProjStartLat(e.target.value);
-                          updateCalculatedDistance(e.target.value, projStartLng, projEndLat, projEndLng, trenchingLine);
-                        }}
-                        required
-                        style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Longitude</label>
-                      <input
-                        type="text"
-                        value={projStartLng}
-                        onChange={(e) => {
-                          setProjStartLng(e.target.value);
-                          updateCalculatedDistance(projStartLat, e.target.value, projEndLat, projEndLng, trenchingLine);
-                        }}
-                        required
-                        style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
-                      />
-                    </div>
-                  </div>
-                </div>
 
-                {/* End Location Parameters */}
-                <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#f87171", textTransform: "uppercase" }}>End Position Parameters</span>
-                  <div style={{ marginTop: 6 }}>
-                    <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Junction/Station Label</label>
-                    <input
-                      type="text"
-                      value={projEndLabel}
-                      onChange={(e) => setProjEndLabel(e.target.value)}
-                      required
-                      style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, outline: "none" }}
-                    />
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Latitude</label>
+                  {/* Start Location Parameters */}
+                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: "#4ade80", textTransform: "uppercase" }}>Start Position Parameters</span>
+                    <div style={{ marginTop: 6 }}>
+                      <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Junction/Station Label</label>
                       <input
                         type="text"
-                        value={projEndLat}
-                        onChange={(e) => {
-                          setProjEndLat(e.target.value);
-                          updateCalculatedDistance(projStartLat, projStartLng, e.target.value, projEndLng, trenchingLine);
-                        }}
+                        value={projStartLabel}
+                        onChange={(e) => setProjStartLabel(e.target.value)}
                         required
-                        style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                        style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, outline: "none" }}
                       />
                     </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Longitude</label>
-                      <input
-                        type="text"
-                        value={projEndLng}
-                        onChange={(e) => {
-                          setProjEndLng(e.target.value);
-                          updateCalculatedDistance(projStartLat, projStartLng, projEndLat, e.target.value, trenchingLine);
-                        }}
-                        required
-                        style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
-                      />
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Latitude</label>
+                        <input
+                          type="text"
+                          value={projStartLat}
+                          onChange={(e) => {
+                            setProjStartLat(e.target.value);
+                            updateCalculatedDistance(e.target.value, projStartLng, projEndLat, projEndLng, trenchingLine);
+                          }}
+                          required
+                          style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Longitude</label>
+                        <input
+                          type="text"
+                          value={projStartLng}
+                          onChange={(e) => {
+                            setProjStartLng(e.target.value);
+                            updateCalculatedDistance(projStartLat, e.target.value, projEndLat, projEndLng, trenchingLine);
+                          }}
+                          required
+                          style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Submit Action Buttons */}
-                <div style={{ display: "flex", gap: 12, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 14, marginTop: 6 }}>
-                  <button
-                    type="button"
-                    onClick={() => setEditingProjectItem(null)}
-                    style={{ flex: 0.8, minHeight: 44, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#94a3b8", fontSize: 13, fontWeight: 750, cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    style={{ flex: 1.2, minHeight: 44, background: "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)", border: "none", borderRadius: 12, color: "white", fontSize: 13, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 15px rgba(6, 182, 212, 0.25)" }}
-                  >
-                    ✓ Save Project & GIS
+                  {/* End Location Parameters */}
+                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: "#f87171", textTransform: "uppercase" }}>End Position Parameters</span>
+                    <div style={{ marginTop: 6 }}>
+                      <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Junction/Station Label</label>
+                      <input
+                        type="text"
+                        value={projEndLabel}
+                        onChange={(e) => setProjEndLabel(e.target.value)}
+                        required
+                        style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, outline: "none" }}
+                      />
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Latitude</label>
+                        <input
+                          type="text"
+                          value={projEndLat}
+                          onChange={(e) => {
+                            setProjEndLat(e.target.value);
+                            updateCalculatedDistance(projStartLat, projStartLng, e.target.value, projEndLng, trenchingLine);
+                          }}
+                          required
+                          style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Longitude</label>
+                        <input
+                          type="text"
+                          value={projEndLng}
+                          onChange={(e) => {
+                            setProjEndLng(e.target.value);
+                            updateCalculatedDistance(projStartLat, projStartLng, projEndLat, e.target.value, trenchingLine);
+                          }}
+                          required
+                          style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Submit Action Buttons */}
+                  <div style={{ display: "flex", gap: 12, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 14, marginTop: 6 }}>
+                    <button
+                      type="button"
+                      onClick={() => setEditingProjectItem(null)}
+                      style={{ flex: 0.8, minHeight: 44, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#94a3b8", fontSize: 13, fontWeight: 750, cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      style={{ flex: 1.2, minHeight: 44, background: "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)", border: "none", borderRadius: 12, color: "white", fontSize: 13, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 15px rgba(6, 182, 212, 0.25)" }}
+                    >
+                      ✓ Save Project & GIS
+                    </button>
+                  </div>
+                </form>
+
+              </div>
+            </div>
+          </div>
+        );
+      })()}Save Project & GIS
                   </button>
                 </div>
               </form>
