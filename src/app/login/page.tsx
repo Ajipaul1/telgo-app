@@ -1,20 +1,6 @@
 "use client";
 import { useState, useEffect, FormEvent } from "react";
 
-function checkAndRequestLocation(): Promise<"granted" | "denied"> {
-  return new Promise((resolve) => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      resolve("denied");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      () => resolve("granted"),
-      () => resolve("denied"),
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-    );
-  });
-}
-
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,11 +9,6 @@ export default function LoginPage() {
   const [msg, setMsg] = useState("");
   const [ready, setReady] = useState(false);
   const [isWebView, setIsWebView] = useState(false);
-
-  // Mandatory Location Guard state for logged-in Supervisor/Finance
-  const [loggedInUser, setLoggedInUser] = useState<{ id: string; email: string; fullName: string; role: string } | null>(null);
-  const [locChecking, setLocChecking] = useState(false);
-  const [locError, setLocError] = useState("");
 
   useEffect(() => {
     setReady(true);
@@ -86,30 +67,10 @@ export default function LoginPage() {
       if (r.ok && d.ok) {
         const role = d.user?.role ?? "supervisor";
         
-        if (role === "supervisor" || role === "finance") {
-          // Query if permission is already granted so we can skip the manual intercept
-          if (typeof navigator !== "undefined" && navigator.geolocation) {
-            if (navigator.permissions && navigator.permissions.query) {
-              try {
-                const status = await navigator.permissions.query({ name: "geolocation" as PermissionName });
-                if (status.state === "granted") {
-                  window.location.href = role === "finance" ? "/app/finance" : "/app/supervisor";
-                  return;
-                }
-              } catch (e) {
-                // fall through
-              }
-            }
-          }
-          // Hold redirect and display fullscreen location verification overlay
-          setLoggedInUser(d.user);
-          setState("idle");
-          return;
-        }
-
-        // Admins and Clients bypass location prompts and redirect immediately
+        // Redirect immediately to their dashboards
         window.location.href =
           role === "admin" ? "/app/admin" :
+          role === "finance" ? "/app/finance" :
           role === "client" ? "/app/client" :
           "/app/supervisor";
         return;
@@ -117,113 +78,6 @@ export default function LoginPage() {
       if (r.status === 403 && d.message?.includes("pending")) { setState("pending"); setMsg(d.message); return; }
       setState("error"); setMsg(d.message || "Incorrect email or password.");
     } catch { setState("error"); setMsg("Connection error. Please try again."); }
-  }
-
-  async function handleLocationPermissionCheck() {
-    setLocChecking(true);
-    setLocError("");
-    
-    const permission = await checkAndRequestLocation();
-    
-    if (permission === "granted") {
-      const role = loggedInUser?.role ?? "supervisor";
-      window.location.href = role === "finance" ? "/app/finance" : "/app/supervisor";
-    } else {
-      setLocChecking(false);
-      setLocError("Location access was denied or timed out. To log in, please allow location permissions in your browser or device settings.");
-    }
-  }
-
-  // Intercept layout if a Supervisor or Finance has logged in but needs to activate location first
-  if (ready && loggedInUser) {
-    return (
-      <main style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px 20px", background: "linear-gradient(160deg, #0d0621 0%, #060912 50%, #040d1a 100%)" }}>
-        <div className="glass fade-in" style={{ width: "100%", maxWidth: 420, padding: "40px 32px", textAlign: "center", border: "1px solid rgba(6, 182, 212, 0.25)", boxShadow: "0 24px 64px rgba(0, 0, 0, 0.7)" }}>
-          <div style={{
-            width: 72,
-            height: 72,
-            borderRadius: "50%",
-            background: loggedInUser.role === "finance" ? "rgba(250, 204, 21, 0.12)" : "rgba(6, 182, 212, 0.12)",
-            border: loggedInUser.role === "finance" ? "1px solid rgba(250, 204, 21, 0.3)" : "1px solid rgba(6, 182, 212, 0.3)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 auto 24px",
-            boxShadow: loggedInUser.role === "finance" ? "0 0 30px rgba(250, 204, 21, 0.2)" : "0 0 30px rgba(6, 182, 212, 0.2)"
-          }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={loggedInUser.role === "finance" ? "#facc15" : "#06b6d4"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-              <circle cx="12" cy="10" r="3"/>
-            </svg>
-          </div>
-
-          <h2 style={{ fontSize: 22, fontWeight: 900, color: "#f1f5f9", marginBottom: 12, letterSpacing: "-0.02em" }}>
-            Location Verification
-          </h2>
-          
-          <p style={{ fontSize: 14, color: "#94a3b8", marginBottom: 28, lineHeight: 1.6 }}>
-            Welcome back, <strong style={{ color: "#f1f5f9" }}>{loggedInUser.fullName}</strong>! As a <strong style={{ color: loggedInUser.role === "finance" ? "#fcd34d" : "#67e8f9", textTransform: "capitalize" }}>{loggedInUser.role}</strong>, you must enable location services before accessing the platform.
-          </p>
-
-          {locError && (
-            <div style={{
-              background: "rgba(239, 68, 68, 0.08)",
-              border: "1px solid rgba(239, 68, 68, 0.2)",
-              borderRadius: 12,
-              padding: "12px 14px",
-              fontSize: 12,
-              color: "#fca5a5",
-              lineHeight: 1.5,
-              textAlign: "left",
-              marginBottom: 20
-            }}>
-              ⚠️ <strong>Access Denied:</strong> {locError}
-            </div>
-          )}
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <button 
-              onClick={handleLocationPermissionCheck}
-              disabled={locChecking}
-              className="btn-primary"
-              style={{
-                minHeight: 48,
-                background: loggedInUser.role === "finance" 
-                  ? "linear-gradient(135deg, #facc15 0%, #7c3aed 100%)" 
-                  : "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)",
-                border: "none",
-                color: loggedInUser.role === "finance" ? "black" : "white",
-                fontWeight: 700,
-                boxShadow: loggedInUser.role === "finance" ? "0 8px 24px rgba(250, 204, 21, 0.3)" : "0 8px 24px rgba(6, 182, 212, 0.3)"
-              }}
-            >
-              {locChecking ? (
-                <><div className="spinner" style={{ borderTopColor: loggedInUser.role === "finance" ? "black" : "white" }} /> Verifying Location...</>
-              ) : (
-                <>
-                  <span>Activate Location & Log In</span>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="3 11 22 2 13 21 11 13 3 11"/>
-                  </svg>
-                </>
-              )}
-            </button>
-
-            <button 
-              onClick={async () => {
-                await fetch("/api/mobile/sign-out", { method: "POST" });
-                setLoggedInUser(null);
-                setLocError("");
-              }}
-              className="btn-ghost"
-              style={{ minHeight: 44, marginTop: 8 }}
-            >
-              Cancel & Sign Out
-            </button>
-          </div>
-        </div>
-      </main>
-    );
   }
 
   return (
