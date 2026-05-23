@@ -7,6 +7,7 @@ type AccessUser = {
   email: string;
   full_name: string;
   role: string;
+  login_id: string | null;
   access_status: string;
   created_at: string;
 };
