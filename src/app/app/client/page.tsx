@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
+import { ProfileModal, ProfileHeaderWidget, ProfileUser } from "@/components/profile-modal";
 
 export default function ClientDashboard() {
-  const [user, setUser] = useState<{fullName:string;email:string;role:string}|null>(null);
+  const [user, setUser] = useState<ProfileUser | null>(null);
   useEffect(() => {
     fetch("/api/mobile/me").then(r=>r.json()).then(d=>{ if(d.ok) setUser(d.user); else window.location.href="/login"; });
   }, []);

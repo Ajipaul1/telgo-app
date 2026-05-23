@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useGeolocation } from "@/lib/use-geolocation";
+import { ProfileModal, ProfileHeaderWidget, ProfileUser } from "@/components/profile-modal";
 
 export default function SupervisorDashboard() {
-  const [user, setUser] = useState<{fullName:string;email:string;role:string}|null>(null);
+  const [user, setUser] = useState<ProfileUser | null>(null);
   const { permission, requestPermission } = useGeolocation();
 
   useEffect(() => {

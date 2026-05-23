@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { ProfileModal } from "@/components/profile-modal";
+import { ProfileModal, ProfileUser } from "@/components/profile-modal";
 
 type AccessUser = {
   id: string;
@@ -27,7 +27,7 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Admin Self Profile State
-  const [adminSelf, setAdminSelf] = useState<{ userId: string; email: string; fullName: string; role: string; loginId: string } | null>(null);
+  const [adminSelf, setAdminSelf] = useState<ProfileUser | null>(null);
   const [isAdminSettingsOpen, setIsAdminSettingsOpen] = useState(false);
   const [approvalsTab, setApprovalsTab] = useState<"pending" | "active">("pending");
 
