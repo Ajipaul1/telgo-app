@@ -82,7 +82,7 @@ export default function ClientDashboard() {
 
         // Update selected worker live coordinates if they are active
         if (selectedWorker) {
-          const updated = mappedWorkers.find((w) => w.userId === selectedWorker.userId);
+          const updated = mappedWorkers.find((w: any) => w.userId === selectedWorker.userId);
           if (updated && updated.status === "active") {
             setSelectedWorker(updated);
           }
