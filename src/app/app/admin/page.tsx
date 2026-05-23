@@ -773,7 +773,7 @@ export default function AdminDashboard() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 4 }}>
                 <div>
                   <span style={{ fontSize: 10, color: "#475569", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Operational ID</span>
-                  <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 700, fontFamily: "monospace", color: "#94a3b8" }}>{selectedUser.login_id}</p>
+                  <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 700, fontFamily: "monospace", color: "#94a3b8" }}>{(selectedUser as any).login_id}</p>
                 </div>
                 <div>
                   <span style={{ fontSize: 10, color: "#475569", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</span>
