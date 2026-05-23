@@ -112,12 +112,92 @@ export default function AdminDashboard() {
       const lat2 = parseFloat(eLat);
       const lng2 = parseFloat(eLng);
       if (!isNaN(lat1) && !isNaN(lng1) && !isNaN(lat2) && !isNaN(lng2)) {
-        const dist = calculateHaversineDistance(lat1, lng1, lat2, lng2);
-        setProjDistance(`${dist.toFixed(2)} km`);
+        // Asynchronously fetch driving distance along actual roads
+        fetch(`https://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=false`)
+          .then(r => r.json())
+          .then(data => {
+            if (data.code === "Ok" && data.routes && data.routes.length > 0) {
+              const routeDistanceKm = data.routes[0].distance / 1000;
+              setProjDistance(`${routeDistanceKm.toFixed(2)} km`);
+            } else {
+              const dist = calculateHaversineDistance(lat1, lng1, lat2, lng2);
+              setProjDistance(`${dist.toFixed(2)} km`);
+            }
+          })
+          .catch(() => {
+            const dist = calculateHaversineDistance(lat1, lng1, lat2, lng2);
+            setProjDistance(`${dist.toFixed(2)} km`);
+          });
       } else {
         setProjDistance("0.00 km");
       }
     }
+  };
+
+  const appendSnappedTrenchPoint = async (lat: number, lng: number) => {
+    setTrenchingLine(prev => {
+      if (prev.length === 0) {
+        return [[lat, lng] as [number, number]];
+      }
+      
+      const lastPoint = prev[prev.length - 1];
+      fetch(`https://router.project-osrm.org/route/v1/driving/${lastPoint[1]},${lastPoint[0]};${lng},${lat}?overview=full&geometries=geojson`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.code === "Ok" && data.routes && data.routes.length > 0) {
+            const routeCoords = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
+            const newSegment = routeCoords.slice(1);
+            setTrenchingLine(old => {
+              const next = [...old, ...newSegment];
+              updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
+              return next;
+            });
+            showToast("🛣️ Trench segment conformed perfectly along the road turns!");
+          } else {
+            setTrenchingLine(old => {
+              const next = [...old, [lat, lng] as [number, number]];
+              updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
+              return next;
+            });
+          }
+        })
+        .catch(() => {
+          setTrenchingLine(old => {
+            const next = [...old, [lat, lng] as [number, number]];
+            updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
+            return next;
+          });
+        });
+        
+      return prev;
+    });
+  };
+
+  const appendSnappedUtilityPoint = async (lat: number, lng: number) => {
+    setUtilityPath(prev => {
+      if (prev.length === 0) {
+        return [[lat, lng] as [number, number]];
+      }
+      
+      const lastPoint = prev[prev.length - 1];
+      fetch(`https://router.project-osrm.org/route/v1/driving/${lastPoint[1]},${lastPoint[0]};${lng},${lat}?overview=full&geometries=geojson`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.code === "Ok" && data.routes && data.routes.length > 0) {
+            const routeCoords = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
+            const newSegment = routeCoords.slice(1);
+            setUtilityPath(old => [...old, ...newSegment]);
+            showToast("🟣 Utility link conformed perfectly along the road turns!");
+          } else {
+            setUtilityPath(old => [...old, [lat, lng] as [number, number]]);
+          }
+        })
+        .catch(() => {
+          setUtilityPath(old => [...old, [lat, lng] as [number, number]]);
+        });
+        
+      return prev;
+    });
   };
 
   const DEFAULT_PROJECTS = [
@@ -262,18 +342,9 @@ export default function AdminDashboard() {
             return next;
           });
         } else if (activePinMode === "trench") {
-          setTrenchingLine(prev => {
-            const next = [...prev, [lat, lng] as [number, number]];
-            updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
-            showToast(`🟠 Trench segment coordinate appended.`);
-            return next;
-          });
+          appendSnappedTrenchPoint(lat, lng);
         } else if (activePinMode === "utility") {
-          setUtilityPath(prev => {
-            const next = [...prev, [lat, lng] as [number, number]];
-            showToast(`🟣 Utility shift path coordinate appended.`);
-            return next;
-          });
+          appendSnappedUtilityPoint(lat, lng);
         }
       } else if (e.data.type === "MARKER_DRAG") {
         const { target, lat, lng } = e.data;
