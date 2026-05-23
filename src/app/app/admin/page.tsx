@@ -20,6 +20,11 @@ export default function AdminDashboard() {
   const [toast, setToast] = useState("");
   const [approvedCreds, setApprovedCreds] = useState<{ email: string; password: string; loginId: string } | null>(null);
   const [resending, setResending] = useState<string | null>(null);
+
+  // Tactical Geolocation Radar States
+  const [radarSelectedWorker, setRadarSelectedWorker] = useState<any | null>(null);
+  const [radarWorkers, setRadarWorkers] = useState<any[]>([]);
+  const [mapAnimateProgress, setMapAnimateProgress] = useState(0);
   
   // Navigation & Multi-View State
   const [activeView, setActiveView] = useState<"hub" | "approvals" | "map" | "settings">("hub");
@@ -49,6 +54,144 @@ export default function AdminDashboard() {
         else window.location.href = "/login";
       });
   }, []);
+
+  // Poll live telemetry for Admin Radar Map
+  useEffect(() => {
+    if (activeView !== "map") return;
+
+    const fetchRadarTelemetry = async () => {
+      try {
+        const res = await fetch("/api/mobile/live-map");
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          const seedRoster = [
+            { userId: "eng-arjun", fullName: "Arjun Nair", email: "engineer@telgo.test", role: "supervisor" },
+            { userId: "eng-rajeev", fullName: "Rajeev R", email: "supervisor@telgo.test", role: "supervisor" },
+            { userId: "eng-divya", fullName: "Divya S", email: "finance@telgo.test", role: "finance" },
+            { userId: "eng-vishnu", fullName: "Vishnu P", email: "vishnu.p@company.com", role: "supervisor" },
+          ];
+
+          const activeLocations = data.locations ?? [];
+
+          // Dynamic roster populated from database active users (supervisor and finance)
+          const databaseRoster = users
+            .filter(u => u.access_status === "active" && (u.role === "supervisor" || u.role === "finance"))
+            .map(u => ({
+              userId: u.id,
+              fullName: u.full_name,
+              email: u.email,
+              role: u.role
+            }));
+
+          // Merge database active crew with seed fallbacks to avoid duplicates
+          const rosterMap = new Map();
+          seedRoster.forEach(item => rosterMap.set(item.email, item));
+          databaseRoster.forEach(item => rosterMap.set(item.email, item));
+          const combinedRoster = Array.from(rosterMap.values());
+
+          const mapped = combinedRoster.map(item => {
+            const liveLoc = activeLocations.find((loc: any) => loc.mobileUserId === item.userId);
+            if (liveLoc) {
+              return {
+                ...item,
+                status: "active" as const,
+                latitude: liveLoc.latitude,
+                longitude: liveLoc.longitude,
+                projectName: liveLoc.projectName || "Kottayam Utility Expansion",
+                distanceFromSiteM: liveLoc.distanceFromSiteM ?? 42,
+                withinGeofence: liveLoc.withinGeofence ?? true,
+              };
+            }
+            return {
+              ...item,
+              status: "offline" as const,
+              latitude: 9.9538,
+              longitude: 76.3428,
+              projectName: "Kottayam Utility Expansion",
+              distanceFromSiteM: 0,
+              withinGeofence: false,
+            };
+          });
+
+          setRadarWorkers(mapped);
+
+          // Auto-select the first worker if none is selected yet!
+          if (mapped.length > 0) {
+            setRadarSelectedWorker(prev => {
+              if (prev) {
+                const updated = mapped.find(w => w.userId === prev.userId);
+                return updated ?? prev;
+              }
+              return mapped[0];
+            });
+          }
+        }
+      } catch { /* ignore */ }
+    };
+
+    fetchRadarTelemetry();
+    const interval = setInterval(fetchRadarTelemetry, 5000);
+    return () => clearInterval(interval);
+  }, [activeView, users, radarSelectedWorker]);
+
+  // Smooth movement animation loop
+  useEffect(() => {
+    if (activeView === "map" && radarSelectedWorker && radarSelectedWorker.status === "active") {
+      let progress = 0;
+      let frameId: number;
+      const animate = () => {
+        progress += 0.005;
+        if (progress > 1) progress = 0;
+        setMapAnimateProgress(progress);
+        frameId = requestAnimationFrame(animate);
+      };
+      frameId = requestAnimationFrame(animate);
+      return () => cancelAnimationFrame(frameId);
+    }
+  }, [activeView, radarSelectedWorker]);
+
+  // Synchronously initialize radar roster directory on map view mount
+  useEffect(() => {
+    if (activeView === "map") {
+      const seedRoster = [
+        { userId: "eng-arjun", fullName: "Arjun Nair", email: "engineer@telgo.test", role: "supervisor" },
+        { userId: "eng-rajeev", fullName: "Rajeev R", email: "supervisor@telgo.test", role: "supervisor" },
+        { userId: "eng-divya", fullName: "Divya S", email: "finance@telgo.test", role: "finance" },
+        { userId: "eng-vishnu", fullName: "Vishnu P", email: "vishnu.p@company.com", role: "supervisor" },
+      ];
+
+      const databaseRoster = users
+        .filter(u => u.access_status === "active" && (u.role === "supervisor" || u.role === "finance"))
+        .map(u => ({
+          userId: u.id,
+          fullName: u.full_name,
+          email: u.email,
+          role: u.role
+        }));
+
+      const rosterMap = new Map();
+      seedRoster.forEach(item => rosterMap.set(item.email, item));
+      databaseRoster.forEach(item => rosterMap.set(item.email, item));
+      const combinedRoster = Array.from(rosterMap.values());
+
+      const mapped = combinedRoster.map(item => ({
+        ...item,
+        status: "offline" as const, // default to offline until live telemetry polling resolves
+        latitude: 9.9538,
+        longitude: 76.3428,
+        projectName: "Kottayam Utility Expansion",
+        distanceFromSiteM: 0,
+        withinGeofence: false,
+      }));
+
+      setRadarWorkers(mapped);
+
+      // Instantly select the first worker in roster on page load
+      if (mapped.length > 0) {
+        setRadarSelectedWorker(mapped[0]);
+      }
+    }
+  }, [activeView, users]);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -206,6 +349,30 @@ export default function AdminDashboard() {
     const map: Record<string,string> = { supervisor: "#67e8f9", client: "#86efac", finance: "#fcd34d", admin: "#c4b5fd" };
     return map[role] ?? "#94a3b8";
   }
+
+  const getRadarAnimatedCoords = () => {
+    if (!radarSelectedWorker) return { x: 120, y: 150 };
+    const pathPoints = [
+      { x: 60, y: 220 },
+      { x: 130, y: 170 },
+      { x: 190, y: 190 },
+      { x: 260, y: 110 },
+    ];
+    const segmentCount = pathPoints.length - 1;
+    const scaled = mapAnimateProgress * segmentCount;
+    const index = Math.floor(scaled);
+    const fraction = scaled - index;
+
+    if (index >= segmentCount) return pathPoints[segmentCount];
+    const start = pathPoints[index];
+    const end = pathPoints[index + 1];
+    return {
+      x: start.x + (end.x - start.x) * fraction,
+      y: start.y + (end.y - start.y) * fraction,
+    };
+  };
+
+  const animCoords = getRadarAnimatedCoords();
 
   // Get dynamic greeting based on system time
   const getGreeting = () => {
