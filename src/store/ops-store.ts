@@ -167,8 +167,8 @@ export type TaskSyncStatus = "demo" | "syncing" | "supabase" | "error";
 
 export type GeolocationState = {
   permission: "prompt" | "granted" | "denied";
-  position: GeolocationPosition | null;
-  error: GeolocationPositionError | null;
+  position: any | null;
+  error: any | null;
 };
 
 export type OpsState = {

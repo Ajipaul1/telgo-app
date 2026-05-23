@@ -3,8 +3,8 @@ import { useOpsStore } from "@/store/ops-store";
 
 export type GeolocationState = {
   permission: "prompt" | "granted" | "denied";
-  position: GeolocationPosition | null;
-  error: GeolocationPositionError | null;
+  position: any | null;
+  error: any | null;
 };
 
 export function useGeolocation() {
@@ -25,16 +25,29 @@ export function useGeolocation() {
     const requestPermissionDirect = () => {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setState((s) => ({ ...s, position, permission: "granted", error: null }));
-          setLiveLocation({ position, permission: "granted", error: null });
+          const serializedPos = {
+            coords: {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy,
+              altitude: position.coords.altitude,
+              altitudeAccuracy: position.coords.altitudeAccuracy,
+              heading: position.coords.heading,
+              speed: position.coords.speed,
+            },
+            timestamp: position.timestamp,
+          };
+          setState((s) => ({ ...s, position: serializedPos, permission: "granted", error: null }));
+          setLiveLocation({ position: serializedPos, permission: "granted", error: null });
         },
         (error) => {
+          const serializedErr = { code: error.code, message: error.message };
           if (error.code === error.PERMISSION_DENIED) {
-            setState((s) => ({ ...s, permission: "denied", error }));
-            setLiveLocation({ position: null, permission: "denied", error });
+            setState((s) => ({ ...s, permission: "denied", error: serializedErr }));
+            setLiveLocation({ position: null, permission: "denied", error: serializedErr });
           } else {
-            setState((s) => ({ ...s, error }));
-            setLiveLocation({ position: null, permission: "prompt", error });
+            setState((s) => ({ ...s, error: serializedErr }));
+            setLiveLocation({ position: null, permission: "prompt", error: serializedErr });
           }
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -44,16 +57,29 @@ export function useGeolocation() {
     const startWatching = () => {
       watchId = navigator.geolocation.watchPosition(
         (position) => {
-          setState((s) => ({ ...s, position, permission: "granted", error: null }));
-          setLiveLocation({ position, permission: "granted", error: null });
+          const serializedPos = {
+            coords: {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy,
+              altitude: position.coords.altitude,
+              altitudeAccuracy: position.coords.altitudeAccuracy,
+              heading: position.coords.heading,
+              speed: position.coords.speed,
+            },
+            timestamp: position.timestamp,
+          };
+          setState((s) => ({ ...s, position: serializedPos, permission: "granted", error: null }));
+          setLiveLocation({ position: serializedPos, permission: "granted", error: null });
         },
         (error) => {
+          const serializedErr = { code: error.code, message: error.message };
           if (error.code === error.PERMISSION_DENIED) {
-            setState((s) => ({ ...s, permission: "denied", error }));
-            setLiveLocation({ position: null, permission: "denied", error });
+            setState((s) => ({ ...s, permission: "denied", error: serializedErr }));
+            setLiveLocation({ position: null, permission: "denied", error: serializedErr });
           } else {
-            setState((s) => ({ ...s, error }));
-            setLiveLocation({ position: null, permission: "prompt", error });
+            setState((s) => ({ ...s, error: serializedErr }));
+            setLiveLocation({ position: null, permission: "prompt", error: serializedErr });
           }
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -64,6 +90,7 @@ export function useGeolocation() {
       try {
         if (navigator.permissions && navigator.permissions.query) {
           const permissionStatus = await navigator.permissions.query({ name: "geolocation" as PermissionName });
+          
           setState((s) => ({ ...s, permission: permissionStatus.state as GeolocationState["permission"] }));
           
           permissionStatus.onchange = () => {
@@ -75,18 +102,12 @@ export function useGeolocation() {
 
           if (permissionStatus.state === "granted") {
             startWatching();
-          } else if (permissionStatus.state === "prompt") {
-            requestPermissionDirect();
           }
-        } else {
-          // Standard fallback
-          requestPermissionDirect();
-          startWatching();
+          // Do NOT call requestPermissionDirect() on mount when state is "prompt"
+          // to adhere to strict browser/PWA policies requiring user gesture
         }
       } catch {
-        // Fallback for query error
-        requestPermissionDirect();
-        startWatching();
+        // Fallback for query error - do not auto-request to prevent mount-time crashes
       }
     };
 
@@ -104,17 +125,30 @@ export function useGeolocation() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setState((s) => ({ ...s, position, permission: "granted", error: null }));
-        setLiveLocation({ position, permission: "granted", error: null });
+        const serializedPos = {
+          coords: {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            altitude: position.coords.altitude,
+            altitudeAccuracy: position.coords.altitudeAccuracy,
+            heading: position.coords.heading,
+            speed: position.coords.speed,
+          },
+          timestamp: position.timestamp,
+        };
+        setState((s) => ({ ...s, position: serializedPos, permission: "granted", error: null }));
+        setLiveLocation({ position: serializedPos, permission: "granted", error: null });
       },
       (error) => {
+        const serializedErr = { code: error.code, message: error.message };
         if (error.code === error.PERMISSION_DENIED) {
-          setState((s) => ({ ...s, permission: "denied", error }));
-          setLiveLocation({ position: null, permission: "denied", error });
+          setState((s) => ({ ...s, permission: "denied", error: serializedErr }));
+          setLiveLocation({ position: null, permission: "denied", error: serializedErr });
           alert("Location access denied. Please allow location permissions in your browser or application settings to proceed.");
         } else {
-          setState((s) => ({ ...s, error }));
-          setLiveLocation({ position: null, permission: "prompt", error });
+          setState((s) => ({ ...s, error: serializedErr }));
+          setLiveLocation({ position: null, permission: "prompt", error: serializedErr });
         }
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }

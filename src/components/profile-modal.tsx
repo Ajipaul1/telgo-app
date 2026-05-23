@@ -161,7 +161,7 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
             textTransform: "uppercase",
             marginBottom: 12
           }}>
-            {fullName ? fullName.charAt(0) : user.fullName.charAt(0)}
+            {fullName ? fullName.charAt(0) : (user?.fullName || "U").charAt(0)}
           </div>
           <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Profile Preview</span>
         </div>
@@ -372,7 +372,7 @@ export function ProfileHeaderWidget({ user, onOpenSettings, dashboardTitle }: Pr
           boxShadow: `0 4px 10px ${currentTheme.bg}25`,
           textTransform: "uppercase"
         }}>
-          {user.fullName.charAt(0)}
+          {(user?.fullName || "U").charAt(0)}
         </div>
       </button>
     </div>
