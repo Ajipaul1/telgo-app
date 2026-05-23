@@ -5,6 +5,60 @@ import { markMobileAttendance } from "@/lib/server/mobile-attendance";
 
 const MAX_ATTENDANCE_ACCURACY_M = 500;
 
+export async function GET(request: NextRequest) {
+  const session = await readMobileSession(request);
+  if (!session) {
+    return NextResponse.json(
+      { ok: false, message: "Sign in again to view attendance." },
+      { status: 401 }
+    );
+  }
+
+  let supabase: ReturnType<typeof getMobileAccessClient>;
+  try {
+    supabase = getMobileAccessClient();
+  } catch (error) {
+    return NextResponse.json({ ok: false, message: getErrorMessage(error) }, { status: 500 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const userId = searchParams.get("userId");
+
+  let query = supabase
+    .from("mobile_attendance")
+    .select("*")
+    .order("check_in_at", { ascending: false });
+
+  if (userId) {
+    query = query.eq("mobile_user_id", userId);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    // If the database table isn't fully created or active, fallback gracefully to empty list
+    return NextResponse.json({ ok: true, records: [] });
+  }
+
+  const records = (data ?? []).map((row) => ({
+    id: String(row.id ?? ""),
+    mobileUserId: String(row.mobile_user_id ?? ""),
+    userName: String(row.user_name ?? ""),
+    userLoginId: String(row.user_login_id ?? ""),
+    userRole: String(row.user_role ?? ""),
+    projectId: String(row.project_id ?? ""),
+    projectName: String(row.project_name ?? ""),
+    checkInAt: String(row.check_in_at ?? row.created_at ?? ""),
+    latitude: Number(row.latitude ?? 0),
+    longitude: Number(row.longitude ?? 0),
+    gpsAccuracyM: row.gps_accuracy_m == null ? null : Number(row.gps_accuracy_m),
+    distanceFromSiteM: Number(row.distance_from_site_m ?? 0),
+    withinGeofence: Boolean(row.within_geofence),
+    status: String(row.status ?? "checked_in"),
+  }));
+
+  return NextResponse.json({ ok: true, records });
+}
+
 export async function POST(request: NextRequest) {
   const session = await readMobileSession(request);
   if (!session) {
