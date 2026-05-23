@@ -194,11 +194,6 @@ export default function SupervisorDashboard() {
           gap: 12px;
           margin-bottom: 24px;
         }
-        @media (min-width: 480px) {
-          .menu-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-        }
         .module-card {
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           cursor: pointer;
@@ -289,49 +284,6 @@ export default function SupervisorDashboard() {
               </div>
             </div>
 
-            {/* MODULE 2: RE-REGISTER ATTENDANCE */}
-            <div 
-              onClick={handleReRegisterAttendance}
-              style={{
-                background: "rgba(255,255,255,0.01)",
-                border: "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 18,
-                padding: "18px 14px",
-                cursor: checkingIn ? "not-allowed" : "pointer",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                textAlign: "center",
-                gap: 8,
-              }}
-              className="glass module-card"
-            >
-              <div style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                background: "rgba(167, 139, 250, 0.08)",
-                border: "1px solid rgba(167, 139, 250, 0.2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0
-              }}>
-                {checkingIn ? (
-                  <div className="spinner" style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.1)", borderTop: "2px solid #a78bfa" }} />
-                ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-                  </svg>
-                )}
-              </div>
-              <div>
-                <h4 style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", margin: "0 0 2px" }}>Re-Register</h4>
-                <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700 }}>
-                  {checkingIn ? "Updating GPS..." : "Refresh Location"}
-                </span>
-              </div>
-            </div>
 
             {/* MODULE 3: PROJECT ASSIGNMENT DETAILS */}
             <div 
