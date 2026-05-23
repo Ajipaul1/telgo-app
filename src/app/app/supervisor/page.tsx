@@ -10,6 +10,7 @@ export default function SupervisorDashboard() {
   const [toast, setToast] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
+  const [isTrackingActiveThisSession, setIsTrackingActiveThisSession] = useState(false);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -37,7 +38,7 @@ export default function SupervisorDashboard() {
 
   // Background tracking effect
   useEffect(() => {
-    if (!isShiftActive || !user) return;
+    if (!isShiftActive || !user || !isTrackingActiveThisSession) return;
 
     let watchId: number;
 
@@ -68,7 +69,7 @@ export default function SupervisorDashboard() {
         navigator.geolocation.clearWatch(watchId);
       }
     };
-  }, [isShiftActive, user]);
+  }, [isShiftActive, user, isTrackingActiveThisSession]);
 
   async function handleToggleShift() {
     if (!user) return;
@@ -109,6 +110,7 @@ export default function SupervisorDashboard() {
               localStorage.setItem(`telgo_shift_time_${user.userId}`, now);
               setIsShiftActive(true);
               setCheckInTime(now);
+              setIsTrackingActiveThisSession(true);
               showToast("🚀 Shift Active! Daily attendance registered.");
               setIsAttendanceOpen(false);
             } else {
