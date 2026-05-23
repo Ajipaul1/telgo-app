@@ -538,7 +538,7 @@ export default function AdminDashboard() {
               {/* MODULE 2: LIVE GPS TRACKING */}
               <div 
                 className="glass module-card"
-                onClick={() => showToast("📍 Live Tracking is active in Background telemetry.")}
+                onClick={() => setActiveView("map")}
                 style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)" }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
