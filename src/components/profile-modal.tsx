@@ -25,8 +25,8 @@ export function getAvatarTheme(presetId: string) {
 interface ProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
-  user: ProfileUser | null;
-  onUpdate: (updatedUser: ProfileUser) => void;
+  user: any;
+  onUpdate: (updatedUser: any) => void;
 }
 
 export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalProps) {
@@ -298,7 +298,7 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
 
 // Custom topbar profile avatar button component
 interface ProfileHeaderWidgetProps {
-  user: ProfileUser | null;
+  user: any;
   onOpenSettings: () => void;
   dashboardTitle: string;
 }
