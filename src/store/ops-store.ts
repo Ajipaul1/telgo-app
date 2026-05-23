@@ -1591,7 +1591,12 @@ export const useOpsStore = create<OpsState>()(
     }),
     {
       name: "telgo-ops-workflow",
-      version: 2
+      version: 2,
+      partialize: (state) => {
+        // Exclude liveLocation from persistence since it contains native non-serializable GeolocationPosition objects
+        const { liveLocation, ...rest } = state;
+        return rest;
+      }
     }
   )
 );
