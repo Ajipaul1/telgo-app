@@ -6,10 +6,129 @@ import { ProfileModal, ProfileHeaderWidget, ProfileUser } from "@/components/pro
 export default function FinanceDashboard() {
   const [user, setUser] = useState<ProfileUser | null>(null);
   const { permission, requestPermission } = useGeolocation();
+  
+  const [isShiftActive, setIsShiftActive] = useState(false);
+  const [checkInTime, setCheckInTime] = useState("");
+  const [checkingIn, setCheckingIn] = useState(false);
+  const [toast, setToast] = useState("");
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(""), 3500);
+  }
 
   useEffect(() => {
-    fetch("/api/mobile/me").then(r=>r.json()).then(d=>{ if(d.ok) setUser(d.user); else window.location.href="/login"; });
+    fetch("/api/mobile/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.ok) setUser(d.user);
+        else window.location.href = "/login";
+      });
   }, []);
+
+  // Load shift state from localStorage once user is loaded
+  useEffect(() => {
+    if (user) {
+      const active = localStorage.getItem(`telgo_shift_active_${user.userId}`) === "true";
+      const time = localStorage.getItem(`telgo_shift_time_${user.userId}`) ?? "";
+      setIsShiftActive(active);
+      setCheckInTime(time);
+    }
+  }, [user]);
+
+  // Background tracking effect
+  useEffect(() => {
+    if (!isShiftActive || !user) return;
+
+    let watchId: number;
+
+    const updateBackgroundLocation = (pos: GeolocationPosition) => {
+      fetch("/api/mobile/live-map", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          gpsAccuracyM: pos.coords.accuracy,
+          projectId: "vadakkekotta-sn-cable"
+        })
+      }).catch(() => { /* silently ignore network failures in background */ });
+    };
+
+    if (navigator.geolocation) {
+      // Start watchPosition for continuous background updates
+      watchId = navigator.geolocation.watchPosition(
+        updateBackgroundLocation,
+        () => {},
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    }
+
+    return () => {
+      if (watchId && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [isShiftActive, user]);
+
+  async function handleToggleShift() {
+    if (!user) return;
+    
+    if (isShiftActive) {
+      if (!confirm("Are you sure you want to conclude your active shift and stop location telemetry?")) return;
+      localStorage.removeItem(`telgo_shift_active_${user.userId}`);
+      localStorage.removeItem(`telgo_shift_time_${user.userId}`);
+      setIsShiftActive(false);
+      setCheckInTime("");
+      showToast("🔴 Shift concluded. Background telemetry stopped.");
+    } else {
+      setCheckingIn(true);
+      showToast("⏳ Checking device GPS coordinates...");
+      
+      if (!navigator.geolocation) {
+        showToast("❌ Geolocation is not supported by your device.");
+        setCheckingIn(false);
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const res = await fetch("/api/mobile/attendance", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                gpsAccuracyM: position.coords.accuracy,
+                projectId: "vadakkekotta-sn-cable"
+              })
+            });
+            const data = await res.json();
+            if (res.ok && data.ok) {
+              const now = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+              localStorage.setItem(`telgo_shift_active_${user.userId}`, "true");
+              localStorage.setItem(`telgo_shift_time_${user.userId}`, now);
+              setIsShiftActive(true);
+              setCheckInTime(now);
+              showToast("🚀 Shift active! On-site duty marked successfully.");
+            } else {
+              showToast(`❌ ${data.message || "Attendance marking failed."}`);
+            }
+          } catch {
+            showToast("❌ Network error. Please try again.");
+          } finally {
+            setCheckingIn(false);
+          }
+        },
+        (error) => {
+          showToast(`❌ GPS access error: ${error.message}`);
+          setCheckingIn(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+  }
 
   if (permission !== "granted") {
     return (
@@ -35,7 +154,6 @@ export default function FinanceDashboard() {
           border: "1px solid rgba(250, 204, 21, 0.25)",
           boxShadow: "0 24px 64px rgba(0, 0, 0, 0.7)"
         }}>
-          {/* Animated Glow Location Pin */}
           <div style={{
             width: 72,
             height: 72,
@@ -141,61 +259,116 @@ export default function FinanceDashboard() {
       />
 
       <main style={{ flex: 1, padding: "24px 20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        <div className="glass fade-in" style={{ width: "100%", maxWidth: 420, padding: "40px 28px", textAlign: "center", borderRadius: 20, border: "1px solid rgba(255, 255, 255, 0.05)", background: "rgba(255, 255, 255, 0.01)" }}>
-          <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg,#ca8a04,#facc15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", boxShadow: "0 8px 24px rgba(250, 204, 21, 0.25)" }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <div className="glass fade-in" style={{ width: "100%", maxWidth: 420, padding: "32px 24px", textAlign: "center", borderRadius: 24, border: "1px solid rgba(255, 255, 255, 0.05)", background: "rgba(255, 255, 255, 0.01)" }}>
+          
+          {/* Avatar Profile Display */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 20 }}>
+            <div style={{
+              width: 56,
+              height: 56,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg,#ca8a04,#facc15)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "black",
+              fontSize: 22,
+              fontWeight: 800,
+              boxShadow: "0 8px 24px rgba(250,204,21,0.15)",
+              border: "1.5px solid rgba(255,255,255,0.1)",
+              textTransform: "uppercase"
+            }}>
+              {(user?.fullName || "U").charAt(0)}
+            </div>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", margin: "10px 0 2px" }}>{user?.fullName}</h2>
+            <p style={{ fontSize: 11, color: "#64748b", margin: 0 }}>{user?.email}</p>
           </div>
-          
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: "#f1f5f9", marginBottom: 6 }}>Welcome, {user?.fullName}!</h2>
-          <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>{user?.email}</p>
-          
-          <span style={{ display: "inline-block", background: "rgba(250,204,21,0.15)", color: "#fcd34d", border: "1px solid rgba(250,204,21,0.25)", borderRadius: 8, padding: "4px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", marginBottom: 28 }}>
-            Finance
-          </span>
-          
-          <p style={{ fontSize: 14, color: "#94a3b8", lineHeight: 1.6, marginBottom: 32 }}>
-            Your operations dashboard is currently active. Financial metrics, expense claims, and reporting utilities are loading.
-          </p>
+
+          {/* Active Duty Status Section */}
+          <div className="glass" style={{ padding: 20, borderRadius: 18, border: "1px solid rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.2)", marginBottom: 24, textAlign: "left" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <span style={{ fontSize: 10, fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" }}>Duty Status</span>
+              {isShiftActive ? (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(250,204,21,0.15)", color: "#fcd34d", border: "1px solid rgba(250,204,21,0.25)", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 800, textTransform: "uppercase" }}>
+                  <span className="dot-pulse" style={{ background: "#eab308", width: 6, height: 6 }} /> Active Deployment
+                </span>
+              ) : (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.04)", color: "#94a3b8", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 800, textTransform: "uppercase" }}>
+                  ⚫ Off Duty / Standby
+                </span>
+              )}
+            </div>
+
+            {isShiftActive ? (
+              <div>
+                <p style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.5, margin: 0 }}>
+                  You are currently checked-in at <strong style={{ color: "#fcd34d" }}>{checkInTime}</strong> for on-site financial auditing.
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, background: "rgba(250,204,21,0.05)", border: "1px solid rgba(250,204,21,0.15)", borderRadius: 10, padding: "10px 12px" }}>
+                  <div className="dot-pulse" style={{ background: "#facc15" }} />
+                  <span style={{ fontSize: 11, color: "#facc15", fontWeight: 700 }}>Background Telemetry Loop Active</span>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.5, margin: 0 }}>
+                  Initiate your active shift to enable high-accuracy background location telemetry and register your on-site attendance check-in.
+                </p>
+              </div>
+            )}
+          </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <button 
+              onClick={handleToggleShift}
+              disabled={checkingIn}
+              style={{
+                width: "100%",
+                minHeight: 48,
+                background: isShiftActive ? "rgba(239,68,68,0.1)" : "linear-gradient(135deg, #facc15 0%, #7c3aed 100%)",
+                border: isShiftActive ? "1px solid rgba(239,68,68,0.2)" : "none",
+                borderRadius: 14,
+                color: isShiftActive ? "#f87171" : "#060912",
+                fontSize: 14,
+                fontWeight: 750,
+                cursor: checkingIn ? "not-allowed" : "pointer",
+                fontFamily: "Outfit, sans-serif",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                boxShadow: isShiftActive ? "none" : "0 4px 15px rgba(250, 204, 21, 0.2)",
+                transition: "all 0.2s ease"
+              }}
+            >
+              {checkingIn ? (
+                <>
+                  <div className="spinner" style={{ width: 16, height: 16 }} />
+                  Verifying GPS Coordinates...
+                </>
+              ) : isShiftActive ? (
+                <>🔴 Conclude Active Shift</>
+              ) : (
+                <>🚀 Initiate Active Shift</>
+              )}
+            </button>
+
             <button 
               onClick={() => setIsSettingsOpen(true)}
               style={{
                 width: "100%",
-                minHeight: 46,
-                background: "linear-gradient(135deg, #facc15 0%, #7c3aed 100%)",
-                border: "none",
+                minHeight: 44,
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.08)",
                 borderRadius: 12,
-                color: "black",
-                fontSize: 14,
-                fontWeight: 750,
+                color: "#cbd5e1",
+                fontSize: 13,
+                fontWeight: 700,
                 cursor: "pointer",
-                fontFamily: "Outfit, sans-serif",
-                boxShadow: "0 4px 15px rgba(250, 204, 21, 0.2)"
+                fontFamily: "Outfit, sans-serif"
               }}
             >
               ⚙️ Manage Profile Settings
-            </button>
-
-            <button 
-              onClick={async () => { 
-                await fetch("/api/mobile/sign-out", { method: "POST" }); 
-                window.location.href = "/login"; 
-              }} 
-              style={{ 
-                width: "100%", 
-                minHeight: 44, 
-                background: "transparent", 
-                border: "1px solid rgba(239,68,68,0.2)", 
-                borderRadius: 12, 
-                color: "#f87171", 
-                fontSize: 14, 
-                fontWeight: 600, 
-                cursor: "pointer", 
-                fontFamily: "Outfit,sans-serif" 
-              }}
-            >
-              Sign Out
             </button>
           </div>
         </div>
@@ -208,6 +381,13 @@ export default function FinanceDashboard() {
         user={user as any} 
         onUpdate={(updated: any) => setUser(updated)} 
       />
+
+      {/* Toast Notification */}
+      {toast && (
+        <div style={{ position: "fixed", bottom: 24, left: 16, right: 16, background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: "14px 18px", fontSize: 13, fontWeight: 600, color: "#f1f5f9", zIndex: 10000, textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.5)", animation: "fadeIn 0.3s ease" }}>
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

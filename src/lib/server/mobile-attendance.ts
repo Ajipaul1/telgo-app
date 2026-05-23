@@ -106,7 +106,7 @@ export async function listMobileTrackingSnapshot(
   supabase: SupabaseClient,
   session: MobileSession
 ): Promise<any> {
-  const canViewAll = session.role === "admin" || session.role === "supervisor";
+  const canViewAll = session.role === "admin" || session.role === "supervisor" || session.role === "client";
 
   let locationQuery = supabase
     .from("mobile_live_locations")
