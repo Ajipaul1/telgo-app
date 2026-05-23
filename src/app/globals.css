@@ -16,7 +16,7 @@
   --dim: #475569;
 }
 
-html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; -webkit-font-smoothing: antialiased; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; -webkit-font-smoothing: antialiased; overscroll-behavior-y: none; }
 
 /* Safe screen - full viewport for mobile */
 .safe-screen { min-height: 100dvh; min-height: 100vh; }

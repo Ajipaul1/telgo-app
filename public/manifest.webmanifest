@@ -3,6 +3,7 @@
   "short_name": "Telgo Hub",
   "description": "Internal operations platform for Telgo Power Projects",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#060912",
   "theme_color": "#060912",

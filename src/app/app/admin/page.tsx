@@ -935,7 +935,6 @@ export default function AdminDashboard() {
               <div className="glass" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                   <h2 style={{ fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8", margin: 0 }}>Operational Crew Roster</h2>
-                  <span style={{ fontSize: 11, color: "#64748b", fontWeight: 650 }}>Polling: 5s</span>
                 </div>
                 
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1303,7 +1302,9 @@ export default function AdminDashboard() {
                   const shifts: {
                     dateStr: string;
                     signInTime: string;
+                    signInAt: string | null;
                     signOutTime: string;
+                    signOutAt: string | null;
                     withinGeofence: boolean;
                     distanceFromSiteM: number;
                     latitude: number;
@@ -1326,6 +1327,7 @@ export default function AdminDashboard() {
                     if (rec.status === "checked_out") {
                       if (currentShift) {
                         currentShift.signOutTime = timeLabel;
+                        currentShift.signOutAt = rec.checkInAt;
                         currentShift.records.push(rec);
                         shifts.push(currentShift);
                         currentShift = null;
@@ -1333,7 +1335,9 @@ export default function AdminDashboard() {
                         shifts.push({
                           dateStr: dateLabel,
                           signInTime: "--",
+                          signInAt: null,
                           signOutTime: timeLabel,
+                          signOutAt: rec.checkInAt,
                           withinGeofence: rec.withinGeofence,
                           distanceFromSiteM: rec.distanceFromSiteM,
                           latitude: rec.latitude,
@@ -1342,19 +1346,24 @@ export default function AdminDashboard() {
                         });
                       }
                     } else {
-                      if (currentShift) {
-                        shifts.push(currentShift);
+                      if (!currentShift) {
+                        currentShift = {
+                          dateStr: dateLabel,
+                          signInTime: timeLabel,
+                          signInAt: rec.checkInAt,
+                          signOutTime: "--",
+                          signOutAt: null,
+                          withinGeofence: rec.withinGeofence,
+                          distanceFromSiteM: rec.distanceFromSiteM,
+                          latitude: rec.latitude,
+                          longitude: rec.longitude,
+                          records: [rec]
+                        };
+                      } else {
+                        // Intermediate re-registration/refresh coordinate record inside active shift.
+                        // We swallow it from creating a new row, but append it to the active shift records.
+                        currentShift.records.push(rec);
                       }
-                      currentShift = {
-                        dateStr: dateLabel,
-                        signInTime: timeLabel,
-                        signOutTime: "--",
-                        withinGeofence: rec.withinGeofence,
-                        distanceFromSiteM: rec.distanceFromSiteM,
-                        latitude: rec.latitude,
-                        longitude: rec.longitude,
-                        records: [rec]
-                      };
                     }
                   });
 
@@ -1409,7 +1418,7 @@ export default function AdminDashboard() {
                           <div className="glass" style={{ padding: "12px 14px", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 12, background: "rgba(255,255,255,0.01)" }}>
                             <span style={{ fontSize: 8, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Total Shifts</span>
                             <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#a78bfa" }}>
-                              {attendanceRecords.filter(r => r.status !== "checked_out").length} <span style={{ fontSize: 10, fontWeight: 650, color: "#64748b" }}>Runs</span>
+                              {processedLogs.length} <span style={{ fontSize: 10, fontWeight: 650, color: "#64748b" }}>Runs</span>
                             </p>
                           </div>
                         </div>
@@ -1422,35 +1431,50 @@ export default function AdminDashboard() {
                                 <th style={{ padding: "10px 8px" }}>Date</th>
                                 <th style={{ padding: "10px 8px" }}>Sign In</th>
                                 <th style={{ padding: "10px 8px" }}>Sign Out</th>
+                                <th style={{ padding: "10px 8px" }}>Duration</th>
                                 <th style={{ padding: "10px 8px" }}>Geofence</th>
                                 <th style={{ padding: "10px 8px" }}>Drift</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {processedLogs.map((log, index) => (
-                                <tr key={index} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", color: "#cbd5e1" }}>
-                                  <td style={{ padding: "12px 8px", fontWeight: 700 }}>{log.dateStr}</td>
-                                  <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#4ade80" }}>{log.signInTime}</td>
-                                  <td style={{ padding: "12px 8px", fontFamily: "monospace", color: log.signOutTime !== "--" ? "#f87171" : "#64748b" }}>{log.signOutTime}</td>
-                                  <td style={{ padding: "12px 8px" }}>
-                                    <span style={{
-                                      fontSize: 9,
-                                      fontWeight: 800,
-                                      background: log.withinGeofence ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
-                                      color: log.withinGeofence ? "#4ade80" : "#f87171",
-                                      border: `1px solid ${log.withinGeofence ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)"}`,
-                                      padding: "2px 6px",
-                                      borderRadius: 4,
-                                      textTransform: "uppercase"
-                                    }}>
-                                      {log.withinGeofence ? "On-Site" : "Off-Site"}
-                                    </span>
-                                  </td>
-                                  <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#a78bfa" }}>
-                                    {log.distanceFromSiteM}m
-                                  </td>
-                                </tr>
-                              ))}
+                              {processedLogs.map((log, index) => {
+                                const durationStr = (() => {
+                                  if (!log.signInAt || !log.signOutAt) return "--";
+                                  const diffMs = new Date(log.signOutAt).getTime() - new Date(log.signInAt).getTime();
+                                  if (diffMs <= 0) return "0 mins";
+                                  const diffMins = Math.round(diffMs / 60000);
+                                  if (diffMins < 60) return `${diffMins} mins`;
+                                  const hrs = Math.floor(diffMins / 60);
+                                  const mins = diffMins % 60;
+                                  return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
+                                })();
+
+                                return (
+                                  <tr key={index} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", color: "#cbd5e1" }}>
+                                    <td style={{ padding: "12px 8px", fontWeight: 700 }}>{log.dateStr}</td>
+                                    <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#4ade80" }}>{log.signInTime}</td>
+                                    <td style={{ padding: "12px 8px", fontFamily: "monospace", color: log.signOutTime !== "--" ? "#f87171" : "#64748b" }}>{log.signOutTime}</td>
+                                    <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#fbbf24", fontWeight: 700 }}>{durationStr}</td>
+                                    <td style={{ padding: "12px 8px" }}>
+                                      <span style={{
+                                        fontSize: 9,
+                                        fontWeight: 800,
+                                        background: log.withinGeofence ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
+                                        color: log.withinGeofence ? "#4ade80" : "#f87171",
+                                        border: `1px solid ${log.withinGeofence ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)"}`,
+                                        padding: "2px 6px",
+                                        borderRadius: 4,
+                                        textTransform: "uppercase"
+                                      }}>
+                                        {log.withinGeofence ? "On-Site" : "Off-Site"}
+                                      </span>
+                                    </td>
+                                    <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#a78bfa" }}>
+                                      {log.distanceFromSiteM}m
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
