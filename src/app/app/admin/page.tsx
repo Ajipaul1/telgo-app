@@ -689,8 +689,8 @@ export default function AdminDashboard() {
       <ProfileModal
         isOpen={isAdminSettingsOpen}
         onClose={() => setIsAdminSettingsOpen(false)}
-        user={adminSelf}
-        onUpdate={(updated) => setAdminSelf(updated)}
+        user={adminSelf as any}
+        onUpdate={(updated: any) => setAdminSelf(updated)}
       />
 
       {/* ADMINISTRATIVE USER MANAGEMENT MODAL */}

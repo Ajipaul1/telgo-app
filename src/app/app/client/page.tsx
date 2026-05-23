@@ -83,8 +83,8 @@ export default function ClientDashboard() {
       <ProfileModal 
         isOpen={isSettingsOpen} 
         onClose={() => setIsSettingsOpen(false)} 
-        user={user} 
-        onUpdate={(updated) => setUser(updated)} 
+        user={user as any} 
+        onUpdate={(updated: any) => setUser(updated)} 
       />
     </div>
   );
