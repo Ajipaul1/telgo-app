@@ -19,6 +19,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, message: getErrorMessage(error) }, { status: 500 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const userId = searchParams.get("userId");
+
+  if (userId) {
+    try {
+      const { data: historyData, error: historyError } = await supabase
+        .from("mobile_live_locations")
+        .select("latitude,longitude,recorded_at")
+        .eq("mobile_user_id", userId)
+        .order("recorded_at", { ascending: true })
+        .limit(150);
+
+      if (historyError) {
+        return NextResponse.json({ ok: false, message: historyError.message }, { status: 500 });
+      }
+
+      return NextResponse.json({ ok: true, history: historyData ?? [] });
+    } catch (error) {
+      return NextResponse.json({ ok: false, message: getErrorMessage(error) }, { status: 500 });
+    }
+  }
+
   try {
     const snapshot = await listMobileTrackingSnapshot(supabase, session);
     

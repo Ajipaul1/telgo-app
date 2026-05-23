@@ -33,6 +33,7 @@ export default function AdminDashboard() {
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
   const [selectedAttendanceWorker, setSelectedAttendanceWorker] = useState<any | null>(null);
+  const [radarWorkerHistory, setRadarWorkerHistory] = useState<any[]>([]);
   
   // Active User Search State
   const [searchQuery, setSearchQuery] = useState("");
@@ -175,6 +176,28 @@ export default function AdminDashboard() {
       }
     }
   }, [activeView, users]);
+
+  // Fetch historical route coordinates when a worker is selected
+  useEffect(() => {
+    if (activeView !== "map" || !radarSelectedWorker) {
+      setRadarWorkerHistory([]);
+      return;
+    }
+
+    const fetchWorkerHistory = async () => {
+      try {
+        const res = await fetch(`/api/mobile/live-map?userId=${radarSelectedWorker.userId}`);
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          setRadarWorkerHistory(data.history ?? []);
+        }
+      } catch { /* ignore */ }
+    };
+
+    fetchWorkerHistory();
+    const interval = setInterval(fetchWorkerHistory, 8000);
+    return () => clearInterval(interval);
+  }, [activeView, radarSelectedWorker?.userId]);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -412,6 +435,16 @@ export default function AdminDashboard() {
         .active-glow-pending {
           animation: subtleGlow 2s infinite ease-in-out;
         }
+        .admin-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+        }
+        @media (min-width: 580px) {
+          .admin-grid {
+            grid-template-columns: repeat(4, 1fr);
+          }
+        }
       `}</style>
 
       {/* VIEW 1: CENTRAL CONTROL HUB */}
@@ -488,84 +521,119 @@ export default function AdminDashboard() {
 
           {/* Core System Grid */}
           <div style={{ padding: "0 16px" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#475569", marginBottom: 12 }}>Control Modules</p>
+            <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "#64748b", marginBottom: 14 }}>System Modules</p>
             
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div className="admin-grid">
               
-              {/* MODULE 1: ONBOARDING APPROVALS */}
+              {/* MODULE 1: ACCESS & PERSONNEL */}
               <div 
                 className={`glass module-card ${pending.length > 0 ? "active-glow-pending" : ""}`}
                 onClick={() => setActiveView("approvals")}
                 style={{ 
-                  padding: 20, 
-                  border: pending.length > 0 ? "1px solid rgba(245, 158, 11, 0.4)" : "1px solid rgba(255,255,255,0.06)",
-                  background: pending.length > 0 ? "linear-gradient(135deg, rgba(245,158,11,0.04) 0%, rgba(6,9,18,0.8) 100%)" : "rgba(255,255,255,0.02)"
+                  padding: "18px 14px", 
+                  borderRadius: 16,
+                  border: pending.length > 0 ? "1px solid rgba(251, 191, 36, 0.35)" : "1px solid rgba(255,255,255,0.05)",
+                  background: pending.length > 0 ? "linear-gradient(135deg, rgba(251,191,36,0.06) 0%, rgba(6,9,18,0.7) 100%)" : "rgba(255,255,255,0.01)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: 10
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: pending.length > 0 ? "rgba(245,158,11,0.12)" : "rgba(124, 58, 237, 0.12)", border: pending.length > 0 ? "1px solid rgba(245, 158, 11, 0.3)" : "1px solid rgba(124, 58, 237, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={pending.length > 0 ? "#fbbf24" : "#a78bfa"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                <div style={{ position: "relative" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: pending.length > 0 ? "rgba(251,191,36,0.12)" : "rgba(196, 181, 253, 0.1)", border: pending.length > 0 ? "1px solid rgba(251,191,36,0.3)" : "1px solid rgba(196, 181, 253, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={pending.length > 0 ? "#fbbf24" : "#c4b5fd"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
                   </div>
-                  {pending.length > 0 ? (
-                    <span style={{ fontSize: 11, fontWeight: 800, background: "#fbbf24", color: "#060912", borderRadius: 10, padding: "4px 10px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                      ⚠️ {pending.length} Waiting
+                  {pending.length > 0 && (
+                    <span style={{ position: "absolute", top: -4, right: -4, fontSize: 9, fontWeight: 900, background: "#fbbf24", color: "#060912", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", border: "1.5px solid #060912" }}>
+                      {pending.length}
                     </span>
-                  ) : (
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Clear</span>
                   )}
                 </div>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", margin: "0 0 6px" }}>Access & Approvals</h3>
-                <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5, margin: 0 }}>Review registrations, authorize operational accounts, generate credentials, and manage active system users.</p>
+                <div>
+                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>Access Control</h4>
+                  <span style={{ fontSize: 10, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>
+                    {pending.length > 0 ? `${pending.length} Pending` : "Personnel Directory"}
+                  </span>
+                </div>
               </div>
 
               {/* MODULE 2: LIVE GPS TRACKING */}
               <div 
                 className="glass module-card"
                 onClick={() => setActiveView("map")}
-                style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)" }}
+                style={{ 
+                  padding: "18px 14px", 
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.05)",
+                  background: "rgba(255,255,255,0.01)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: 10
+                }}
               >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(6, 182, 212, 0.12)", border: "1px solid rgba(6, 182, 212, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="10" r="3"/></svg>
-                  </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: "#06b6d4", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 4 }}>
-                    <span className="dot-pulse" style={{ background: "#06b6d4" }} /> Active
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(6, 182, 212, 0.1)", border: "1px solid rgba(6, 182, 212, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>Live Radar Map</h4>
+                  <span style={{ fontSize: 10, color: "#06b6d4", fontWeight: 800, textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <span className="dot-pulse" style={{ background: "#06b6d4", width: 5, height: 5 }} /> Radar Active
                   </span>
                 </div>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", margin: "0 0 6px" }}>Live Crew Radar</h3>
-                <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5, margin: 0 }}>View real-time geological location tracking and check-in coordinates of field supervisors and finance teams.</p>
               </div>
 
-              {/* MODULE 3: SYSTEM LOGGER */}
-              <div 
-                className="glass module-card"
-                onClick={() => showToast("📊 Log analytics are being collected in the secure cloud.")}
-                style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)" }}
-              >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(34, 197, 94, 0.12)", border: "1px solid rgba(34, 197, 94, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                  </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: "#22c55e", textTransform: "uppercase" }}>Healthy</span>
-                </div>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", margin: "0 0 6px" }}>Operational Metrics</h3>
-                <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5, margin: 0 }}>Inspect active logs, generated credentials copies, check-in history timestamps, and system anomalies.</p>
-              </div>
-
-              {/* MODULE 4: REAL DATABASE ATTENDANCE HISTORY */}
+              {/* MODULE 3: REAL DATABASE ATTENDANCE HISTORY */}
               <div 
                 className="glass module-card"
                 onClick={() => setActiveView("attendance")}
-                style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)" }}
+                style={{ 
+                  padding: "18px 14px", 
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.05)",
+                  background: "rgba(255,255,255,0.01)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: 10
+                }}
               >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(167, 139, 250, 0.12)", border: "1px solid rgba(167, 139, 250, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                  </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", textTransform: "uppercase" }}>Database History</span>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(167, 139, 250, 0.1)", border: "1px solid rgba(167, 139, 250, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 </div>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", margin: "0 0 6px" }}>Attendance Ledger</h3>
-                <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5, margin: 0 }}>Inspect full monthly check-in history records, coordinates, geofence metrics, and drift telemetry for all registered crew members.</p>
+                <div>
+                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>Attendance Ledger</h4>
+                  <span style={{ fontSize: 10, color: "#a78bfa", fontWeight: 700, textTransform: "uppercase" }}>Monthly registry</span>
+                </div>
+              </div>
+
+              {/* MODULE 4: SYSTEM METRICS */}
+              <div 
+                className="glass module-card"
+                onClick={() => showToast("📊 Log analytics are being collected in the secure cloud.")}
+                style={{ 
+                  padding: "18px 14px", 
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.05)",
+                  background: "rgba(255,255,255,0.01)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: 10
+                }}
+              >
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(34, 197, 94, 0.1)", border: "1px solid rgba(34, 197, 94, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>Metrics Hub</h4>
+                  <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 700, textTransform: "uppercase" }}>Operations logs</span>
+                </div>
               </div>
               
             </div>
@@ -576,7 +644,11 @@ export default function AdminDashboard() {
             <button 
               onClick={async () => {
                 if (confirm("Are you sure you want to sign out securely from Telgo Hub?")) {
-                  await fetch("/api/mobile/sign-out", { method: "POST" });
+                  try {
+                    await fetch("/api/mobile/sign-out", { method: "POST" });
+                  } catch (e) {
+                    console.error("Sign out API failed:", e);
+                  }
                   localStorage.removeItem("telgo_saved_email");
                   localStorage.removeItem("telgo_saved_password");
                   window.location.href = "/login";
@@ -980,6 +1052,30 @@ export default function AdminDashboard() {
                                 weight: 1.5,
                                 radius: 150
                               }).addTo(map);
+
+                              // Draw historical route polyline if coordinate history exists
+                              const historyCoords = ${JSON.stringify(radarWorkerHistory.map(pt => [pt.latitude, pt.longitude]))};
+                              if (historyCoords && historyCoords.length > 1) {
+                                // Glow path (thick semi-transparent back)
+                                const polylineGlow = L.polyline(historyCoords, {
+                                  color: '#06b6d4',
+                                  weight: 8,
+                                  opacity: 0.3,
+                                  lineJoin: 'round'
+                                }).addTo(map);
+
+                                // Forepath (sharp high-opacity front)
+                                const polylineMain = L.polyline(historyCoords, {
+                                  color: '#06b6d4',
+                                  weight: 3.5,
+                                  opacity: 0.95,
+                                  lineJoin: 'round'
+                                }).addTo(map);
+
+                                try {
+                                  map.fitBounds(polylineMain.getBounds(), { padding: [40, 40] });
+                                } catch(e) {}
+                              }
 
                               // Custom pulsing HTML marker icon
                               const pulseIcon = L.divIcon({

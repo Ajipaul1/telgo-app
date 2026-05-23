@@ -381,7 +381,11 @@ export default function SupervisorDashboard() {
           <button 
             onClick={async () => {
               if (confirm("Are you sure you want to sign out securely from Telgo Hub?")) {
-                await fetch("/api/mobile/sign-out", { method: "POST" });
+                try {
+                  await fetch("/api/mobile/sign-out", { method: "POST" });
+                } catch (e) {
+                  console.error("Sign out API failed:", e);
+                }
                 localStorage.removeItem("telgo_saved_email");
                 localStorage.removeItem("telgo_saved_password");
                 window.location.href = "/login";

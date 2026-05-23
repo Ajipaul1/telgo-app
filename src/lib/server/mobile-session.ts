@@ -50,7 +50,8 @@ export function clearMobileSession(response: NextResponse) {
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 0
+    maxAge: 0,
+    expires: new Date(0)
   });
 }
 
