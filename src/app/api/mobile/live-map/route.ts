@@ -39,7 +39,6 @@ export async function GET(request: NextRequest) {
     }));
 
     return NextResponse.json({ ok: true, ...snapshot, crew });
-  }
   } catch (error) {
     return NextResponse.json({ ok: false, message: getErrorMessage(error) }, { status: 500 });
   }
