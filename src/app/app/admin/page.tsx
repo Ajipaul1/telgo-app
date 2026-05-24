@@ -2557,7 +2557,7 @@ export default function AdminDashboard() {
                         <div style={{ textAlign: "left" }}>
                           <h4 style={{ fontSize: 13, fontWeight: 800, color: isSelected ? "#10b981" : "var(--text)", margin: 0 }}>{r.supervisorName}</h4>
                           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 2 }}>
-                            <span style={{ fontSize: 9, color: "var(--dim)", fontFamily: "monospace" }}>Staged: {new Date(r.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+                            <span style={{ fontSize: 9, color: "var(--dim)", fontFamily: "monospace" }}>Staged: {new Date(r.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
                             {r.status === "approved" ? (
                               <span style={{ fontSize: 9, background: "#dcfce7", color: "#15803d", border: "1px solid #bbf7d0", borderRadius: 4, padding: "1px 4px", fontWeight: 800 }}>✓ Approved & Locked</span>
                             ) : (
@@ -3079,7 +3079,7 @@ export default function AdminDashboard() {
                     <div>
                       <span style={{ fontSize: 9, fontWeight: 900, color: "#10b981", letterSpacing: "0.15em", textTransform: "uppercase" }}>Selected Staged Update</span>
                       <h3 style={{ fontSize: 18, fontWeight: 900, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>{selectedReport.supervisorName}</h3>
-                      <span style={{ fontSize: 10, color: "var(--dim)", fontFamily: "monospace" }}>Date: {selectedReport.reportDate} | Submitted: {new Date(selectedReport.created_at).toLocaleTimeString("en-IN")}</span>
+                      <span style={{ fontSize: 10, color: "var(--dim)", fontFamily: "monospace" }}>Date: {selectedReport.reportDate} | Submitted: {new Date(selectedReport.createdAt).toLocaleTimeString("en-IN")}</span>
                     </div>
 
                     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
