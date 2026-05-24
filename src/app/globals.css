@@ -3,47 +3,53 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #060912;
-  --surface: rgba(255,255,255,0.04);
-  --border: rgba(255,255,255,0.08);
+  --bg: #ffffff;
+  --surface: #f8fafc;
+  --border: #e2e8f0;
   --violet: #7c3aed;
-  --cyan: #06b6d4;
-  --green: #22c55e;
-  --amber: #f59e0b;
-  --red: #ef4444;
-  --text: #f1f5f9;
-  --muted: #94a3b8;
-  --dim: #475569;
+  --cyan: #0ea5e9;
+  --green: #16a34a;
+  --amber: #d97706;
+  --red: #dc2626;
+  --text: #0f172a;
+  --muted: #475569;
+  --dim: #64748b;
 }
 
-html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; -webkit-font-smoothing: antialiased; overscroll-behavior-y: none; }
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
 
 /* Safe screen - full viewport for mobile */
 .safe-screen { min-height: 100dvh; min-height: 100vh; }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.3); border-radius: 99px; }
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
 
-/* Glass card */
+/* Glass card (styled into a clean premium white card) */
 .glass {
-  background: rgba(255,255,255,0.04);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: #ffffff;
+  border: 1px solid var(--border);
   border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
 }
 
-/* Glow effects */
-.glow-violet { box-shadow: 0 0 24px rgba(124,58,237,0.25); }
-.glow-cyan   { box-shadow: 0 0 24px rgba(6,182,212,0.25); }
+/* Glow effects updated for light surfaces */
+.glow-violet { box-shadow: 0 8px 24px rgba(124,58,237,0.12); }
+.glow-cyan   { box-shadow: 0 8px 24px rgba(14,165,233,0.12); }
 
-/* Input base */
+/* Input base overrides for light layout */
 .input-base {
   width: 100%;
-  background: rgba(0,0,0,0.4);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: #ffffff;
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 14px 16px;
   color: var(--text);
@@ -52,7 +58,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-.input-base::placeholder { color: var(--dim); }
+.input-base::placeholder { color: #94a3b8; }
 .input-base:focus { border-color: var(--violet); box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
 
 /* Button primary */
@@ -72,20 +78,20 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
   justify-content: center;
   gap: 8px;
   transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
-  box-shadow: 0 8px 24px rgba(124,58,237,0.3);
+  box-shadow: 0 4px 12px rgba(124,58,237,0.2);
 }
 .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
 .btn-primary:active { transform: translateY(0); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-/* Button ghost */
+/* Button ghost overrides */
 .btn-ghost {
   width: 100%;
   min-height: 48px;
-  background: transparent;
-  border: 1px solid rgba(124,58,237,0.35);
+  background: #f8fafc;
+  border: 1px solid var(--border);
   border-radius: 14px;
-  color: #a78bfa;
+  color: var(--violet);
   font-family: 'Outfit', sans-serif;
   font-size: 15px;
   font-weight: 600;
@@ -94,20 +100,20 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background 0.2s, border-color 0.2s;
+  transition: all 0.2s;
 }
-.btn-ghost:hover { background: rgba(124,58,237,0.1); border-color: rgba(124,58,237,0.6); }
+.btn-ghost:hover { background: #f1f5f9; border-color: #cbd5e1; }
 
 /* Spinner */
 @keyframes spin { to { transform: rotate(360deg); } }
-.spinner { width: 20px; height: 20px; border: 2.5px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+.spinner { width: 20px; height: 20px; border: 2.5px solid rgba(0,0,0,0.1); border-top-color: var(--violet); border-radius: 50%; animation: spin 0.7s linear infinite; }
 
-/* Status badges */
+/* Status badges optimized for white sheets */
 .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; }
-.badge-pending  { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
-.badge-active   { background: rgba(34,197,94,0.15);  color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
-.badge-blocked  { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
-.badge-role     { background: rgba(124,58,237,0.15); color: #a78bfa; border: 1px solid rgba(124,58,237,0.25); }
+.badge-pending  { background: #fef9c3; color: #a16207; border: 1px solid #fef08a; }
+.badge-active   { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.badge-blocked  { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.badge-role     { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
 
 /* Pulse dot */
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
@@ -117,15 +123,15 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 .fade-in { animation: fadeIn 0.4s ease forwards; }
 
-/* Nav bar */
+/* Nav bar light theme overrides */
 .nav-bar {
   position: fixed;
   bottom: 0; left: 0; right: 0;
-  background: rgba(6,9,18,0.92);
-  backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(255,255,255,0.06);
+  background: #ffffff;
+  border-top: 1px solid var(--border);
   display: flex;
   z-index: 50;
+  box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.04);
 }
 .nav-item {
   flex: 1;
@@ -137,42 +143,277 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
   padding: 10px 0 14px;
   font-size: 10px;
   font-weight: 600;
-  color: var(--dim);
+  color: #64748b;
   cursor: pointer;
   transition: color 0.2s;
   border: none;
   background: none;
   font-family: 'Outfit', sans-serif;
 }
-.nav-item.active { color: var(--cyan); }
+.nav-item.active { color: var(--violet); }
 .nav-item svg { width: 22px; height: 22px; }
 
-/* Page content (above nav) */
+/* Page content */
 .page { padding: 0 0 80px; min-height: 100dvh; }
 
-/* Section */
-.section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; padding: 0 20px; }
+/* Section title */
+.section-title { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; padding: 0 20px; }
 
 /* Card row */
 .card-row { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
 
 /* Approval card */
 .approval-card {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.07);
+  background: #ffffff;
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
 }
 
 /* Divider */
-.divider { height: 1px; background: rgba(255,255,255,0.06); margin: 20px 16px; }
+.divider { height: 1px; background: var(--border); margin: 20px 16px; }
 
-/* Role chip */
+/* Role chips color accents */
 .role-chip { text-transform: capitalize; }
-.role-supervisor { color: #67e8f9; }
-.role-client     { color: #86efac; }
-.role-finance    { color: #fcd34d; }
-.role-admin      { color: #c4b5fd; }
+.role-supervisor { color: #0284c7; }
+.role-client     { color: #16a34a; }
+.role-finance    { color: #d97706; }
+.role-admin      { color: #6d28d9; }
+
+/* ==========================================================================
+   THEME STYLING INTERCEPTORS (FORCES WHITE/LIGHT BACKGROUNDS ACROSS INLINES)
+   ========================================================================== */
+
+main, 
+div[style*="background: linear-gradient"],
+div[style*="background:linear-gradient"],
+main[style*="background: linear-gradient"],
+main[style*="background:linear-gradient"] {
+  background: linear-gradient(165deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%) !important;
+  color: var(--text) !important;
+}
+
+/* Intercept absolute background divs */
+div[style*="background: #060912"],
+div[style*="background:#060912"],
+div[style*="background: #080b13"],
+div[style*="background:#080b13"],
+div[style*="background: #0d0621"],
+div[style*="background: #040d1a"],
+div[style*="background: rgba(6,9,18"],
+div[style*="background:rgba(6,9,18"],
+div[style*="background: rgba(10,14,26"],
+div[style*="background:rgba(10,14,26"],
+div[style*="background: rgba(3, 4, 9"],
+div[style*="background:rgba(3, 4, 9"],
+div[style*="background:rgba(0, 0, 0, 0.85)"],
+div[style*="background: rgba(6,9,18,0.85)"],
+.glass {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* Intercept subcard cards and background elements */
+div[style*="background: rgba(255,255,255,0.01)"],
+div[style*="background:rgba(255,255,255,0.01)"],
+div[style*="background: rgba(255,255,255,0.02)"],
+div[style*="background:rgba(255,255,255,0.02)"],
+div[style*="background: rgba(255,255,255,0.03)"],
+div[style*="background:rgba(255,255,255,0.03)"],
+div[style*="background: rgba(255,255,255,0.04)"],
+div[style*="background:rgba(255,255,255,0.04)"],
+div[style*="background: rgba(255,255,255,0.06)"],
+div[style*="background:rgba(255,255,255,0.06)"],
+div[style*="background: rgba(255,255,255,0.08)"],
+div[style*="background:rgba(255,255,255,0.08)"],
+div[style*="background: rgba(255,255,255,0.12)"],
+div[style*="background:rgba(255,255,255,0.12)"],
+div[style*="background: rgba(0,0,0,0.15)"],
+div[style*="background:rgba(0,0,0,0.15)"],
+div[style*="background: rgba(0,0,0,0.2)"],
+div[style*="background:rgba(0,0,0,0.2)"],
+div[style*="background: rgba(0,0,0,0.3)"],
+div[style*="background:rgba(0,0,0,0.3)"],
+div[style*="background: rgba(0,0,0,0.4)"],
+div[style*="background:rgba(0,0,0,0.4)"] {
+  background: var(--surface) !important;
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+/* Intercept standard inline inputs and text fields */
+.input-base,
+input[style*="background"],
+textarea[style*="background"],
+select[style*="background"] {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--dim) !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--violet) !important;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15) !important;
+}
+
+/* Intercept hardcoded gray, white and light slate text colors to standard dark slate */
+span[style*="color: #cbd5e1"],
+span[style*="color:#cbd5e1"],
+span[style*="color: #f1f5f9"],
+span[style*="color:#f1f5f9"],
+span[style*="color: #e2e8f0"],
+span[style*="color:#e2e8f0"],
+span[style*="color: white"],
+span[style*="color:white"],
+p[style*="color: #cbd5e1"],
+p[style*="color:#cbd5e1"],
+p[style*="color: #f1f5f9"],
+p[style*="color:#f1f5f9"],
+p[style*="color: #e2e8f0"],
+p[style*="color:#e2e8f0"],
+p[style*="color: white"],
+p[style*="color:white"],
+h1[style*="color: #cbd5e1"],
+h1[style*="color:#cbd5e1"],
+h1[style*="color: #f1f5f9"],
+h1[style*="color:#f1f5f9"],
+h1[style*="color: #e2e8f0"],
+h1[style*="color:#e2e8f0"],
+h1[style*="color: white"],
+h1[style*="color:white"],
+h2[style*="color: #cbd5e1"],
+h2[style*="color:#cbd5e1"],
+h2[style*="color: #f1f5f9"],
+h2[style*="color:#f1f5f9"],
+h2[style*="color: #e2e8f0"],
+h2[style*="color:#e2e8f0"],
+h2[style*="color: white"],
+h2[style*="color:white"],
+h3[style*="color: #cbd5e1"],
+h3[style*="color:#cbd5e1"],
+h3[style*="color: #f1f5f9"],
+h3[style*="color:#f1f5f9"],
+h3[style*="color: #e2e8f0"],
+h3[style*="color:#e2e8f0"],
+h3[style*="color: white"],
+h3[style*="color:white"],
+h4[style*="color: #cbd5e1"],
+h4[style*="color:#cbd5e1"],
+h4[style*="color: #f1f5f9"],
+h4[style*="color:#f1f5f9"],
+h4[style*="color: #e2e8f0"],
+h4[style*="color:#e2e8f0"],
+h4[style*="color: white"],
+h4[style*="color:white"],
+label[style*="color: #cbd5e1"],
+label[style*="color:#cbd5e1"],
+label[style*="color: #f1f5f9"],
+label[style*="color:#f1f5f9"],
+label[style*="color: #e2e8f0"],
+label[style*="color:#e2e8f0"],
+label[style*="color: white"],
+label[style*="color:white"],
+strong[style*="color: #cbd5e1"],
+strong[style*="color:#cbd5e1"],
+strong[style*="color: #f1f5f9"],
+strong[style*="color:#f1f5f9"],
+strong[style*="color: #e2e8f0"],
+strong[style*="color:#e2e8f0"],
+strong[style*="color: white"],
+strong[style*="color:white"],
+span[style*="color: var(--text)"],
+p[style*="color: var(--text)"],
+h1[style*="color: var(--text)"],
+h2[style*="color: var(--text)"],
+h3[style*="color: var(--text)"],
+h4[style*="color: var(--text)"] {
+  color: var(--text) !important;
+}
+
+/* Intercept subtexts to beautiful slate gray */
+span[style*="color: #94a3b8"],
+span[style*="color:#94a3b8"],
+span[style*="color: #64748b"],
+span[style*="color:#64748b"],
+span[style*="color: #475569"],
+span[style*="color:#475569"],
+p[style*="color: #94a3b8"],
+p[style*="color:#94a3b8"],
+p[style*="color: #64748b"],
+p[style*="color:#64748b"],
+p[style*="color: #475569"],
+p[style*="color:#475569"] {
+  color: var(--muted) !important;
+}
+
+/* Intercept hardcoded borders */
+*[style*="border: 1px solid rgba(255,255,255"],
+*[style*="border:1px solid rgba(255,255,255"],
+*[style*="border: 1.5px solid rgba(255,255,255"],
+*[style*="border-color: rgba(255,255,255"],
+*[style*="border-color:rgba(255,255,255"],
+*[style*="border-bottom: 1px solid rgba(255,255,255"],
+*[style*="border-bottom:1px solid rgba(255,255,255"],
+*[style*="border-top: 1px solid rgba(255,255,255"],
+*[style*="border-top:1px solid rgba(255,255,255"] {
+  border-color: var(--border) !important;
+}
+
+/* Override input containers and upload labels */
+label[style*="background: pwdReceipt"],
+label[style*="background:pwdReceipt"],
+label[style*="background: ksebReceipt"],
+label[style*="background:ksebReceipt"],
+label[style*="background: nhReceipt"],
+label[style*="background:nhReceipt"],
+label[style*="background: reqFinanceReceipt"],
+label[style*="background:reqFinanceReceipt"] {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+/* Override profile header controls */
+header,
+div[style*="background: rgba(6,9,18,0.6)"],
+div[style*="background:rgba(6,9,18,0.6)"] {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-bottom: 1px solid var(--border) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+/* Overrides for specific tools and markers in map components */
+.leaflet-bar a {
+  background-color: #ffffff !important;
+  color: #334155 !important;
+  border-color: var(--border) !important;
+}
+.leaflet-bar a:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Table light mode rules */
+th, td {
+  border-bottom: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+th {
+  background-color: var(--surface) !important;
+  color: var(--muted) !important;
+}

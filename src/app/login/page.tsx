@@ -43,14 +43,14 @@ export default function LoginPage() {
         });
       }
 
-      // Dynamically update theme-color to match the purplish start of the gradient (#0d0621)
+      // Dynamically update theme-color to match the clean light background (#ffffff)
       let meta = document.querySelector('meta[name="theme-color"]');
       if (!meta) {
         meta = document.createElement('meta');
         meta.setAttribute('name', 'theme-color');
         document.head.appendChild(meta);
       }
-      meta.setAttribute('content', '#0d0621');
+      meta.setAttribute('content', '#ffffff');
 
       const queryApk = window.location.search.includes("apk=true") || window.location.search.includes("platform=apk");
       
@@ -77,7 +77,7 @@ export default function LoginPage() {
       if (typeof window !== "undefined") {
         const meta = document.querySelector('meta[name="theme-color"]');
         if (meta) {
-          meta.setAttribute('content', '#060912');
+          meta.setAttribute('content', '#ffffff');
         }
       }
     };

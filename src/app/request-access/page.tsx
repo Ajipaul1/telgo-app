@@ -19,13 +19,13 @@ export default function RequestAccessPage() {
         meta.setAttribute('name', 'theme-color');
         document.head.appendChild(meta);
       }
-      meta.setAttribute('content', '#0d0621');
+      meta.setAttribute('content', '#ffffff');
     }
     return () => {
       if (typeof window !== "undefined") {
         const meta = document.querySelector('meta[name="theme-color"]');
         if (meta) {
-          meta.setAttribute('content', '#060912');
+          meta.setAttribute('content', '#ffffff');
         }
       }
     };

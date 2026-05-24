@@ -17,8 +17,8 @@ export const metadata: Metadata = {
   other: {
     "mobile-web-app-capable": "yes",
     "apple-mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-status-bar-style": "black-translucent",
-    "theme-color": "#060912"
+    "apple-mobile-web-app-status-bar-style": "default",
+    "theme-color": "#ffffff"
   }
 };
 
@@ -28,13 +28,13 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#060912"
+  themeColor: "#ffffff"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body style={{ background: '#060912', margin: 0, padding: 0 }}>{children}</body>
+      <body style={{ background: '#ffffff', margin: 0, padding: 0 }}>{children}</body>
     </html>
   );
 }
