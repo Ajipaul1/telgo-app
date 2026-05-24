@@ -79,35 +79,73 @@ export default function SupervisorDashboard() {
   ];
 
   const [isDailyReportOpen, setIsDailyReportOpen] = useState(false);
-  const [reportStep, setReportStep] = useState(1);
+  const [reportStep, setReportStep] = useState(1); // 1: Select/Labor, 2: WIP Progress, 3: Clearances, 4: Requests, 5: Review
   const [reportProjectId, setReportProjectId] = useState("");
   const [reportDate, setReportDate] = useState("");
   
+  // Step A: Labor & Expenses
   const [laborCount, setLaborCount] = useState(0);
-  const [otHours, setOtHours] = useState(0);
-  const [fuelExpenses, setFuelExpenses] = useState("");
-  const [travelExpenses, setTravelExpenses] = useState("");
-  const [roomRent, setRoomRent] = useState("");
-  const [roomRentReceipt, setRoomRentReceipt] = useState("");
-  const [toolRent, setToolRent] = useState("");
-  const [toolRentReceipt, setToolRentReceipt] = useState("");
+  const [includeSupervisor, setIncludeSupervisor] = useState(false);
+  const [supervisorNarration, setSupervisorNarration] = useState("");
+  const [laborWagesNarration, setLaborWagesNarration] = useState("");
 
-  const [excavationLength, setExcavationLength] = useState("");
-  const [hddLength, setHddLength] = useState("");
-  const [cableLayingLength, setCableLayingLength] = useState("");
-  const [cableMoundingLength, setCableMoundingLength] = useState("");
-  const [joiningLinksCompleted, setJoiningLinksCompleted] = useState("");
-  const [rmuFoundationStatus, setRmuFoundationStatus] = useState("");
-  const [terminationEndpoints, setTerminationEndpoints] = useState("");
+  // Overtime workers array
+  const [otWorkers, setOtWorkers] = useState<any[]>([]);
+
+  // Expenses lists (Multi-entry)
+  const [fuelExpensesList, setFuelExpensesList] = useState<any[]>([]);
+  const [travelExpensesList, setTravelExpensesList] = useState<any[]>([]);
+  const [roomRentList, setRoomRentList] = useState<any[]>([]);
+  const [toolRentList, setToolRentList] = useState<any[]>([]);
+  const [otherExpensesList, setOtherExpensesList] = useState<any[]>([]);
+
+  // Step B: WIP progress (Value + Narration + Photo for each)
+  const [wipTrenchingValue, setWipTrenchingValue] = useState("");
+  const [wipTrenchingNarration, setWipTrenchingNarration] = useState("");
+  const [wipTrenchingPhoto, setWipTrenchingPhoto] = useState("");
+
+  const [wipHddValue, setWipHddValue] = useState("");
+  const [wipHddNarration, setWipHddNarration] = useState("");
+  const [wipHddPhoto, setWipHddPhoto] = useState("");
+
+  const [wipCableLayingValue, setWipCableLayingValue] = useState("");
+  const [wipCableLayingNarration, setWipCableLayingNarration] = useState("");
+  const [wipCableLayingPhoto, setWipCableLayingPhoto] = useState("");
+
+  const [wipCableMoundingValue, setWipCableMoundingValue] = useState("");
+  const [wipCableMoundingNarration, setWipCableMoundingNarration] = useState("");
+  const [wipCableMoundingPhoto, setWipCableMoundingPhoto] = useState("");
+
+  const [wipJoiningValue, setWipJoiningValue] = useState("");
+  const [wipJoiningNarration, setWipJoiningNarration] = useState("");
+  const [wipJoiningPhoto, setWipJoiningPhoto] = useState("");
+
+  const [wipRmuValue, setWipRmuValue] = useState("");
+  const [wipRmuNarration, setWipRmuNarration] = useState("");
+  const [wipRmuPhoto, setWipRmuPhoto] = useState("");
+
+  const [wipTerminationsValue, setWipTerminationsValue] = useState("");
+  const [wipTerminationsNarration, setWipTerminationsNarration] = useState("");
+  const [wipTerminationsPhoto, setWipTerminationsPhoto] = useState("");
+
   const [terminationGpsLat, setTerminationGpsLat] = useState("");
   const [terminationGpsLng, setTerminationGpsLng] = useState("");
 
+  // Step C: Clearances
   const [pwdClearance, setPwdClearance] = useState("None");
   const [pwdReceipt, setPwdReceipt] = useState("");
   const [ksebClearance, setKsebClearance] = useState("None");
   const [ksebReceipt, setKsebReceipt] = useState("");
   const [nhClearance, setNhClearance] = useState("None");
   const [nhReceipt, setNhReceipt] = useState("");
+
+  // Step D: Operational Requests & Notes (Problems, plans, finance, etc.)
+  const [reqProblems, setReqProblems] = useState("");
+  const [reqPlans, setReqPlans] = useState("");
+  const [reqFinanceAmount, setReqFinanceAmount] = useState("");
+  const [reqFinanceNarration, setReqFinanceNarration] = useState("");
+  const [reqFinanceReceipt, setReqFinanceReceipt] = useState("");
+  const [reqAdminConcerns, setReqAdminConcerns] = useState("");
 
   const [submittingReport, setSubmittingReport] = useState(false);
 
@@ -146,6 +184,191 @@ export default function SupervisorDashboard() {
     });
   };
 
+  // Calculated Wages & OT totals
+  const totalOtHours = otWorkers.reduce((sum: number, w: any) => sum + Number(w.hours || 0), 0);
+  const totalOtWages = otWorkers.reduce((sum: number, w: any) => sum + (Number(w.workerCount || 0) * Number(w.rate || 0) * Number(w.hours || 0)), 0);
+  const crewWages = laborCount * 900;
+  const supervisorWages = includeSupervisor ? 1200 : 0;
+  const calculatedWages = crewWages + supervisorWages + totalOtWages;
+
+  const totalFuel = fuelExpensesList.reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
+  const totalTravel = travelExpensesList.reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
+  const totalRoomRent = roomRentList.reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
+  const totalToolRent = toolRentList.reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
+  const totalOtherRent = otherExpensesList.reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
+
+  // Find all active drafts in localStorage
+  const getActiveDrafts = () => {
+    const drafts: { project: any; data: any }[] = [];
+    projectsList.forEach((p) => {
+      const saved = localStorage.getItem(`telgo_draft_report_${p.id}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (
+            parsed.reportDate ||
+            parsed.laborCount > 0 ||
+            parsed.includeSupervisor ||
+            parsed.otWorkers?.length > 0 ||
+            parsed.fuelExpensesList?.length > 0 ||
+            parsed.travelExpensesList?.length > 0 ||
+            parsed.roomRentList?.length > 0 ||
+            parsed.toolRentList?.length > 0 ||
+            parsed.otherExpensesList?.length > 0 ||
+            parsed.wipTrenchingValue ||
+            parsed.wipHddValue ||
+            parsed.wipCableLayingValue ||
+            parsed.wipCableMoundingValue ||
+            parsed.wipJoiningValue ||
+            parsed.wipRmuValue ||
+            parsed.wipTerminationsValue
+          ) {
+            drafts.push({ project: p, data: parsed });
+          }
+        } catch {}
+      }
+    });
+    return drafts;
+  };
+
+  const submitReportForProject = async (projId: string, d: any) => {
+    setSubmittingReport(true);
+    const wipProgressList = {
+      trenching: { value: Number(d.wipTrenchingValue || 0), narration: d.wipTrenchingNarration || "", photo: d.wipTrenchingPhoto || "" },
+      hdd: { value: Number(d.wipHddValue || 0), narration: d.wipHddNarration || "", photo: d.wipHddPhoto || "" },
+      cableLaying: { value: Number(d.wipCableLayingValue || 0), narration: d.wipCableLayingNarration || "", photo: d.wipCableLayingPhoto || "" },
+      cableMounding: { value: Number(d.wipCableMoundingValue || 0), narration: d.wipCableMoundingNarration || "", photo: d.wipCableMoundingPhoto || "" },
+      joining: { value: Number(d.wipJoiningValue || 0), narration: d.wipJoiningNarration || "", photo: d.wipJoiningPhoto || "" },
+      rmu: { value: Number(d.wipRmuValue || 0), narration: d.wipRmuNarration || "", photo: d.wipRmuPhoto || "" },
+      terminations: { value: Number(d.wipTerminationsValue || 0), narration: d.wipTerminationsNarration || "", photo: d.wipTerminationsPhoto || "" }
+    };
+
+    const requestsAndNotes = {
+      problems: d.reqProblems || "",
+      plans: d.reqPlans || "",
+      financeAmount: d.reqFinanceAmount || "",
+      financeNarration: d.reqFinanceNarration || "",
+      financeReceipt: d.reqFinanceReceipt || "",
+      adminConcerns: d.reqAdminConcerns || ""
+    };
+
+    const payload = {
+      reportDate: d.reportDate || new Date().toISOString().split("T")[0],
+      projectId: projId,
+      laborCount: Number(d.laborCount || 0),
+      includeSupervisor: !!d.includeSupervisor,
+      supervisorNarration: d.supervisorNarration || "",
+      laborWagesNarration: d.laborWagesNarration || "",
+      otWorkers: d.otWorkers || [],
+      fuelExpensesList: d.fuelExpensesList || [],
+      travelExpensesList: d.travelExpensesList || [],
+      roomRentList: d.roomRentList || [],
+      toolRentList: d.toolRentList || [],
+      otherExpensesList: d.otherExpensesList || [],
+      wipProgressList,
+      requestsAndNotes,
+      terminationEndpoints: Number(d.wipTerminationsValue || 0),
+      terminationGpsLat: d.terminationGpsLat ? Number(d.terminationGpsLat) : undefined,
+      terminationGpsLng: d.terminationGpsLng ? Number(d.terminationGpsLng) : undefined,
+      clearances: {
+        PWD: { status: d.pwdClearance || "None", receipt: d.pwdReceipt || "" },
+        KSEB: { status: d.ksebClearance || "None", receipt: d.ksebReceipt || "" },
+        NH: { status: d.nhClearance || "None", receipt: d.nhReceipt || "" }
+      }
+    };
+
+    try {
+      const res = await fetch("/api/mobile/daily-reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        showToast(`🚀 Report for ${projId} submitted successfully!`);
+        localStorage.removeItem(`telgo_draft_report_${projId}`);
+        if (reportProjectId === projId) {
+          // Clear current states if it was active
+          setLaborCount(0);
+          setIncludeSupervisor(false);
+          setSupervisorNarration("");
+          setLaborWagesNarration("");
+          setOtWorkers([]);
+          setFuelExpensesList([]);
+          setTravelExpensesList([]);
+          setRoomRentList([]);
+          setToolRentList([]);
+          setOtherExpensesList([]);
+          setWipTrenchingValue("");
+          setWipTrenchingNarration("");
+          setWipTrenchingPhoto("");
+          setWipHddValue("");
+          setWipHddNarration("");
+          setWipHddPhoto("");
+          setWipCableLayingValue("");
+          setWipCableLayingNarration("");
+          setWipCableLayingPhoto("");
+          setWipCableMoundingValue("");
+          setWipCableMoundingNarration("");
+          setWipCableMoundingPhoto("");
+          setWipJoiningValue("");
+          setWipJoiningNarration("");
+          setWipJoiningPhoto("");
+          setWipRmuValue("");
+          setWipRmuNarration("");
+          setWipRmuPhoto("");
+          setWipTerminationsValue("");
+          setWipTerminationsNarration("");
+          setWipTerminationsPhoto("");
+          setTerminationGpsLat("");
+          setTerminationGpsLng("");
+          setPwdClearance("None");
+          setPwdReceipt("");
+          setKsebClearance("None");
+          setKsebReceipt("");
+          setNhClearance("None");
+          setNhReceipt("");
+          setReqProblems("");
+          setReqPlans("");
+          setReqFinanceAmount("");
+          setReqFinanceNarration("");
+          setReqFinanceReceipt("");
+          setReqAdminConcerns("");
+        }
+        return true;
+      } else {
+        showToast(`❌ Submission error: ${data.message || "Unknown error."}`);
+        return false;
+      }
+    } catch (err) {
+      showToast("📡 Connection issue. Draft cached locally in offline queue.");
+      const localQueue = localStorage.getItem("telgo_offline_submissions");
+      const parsedQueue = localQueue ? JSON.parse(localQueue) : [];
+      parsedQueue.push(payload);
+      localStorage.setItem("telgo_offline_submissions", JSON.stringify(parsedQueue));
+      localStorage.removeItem(`telgo_draft_report_${projId}`);
+      return true;
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
+
+  const submitAllActiveDrafts = async () => {
+    const drafts = getActiveDrafts();
+    if (drafts.length === 0) {
+      showToast("ℹ️ No active drafts to submit.");
+      return;
+    }
+    let successCount = 0;
+    for (const d of drafts) {
+      const ok = await submitReportForProject(d.project.id, d.data);
+      if (ok) successCount++;
+    }
+    showToast(`✓ Completed ${successCount} report submissions!`);
+    setIsDailyReportOpen(false);
+  };
+
+  // Sync projects list with localStorage to show Admin updates instantly in read-only format
   useEffect(() => {
     const saved = localStorage.getItem("telgo_custom_projects");
     if (saved) {
@@ -163,6 +386,7 @@ export default function SupervisorDashboard() {
     }
   }, [isProjectsOpen]);
 
+  // Load draft from localStorage when reportProjectId is selected
   useEffect(() => {
     if (!reportProjectId) return;
     const saved = localStorage.getItem(`telgo_draft_report_${reportProjectId}`);
@@ -171,78 +395,159 @@ export default function SupervisorDashboard() {
         const d = JSON.parse(saved);
         setReportDate(d.reportDate || "");
         setLaborCount(Number(d.laborCount || 0));
-        setOtHours(Number(d.otHours || 0));
-        setFuelExpenses(d.fuelExpenses || "");
-        setTravelExpenses(d.travelExpenses || "");
-        setRoomRent(d.roomRent || "");
-        setRoomRentReceipt(d.roomRentReceipt || "");
-        setToolRent(d.toolRent || "");
-        setToolRentReceipt(d.toolRentReceipt || "");
-        setExcavationLength(d.excavationLength || "");
-        setHddLength(d.hddLength || "");
-        setCableLayingLength(d.cableLayingLength || "");
-        setCableMoundingLength(d.cableMoundingLength || "");
-        setJoiningLinksCompleted(d.joiningLinksCompleted || "");
-        setRmuFoundationStatus(d.rmuFoundationStatus || "");
-        setTerminationEndpoints(d.terminationEndpoints || "");
+        setIncludeSupervisor(!!d.includeSupervisor);
+        setSupervisorNarration(d.supervisorNarration || "");
+        setLaborWagesNarration(d.laborWagesNarration || "");
+        setOtWorkers(d.otWorkers || []);
+        setFuelExpensesList(d.fuelExpensesList || []);
+        setTravelExpensesList(d.travelExpensesList || []);
+        setRoomRentList(d.roomRentList || []);
+        setToolRentList(d.toolRentList || []);
+        setOtherExpensesList(d.otherExpensesList || []);
+        
+        setWipTrenchingValue(d.wipTrenchingValue || "");
+        setWipTrenchingNarration(d.wipTrenchingNarration || "");
+        setWipTrenchingPhoto(d.wipTrenchingPhoto || "");
+        
+        setWipHddValue(d.wipHddValue || "");
+        setWipHddNarration(d.wipHddNarration || "");
+        setWipHddPhoto(d.wipHddPhoto || "");
+        
+        setWipCableLayingValue(d.wipCableLayingValue || "");
+        setWipCableLayingNarration(d.wipCableLayingNarration || "");
+        setWipCableLayingPhoto(d.wipCableLayingPhoto || "");
+        
+        setWipCableMoundingValue(d.wipCableMoundingValue || "");
+        setWipCableMoundingNarration(d.wipCableMoundingNarration || "");
+        setWipCableMoundingPhoto(d.wipCableMoundingPhoto || "");
+        
+        setWipJoiningValue(d.wipJoiningValue || "");
+        setWipJoiningNarration(d.wipJoiningNarration || "");
+        setWipJoiningPhoto(d.wipJoiningPhoto || "");
+        
+        setWipRmuValue(d.wipRmuValue || "");
+        setWipRmuNarration(d.wipRmuNarration || "");
+        setWipRmuPhoto(d.wipRmuPhoto || "");
+        
+        setWipTerminationsValue(d.wipTerminationsValue || "");
+        setWipTerminationsNarration(d.wipTerminationsNarration || "");
+        setWipTerminationsPhoto(d.wipTerminationsPhoto || "");
+        
         setTerminationGpsLat(d.terminationGpsLat || "");
         setTerminationGpsLng(d.terminationGpsLng || "");
+        
         setPwdClearance(d.pwdClearance || "None");
         setPwdReceipt(d.pwdReceipt || "");
         setKsebClearance(d.ksebClearance || "None");
         setKsebReceipt(d.ksebReceipt || "");
         setNhClearance(d.nhClearance || "None");
         setNhReceipt(d.nhReceipt || "");
+
+        setReqProblems(d.reqProblems || "");
+        setReqPlans(d.reqPlans || "");
+        setReqFinanceAmount(d.reqFinanceAmount || "");
+        setReqFinanceNarration(d.reqFinanceNarration || "");
+        setReqFinanceReceipt(d.reqFinanceReceipt || "");
+        setReqAdminConcerns(d.reqAdminConcerns || "");
       } catch (e) {
         console.error("Error parsing report draft:", e);
       }
     } else {
       setReportDate("");
       setLaborCount(0);
-      setOtHours(0);
-      setFuelExpenses("");
-      setTravelExpenses("");
-      setRoomRent("");
-      setRoomRentReceipt("");
-      setToolRent("");
-      setToolRentReceipt("");
-      setExcavationLength("");
-      setHddLength("");
-      setCableLayingLength("");
-      setCableMoundingLength("");
-      setJoiningLinksCompleted("");
-      setRmuFoundationStatus("");
-      setTerminationEndpoints("");
+      setIncludeSupervisor(false);
+      setSupervisorNarration("");
+      setLaborWagesNarration("");
+      setOtWorkers([]);
+      setFuelExpensesList([]);
+      setTravelExpensesList([]);
+      setRoomRentList([]);
+      setToolRentList([]);
+      setOtherExpensesList([]);
+      
+      setWipTrenchingValue("");
+      setWipTrenchingNarration("");
+      setWipTrenchingPhoto("");
+      
+      setWipHddValue("");
+      setWipHddNarration("");
+      setWipHddPhoto("");
+      
+      setWipCableLayingValue("");
+      setWipCableLayingNarration("");
+      setWipCableLayingPhoto("");
+      
+      setWipCableMoundingValue("");
+      setWipCableMoundingNarration("");
+      setWipCableMoundingPhoto("");
+      
+      setWipJoiningValue("");
+      setWipJoiningNarration("");
+      setWipJoiningPhoto("");
+      
+      setWipRmuValue("");
+      setWipRmuNarration("");
+      setWipRmuPhoto("");
+      
+      setWipTerminationsValue("");
+      setWipTerminationsNarration("");
+      setWipTerminationsPhoto("");
+      
       setTerminationGpsLat("");
       setTerminationGpsLng("");
+      
       setPwdClearance("None");
       setPwdReceipt("");
       setKsebClearance("None");
       setKsebReceipt("");
       setNhClearance("None");
       setNhReceipt("");
+
+      setReqProblems("");
+      setReqPlans("");
+      setReqFinanceAmount("");
+      setReqFinanceNarration("");
+      setReqFinanceReceipt("");
+      setReqAdminConcerns("");
     }
   }, [reportProjectId]);
 
+  // Save report states to localStorage draft on any changes
   useEffect(() => {
     if (!reportProjectId) return;
     const draft = {
       reportDate,
       laborCount,
-      otHours,
-      fuelExpenses,
-      travelExpenses,
-      roomRent,
-      roomRentReceipt,
-      toolRent,
-      toolRentReceipt,
-      excavationLength,
-      hddLength,
-      cableLayingLength,
-      cableMoundingLength,
-      joiningLinksCompleted,
-      rmuFoundationStatus,
-      terminationEndpoints,
+      includeSupervisor,
+      supervisorNarration,
+      laborWagesNarration,
+      otWorkers,
+      fuelExpensesList,
+      travelExpensesList,
+      roomRentList,
+      toolRentList,
+      otherExpensesList,
+      wipTrenchingValue,
+      wipTrenchingNarration,
+      wipTrenchingPhoto,
+      wipHddValue,
+      wipHddNarration,
+      wipHddPhoto,
+      wipCableLayingValue,
+      wipCableLayingNarration,
+      wipCableLayingPhoto,
+      wipCableMoundingValue,
+      wipCableMoundingNarration,
+      wipCableMoundingPhoto,
+      wipJoiningValue,
+      wipJoiningNarration,
+      wipJoiningPhoto,
+      wipRmuValue,
+      wipRmuNarration,
+      wipRmuPhoto,
+      wipTerminationsValue,
+      wipTerminationsNarration,
+      wipTerminationsPhoto,
       terminationGpsLat,
       terminationGpsLng,
       pwdClearance,
@@ -250,27 +555,35 @@ export default function SupervisorDashboard() {
       ksebClearance,
       ksebReceipt,
       nhClearance,
-      nhReceipt
+      nhReceipt,
+      reqProblems,
+      reqPlans,
+      reqFinanceAmount,
+      reqFinanceNarration,
+      reqFinanceReceipt,
+      reqAdminConcerns
     };
     localStorage.setItem(`telgo_draft_report_${reportProjectId}`, JSON.stringify(draft));
   }, [
     reportProjectId,
     reportDate,
     laborCount,
-    otHours,
-    fuelExpenses,
-    travelExpenses,
-    roomRent,
-    roomRentReceipt,
-    toolRent,
-    toolRentReceipt,
-    excavationLength,
-    hddLength,
-    cableLayingLength,
-    cableMoundingLength,
-    joiningLinksCompleted,
-    rmuFoundationStatus,
-    terminationEndpoints,
+    includeSupervisor,
+    supervisorNarration,
+    laborWagesNarration,
+    otWorkers,
+    fuelExpensesList,
+    travelExpensesList,
+    roomRentList,
+    toolRentList,
+    otherExpensesList,
+    wipTrenchingValue, wipTrenchingNarration, wipTrenchingPhoto,
+    wipHddValue, wipHddNarration, wipHddPhoto,
+    wipCableLayingValue, wipCableLayingNarration, wipCableLayingPhoto,
+    wipCableMoundingValue, wipCableMoundingNarration, wipCableMoundingPhoto,
+    wipJoiningValue, wipJoiningNarration, wipJoiningPhoto,
+    wipRmuValue, wipRmuNarration, wipRmuPhoto,
+    wipTerminationsValue, wipTerminationsNarration, wipTerminationsPhoto,
     terminationGpsLat,
     terminationGpsLng,
     pwdClearance,
@@ -278,7 +591,13 @@ export default function SupervisorDashboard() {
     ksebClearance,
     ksebReceipt,
     nhClearance,
-    nhReceipt
+    nhReceipt,
+    reqProblems,
+    reqPlans,
+    reqFinanceAmount,
+    reqFinanceNarration,
+    reqFinanceReceipt,
+    reqAdminConcerns
   ]);
 
   function showToast(msg: string) {
@@ -1113,7 +1432,7 @@ export default function SupervisorDashboard() {
         }}>
           <div className="glass fade-in" style={{
             width: "100%",
-            maxWidth: 440,
+            maxWidth: 460,
             background: "linear-gradient(135deg, #0e0828 0%, #060912 100%)",
             border: "1px solid rgba(255,255,255,0.08)",
             borderRadius: 24,
@@ -1144,7 +1463,7 @@ export default function SupervisorDashboard() {
 
             {/* Step Progress Bar */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: "10px 14px", borderRadius: 14 }}>
-              {[1, 2, 3, 4].map((step) => (
+              {[1, 2, 3, 4, 5].map((step) => (
                 <div key={step} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <div style={{
                     width: 22,
@@ -1161,36 +1480,36 @@ export default function SupervisorDashboard() {
                   }}>
                     {reportStep > step ? "✓" : step}
                   </div>
-                  {step < 4 && <div style={{ width: 14, height: 1, background: reportStep > step ? "#10b981" : "rgba(255,255,255,0.08)" }} />}
+                  {step < 5 && <div style={{ width: 14, height: 1, background: reportStep > step ? "#10b981" : "rgba(255,255,255,0.08)" }} />}
                 </div>
               ))}
               <span style={{ fontSize: 10, fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>
-                Step {reportStep} of 4
+                Step {reportStep} of 5
               </span>
+            </div>
+
+            {/* Project Selection Dropdown - Visible on EVERY page */}
+            <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", padding: 12, borderRadius: 16 }}>
+              <label style={{ display: "block", fontSize: 10, fontWeight: 800, color: "#67e8f9", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Active Project Corridor</label>
+              <select
+                value={reportProjectId}
+                onChange={(e) => setReportProjectId(e.target.value)}
+                style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none", cursor: "pointer", fontWeight: 700 }}
+              >
+                {projectsList.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
+                ))}
+              </select>
             </div>
 
             {/* Scrollable Wizard Body */}
             <div style={{ flex: 1, overflowY: "auto", paddingRight: 4, display: "flex", flexDirection: "column", gap: 14, textAlign: "left" }}>
-              
-              {/* STEP 1: SELECT PROJECT, DATE & EXPENSES */}
-              {reportStep === 1 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: "0 0 4px" }}>Step A: Project & Wages/Expenses</h4>
-                  
-                  {/* Project Selector */}
-                  <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Project Corridor</label>
-                    <select
-                      value={reportProjectId}
-                      onChange={(e) => setReportProjectId(e.target.value)}
-                      style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none", cursor: "pointer" }}
-                    >
-                      {projectsList.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
-                      ))}
-                    </select>
-                  </div>
 
+              {/* STEP 1: LABOR, OVERTIME & EXPENSES */}
+              {reportStep === 1 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: 0 }}>Step 1: Labor & Expenses</h4>
+                  
                   {/* Date picker */}
                   <div>
                     <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Report Date</label>
@@ -1204,16 +1523,18 @@ export default function SupervisorDashboard() {
                         d.setDate(d.getDate() - 7);
                         return d.toISOString().split("T")[0];
                       })()}
-                      style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
+                      style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none", fontWeight: 700 }}
                       required
                     />
-                    <span style={{ fontSize: 9, color: "#64748b", display: "block", marginTop: 4 }}>Maximum submission range is today or up to 7 days in the past.</span>
                   </div>
 
-                  {/* Wages Counter logic */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14 }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Workers Count</label>
+                  {/* Labor Wages Section */}
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Labor Count & Attendance</span>
+                    
+                    {/* Crew count */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 12, color: "#cbd5e1" }}>On-Site Crew Count</span>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <button type="button" onClick={() => setLaborCount(Math.max(0, laborCount - 1))} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "white", cursor: "pointer", fontWeight: 900 }}>-</button>
                         <input
@@ -1225,202 +1546,586 @@ export default function SupervisorDashboard() {
                         <button type="button" onClick={() => setLaborCount(laborCount + 1)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "white", cursor: "pointer", fontWeight: 900 }}>+</button>
                       </div>
                     </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Overtime Hours</label>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <button type="button" onClick={() => setOtHours(Math.max(0, otHours - 1))} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "white", cursor: "pointer", fontWeight: 900 }}>-</button>
-                        <input
-                          type="number"
-                          value={otHours}
-                          onChange={(e) => setOtHours(Math.max(0, parseInt(e.target.value) || 0))}
-                          style={{ width: 40, height: 28, background: "transparent", border: "none", color: "white", fontSize: 14, fontWeight: 800, textAlign: "center", outline: "none" }}
-                        />
-                        <button type="button" onClick={() => setOtHours(otHours + 1)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "white", cursor: "pointer", fontWeight: 900 }}>+</button>
-                      </div>
-                    </div>
-                    
-                    {/* Live wages display */}
-                    <div style={{ gridColumn: "span 2", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 10, marginTop: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
-                        <span style={{ fontSize: 10, color: "#64748b", fontWeight: 800, textTransform: "uppercase" }}>Calculated Wages</span>
-                        <p style={{ margin: 0, fontSize: 8, color: "#64748b" }}>(₹900/worker + ₹150/OT-hour)</p>
-                      </div>
-                      <span style={{ fontSize: 18, fontWeight: 900, color: "#10b981", letterSpacing: "-0.5px" }}>
-                        ₹{(laborCount * 900) + (otHours * 150)}
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Operational Expenses */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Fuel Expense (₹)</label>
-                      <input
-                        type="number"
-                        placeholder="0.00"
-                        value={fuelExpenses}
-                        onChange={(e) => setFuelExpenses(e.target.value)}
-                        style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Travel Expense (₹)</label>
-                      <input
-                        type="number"
-                        placeholder="0.00"
-                        value={travelExpenses}
-                        onChange={(e) => setTravelExpenses(e.target.value)}
-                        style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Room rent + Receipt */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.03)", padding: 10, borderRadius: 12 }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Room Rent (₹)</label>
-                      <input
-                        type="number"
-                        placeholder="0.00"
-                        value={roomRent}
-                        onChange={(e) => setRoomRent(e.target.value)}
-                        style={{ width: "100%", height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Rent Receipt</label>
-                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, width: "100%", height: 34, background: roomRentReceipt ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: roomRentReceipt ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: roomRentReceipt ? "#10b981" : "#cbd5e1", fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                        {roomRentReceipt ? "Receipt ✓" : "Upload File"}
+                    {/* Supervisor Option */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: 10 }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
                         <input
-                          type="file"
-                          accept="image/*"
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const compressed = await compressImage(file);
-                              setRoomRentReceipt(compressed);
-                            }
-                          }}
-                          style={{ display: "none" }}
+                          type="checkbox"
+                          checked={includeSupervisor}
+                          onChange={(e) => setIncludeSupervisor(e.target.checked)}
+                          style={{ accentColor: "#06b6d4", width: 16, height: 16 }}
                         />
+                        <span style={{ fontSize: 12, color: "#cbd5e1", fontWeight: 700 }}>Include Supervisor attendance (₹1200)</span>
                       </label>
+                      {includeSupervisor && (
+                        <input
+                          type="text"
+                          placeholder="Supervisor narration note..."
+                          value={supervisorNarration}
+                          onChange={(e) => setSupervisorNarration(e.target.value)}
+                          style={{ width: "100%", height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 10px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                        />
+                      )}
+                    </div>
+
+                    {/* Wages Narration */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <span style={{ fontSize: 9, color: "#64748b", fontWeight: 800, textTransform: "uppercase" }}>Wages / Attendance Narration</span>
+                      <input
+                        type="text"
+                        placeholder="General wages narration notes..."
+                        value={laborWagesNarration}
+                        onChange={(e) => setLaborWagesNarration(e.target.value)}
+                        style={{ width: "100%", height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 10px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                      />
                     </div>
                   </div>
 
-                  {/* Tool rent + Receipt */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.03)", padding: 10, borderRadius: 12 }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Tool Rent (₹)</label>
-                      <input
-                        type="number"
-                        placeholder="0.00"
-                        value={toolRent}
-                        onChange={(e) => setToolRent(e.target.value)}
-                        style={{ width: "100%", height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
-                      />
+                  {/* Overtime Workers Section */}
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Overtime Workers</span>
+                      <button
+                        type="button"
+                        onClick={() => setOtWorkers([...otWorkers, { id: Math.random().toString(), workerCount: 1, rate: 150, hours: 1, narration: "" }])}
+                        style={{ fontSize: 10, fontWeight: 800, color: "#a78bfa", background: "rgba(167, 139, 250, 0.08)", border: "1px solid rgba(167, 139, 250, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
+                      >
+                        ➕ Add OT Worker
+                      </button>
                     </div>
+
+                    {otWorkers.length === 0 ? (
+                      <p style={{ margin: 0, fontSize: 11, color: "#64748b", textAlign: "center" }}>No active overtime entries.</p>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {otWorkers.map((item, idx) => (
+                          <div key={item.id} style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span style={{ fontSize: 10, color: "#a78bfa", fontWeight: 800 }}>Group #{idx + 1}</span>
+                              <button
+                                type="button"
+                                onClick={() => setOtWorkers(otWorkers.filter((x) => x.id !== item.id))}
+                                style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
+                              >
+                                Remove
+                              </button>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                              <div>
+                                <span style={{ fontSize: 9, color: "#64748b" }}>Qty</span>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={item.workerCount}
+                                  onChange={(e) => {
+                                    const val = Math.max(1, parseInt(e.target.value) || 1);
+                                    setOtWorkers(otWorkers.map((x) => x.id === item.id ? { ...x, workerCount: val } : x));
+                                  }}
+                                  style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 6px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                                />
+                              </div>
+                              <div>
+                                <span style={{ fontSize: 9, color: "#64748b" }}>Rate (₹/hr)</span>
+                                <input
+                                  type="number"
+                                  value={item.rate}
+                                  onChange={(e) => {
+                                    const val = Math.max(0, parseInt(e.target.value) || 0);
+                                    setOtWorkers(otWorkers.map((x) => x.id === item.id ? { ...x, rate: val } : x));
+                                  }}
+                                  style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 6px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                                />
+                              </div>
+                              <div>
+                                <span style={{ fontSize: 9, color: "#64748b" }}>Hours</span>
+                                <input
+                                  type="number"
+                                  value={item.hours}
+                                  onChange={(e) => {
+                                    const val = Math.max(0, parseFloat(e.target.value) || 0);
+                                    setOtWorkers(otWorkers.map((x) => x.id === item.id ? { ...x, hours: val } : x));
+                                  }}
+                                  style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 6px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                                />
+                              </div>
+                            </div>
+                            <input
+                              type="text"
+                              placeholder="OT task narration..."
+                              value={item.narration}
+                              onChange={(e) => {
+                                setOtWorkers(otWorkers.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
+                              }}
+                              style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                            />
+                            <div style={{ fontSize: 10, color: "#10b981", textAlign: "right", fontWeight: 700 }}>
+                              Subtotal: ₹{item.workerCount * item.rate * item.hours}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Wages Live Total Glow Panel */}
+                  <div style={{ background: "rgba(16, 185, 129, 0.05)", border: "1px solid rgba(16, 185, 129, 0.15)", padding: 12, borderRadius: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Rent Receipt</label>
-                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, width: "100%", height: 34, background: toolRentReceipt ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: toolRentReceipt ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: toolRentReceipt ? "#10b981" : "#cbd5e1", fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                        {toolRentReceipt ? "Receipt ✓" : "Upload File"}
+                      <span style={{ fontSize: 10, color: "#10b981", fontWeight: 800, textTransform: "uppercase" }}>Total Wages Sum</span>
+                      <p style={{ margin: 0, fontSize: 8, color: "#64748b" }}>(Crew + Supervisor + OT)</p>
+                    </div>
+                    <span style={{ fontSize: 18, fontWeight: 950, color: "#10b981" }}>
+                      ₹{calculatedWages}
+                    </span>
+                  </div>
+
+                  {/* Dynamic Expenses Builder - Fuel */}
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Fuel Expenses</span>
+                      <button
+                        type="button"
+                        onClick={() => setFuelExpensesList([...fuelExpensesList, { id: Math.random().toString(), amount: "", narration: "", billImage: "" }])}
+                        style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", background: "rgba(6, 182, 212, 0.08)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
+                      >
+                        ➕ Add Fuel Expense
+                      </button>
+                    </div>
+
+                    {fuelExpensesList.map((item, idx) => (
+                      <div key={item.id} style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700 }}>Fuel #{idx + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => setFuelExpensesList(fuelExpensesList.filter((x) => x.id !== item.id))}
+                            style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                          <input
+                            type="number"
+                            placeholder="Amount (₹)"
+                            value={item.amount}
+                            onChange={(e) => {
+                              setFuelExpensesList(fuelExpensesList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
+                            }}
+                            style={{ height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                          />
+                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                            {item.billImage ? "Bill ✓" : "Bill Receipt"}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const compressed = await compressImage(file);
+                                  setFuelExpensesList(fuelExpensesList.map((x) => x.id === item.id ? { ...x, billImage: compressed } : x));
+                                }
+                              }}
+                              style={{ display: "none" }}
+                            />
+                          </label>
+                        </div>
+                        {item.billImage && (
+                          <div style={{ textAlign: "center" }}>
+                            <img src={item.billImage} alt="bill thumb" style={{ maxWidth: 80, maxHeight: 60, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                          </div>
+                        )}
                         <input
-                          type="file"
-                          accept="image/*"
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const compressed = await compressImage(file);
-                              setToolRentReceipt(compressed);
-                            }
+                          type="text"
+                          placeholder="Fuel narration/reason..."
+                          value={item.narration}
+                          onChange={(e) => {
+                            setFuelExpensesList(fuelExpensesList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
                           }}
-                          style={{ display: "none" }}
+                          style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
                         />
-                      </label>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Dynamic Expenses Builder - Travel */}
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Travel Expenses</span>
+                      <button
+                        type="button"
+                        onClick={() => setTravelExpensesList([...travelExpensesList, { id: Math.random().toString(), amount: "", narration: "", billImage: "" }])}
+                        style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", background: "rgba(6, 182, 212, 0.08)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
+                      >
+                        ➕ Add Travel Expense
+                      </button>
                     </div>
+
+                    {travelExpensesList.map((item, idx) => (
+                      <div key={item.id} style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700 }}>Travel #{idx + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => setTravelExpensesList(travelExpensesList.filter((x) => x.id !== item.id))}
+                            style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                          <input
+                            type="number"
+                            placeholder="Amount (₹)"
+                            value={item.amount}
+                            onChange={(e) => {
+                              setTravelExpensesList(travelExpensesList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
+                            }}
+                            style={{ height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                          />
+                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                            {item.billImage ? "Bill ✓" : "Bill Receipt"}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const compressed = await compressImage(file);
+                                  setTravelExpensesList(travelExpensesList.map((x) => x.id === item.id ? { ...x, billImage: compressed } : x));
+                                }
+                              }}
+                              style={{ display: "none" }}
+                            />
+                          </label>
+                        </div>
+                        {item.billImage && (
+                          <div style={{ textAlign: "center" }}>
+                            <img src={item.billImage} alt="bill thumb" style={{ maxWidth: 80, maxHeight: 60, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                          </div>
+                        )}
+                        <input
+                          type="text"
+                          placeholder="Travel narration/reason..."
+                          value={item.narration}
+                          onChange={(e) => {
+                            setTravelExpensesList(travelExpensesList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
+                          }}
+                          style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Dynamic Expenses Builder - Room Rent */}
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Room Rent Expenses</span>
+                      <button
+                        type="button"
+                        onClick={() => setRoomRentList([...roomRentList, { id: Math.random().toString(), amount: "", narration: "", billImage: "" }])}
+                        style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", background: "rgba(6, 182, 212, 0.08)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
+                      >
+                        ➕ Add Room Rent
+                      </button>
+                    </div>
+
+                    {roomRentList.map((item, idx) => (
+                      <div key={item.id} style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700 }}>Room Rent #{idx + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => setRoomRentList(roomRentList.filter((x) => x.id !== item.id))}
+                            style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                          <input
+                            type="number"
+                            placeholder="Amount (₹)"
+                            value={item.amount}
+                            onChange={(e) => {
+                              setRoomRentList(roomRentList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
+                            }}
+                            style={{ height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                          />
+                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                            {item.billImage ? "Bill ✓" : "Bill Receipt"}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const compressed = await compressImage(file);
+                                  setRoomRentList(roomRentList.map((x) => x.id === item.id ? { ...x, billImage: compressed } : x));
+                                }
+                              }}
+                              style={{ display: "none" }}
+                            />
+                          </label>
+                        </div>
+                        {item.billImage && (
+                          <div style={{ textAlign: "center" }}>
+                            <img src={item.billImage} alt="bill thumb" style={{ maxWidth: 80, maxHeight: 60, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                          </div>
+                        )}
+                        <input
+                          type="text"
+                          placeholder="Room Rent narration/notes..."
+                          value={item.narration}
+                          onChange={(e) => {
+                            setRoomRentList(roomRentList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
+                          }}
+                          style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Dynamic Expenses Builder - Tool Rent */}
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tool Rent Box</span>
+                      <button
+                        type="button"
+                        onClick={() => setToolRentList([...toolRentList, { id: Math.random().toString(), toolName: "", amount: "", narration: "", billImage: "" }])}
+                        style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", background: "rgba(6, 182, 212, 0.08)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
+                      >
+                        ➕ Add Tool Rent
+                      </button>
+                    </div>
+
+                    {toolRentList.map((item, idx) => (
+                      <div key={item.id} style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700 }}>Tool Rent #{idx + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => setToolRentList(toolRentList.filter((x) => x.id !== item.id))}
+                            style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Tool Name (e.g. Jackhammer, Generator)"
+                          value={item.toolName}
+                          onChange={(e) => {
+                            setToolRentList(toolRentList.map((x) => x.id === item.id ? { ...x, toolName: e.target.value } : x));
+                          }}
+                          style={{ width: "100%", height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                        />
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                          <input
+                            type="number"
+                            placeholder="Price / Cost (₹)"
+                            value={item.amount}
+                            onChange={(e) => {
+                              setToolRentList(toolRentList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
+                            }}
+                            style={{ height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                          />
+                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                            {item.billImage ? "Bill ✓" : "Bill Receipt"}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const compressed = await compressImage(file);
+                                  setToolRentList(toolRentList.map((x) => x.id === item.id ? { ...x, billImage: compressed } : x));
+                                }
+                              }}
+                              style={{ display: "none" }}
+                            />
+                          </label>
+                        </div>
+                        {item.billImage && (
+                          <div style={{ textAlign: "center" }}>
+                            <img src={item.billImage} alt="bill thumb" style={{ maxWidth: 80, maxHeight: 60, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                          </div>
+                        )}
+                        <input
+                          type="text"
+                          placeholder="Tool rent narration..."
+                          value={item.narration}
+                          onChange={(e) => {
+                            setToolRentList(toolRentList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
+                          }}
+                          style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Dynamic Expenses Builder - Other Uncategorized Expenses */}
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.05em" }}>Other Misc Expenses</span>
+                      <button
+                        type="button"
+                        onClick={() => setOtherExpensesList([...otherExpensesList, { id: Math.random().toString(), name: "", amount: "", narration: "", billImage: "" }])}
+                        style={{ fontSize: 10, fontWeight: 800, color: "#fbbf24", background: "rgba(251, 191, 36, 0.08)", border: "1px solid rgba(251, 191, 36, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
+                      >
+                        ➕ Add Misc Expense
+                      </button>
+                    </div>
+
+                    {otherExpensesList.map((item, idx) => (
+                      <div key={item.id} style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 10, color: "#fbbf24", fontWeight: 700 }}>Misc Expense #{idx + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => setOtherExpensesList(otherExpensesList.filter((x) => x.id !== item.id))}
+                            style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Expense Name (e.g. Water bottles, Tea, Print)"
+                          value={item.name}
+                          onChange={(e) => {
+                            setOtherExpensesList(otherExpensesList.map((x) => x.id === item.id ? { ...x, name: e.target.value } : x));
+                          }}
+                          style={{ width: "100%", height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                        />
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                          <input
+                            type="number"
+                            placeholder="Price / Amount (₹)"
+                            value={item.amount}
+                            onChange={(e) => {
+                              setOtherExpensesList(otherExpensesList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
+                            }}
+                            style={{ height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                          />
+                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                            {item.billImage ? "Bill ✓" : "Bill Receipt"}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const compressed = await compressImage(file);
+                                  setOtherExpensesList(otherExpensesList.map((x) => x.id === item.id ? { ...x, billImage: compressed } : x));
+                                }
+                              }}
+                              style={{ display: "none" }}
+                            />
+                          </label>
+                        </div>
+                        {item.billImage && (
+                          <div style={{ textAlign: "center" }}>
+                            <img src={item.billImage} alt="bill thumb" style={{ maxWidth: 80, maxHeight: 60, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                          </div>
+                        )}
+                        <input
+                          type="text"
+                          placeholder="Miscellaneous notes/narration..."
+                          value={item.narration}
+                          onChange={(e) => {
+                            setOtherExpensesList(otherExpensesList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
+                          }}
+                          style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Expenses Live Total Glow Panel */}
+                  <div style={{ background: "rgba(6, 182, 212, 0.05)", border: "1px solid rgba(6, 182, 212, 0.15)", padding: 12, borderRadius: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <span style={{ fontSize: 10, color: "#06b6d4", fontWeight: 800, textTransform: "uppercase" }}>Total Logistics Expenses</span>
+                      <p style={{ margin: 0, fontSize: 8, color: "#64748b" }}>(Fuel+Travel+Room+Tool+Misc)</p>
+                    </div>
+                    <span style={{ fontSize: 18, fontWeight: 950, color: "#06b6d4" }}>
+                      ₹{totalFuel + totalTravel + totalRoomRent + totalToolRent + totalOtherRent}
+                    </span>
                   </div>
                 </div>
               )}
 
-              {/* STEP 2: WIP PROGRESS (TRENCHING & TERMINATIONS) */}
+              {/* STEP 2: WIP PROGRESS (TRENCHING & METRICS) */}
               {reportStep === 2 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: "0 0 4px" }}>Step B: WIP operational progress</h4>
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: 0 }}>Step 2: WIP Operational Progress</h4>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Trenching / Excavation (m)</label>
-                      <input
-                        type="number"
-                        placeholder="0.00"
-                        value={excavationLength}
-                        onChange={(e) => setExcavationLength(e.target.value)}
-                        style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>HDD Drilling (m)</label>
-                      <input
-                        type="number"
-                        placeholder="0.00"
-                        value={hddLength}
-                        onChange={(e) => setHddLength(e.target.value)}
-                        style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
-                      />
-                    </div>
-                  </div>
+                  {/* Dynamic Metrics List */}
+                  {[
+                    { label: "Trenching / Excavation (m)", val: wipTrenchingValue, setVal: setWipTrenchingValue, narr: wipTrenchingNarration, setNarr: setWipTrenchingNarration, pic: wipTrenchingPhoto, setPic: setWipTrenchingPhoto },
+                    { label: "HDD Drilling (m)", val: wipHddValue, setVal: setWipHddValue, narr: wipHddNarration, setNarr: setWipHddNarration, pic: wipHddPhoto, setPic: setWipHddPhoto },
+                    { label: "Cable Laying (m)", val: wipCableLayingValue, setVal: setWipCableLayingValue, narr: wipCableLayingNarration, setNarr: setWipCableLayingNarration, pic: wipCableLayingPhoto, setPic: setWipCableLayingPhoto },
+                    { label: "Cable Mounding (m)", val: wipCableMoundingValue, setVal: setWipCableMoundingValue, narr: wipCableMoundingNarration, setNarr: setWipCableMoundingNarration, pic: wipCableMoundingPhoto, setPic: setWipCableMoundingPhoto },
+                    { label: "Joining Links Completed", val: wipJoiningValue, setVal: setWipJoiningValue, narr: wipJoiningNarration, setNarr: setWipJoiningNarration, pic: wipJoiningPhoto, setPic: setWipJoiningPhoto },
+                    { label: "RMU Foundations", val: wipRmuValue, setVal: setWipRmuValue, narr: wipRmuNarration, setNarr: setWipRmuNarration, pic: wipRmuPhoto, setPic: setWipRmuPhoto },
+                    { label: "Terminations (Qty)", val: wipTerminationsValue, setVal: setWipTerminationsValue, narr: wipTerminationsNarration, setNarr: setWipTerminationsNarration, pic: wipTerminationsPhoto, setPic: setWipTerminationsPhoto }
+                  ].map((m, idx) => (
+                    <div key={idx} style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "#cbd5e1", textTransform: "uppercase" }}>{m.label}</span>
+                      </div>
+                      
+                      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                        <input
+                          type="number"
+                          placeholder="0.00"
+                          value={m.val}
+                          onChange={(e) => m.setVal(e.target.value)}
+                          style={{ height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                        />
+                        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: m.pic ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: m.pic ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: m.pic ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                          {m.pic ? "Photo ✓" : "Upload Photo"}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const compressed = await compressImage(file);
+                                m.setPic(compressed);
+                              }
+                            }}
+                            style={{ display: "none" }}
+                          />
+                        </label>
+                      </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Cable Laying (m)</label>
-                      <input
-                        type="number"
-                        placeholder="0.00"
-                        value={cableLayingLength}
-                        onChange={(e) => setCableLayingLength(e.target.value)}
-                        style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Cable Mounding (m)</label>
-                      <input
-                        type="number"
-                        placeholder="0.00"
-                        value={cableMoundingLength}
-                        onChange={(e) => setCableMoundingLength(e.target.value)}
-                        style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
-                      />
-                    </div>
-                  </div>
+                      {m.pic && (
+                        <div style={{ textAlign: "center" }}>
+                          <img src={m.pic} alt="wip preview" style={{ maxWidth: 100, maxHeight: 80, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                        </div>
+                      )}
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Joining Links Completed</label>
                       <input
-                        type="number"
-                        placeholder="0"
-                        value={joiningLinksCompleted}
-                        onChange={(e) => setJoiningLinksCompleted(e.target.value)}
-                        style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
+                        type="text"
+                        placeholder="Progress narration note..."
+                        value={m.narr}
+                        onChange={(e) => m.setNarr(e.target.value)}
+                        style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
                       />
                     </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>RMU Foundations</label>
-                      <input
-                        type="number"
-                        placeholder="0"
-                        value={rmuFoundationStatus}
-                        onChange={(e) => setRmuFoundationStatus(e.target.value)}
-                        style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
-                      />
-                    </div>
-                  </div>
+                  ))}
 
-                  {/* GPS Terminations and Snapped Coordinates */}
-                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                      <label style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", margin: 0 }}>Termination Endpoints</label>
+                  {/* GPS snaps coordinates */}
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Snapped GPS Coordinates</span>
                       <button
                         type="button"
                         onClick={() => {
@@ -1443,41 +2148,41 @@ export default function SupervisorDashboard() {
                         }}
                         style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", background: "rgba(6, 182, 212, 0.08)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 6, padding: "3px 8px", cursor: "pointer" }}
                       >
-                        ⚡ Fetch GPS Coords
+                        ⚡ Fetch GPS
                       </button>
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr 1.2fr", gap: 6 }}>
                       <div>
-                        <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700 }}>Endpoints (Qty)</span>
+                        <span style={{ fontSize: 9, color: "#64748b" }}>Endpoints (Qty)</span>
                         <input
                           type="number"
                           placeholder="0"
                           value={terminationEndpoints}
                           onChange={(e) => setTerminationEndpoints(e.target.value)}
-                          style={{ width: "100%", height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "#cbd5e1", fontSize: 12, outline: "none", marginTop: 4 }}
+                          style={{ width: "100%", height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
                         />
                       </div>
                       <div>
-                        <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700 }}>Latitude</span>
+                        <span style={{ fontSize: 9, color: "#64748b" }}>Latitude</span>
                         <input
                           type="number"
                           step="0.000001"
                           placeholder="9.9538"
                           value={terminationGpsLat}
                           onChange={(e) => setTerminationGpsLat(e.target.value)}
-                          style={{ width: "100%", height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none", marginTop: 4 }}
+                          style={{ width: "100%", height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
                         />
                       </div>
                       <div>
-                        <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700 }}>Longitude</span>
+                        <span style={{ fontSize: 9, color: "#64748b" }}>Longitude</span>
                         <input
                           type="number"
                           step="0.000001"
                           placeholder="76.3428"
                           value={terminationGpsLng}
                           onChange={(e) => setTerminationGpsLng(e.target.value)}
-                          style={{ width: "100%", height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none", marginTop: 4 }}
+                          style={{ width: "100%", height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
                         />
                       </div>
                     </div>
@@ -1488,7 +2193,7 @@ export default function SupervisorDashboard() {
               {/* STEP 3: STATUTORY CLEARANCES */}
               {reportStep === 3 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: "0 0 4px" }}>Step C: Clearance & Authority Approvals</h4>
+                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: 0 }}>Step 3: Clearance & Authority Approvals</h4>
                   
                   {/* PWD */}
                   <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1500,7 +2205,7 @@ export default function SupervisorDashboard() {
                       <select
                         value={pwdClearance}
                         onChange={(e) => setPwdClearance(e.target.value)}
-                        style={{ height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "#cbd5e1", fontSize: 11, cursor: "pointer" }}
+                        style={{ height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "#cbd5e1", fontSize: 11, cursor: "pointer", outline: "none" }}
                       >
                         <option value="None">None / Initiated</option>
                         <option value="Demand Issued">Demand Note Issued</option>
@@ -1523,6 +2228,11 @@ export default function SupervisorDashboard() {
                         />
                       </label>
                     </div>
+                    {pwdReceipt && (
+                      <div style={{ textAlign: "center" }}>
+                        <img src={pwdReceipt} alt="pwd receipt" style={{ maxWidth: 100, maxHeight: 80, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                      </div>
+                    )}
                   </div>
 
                   {/* KSEB */}
@@ -1535,7 +2245,7 @@ export default function SupervisorDashboard() {
                       <select
                         value={ksebClearance}
                         onChange={(e) => setKsebClearance(e.target.value)}
-                        style={{ height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "#cbd5e1", fontSize: 11, cursor: "pointer" }}
+                        style={{ height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "#cbd5e1", fontSize: 11, cursor: "pointer", outline: "none" }}
                       >
                         <option value="None">None / Initiated</option>
                         <option value="Demand Issued">Demand Note Issued</option>
@@ -1558,6 +2268,11 @@ export default function SupervisorDashboard() {
                         />
                       </label>
                     </div>
+                    {ksebReceipt && (
+                      <div style={{ textAlign: "center" }}>
+                        <img src={ksebReceipt} alt="kseb receipt" style={{ maxWidth: 100, maxHeight: 80, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                      </div>
+                    )}
                   </div>
 
                   {/* NH Authority */}
@@ -1570,7 +2285,7 @@ export default function SupervisorDashboard() {
                       <select
                         value={nhClearance}
                         onChange={(e) => setNhClearance(e.target.value)}
-                        style={{ height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "#cbd5e1", fontSize: 11, cursor: "pointer" }}
+                        style={{ height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "#cbd5e1", fontSize: 11, cursor: "pointer", outline: "none" }}
                       >
                         <option value="None">None / Initiated</option>
                         <option value="Demand Issued">Demand Note Issued</option>
@@ -1593,88 +2308,192 @@ export default function SupervisorDashboard() {
                         />
                       </label>
                     </div>
+                    {nhReceipt && (
+                      <div style={{ textAlign: "center" }}>
+                        <img src={nhReceipt} alt="nh receipt" style={{ maxWidth: 100, maxHeight: 80, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
-              {/* STEP 4: VERIFY & SUBMIT */}
+              {/* STEP 4: PLANNING & REQUESTS */}
               {reportStep === 4 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: "0 0 4px" }}>Step D: Review operational draft</h4>
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: 0 }}>Step 4: Operational Requests & Notes</h4>
                   
-                  {/* Category 1: Financials */}
-                  <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14 }}>
-                    <span style={{ fontSize: 9, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.08em" }}>Wages & Expenses</span>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
-                        <span style={{ color: "#94a3b8" }}>Workers / Overtime</span>
-                        <span style={{ color: "white", fontWeight: 700 }}>{laborCount} crew | {otHours} OT hrs</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
-                        <span style={{ color: "#94a3b8" }}>Calculated Wages</span>
-                        <span style={{ color: "#10b981", fontWeight: 800 }}>₹{(laborCount * 900) + (otHours * 150)}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
-                        <span style={{ color: "#94a3b8" }}>Fuel / Travel Expenses</span>
-                        <span style={{ color: "white" }}>₹{fuelExpenses || "0"} / ₹{travelExpenses || "0"}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
-                        <span style={{ color: "#94a3b8" }}>Room / Tool Rent</span>
-                        <span style={{ color: "white" }}>₹{roomRent || "0"} {roomRentReceipt ? "(📎)" : ""} / ₹{toolRent || "0"} {toolRentReceipt ? "(📎)" : ""}</span>
-                      </div>
-                    </div>
+                  {/* Problems encountered */}
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Problems / Impediments Encountered</label>
+                    <textarea
+                      placeholder="List any problems, traffic delays, utility clashing, public disputes or raw material shortages..."
+                      value={reqProblems}
+                      onChange={(e) => setReqProblems(e.target.value)}
+                      style={{ width: "100%", height: 80, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: 10, color: "#cbd5e1", fontSize: 12, outline: "none", resize: "none" }}
+                    />
                   </div>
 
-                  {/* Category 2: WIP lengths */}
-                  <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14 }}>
-                    <span style={{ fontSize: 9, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.08em" }}>Physical Infrastructure Work</span>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
-                        <span style={{ color: "#94a3b8" }}>Trenching / Excavation</span>
-                        <span style={{ color: "white", fontWeight: 700 }}>{excavationLength || "0"} m</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
-                        <span style={{ color: "#94a3b8" }}>HDD Boring / Drilling</span>
-                        <span style={{ color: "white", fontWeight: 700 }}>{hddLength || "0"} m</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
-                        <span style={{ color: "#94a3b8" }}>Cable Laying / Mounding</span>
-                        <span style={{ color: "white" }}>{cableLayingLength || "0"}m / {cableMoundingLength || "0"}m</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
-                        <span style={{ color: "#94a3b8" }}>Joints / Foundations / Terminations</span>
-                        <span style={{ color: "white" }}>{joiningLinksCompleted || "0"} / {rmuFoundationStatus || "0"} / {terminationEndpoints || "0"}</span>
-                      </div>
-                      {terminationGpsLat && (
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#a78bfa" }}>
-                          <span>Termination Coordinates</span>
-                          <span>[{Number(terminationGpsLat).toFixed(4)}, {Number(terminationGpsLng).toFixed(4)}]</span>
-                        </div>
-                      )}
-                    </div>
+                  {/* Plans for tomorrow */}
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Work Plans for Tomorrow</label>
+                    <textarea
+                      placeholder="Mention expected trenching meters, planned HDD points, or clearance permissions required..."
+                      value={reqPlans}
+                      onChange={(e) => setReqPlans(e.target.value)}
+                      style={{ width: "100%", height: 80, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: 10, color: "#cbd5e1", fontSize: 12, outline: "none", resize: "none" }}
+                    />
                   </div>
 
-                  {/* Category 3: Clearances */}
-                  <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14 }}>
-                    <span style={{ fontSize: 9, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.08em" }}>Clearances & Approvals</span>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
-                        <span style={{ color: "#94a3b8" }}>PWD Authority</span>
-                        <span style={{ color: pwdClearance === "Permission Gathered" ? "#10b981" : pwdClearance === "Demand Issued" ? "#fbbf24" : "#64748b", fontWeight: 700 }}>{pwdClearance} {pwdReceipt ? "📎" : ""}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
-                        <span style={{ color: "#94a3b8" }}>KSEB Grid Access</span>
-                        <span style={{ color: ksebClearance === "Permission Gathered" ? "#10b981" : ksebClearance === "Demand Issued" ? "#fbbf24" : "#64748b", fontWeight: 700 }}>{ksebClearance} {ksebReceipt ? "📎" : ""}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
-                        <span style={{ color: "#94a3b8" }}>National Highway</span>
-                        <span style={{ color: nhClearance === "Permission Gathered" ? "#10b981" : nhClearance === "Demand Issued" ? "#fbbf24" : "#64748b", fontWeight: 700 }}>{nhClearance} {nhReceipt ? "📎" : ""}</span>
-                      </div>
+                  {/* Urgent Finance request */}
+                  <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.05em" }}>💵 Urgent Finance / Fund Request</span>
+                    
+                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                      <input
+                        type="number"
+                        placeholder="Request Amount (₹)"
+                        value={reqFinanceAmount}
+                        onChange={(e) => setReqFinanceAmount(e.target.value)}
+                        style={{ height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                      />
+                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: reqFinanceReceipt ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: reqFinanceReceipt ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: reqFinanceReceipt ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                        {reqFinanceReceipt ? "Invoice ✓" : "Upload Invoice"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const compressed = await compressImage(file);
+                              setReqFinanceReceipt(compressed);
+                            }
+                          }}
+                          style={{ display: "none" }}
+                        />
+                      </label>
                     </div>
+
+                    {reqFinanceReceipt && (
+                      <div style={{ textAlign: "center" }}>
+                        <img src={reqFinanceReceipt} alt="finance doc" style={{ maxWidth: 100, maxHeight: 80, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                      </div>
+                    )}
+
+                    <input
+                      type="text"
+                      placeholder="Purpose / Reason for fund request..."
+                      value={reqFinanceNarration}
+                      onChange={(e) => setReqFinanceNarration(e.target.value)}
+                      style={{ width: "100%", height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 10px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                    />
+                  </div>
+
+                  {/* General concerns / Admin notes */}
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Critical Notes for Admin Concern</label>
+                    <textarea
+                      placeholder="Type any message, warnings, safety concerns, or equipment requirements that the Telgo Admin board should address..."
+                      value={reqAdminConcerns}
+                      onChange={(e) => setReqAdminConcerns(e.target.value)}
+                      style={{ width: "100%", height: 80, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: 10, color: "#cbd5e1", fontSize: 12, outline: "none", resize: "none" }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 5: REVIEW MULTI-PROJECT DRAFTS & SUBMIT */}
+              {reportStep === 5 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: 0 }}>Step 5: Review & Submit All Drafts</h4>
+
+                  {/* Active Drafts list */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Consolidated Active Drafts</span>
+                    
+                    {(() => {
+                      const drafts = getActiveDrafts();
+                      if (drafts.length === 0) {
+                        return (
+                          <div className="glass" style={{ padding: 20, textAlign: "center", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16 }}>
+                            <p style={{ margin: 0, fontSize: 12, color: "#64748b" }}>No active project drafts found.</p>
+                            <p style={{ margin: "4px 0 0", fontSize: 11, color: "#cbd5e1" }}>Go back to Step 1 to fill in wages or WIP operational progress.</p>
+                          </div>
+                        );
+                      }
+                      
+                      return drafts.map((d) => {
+                        const wagesSum = Number(d.data.laborCount || 0) * 900 +
+                          (d.data.includeSupervisor ? 1200 : 0) +
+                          (d.data.otWorkers || []).reduce((sum: number, w: any) => sum + (Number(w.workerCount || 0) * Number(w.rate || 0) * Number(w.hours || 0)), 0);
+                        
+                        const expSum = (d.data.fuelExpensesList || []).reduce((sum: number, x: any) => sum + Number(x.amount || 0), 0) +
+                          (d.data.travelExpensesList || []).reduce((sum: number, x: any) => sum + Number(x.amount || 0), 0) +
+                          (d.data.roomRentList || []).reduce((sum: number, x: any) => sum + Number(x.amount || 0), 0) +
+                          (d.data.toolRentList || []).reduce((sum: number, x: any) => sum + Number(x.amount || 0), 0) +
+                          (d.data.otherExpensesList || []).reduce((sum: number, x: any) => sum + Number(x.amount || 0), 0);
+
+                        return (
+                          <div key={d.project.id} className="glass" style={{ padding: 14, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, background: "rgba(255,255,255,0.01)", display: "flex", flexDirection: "column", gap: 8 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                              <div>
+                                <h5 style={{ fontSize: 13, fontWeight: 900, color: "#f1f5f9", margin: 0 }}>{d.project.name}</h5>
+                                <span style={{ fontSize: 9, fontFamily: "monospace", color: "#64748b" }}>ID: {d.project.id} | Date: {d.data.reportDate || "Today"}</span>
+                              </div>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: "#67e8f9", background: "rgba(6, 182, 212, 0.12)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 6, padding: "2px 6px" }}>
+                                DRAFT
+                              </span>
+                            </div>
+
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, background: "rgba(0,0,0,0.15)", padding: 8, borderRadius: 10, fontSize: 11 }}>
+                              <div>
+                                <span style={{ color: "#94a3b8" }}>Calculated Wages:</span>
+                                <span style={{ display: "block", color: "#10b981", fontWeight: 800 }}>₹{wagesSum}</span>
+                              </div>
+                              <div>
+                                <span style={{ color: "#94a3b8" }}>Total Expenses:</span>
+                                <span style={{ display: "block", color: "#06b6d4", fontWeight: 800 }}>₹{expSum}</span>
+                              </div>
+                              <div style={{ gridColumn: "span 2", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: 4, marginTop: 4 }}>
+                                <span style={{ color: "#94a3b8" }}>WIP Metrics Entered:</span>
+                                <span style={{ display: "block", color: "white", fontWeight: 700, fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {[
+                                    d.data.wipTrenchingValue ? `${d.data.wipTrenchingValue}m Trench` : "",
+                                    d.data.wipHddValue ? `${d.data.wipHddValue}m HDD` : "",
+                                    d.data.wipCableLayingValue ? `${d.data.wipCableLayingValue}m Cable` : "",
+                                    d.data.wipTerminationsValue ? `${d.data.wipTerminationsValue} Term` : ""
+                                  ].filter(Boolean).join(" | ") || "None"}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setReportProjectId(d.project.id);
+                                  setReportStep(1);
+                                }}
+                                style={{ flex: 1, height: 32, background: "transparent", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, color: "#cbd5e1", fontSize: 11, fontWeight: 750, cursor: "pointer" }}
+                              >
+                                Edit Draft
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => submitReportForProject(d.project.id, d.data)}
+                                style={{ flex: 1.5, height: 32, background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", border: "none", borderRadius: 8, color: "white", fontSize: 11, fontWeight: 800, cursor: "pointer", boxShadow: "0 2px 8px rgba(16, 185, 129, 0.15)" }}
+                              >
+                                Submit This
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
 
                   <p style={{ margin: "4px 0 0", fontSize: 10, color: "#fbbf24", textAlign: "center", lineHeight: 1.4 }}>
-                    ⚠️ Submitting will lock operations for {reportDate || new Date().toISOString().split("T")[0]} under project ID. Verify coordinates & receipts!
+                    ⚠️ Verify all active drafts. Once submitted, daily project operation logs are locked for that date!
                   </p>
                 </div>
               )}
@@ -1693,7 +2512,7 @@ export default function SupervisorDashboard() {
                 </button>
               )}
               
-              {reportStep < 4 ? (
+              {reportStep < 5 ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -1716,74 +2535,17 @@ export default function SupervisorDashboard() {
               ) : (
                 <button
                   type="button"
-                  onClick={async () => {
-                    setSubmittingReport(true);
-                    
-                    const payload = {
-                      reportDate,
-                      projectId: reportProjectId,
-                      laborCount,
-                      otHours,
-                      fuelExpenses: Number(fuelExpenses || 0),
-                      travelExpenses: Number(travelExpenses || 0),
-                      roomRent: Number(roomRent || 0),
-                      roomRentReceipt,
-                      toolRent: Number(toolRent || 0),
-                      toolRentReceipt,
-                      excavationLength: Number(excavationLength || 0),
-                      hddLength: Number(hddLength || 0),
-                      cableLayingLength: Number(cableLayingLength || 0),
-                      cableMoundingLength: Number(cableMoundingLength || 0),
-                      joiningLinksCompleted: Number(joiningLinksCompleted || 0),
-                      rmuFoundationStatus: Number(rmuFoundationStatus || 0),
-                      terminationEndpoints: Number(terminationEndpoints || 0),
-                      terminationGpsLat: terminationGpsLat ? Number(terminationGpsLat) : undefined,
-                      terminationGpsLng: terminationGpsLng ? Number(terminationGpsLng) : undefined,
-                      stockAvailable: {},
-                      clearances: {
-                        PWD: { status: pwdClearance, receipt: pwdReceipt },
-                        KSEB: { status: ksebClearance, receipt: ksebReceipt },
-                        NH: { status: nhClearance, receipt: nhReceipt }
-                      }
-                    };
-
-                    try {
-                      const res = await fetch("/api/mobile/daily-reports", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(payload)
-                      });
-
-                      const data = await res.json();
-                      if (res.ok && data.ok) {
-                        showToast("🚀 Daily report submitted successfully! Approved status pending Admin Lock.");
-                        localStorage.removeItem(`telgo_draft_report_${reportProjectId}`);
-                        setIsDailyReportOpen(false);
-                      } else {
-                        showToast(`❌ Submission error: ${data.message || "Unknown error."}`);
-                      }
-                    } catch (err) {
-                      showToast("📡 Connection drop detected! Report cached locally in offline submissions queue.");
-                      const localQueue = localStorage.getItem("telgo_offline_submissions");
-                      const parsedQueue = localQueue ? JSON.parse(localQueue) : [];
-                      parsedQueue.push(payload);
-                      localStorage.setItem("telgo_offline_submissions", JSON.stringify(parsedQueue));
-                      localStorage.removeItem(`telgo_draft_report_${reportProjectId}`);
-                      setIsDailyReportOpen(false);
-                    } finally {
-                      setSubmittingReport(false);
-                    }
-                  }}
-                  disabled={submittingReport}
-                  style={{ flex: 1.2, height: 42, background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", border: "none", borderRadius: 12, color: "white", fontSize: 13, fontWeight: 800, cursor: submittingReport ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px rgba(16, 185, 129, 0.25)" }}
+                  onClick={submitAllActiveDrafts}
+                  disabled={submittingReport || getActiveDrafts().length === 0}
+                  style={{ flex: 1.2, height: 42, background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", border: "none", borderRadius: 12, color: "white", fontSize: 13, fontWeight: 800, cursor: submittingReport || getActiveDrafts().length === 0 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px rgba(16, 185, 129, 0.25)" }}
                 >
                   {submittingReport ? (
                     <>
                       <div className="spinner" style={{ width: 14, height: 14 }} />
-                      Submitting...
+                      Submitting All...
                     </>
                   ) : (
-                    <>🚀 Submit Daily Report</>
+                    <>🚀 Submit All Project Drafts</>
                   )}
                 </button>
               )}

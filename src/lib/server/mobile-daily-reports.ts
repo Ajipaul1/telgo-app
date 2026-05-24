@@ -1,5 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import os from "node:os";
 import { getMobileAccessClient } from "./mobile-access";
 
 export interface DailyReport {
@@ -54,7 +55,7 @@ export interface LedgerRow {
   updatedAt: string;
 }
 
-const STORE_PATH = path.join(process.cwd(), "src/lib/server/reports-store.json");
+const STORE_PATH = path.join(os.tmpdir(), "telgo-reports-store.json");
 
 async function getLocalStore() {
   try {

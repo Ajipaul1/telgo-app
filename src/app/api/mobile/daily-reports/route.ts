@@ -56,35 +56,99 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Calculate wages: Wages = (₹900 * Labors) + (₹150 * OT Hours)
-    const laborCount = Math.max(0, parseInt(body.laborCount || 0));
-    const otHours = Math.max(0, parseInt(body.otHours || 0));
-    const calculatedWages = (laborCount * 900) + (otHours * 150);
+    // Calculate wages: Wages = (₹900 * Labors) + (₹1200 * Supervisor if included) + Sum(OT worker wages)
+    const crewLabor = Math.max(0, parseInt(body.laborCount || 0));
+    const supervisorCount = body.includeSupervisor ? 1 : 0;
+    const supervisorWage = supervisorCount * 1200;
+    const crewWages = (crewLabor * 900) + supervisorWage;
+
+    // Overtime workers array calculation
+    const otWorkers = body.otWorkers || [];
+    let totalOtHours = 0;
+    let totalOtWages = 0;
+    let totalOtWorkersCount = 0;
+    otWorkers.forEach((w: any) => {
+      const hours = Math.max(0, Number(w.hours || 0));
+      const rate = Math.max(0, Number(w.rate || 0));
+      const count = Math.max(0, Number(w.workerCount || 1));
+      totalOtHours += hours;
+      totalOtWorkersCount += count;
+      totalOtWages += hours * rate * count;
+    });
+
+    const calculatedWages = crewWages + totalOtWages;
+
+    // Expense lists summations
+    const fuelList = body.fuelExpensesList || [];
+    const fuelExpenses = fuelList.reduce((sum: number, item: any) => sum + Math.max(0, Number(item.amount || 0)), 0);
+
+    const travelList = body.travelExpensesList || [];
+    const travelExpenses = travelList.reduce((sum: number, item: any) => sum + Math.max(0, Number(item.amount || 0)), 0);
+
+    const roomList = body.roomRentList || [];
+    const roomRent = roomList.reduce((sum: number, item: any) => sum + Math.max(0, Number(item.amount || 0)), 0);
+
+    const toolList = body.toolRentList || [];
+    const toolRent = toolList.reduce((sum: number, item: any) => sum + Math.max(0, Number(item.amount || 0)), 0);
+
+    const otherList = body.otherExpensesList || [];
+    const otherExpensesSum = otherList.reduce((sum: number, item: any) => sum + Math.max(0, Number(item.amount || 0)), 0);
+
+    // Sum other expenses into travel for standard dashboard representation
+    const finalTravelExpenses = travelExpenses + otherExpensesSum;
+
+    // Physical WIP metric extraction
+    const wip = body.wipProgressList || {};
+    const excavationLength = Math.max(0, Number(wip.trenching?.value || 0));
+    const hddLength = Math.max(0, Number(wip.hdd?.value || 0));
+    const cableLayingLength = Math.max(0, Number(wip.cableLaying?.value || 0));
+    const cableMoundingLength = Math.max(0, Number(wip.cableMounding?.value || 0));
+    const joiningLinksCompleted = Math.max(0, parseInt(wip.joining?.value || 0));
+    const rmuFoundationStatus = Math.max(0, parseInt(wip.rmu?.value || 0));
+    const terminationEndpoints = Math.max(0, parseInt(wip.terminations?.value || 0));
+
+    // Combine all detailed arrays, narrations, other tool names, and requests into stockAvailable JSONB
+    const stockAvailable = {
+      ...body.stockAvailable,
+      richDetails: {
+        includeSupervisor: body.includeSupervisor,
+        supervisorNarration: body.supervisorNarration || "",
+        laborWagesNarration: body.laborWagesNarration || "",
+        otWorkers,
+        fuelExpensesList: fuelList,
+        travelExpensesList: travelList,
+        roomRentList: roomList,
+        toolRentList: toolList,
+        otherExpensesList: otherList,
+        wipProgressList: wip,
+        requestsAndNotes: body.requestsAndNotes || {}
+      }
+    };
 
     const reportData = {
       reportDate,
       projectId,
       supervisorId: session.userId,
       supervisorName: session.fullName,
-      laborCount,
-      otHours,
+      laborCount: crewLabor + supervisorCount,
+      otHours: Math.round(totalOtHours),
       calculatedWages,
-      fuelExpenses: Math.max(0, Number(body.fuelExpenses || 0)),
-      travelExpenses: Math.max(0, Number(body.travelExpenses || 0)),
-      roomRent: Math.max(0, Number(body.roomRent || 0)),
-      roomRentReceipt: body.roomRentReceipt || "",
-      toolRent: Math.max(0, Number(body.toolRent || 0)),
-      toolRentReceipt: body.toolRentReceipt || "",
-      excavationLength: Math.max(0, Number(body.excavationLength || 0)),
-      hddLength: Math.max(0, Number(body.hddLength || 0)),
-      cableLayingLength: Math.max(0, Number(body.cableLayingLength || 0)),
-      cableMoundingLength: Math.max(0, Number(body.cableMoundingLength || 0)),
-      joiningLinksCompleted: Math.max(0, parseInt(body.joiningLinksCompleted || 0)),
-      rmuFoundationStatus: Math.max(0, parseInt(body.rmuFoundationStatus || 0)),
-      terminationEndpoints: Math.max(0, parseInt(body.terminationEndpoints || 0)),
+      fuelExpenses,
+      travelExpenses: finalTravelExpenses,
+      roomRent,
+      roomRentReceipt: roomList[0]?.billImage || "",
+      toolRent,
+      toolRentReceipt: toolList[0]?.billImage || "",
+      excavationLength,
+      hddLength,
+      cableLayingLength,
+      cableMoundingLength,
+      joiningLinksCompleted,
+      rmuFoundationStatus,
+      terminationEndpoints,
       terminationGpsLat: body.terminationGpsLat ? Number(body.terminationGpsLat) : undefined,
       terminationGpsLng: body.terminationGpsLng ? Number(body.terminationGpsLng) : undefined,
-      stockAvailable: body.stockAvailable || {},
+      stockAvailable,
       clearances: body.clearances || {},
     };
 
