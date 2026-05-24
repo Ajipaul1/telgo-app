@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS public.pending_daily_reports (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   report_date DATE NOT NULL,
-  project_id TEXT NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  project_id TEXT NOT NULL,
   supervisor_id UUID NOT NULL,
   supervisor_name TEXT NOT NULL,
   labor_count INT NOT NULL DEFAULT 0,
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS public.pending_daily_reports (
 CREATE TABLE IF NOT EXISTS public.master_project_ledger (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   ledger_date DATE NOT NULL,
-  project_id TEXT NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  project_id TEXT NOT NULL,
   total_labor_count INT NOT NULL DEFAULT 0,
   total_ot_hours INT NOT NULL DEFAULT 0,
   total_wages DECIMAL(12,2) NOT NULL DEFAULT 0,
