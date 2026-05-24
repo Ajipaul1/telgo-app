@@ -1648,12 +1648,13 @@ export default function SupervisorDashboard() {
             background: "#ffffff",
             border: "1px solid #e2e8f0",
             borderRadius: 24,
-            padding: "30px 24px",
+            padding: "26px 24px",
             boxShadow: "0 20px 50px rgba(15, 23, 42, 0.08)",
-            maxHeight: "94dvh",
+            height: "85dvh",
+            maxHeight: "780px",
             display: "flex",
             flexDirection: "column",
-            gap: 18,
+            gap: 16,
             color: "#0f172a"
           }}>
             {/* Modal Header */}
@@ -1701,20 +1702,6 @@ export default function SupervisorDashboard() {
               </span>
             </div>
 
-            {/* Project Selection Dropdown */}
-            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16 }}>
-              <label style={{ display: "block", fontSize: 10, fontWeight: 800, color: "#0284c7", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Active Engineering Corridor</label>
-              <select
-                value={reportProjectId}
-                onChange={(e) => setReportProjectId(e.target.value)}
-                style={{ width: "100%", height: 40, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: "0 12px", color: "#0f172a", fontSize: 13, outline: "none", cursor: "pointer", fontWeight: 700 }}
-              >
-                {projectsList.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
-                ))}
-              </select>
-            </div>
-
             {/* Scrollable Wizard Body */}
             <div style={{ flex: 1, overflowY: "auto", paddingRight: 4, display: "flex", flexDirection: "column", gap: 16, textAlign: "left" }}>
 
@@ -1722,6 +1709,20 @@ export default function SupervisorDashboard() {
               {reportStep === 1 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <h4 style={{ fontSize: 13, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", margin: 0 }}>Step 1: Crew Roster & Logistics Expenses</h4>
+                  
+                  {/* Project Selection Dropdown */}
+                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16 }}>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 800, color: "#0284c7", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Active Engineering Corridor</label>
+                    <select
+                      value={reportProjectId}
+                      onChange={(e) => setReportProjectId(e.target.value)}
+                      style={{ width: "100%", height: 40, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: "0 12px", color: "#0f172a", fontSize: 13, outline: "none", cursor: "pointer", fontWeight: 700 }}
+                    >
+                      {projectsList.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
+                      ))}
+                    </select>
+                  </div>
                   
                   {/* Date picker */}
                   <div>
