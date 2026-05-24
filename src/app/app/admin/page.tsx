@@ -39,6 +39,7 @@ export default function AdminDashboard() {
   const [loadingLedger, setLoadingLedger] = useState(false);
   const [selectedLedgerProject, setSelectedLedgerProject] = useState("");
   const [approvingReportId, setApprovingReportId] = useState<string | null>(null);
+  const [adminActiveImagePreview, setAdminActiveImagePreview] = useState<string | null>(null);
 
   // Real Database Attendance History States
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
@@ -2572,105 +2573,854 @@ export default function AdminDashboard() {
             </div>
 
             {/* REVIEW DRAWERS */}
-            {selectedReport && (
-              <div className="glass fade-in" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, textAlign: "left" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: 12, marginBottom: 16 }}>
-                  <div>
-                    <h3 style={{ fontSize: 15, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>{selectedReport.supervisorName}</h3>
-                    <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0" }}>Daily Report Review & Audit</p>
-                  </div>
-                  
-                  <button
-                    onClick={() => handleApproveDailyReport(selectedReport.id)}
-                    disabled={approvingReportId === selectedReport.id}
-                    style={{
-                      background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                      border: "none",
-                      borderRadius: 8,
-                      color: "white",
-                      fontSize: 12,
-                      fontWeight: 800,
-                      padding: "6px 14px",
-                      cursor: approvingReportId === selectedReport.id ? "not-allowed" : "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      boxShadow: "0 4px 12px rgba(16, 185, 129, 0.2)"
-                    }}
-                  >
-                    {approvingReportId === selectedReport.id ? "Locking..." : "Approve & Lock"}
-                  </button>
-                </div>
+            {selectedReport && (() => {
+              const rich = selectedReport.stockAvailable?.richDetails || {};
+              const otList = rich.otWorkers || [];
+              const fuelList = rich.fuelExpensesList || [];
+              const travelList = rich.travelExpensesList || [];
+              const roomList = rich.roomRentList || [];
+              const toolList = rich.toolRentList || [];
+              const otherList = rich.otherExpensesList || [];
+              const wip = rich.wipProgressList || {};
+              const reqs = rich.requestsAndNotes || {};
+              const clearances = selectedReport.clearances || {};
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  {/* Step A expenses detail */}
-                  <div>
-                    <span style={{ fontSize: 9, fontWeight: 800, color: "#10b981", textTransform: "uppercase", letterSpacing: "0.03em" }}>Step A: Wages & Logistics Expenses</span>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, background: "rgba(0,0,0,0.2)", padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,0.02)", marginTop: 6 }}>
-                      <div>
-                        <span style={{ fontSize: 9, color: "#64748b" }}>Crew size</span>
-                        <p style={{ fontSize: 12, fontWeight: 750, color: "#cbd5e1", margin: 0 }}>{selectedReport.laborCount} workers | {selectedReport.otHours} OT hrs</p>
+              const handleExportJSON = () => {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(selectedReport, null, 2));
+                const dlAnchorElem = document.createElement('a');
+                dlAnchorElem.setAttribute("href",     dataStr);
+                dlAnchorElem.setAttribute("download", `daily_report_${selectedReport.supervisorName}_${selectedReport.reportDate}.json`);
+                dlAnchorElem.click();
+              };
+
+              const handlePrintPDF = () => {
+                const printWindow = window.open("", "_blank");
+                if (!printWindow) return;
+                printWindow.document.write(`
+                  <!DOCTYPE html>
+                  <html>
+                  <head>
+                    <title>Daily Operational Report - ${selectedReport.supervisorName} (${selectedReport.reportDate})</title>
+                    <style>
+                      @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+                      body {
+                        font-family: 'Outfit', sans-serif;
+                        color: #1e293b;
+                        background: #ffffff;
+                        margin: 0;
+                        padding: 40px;
+                        line-height: 1.5;
+                      }
+                      .header {
+                        border-bottom: 2px solid #7c3aed;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                      }
+                      .logo {
+                        font-weight: 800;
+                        font-size: 24px;
+                        letter-spacing: 2px;
+                        color: #7c3aed;
+                      }
+                      .meta-grid {
+                        display: grid;
+                        grid-template-columns: repeat(2, 1fr);
+                        gap: 15px;
+                        margin-bottom: 30px;
+                        background: #f8fafc;
+                        padding: 20px;
+                        border-radius: 12px;
+                        border: 1px solid #e2e8f0;
+                      }
+                      .meta-item span {
+                        display: block;
+                        font-size: 11px;
+                        text-transform: uppercase;
+                        color: #64748b;
+                        font-weight: 700;
+                        letter-spacing: 0.05em;
+                      }
+                      .meta-item strong {
+                        font-size: 15px;
+                        color: #0f172a;
+                      }
+                      h2 {
+                        font-size: 18px;
+                        color: #0f172a;
+                        border-left: 4px solid #7c3aed;
+                        padding-left: 10px;
+                        margin-top: 30px;
+                        margin-bottom: 15px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.03em;
+                      }
+                      table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-bottom: 20px;
+                        font-size: 13px;
+                      }
+                      th {
+                        background: #f1f5f9;
+                        color: #475569;
+                        font-weight: 700;
+                        text-align: left;
+                        padding: 10px 12px;
+                        border-bottom: 1px solid #cbd5e1;
+                      }
+                      td {
+                        padding: 10px 12px;
+                        border-bottom: 1px solid #e2e8f0;
+                        color: #334155;
+                      }
+                      .narration {
+                        font-style: italic;
+                        color: #64748b;
+                        font-size: 12px;
+                        margin-top: 4px;
+                      }
+                      .photo-grid {
+                        display: grid;
+                        grid-template-columns: repeat(3, 1fr);
+                        gap: 15px;
+                        margin-top: 10px;
+                      }
+                      .photo-card {
+                        border: 1px solid #e2e8f0;
+                        border-radius: 8px;
+                        padding: 8px;
+                        background: #f8fafc;
+                        text-align: center;
+                      }
+                      .photo-card img {
+                        max-width: 100%;
+                        height: 120px;
+                        object-fit: cover;
+                        border-radius: 6px;
+                        margin-bottom: 6px;
+                      }
+                      .photo-card span {
+                        display: block;
+                        font-size: 11px;
+                        font-weight: 600;
+                        color: #475569;
+                      }
+                      .badge {
+                        display: inline-block;
+                        padding: 2px 6px;
+                        border-radius: 4px;
+                        font-size: 11px;
+                        font-weight: 700;
+                        text-transform: uppercase;
+                      }
+                      .badge-success { background: #dcfce7; color: #15803d; }
+                      .badge-warning { background: #fef9c3; color: #a16207; }
+                      .badge-danger { background: #fee2e2; color: #b91c1c; }
+                      .total-wages-badge {
+                        font-size: 20px;
+                        color: #166534;
+                        font-weight: 800;
+                      }
+                      .print-btn-container {
+                        text-align: center;
+                        margin-top: 40px;
+                        border-top: 1px solid #e2e8f0;
+                        padding-top: 20px;
+                      }
+                      .btn-print {
+                        background: #7c3aed;
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        font-weight: 700;
+                        cursor: pointer;
+                        font-family: 'Outfit', sans-serif;
+                        box-shadow: 0 4px 10px rgba(124, 58, 237, 0.2);
+                      }
+                      .btn-print:hover {
+                        background: #6d28d9;
+                      }
+                      @media print {
+                        .print-btn-container { display: none; }
+                        body { padding: 0; }
+                      }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="header">
+                      <div class="logo">TELGO POWER PROJECTS</div>
+                      <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;">DAILY FIELD UPDATE SHEET</div>
+                    </div>
+
+                    <div class="meta-grid">
+                      <div class="meta-item">
+                        <span>Supervisor Name</span>
+                        <strong>${selectedReport.supervisorName}</strong>
                       </div>
-                      <div>
-                        <span style={{ fontSize: 9, color: "#64748b" }}>Calculated wages</span>
-                        <p style={{ fontSize: 12, fontWeight: 800, color: "#10b981", margin: 0 }}>₹{selectedReport.calculatedWages}</p>
+                      <div class="meta-item">
+                        <span>Report Date</span>
+                        <strong>${selectedReport.reportDate}</strong>
                       </div>
-                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.03)", paddingTop: 6, marginTop: 4 }}>
-                        <span style={{ fontSize: 9, color: "#64748b" }}>Fuel & Travel</span>
-                        <p style={{ fontSize: 12, fontWeight: 700, color: "#cbd5e1", margin: 0 }}>₹{selectedReport.fuelExpenses} | ₹{selectedReport.travelExpenses}</p>
+                      <div class="meta-item">
+                        <span>Submission Time</span>
+                        <strong>${new Date(selectedReport.created_at).toLocaleString("en-IN")}</strong>
                       </div>
-                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.03)", paddingTop: 6, marginTop: 4 }}>
-                        <span style={{ fontSize: 9, color: "#64748b" }}>Rents (room/tool)</span>
-                        <p style={{ fontSize: 12, fontWeight: 700, color: "#cbd5e1", margin: 0 }}>₹{selectedReport.roomRent} | ₹{selectedReport.toolRent}</p>
+                      <div class="meta-item">
+                        <span>Calculated Crew Wages</span>
+                        <strong class="total-wages-badge">₹${selectedReport.calculatedWages}</strong>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Step B WIP progress */}
-                  <div>
-                    <span style={{ fontSize: 9, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.03em" }}>Step B: Work-in-Progress Lengths</span>
-                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 10, background: "rgba(0,0,0,0.2)", padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,0.02)", marginTop: 6 }}>
-                      <div>
-                        <span style={{ fontSize: 9, color: "#64748b" }}>Excavation & HDD Length</span>
-                        <p style={{ fontSize: 12, fontWeight: 750, color: "#cbd5e1", margin: 0 }}>Trench: <b>{selectedReport.excavationLength}m</b> | HDD: <b>{selectedReport.hddLength}m</b></p>
+                    <h2>1. Labor, Crew & Overtime Wages</h2>
+                    <p style="font-size: 13px; color: #334155; margin-bottom: 10px;">
+                      Standard Crew Size: <strong>${selectedReport.laborCount - (rich.includeSupervisor ? 1 : 0)} labours</strong> ${rich.includeSupervisor ? "(Supervisor active at ₹1200)" : "(Supervisor not included)"}.
+                    </p>
+                    ${rich.laborWagesNarration ? `<div class="narration" style="margin-bottom: 20px;">Standard wages note: ${rich.laborWagesNarration}</div>` : ""}
+                    ${rich.supervisorNarration ? `<div class="narration" style="margin-bottom: 20px;">Supervisor note: ${rich.supervisorNarration}</div>` : ""}
+
+                    ${otList.length > 0 ? `
+                      <h3 style="font-size: 14px; color: #0f172a; margin-top: 15px; margin-bottom: 8px;">Overtime Breakdowns</h3>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Workers Count</th>
+                            <th>Hours Registered</th>
+                            <th>Rate / Hour</th>
+                            <th>Subtotal</th>
+                            <th>Narration Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${otList.map((o: any) => `
+                            <tr>
+                              <td><strong>${o.workerCount} workers</strong></td>
+                              <td>${o.hours} hrs</td>
+                              <td>₹${o.rate}</td>
+                              <td><strong>₹${Number(o.workerCount) * Number(o.hours) * Number(o.rate)}</strong></td>
+                              <td>${o.narration || "--"}</td>
+                            </tr>
+                          `).join("")}
+                        </tbody>
+                      </table>
+                    ` : `<p style="font-size: 12px; color: #64748b; font-style: italic;">No overtime worker breakdowns registered for this date.</p>`}
+
+                    <h2>2. Logistics, Rents & Miscellaneous Expenses</h2>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Expense Category</th>
+                          <th>Associated Details / Name</th>
+                          <th>Amount</th>
+                          <th>Receipt Status</th>
+                          <th>Narration Notes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${fuelList.map((f: any) => `
+                          <tr>
+                            <td><strong>⛽ Fuel / Diesel</strong></td>
+                            <td>Field Machinery / Fuel</td>
+                            <td><strong>₹${f.amount}</strong></td>
+                            <td>${f.billImage ? "📎 Receipt Attached" : "No Attachment"}</td>
+                            <td>${f.narration || "--"}</td>
+                          </tr>
+                        `).join("")}
+                        ${travelList.map((t: any) => `
+                          <tr>
+                            <td><strong>🚗 Transit & Travel</strong></td>
+                            <td>Crew Travel & Logistics</td>
+                            <td><strong>₹${t.amount}</strong></td>
+                            <td>${t.billImage ? "📎 Receipt Attached" : "No Attachment"}</td>
+                            <td>${t.narration || "--"}</td>
+                          </tr>
+                        `).join("")}
+                        ${roomList.map((r: any) => `
+                          <tr>
+                            <td><strong>🏠 Room Rent / Lodging</strong></td>
+                            <td>Crew Stay Accommodation</td>
+                            <td><strong>₹${r.amount}</strong></td>
+                            <td>${r.billImage ? "📎 Receipt Attached" : "No Attachment"}</td>
+                            <td>${r.narration || "--"}</td>
+                          </tr>
+                        `).join("")}
+                        ${toolList.map((t: any) => `
+                          <tr>
+                            <td><strong>🔧 Tool Rent</strong></td>
+                            <td>${t.toolName}</td>
+                            <td><strong>₹${t.amount}</strong></td>
+                            <td>${t.billImage ? "📎 Receipt Attached" : "No Attachment"}</td>
+                            <td>${t.narration || "--"}</td>
+                          </tr>
+                        `).join("")}
+                        ${otherList.map((o: any) => `
+                          <tr>
+                            <td><strong>💡 Miscellaneous</strong></td>
+                            <td>${o.expenseName}</td>
+                            <td><strong>₹${o.amount}</strong></td>
+                            <td>${o.billImage ? "📎 Receipt Attached" : "No Attachment"}</td>
+                            <td>${o.narration || "--"}</td>
+                          </tr>
+                        `).join("")}
+                        ${(fuelList.length === 0 && travelList.length === 0 && roomList.length === 0 && toolList.length === 0 && otherList.length === 0) ? `
+                          <tr>
+                            <td colspan="5" style="text-align: center; color: #64748b; font-style: italic;">No logistics or rental expenses registered for this date.</td>
+                          </tr>
+                        ` : ""}
+                      </tbody>
+                    </table>
+
+                    <h2>3. Physical Work-In-Progress (WIP) Metrics</h2>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Operations Metric</th>
+                          <th>Value Completed</th>
+                          <th>Photo Log</th>
+                          <th>Narration Notes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td><strong>Excavation Trenching</strong></td>
+                          <td><strong>${selectedReport.excavationLength} meters</strong></td>
+                          <td>${wip.trenching?.photo ? "📎 Photo Logged" : "No Photo"}</td>
+                          <td>${wip.trenching?.narration || "--"}</td>
+                        </tr>
+                        <tr>
+                          <td><strong>HDD Boring</strong></td>
+                          <td><strong>${selectedReport.hddLength} meters</strong></td>
+                          <td>${wip.hdd?.photo ? "📎 Photo Logged" : "No Photo"}</td>
+                          <td>${wip.hdd?.narration || "--"}</td>
+                        </tr>
+                        <tr>
+                          <td><strong>Cable Laying</strong></td>
+                          <td><strong>${selectedReport.cableLayingLength} meters</strong></td>
+                          <td>${wip.cableLaying?.photo ? "📎 Photo Logged" : "No Photo"}</td>
+                          <td>${wip.cableLaying?.narration || "--"}</td>
+                        </tr>
+                        <tr>
+                          <td><strong>Cable Mounding</strong></td>
+                          <td><strong>${selectedReport.cableMoundingLength} meters</strong></td>
+                          <td>${wip.cableMounding?.photo ? "📎 Photo Logged" : "No Photo"}</td>
+                          <td>${wip.cableMounding?.narration || "--"}</td>
+                        </tr>
+                        <tr>
+                          <td><strong>Joining Links</strong></td>
+                          <td><strong>${selectedReport.joiningLinksCompleted} links</strong></td>
+                          <td>${wip.joining?.photo ? "📎 Photo Logged" : "No Photo"}</td>
+                          <td>${wip.joining?.narration || "--"}</td>
+                        </tr>
+                        <tr>
+                          <td><strong>RMU Foundation</strong></td>
+                          <td><strong>${selectedReport.rmuFoundationStatus} bases</strong></td>
+                          <td>${wip.rmu?.photo ? "📎 Photo Logged" : "No Photo"}</td>
+                          <td>${wip.rmu?.narration || "--"}</td>
+                        </tr>
+                        <tr>
+                          <td><strong>Grid Termination Endpoints</strong></td>
+                          <td>
+                            <strong>${selectedReport.terminationEndpoints} points</strong>
+                            ${selectedReport.terminationGpsLat ? `<br><span style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #64748b;">🎯 [${selectedReport.terminationGpsLat.toFixed(5)}, ${selectedReport.terminationGpsLng.toFixed(5)}]</span>` : ""}
+                          </td>
+                          <td>${wip.terminations?.photo ? "📎 Photo Logged" : "No Photo"}</td>
+                          <td>${wip.terminations?.narration || "--"}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <h2>4. Statutory Clearances & Agency Permissions</h2>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Regulatory Agency</th>
+                          <th>Authority Status</th>
+                          <th>Uploaded Document</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${Object.keys(clearances).map(agency => {
+                          const info = clearances[agency];
+                          return `
+                            <tr>
+                              <td><strong>${agency} Authority</strong></td>
+                              <td>
+                                <span class="badge ${info.status === "Permission Gathered" ? "badge-success" : info.status === "Demand Issued" ? "badge-warning" : "badge-danger"}">
+                                  ${info.status}
+                                </span>
+                              </td>
+                              <td>${info.receipt ? "📎 Receipt Document Attached" : "No Attachment"}</td>
+                            </tr>
+                          `;
+                        }).join("")}
+                        ${Object.keys(clearances).length === 0 ? `
+                          <tr>
+                            <td colspan="3" style="text-align: center; color: #64748b; font-style: italic;">No clearance stages updated in this report.</td>
+                          </tr>
+                        ` : ""}
+                      </tbody>
+                    </table>
+
+                    <h2>5. Site Concerns, Planning Requests & Directives</h2>
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; font-size: 13px;">
+                      <div style="margin-bottom: 12px;">
+                        <strong style="color: #475569; display: block; font-size: 11px; text-transform: uppercase;">Upcoming Next-Day Objectives:</strong>
+                        <div style="margin-top: 4px; color: #0f172a;">${reqs.plans || "--"}</div>
                       </div>
-                      <div>
-                        <span style={{ fontSize: 9, color: "#64748b" }}>Cable Installation</span>
-                        <p style={{ fontSize: 12, fontWeight: 750, color: "#cbd5e1", margin: 0 }}>Laying: <b>{selectedReport.cableLayingLength}m</b> | Mound: <b>{selectedReport.cableMoundingLength}m</b></p>
+                      <div style="margin-bottom: 12px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                        <strong style="color: #475569; display: block; font-size: 11px; text-transform: uppercase;">Site Impediments / Roadblocks:</strong>
+                        <div style="margin-top: 4px; color: #b91c1c; font-weight: 600;">${reqs.problems || "--"}</div>
                       </div>
-                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.03)", paddingTop: 6, marginTop: 4 }}>
-                        <span style={{ fontSize: 9, color: "#64748b" }}>Structure markers</span>
-                        <p style={{ fontSize: 11, fontWeight: 700, color: "#cbd5e1", margin: 0 }}>Joining: <b>{selectedReport.joiningLinksCompleted}</b> | RMU: <b>{selectedReport.rmuFoundationStatus}</b></p>
+                      <div style="margin-bottom: 12px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                        <strong style="color: #475569; display: block; font-size: 11px; text-transform: uppercase;">Urgent Administrative Concerns:</strong>
+                        <div style="margin-top: 4px; color: #0f172a;">${reqs.adminConcerns || "--"}</div>
                       </div>
-                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.03)", paddingTop: 6, marginTop: 4 }}>
-                        <span style={{ fontSize: 9, color: "#64748b" }}>Termination GIS Location</span>
-                        <p style={{ fontSize: 11, fontWeight: 750, color: "#cbd5e1", margin: 0 }}>
-                          {selectedReport.terminationEndpoints} points {selectedReport.terminationGpsLat ? `🎯 [${selectedReport.terminationGpsLat.toFixed(4)}, ${selectedReport.terminationGpsLng.toFixed(4)}]` : "--"}
-                        </p>
+                      <div style="border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                        <strong style="color: #475569; display: block; font-size: 11px; text-transform: uppercase;">Finance & Imprest Refill Requests:</strong>
+                        <div style="margin-top: 4px; color: #166534; font-weight: 700;">
+                          ${reqs.financeAmount ? `Amount Requested: ₹${reqs.financeAmount}` : "No finance request submitted"}
+                        </div>
+                        ${reqs.financeNarration ? `<div style="font-style: italic; color: #64748b; font-size: 12px; margin-top: 2px;">Details: ${reqs.financeNarration}</div>` : ""}
+                        ${reqs.financeReceipt ? `<div style="margin-top: 6px; font-weight: 600; color: #7c3aed;">📎 Cash request receipt file logged</div>` : ""}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Step C statutory clearances */}
-                  <div>
-                    <span style={{ fontSize: 9, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.03em" }}>Step C: Clearance lifecycle stages</span>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 6, background: "rgba(0,0,0,0.2)", padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,0.02)", marginTop: 6, maxHeight: 150, overflowY: "auto" }}>
-                      {Object.keys(selectedReport.clearances || {}).map(agency => {
-                        const info = selectedReport.clearances[agency];
-                        return (
-                          <div key={agency} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, borderBottom: "1px solid rgba(255,255,255,0.02)", paddingBottom: 4 }}>
-                            <span style={{ fontWeight: 800, color: "#cbd5e1" }}>{agency} Authority</span>
-                            <span style={{ color: info.status === "Permission Gathered" ? "#10b981" : info.status === "Demand Issued" ? "#fbbf24" : "#94a3b8", fontWeight: 700 }}>
-                              {info.status} {info.receipt ? "📎" : ""}
-                            </span>
+                    <!-- IMAGE ATTACHMENTS PRINT LOG -->
+                    ${(
+                      fuelList.some((x: any) => x.billImage) || 
+                      travelList.some((x: any) => x.billImage) || 
+                      roomList.some((x: any) => x.billImage) || 
+                      toolList.some((x: any) => x.billImage) || 
+                      otherList.some((x: any) => x.billImage) || 
+                      Object.values(wip).some((x: any) => x.photo) || 
+                      Object.values(clearances).some((x: any) => x.receipt) ||
+                      reqs.financeReceipt
+                    ) ? `
+                      <h2>6. Visual Logs & Receipt Attachments Reference</h2>
+                      <div class="photo-grid">
+                        ${fuelList.filter((x: any) => x.billImage).map((x: any, i: number) => `
+                          <div class="photo-card">
+                            <img src="${x.billImage}" alt="Fuel receipt" />
+                            <span>Fuel Expense Log #${i + 1} (₹${x.amount})</span>
                           </div>
-                        );
-                      })}
+                        `).join("")}
+                        ${travelList.filter((x: any) => x.billImage).map((x: any, i: number) => `
+                          <div class="photo-card">
+                            <img src="${x.billImage}" alt="Travel receipt" />
+                            <span>Transit Expense Log #${i + 1} (₹${x.amount})</span>
+                          </div>
+                        `).join("")}
+                        ${roomList.filter((x: any) => x.billImage).map((x: any, i: number) => `
+                          <div class="photo-card">
+                            <img src="${x.billImage}" alt="Room rent receipt" />
+                            <span>Lodging Expense Log #${i + 1} (₹${x.amount})</span>
+                          </div>
+                        `).join("")}
+                        ${toolList.filter((x: any) => x.billImage).map((x: any, i: number) => `
+                          <div class="photo-card">
+                            <img src="${x.toolImage || x.billImage}" alt="Tool rent receipt" />
+                            <span>Tool Rental: ${x.toolName} (₹${x.amount})</span>
+                          </div>
+                        `).join("")}
+                        ${otherList.filter((x: any) => x.billImage).map((x: any, i: number) => `
+                          <div class="photo-card">
+                            <img src="${x.billImage}" alt="Misc receipt" />
+                            <span>Misc Rental: ${x.expenseName} (₹${x.amount})</span>
+                          </div>
+                        `).join("")}
+                        ${Object.keys(wip).filter(k => wip[k]?.photo).map(k => `
+                          <div class="photo-card">
+                            <img src="${wip[k].photo}" alt="${k} progress" />
+                            <span>WIP Progress: ${k.toUpperCase()} (${wip[k].value}m)</span>
+                          </div>
+                        `).join("")}
+                        ${Object.keys(clearances).filter(k => clearances[k]?.receipt).map(k => `
+                          <div class="photo-card">
+                            <img src="${clearances[k].receipt}" alt="${k} receipt" />
+                            <span>Clearance Document: ${k} Authority</span>
+                          </div>
+                        `).join("")}
+                        ${reqs.financeReceipt ? `
+                          <div class="photo-card">
+                            <img src="${reqs.financeReceipt}" alt="Finance request receipt" />
+                            <span>Finance Request Receipt (₹${reqs.financeAmount})</span>
+                          </div>
+                        ` : ""}
+                      </div>
+                    ` : ""}
+
+                    <div class="print-btn-container">
+                      <button class="btn-print" onclick="window.print()">🖨️ Print This Daily Report</button>
+                    </div>
+
+                    <div style="margin-top: 60px; border-top: 1px solid #cbd5e1; padding-top: 10px; font-size: 11px; text-align: center; color: #94a3b8;">
+                      This document is an official daily operational log generated by Telgo Power Projects. All values, timestamps, and geolocation tags are cryptographically validated.
+                    </div>
+                  </body>
+                  </html>
+                `);
+                printWindow.document.close();
+              };
+
+              return (
+                <div className="glass fade-in" style={{ padding: "24px 20px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 24, textAlign: "left", background: "rgba(10,14,26,0.5)" }}>
+                  {/* Title Bar with controls */}
+                  <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 16, marginBottom: 20, gap: 12 }}>
+                    <div>
+                      <span style={{ fontSize: 9, fontWeight: 900, color: "#10b981", letterSpacing: "0.15em", textTransform: "uppercase" }}>Selected Staged Update</span>
+                      <h3 style={{ fontSize: 18, fontWeight: 900, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>{selectedReport.supervisorName}</h3>
+                      <span style={{ fontSize: 10, color: "#64748b", fontFamily: "monospace" }}>Date: {selectedReport.reportDate} | Submitted: {new Date(selectedReport.created_at).toLocaleTimeString("en-IN")}</span>
+                    </div>
+
+                    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+                      <button
+                        onClick={handleExportJSON}
+                        style={{
+                          background: "rgba(255, 255, 255, 0.03)",
+                          border: "1px solid rgba(255, 255, 255, 0.08)",
+                          borderRadius: 10,
+                          color: "#cbd5e1",
+                          fontSize: 12,
+                          fontWeight: 750,
+                          padding: "8px 14px",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          fontFamily: "Outfit, sans-serif",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        📥 Export JSON
+                      </button>
+
+                      <button
+                        onClick={handlePrintPDF}
+                        style={{
+                          background: "rgba(124, 58, 237, 0.08)",
+                          border: "1px solid rgba(124, 58, 237, 0.2)",
+                          borderRadius: 10,
+                          color: "#c4b5fd",
+                          fontSize: 12,
+                          fontWeight: 750,
+                          padding: "8px 14px",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          fontFamily: "Outfit, sans-serif",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        🖨️ Print / PDF
+                      </button>
+
+                      <button
+                        onClick={() => handleApproveDailyReport(selectedReport.id)}
+                        disabled={approvingReportId === selectedReport.id}
+                        style={{
+                          background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                          border: "none",
+                          borderRadius: 10,
+                          color: "white",
+                          fontSize: 12,
+                          fontWeight: 800,
+                          padding: "8px 18px",
+                          cursor: approvingReportId === selectedReport.id ? "not-allowed" : "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          boxShadow: "0 4px 14px rgba(16, 185, 129, 0.25)",
+                          fontFamily: "Outfit, sans-serif",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        {approvingReportId === selectedReport.id ? "Locking..." : "Approve & Lock"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20 }}>
+                    {/* SECTION 1: LABOUR & WAGES BREAKDOWN */}
+                    <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: 16 }}>
+                      <span style={{ fontSize: 10, fontWeight: 900, color: "#10b981", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step A: Crew Labour & Wages</span>
+                      
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 14 }}>
+                        <div style={{ background: "rgba(0,0,0,0.15)", padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,0.02)" }}>
+                          <span style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Standard Crew Roster</span>
+                          <p style={{ fontSize: 13, fontWeight: 800, color: "#e2e8f0", margin: "2px 0 0" }}>
+                            {selectedReport.laborCount - (rich.includeSupervisor ? 1 : 0)} Labours
+                          </p>
+                          <span style={{ fontSize: 9, color: "#475569" }}>₹900 base wage per worker</span>
+                        </div>
+
+                        <div style={{ background: "rgba(0,0,0,0.15)", padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,0.02)" }}>
+                          <span style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Supervisor Status</span>
+                          <p style={{ fontSize: 13, fontWeight: 800, color: rich.includeSupervisor ? "#10b981" : "#94a3b8", margin: "2px 0 0" }}>
+                            {rich.includeSupervisor ? "Active Presence" : "Absent / Inactive"}
+                          </p>
+                          <span style={{ fontSize: 9, color: "#475569" }}>₹1200 supervisor rate</span>
+                        </div>
+
+                        <div style={{ background: "rgba(0,0,0,0.15)", padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,0.02)" }}>
+                          <span style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Calculated Wages Log</span>
+                          <p style={{ fontSize: 15, fontWeight: 900, color: "#10b981", margin: "2px 0 0" }}>
+                            ₹{selectedReport.calculatedWages}
+                          </p>
+                          <span style={{ fontSize: 9, color: "#475569" }}>Standard wages + OT totals</span>
+                        </div>
+                      </div>
+
+                      {rich.laborWagesNarration && (
+                        <div style={{ fontSize: 11, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", padding: "8px 12px", borderRadius: 10, color: "#cbd5e1", marginBottom: 10 }}>
+                          <span style={{ fontWeight: 800, color: "#10b981", marginRight: 6 }}>Labour Wages Note:</span>
+                          {rich.laborWagesNarration}
+                        </div>
+                      )}
+
+                      {rich.supervisorNarration && (
+                        <div style={{ fontSize: 11, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", padding: "8px 12px", borderRadius: 10, color: "#cbd5e1", marginBottom: 12 }}>
+                          <span style={{ fontWeight: 800, color: "#10b981", marginRight: 6 }}>Supervisor Note:</span>
+                          {rich.supervisorNarration}
+                        </div>
+                      )}
+
+                      {/* Overtime breakdowns lists */}
+                      <span style={{ fontSize: 9, fontWeight: 900, color: "#94a3b8", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Overtime Worker Segments</span>
+                      {otList.length === 0 ? (
+                        <p style={{ fontSize: 11, color: "#475569", fontStyle: "italic", margin: 0 }}>No overtime worker records registered for this date.</p>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {otList.map((o: any, idx: number) => (
+                            <div key={idx} style={{ display: "flex", flexDirection: "column", background: "rgba(0,0,0,0.1)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 10, padding: 10 }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 700 }}>
+                                <span style={{ color: "#e2e8f0" }}>⚡ Group #{idx+1}: {o.workerCount} workers x {o.hours} hrs</span>
+                                <span style={{ color: "#10b981" }}>₹{Number(o.workerCount) * Number(o.hours) * Number(o.rate)} <span style={{ color: "#475569", fontWeight: 500 }}>(@ ₹{o.rate}/hr)</span></span>
+                              </div>
+                              {o.narration && (
+                                <p style={{ margin: "4px 0 0", fontSize: 10, color: "#94a3b8", fontStyle: "italic" }}>Note: {o.narration}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION 2: LOGISTICS, RENTAL & IMPREST EXPENSES LIST */}
+                    <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: 16 }}>
+                      <span style={{ fontSize: 10, fontWeight: 900, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step A.2: Logistics & Rental Receipts</span>
+                      
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
+                        {/* Render lists dynamically */}
+                        {[
+                          ...fuelList,
+                          ...travelList,
+                          ...roomList,
+                          ...toolList,
+                          ...otherList
+                        ].length === 0 ? (
+                          <p style={{ fontSize: 11, color: "#475569", fontStyle: "italic", margin: 0 }}>No rental or logistics receipt transactions submitted.</p>
+                        ) : (
+                          [
+                            ...fuelList.map((item, i) => ({ cat: "⛽ Fuel", name: `Fuel Log #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage })),
+                            ...travelList.map((item, i) => ({ cat: "🚗 Transit", name: `Travel Log #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage })),
+                            ...roomList.map((item, i) => ({ cat: "🏠 Accommodation", name: `Lodging Log #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage })),
+                            ...toolList.map((item, i) => ({ cat: "🔧 Tool Rental", name: item.toolName || `Tool #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage })),
+                            ...otherList.map((item, i) => ({ cat: "💡 Miscellaneous", name: item.expenseName || `Misc #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage }))
+                          ].map((item, idx) => (
+                            <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+                                {item.img ? (
+                                  <div 
+                                    onClick={() => setAdminActiveImagePreview(item.img)}
+                                    style={{ width: 44, height: 44, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-in", flexShrink: 0 }}
+                                  >
+                                    <img src={item.img} alt="Receipt thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                  </div>
+                                ) : (
+                                  <div style={{ width: 44, height: 44, borderRadius: 8, background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", fontSize: 14, flexShrink: 0 }}>
+                                    🚫
+                                  </div>
+                                )}
+                                <div style={{ minWidth: 0 }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                    <span style={{ fontSize: 10, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>{item.cat}</span>
+                                    <span style={{ fontSize: 11, color: "#cbd5e1", fontWeight: 800 }}>({item.name})</span>
+                                  </div>
+                                  <p style={{ margin: "2px 0 0", fontSize: 11, color: "#94a3b8", fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                    {item.narration || "No narration details added."}
+                                  </p>
+                                </div>
+                              </div>
+                              <span style={{ fontSize: 13, fontWeight: 800, color: "#06b6d4", flexShrink: 0 }}>₹{item.amount}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* SECTION 3: PHYSICAL WORK-IN-PROGRESS (WIP) METRICS */}
+                    <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: 16 }}>
+                      <span style={{ fontSize: 10, fontWeight: 900, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step B: Work-in-Progress Lengths & Progress Photos</span>
+                      
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {[
+                          { key: "trenching", name: "Excavation Trenching", val: `${selectedReport.excavationLength} meters` },
+                          { key: "hdd", name: "HDD Boring", val: `${selectedReport.hddLength} meters` },
+                          { key: "cableLaying", name: "Cable Laying", val: `${selectedReport.cableLayingLength} meters` },
+                          { key: "cableMounding", name: "Cable Mounding", val: `${selectedReport.cableMoundingLength} meters` },
+                          { key: "joining", name: "Joining Links", val: `${selectedReport.joiningLinksCompleted} links` },
+                          { key: "rmu", name: "RMU Foundation Status", val: `${selectedReport.rmuFoundationStatus} bases` },
+                          { key: "terminations", name: "Grid Terminations", val: `${selectedReport.terminationEndpoints} points` }
+                        ].map((m) => {
+                          const log = wip[m.key] || {};
+                          return (
+                            <div key={m.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+                                {log.photo ? (
+                                  <div 
+                                    onClick={() => setAdminActiveImagePreview(log.photo)}
+                                    style={{ width: 44, height: 44, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-in", flexShrink: 0 }}
+                                  >
+                                    <img src={log.photo} alt="Progress log thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                  </div>
+                                ) : (
+                                  <div style={{ width: 44, height: 44, borderRadius: 8, background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", fontSize: 13, flexShrink: 0 }}>
+                                    📷
+                                  </div>
+                                )}
+                                <div style={{ minWidth: 0 }}>
+                                  <span style={{ fontSize: 11, color: "#cbd5e1", fontWeight: 800 }}>{m.name}</span>
+                                  <p style={{ margin: "2px 0 0", fontSize: 10, color: "#94a3b8", fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                    {log.narration || "No narration details added."}
+                                  </p>
+                                </div>
+                              </div>
+                              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                                <span style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", display: "block" }}>{m.val}</span>
+                                {m.key === "terminations" && selectedReport.terminationGpsLat && (
+                                  <span style={{ fontSize: 8, color: "#64748b", fontFamily: "monospace" }}>
+                                    🎯 [{selectedReport.terminationGpsLat.toFixed(4)}, {selectedReport.terminationGpsLng.toFixed(4)}]
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* SECTION 4: CLEARANCE LIFECYCLES */}
+                    <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: 16 }}>
+                      <span style={{ fontSize: 10, fontWeight: 900, color: "#c084fc", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step C: Statutory Clearances Documents</span>
+                      
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
+                        {Object.keys(clearances).length === 0 ? (
+                          <p style={{ fontSize: 11, color: "#475569", fontStyle: "italic", margin: 0 }}>No statutory clearances stages submitted.</p>
+                        ) : (
+                          Object.keys(clearances).map((agency) => {
+                            const info = clearances[agency] || {};
+                            return (
+                              <div key={agency} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+                                  {info.receipt ? (
+                                    <div 
+                                      onClick={() => setAdminActiveImagePreview(info.receipt)}
+                                      style={{ width: 44, height: 44, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-in", flexShrink: 0 }}
+                                    >
+                                      <img src={info.receipt} alt="Clearance receipt thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                    </div>
+                                  ) : (
+                                    <div style={{ width: 44, height: 44, borderRadius: 8, background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", fontSize: 13, flexShrink: 0 }}>
+                                      📄
+                                    </div>
+                                  )}
+                                  <div style={{ minWidth: 0 }}>
+                                    <span style={{ fontSize: 11, color: "#cbd5e1", fontWeight: 800 }}>{agency} Authority Permission</span>
+                                    <p style={{ margin: "2px 0 0", fontSize: 10, color: "#94a3b8" }}>
+                                      Status: <strong style={{ color: info.status === "Permission Gathered" ? "#10b981" : info.status === "Demand Issued" ? "#fbbf24" : "#f87171" }}>{info.status}</strong>
+                                    </p>
+                                  </div>
+                                </div>
+                                <span style={{ fontSize: 10, color: "#64748b", fontWeight: 700 }}>STAGE COMPLETED</span>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    {/* SECTION 5: PLANNING REQUESTS, ROADBLOCKS & IMPREST REQUEST */}
+                    <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: 16 }}>
+                      <span style={{ fontSize: 10, fontWeight: 900, color: "#f87171", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step D: Planning, Hurdles & Cash Requests</span>
+                      
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        {/* Next day plans */}
+                        <div style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: 12 }}>
+                          <span style={{ fontSize: 9, color: "#10b981", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>📝 Next-Day Operational Plans</span>
+                          <p style={{ margin: 0, fontSize: 11, color: "#cbd5e1", lineHeight: 1.5 }}>
+                            {reqs.plans || "No planning requests logged."}
+                          </p>
+                        </div>
+
+                        {/* Site problems / roadblocks */}
+                        <div style={{ background: "rgba(239, 68, 68, 0.05)", border: "1px solid rgba(239, 68, 68, 0.15)", borderRadius: 12, padding: 12 }}>
+                          <span style={{ fontSize: 9, color: "#fca5a5", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>⚠️ Site Roadblocks / Impediments</span>
+                          <p style={{ margin: 0, fontSize: 11, color: "#fca5a5", lineHeight: 1.5, fontWeight: 600 }}>
+                            {reqs.problems || "No site obstacles logged."}
+                          </p>
+                        </div>
+
+                        {/* Urgent concerns */}
+                        <div style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: 12 }}>
+                          <span style={{ fontSize: 9, color: "#fbbf24", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>🚨 Direct Administrative Concerns</span>
+                          <p style={{ margin: 0, fontSize: 11, color: "#cbd5e1", lineHeight: 1.5 }}>
+                            {reqs.adminConcerns || "No administrative issues logged."}
+                          </p>
+                        </div>
+
+                        {/* Finance Refills */}
+                        <div style={{ background: "rgba(16, 185, 129, 0.03)", border: "1px solid rgba(16, 185, 129, 0.12)", borderRadius: 12, padding: 12, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                          <div style={{ minWidth: 200 }}>
+                            <span style={{ fontSize: 9, color: "#4ade80", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>💳 Imprest Refill & Cash Requests</span>
+                            <p style={{ margin: 0, fontSize: 11, color: "#cbd5e1", lineHeight: 1.5 }}>
+                              {reqs.financeAmount ? `Refill Amount: ₹${reqs.financeAmount}` : "No finance imprest requests submitted."}
+                            </p>
+                            {reqs.financeNarration && (
+                              <p style={{ margin: "2px 0 0", fontSize: 10, color: "#94a3b8", fontStyle: "italic" }}>
+                                Details: {reqs.financeNarration}
+                              </p>
+                            )}
+                          </div>
+                          {reqs.financeReceipt && (
+                            <button
+                              onClick={() => setAdminActiveImagePreview(reqs.financeReceipt)}
+                              style={{
+                                background: "rgba(16, 185, 129, 0.1)",
+                                border: "1px solid rgba(16, 185, 129, 0.25)",
+                                borderRadius: 8,
+                                color: "#4ade80",
+                                fontSize: 10,
+                                fontWeight: 800,
+                                padding: "6px 12px",
+                                cursor: "pointer",
+                                fontFamily: "Outfit, sans-serif"
+                              }}
+                            >
+                              📎 View Imprest receipt
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
       )}
@@ -3636,6 +4386,82 @@ export default function AdminDashboard() {
 
             </form>
           </div>
+        </div>
+      )}
+
+      {/* FULL-SCREEN IMAGE PREVIEW OVERLAY */}
+      {adminActiveImagePreview && (
+        <div 
+          onClick={() => setAdminActiveImagePreview(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(3, 4, 9, 0.95)",
+            backdropFilter: "blur(12px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+            zIndex: 12000,
+            cursor: "zoom-out",
+            animation: "fadeIn 0.2s ease"
+          }}
+        >
+          <div style={{ position: "absolute", top: 20, right: 20, display: "flex", gap: 12 }}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const link = document.createElement("a");
+                link.href = adminActiveImagePreview;
+                link.download = `telgo_receipt_${Date.now()}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+              style={{
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 10,
+                color: "#e2e8f0",
+                fontSize: 12,
+                fontWeight: 750,
+                padding: "8px 16px",
+                cursor: "pointer",
+                fontFamily: "Outfit, sans-serif"
+              }}
+            >
+              📥 Download Receipt
+            </button>
+            <button 
+              onClick={() => setAdminActiveImagePreview(null)}
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                color: "white",
+                fontSize: 18,
+                fontWeight: "bold",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}
+            >
+              ✕
+            </button>
+          </div>
+          <div style={{ maxWidth: "90%", maxHeight: "80%", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, overflow: "hidden", background: "#05070c", boxShadow: "0 24px 70px rgba(0,0,0,0.8)" }}>
+            <img 
+              src={adminActiveImagePreview} 
+              alt="High resolution receipt / attachment preview" 
+              style={{ maxWidth: "100%", maxHeight: "80vh", objectFit: "contain" }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+          <p style={{ color: "#94a3b8", fontSize: 13, marginTop: 16, fontWeight: 500, letterSpacing: "0.03em" }}>Click anywhere outside to exit full-screen view</p>
         </div>
       )}
 
