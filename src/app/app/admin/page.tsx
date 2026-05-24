@@ -1110,7 +1110,7 @@ export default function AdminDashboard() {
               </div>
               <div className="glass" style={{ padding: "16px 18px", border: "1px solid var(--border)" }}>
                 <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Active Mailers</span>
-                <p style={{ fontSize: 15, fontWeight: 700, color: "#4ade80", margin: "16px 0 0", display: "flex", alignItems: "center", gap: 6 }}>
+                <p style={{ fontSize: 15, fontWeight: 700, color: "#15803d", margin: "16px 0 0", display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e" }} />
                   SMTP Ready
                 </p>
@@ -1231,7 +1231,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <h4 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>Metrics Hub</h4>
-                  <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 700, textTransform: "uppercase" }}>Operations logs</span>
+                  <span style={{ fontSize: 10, color: "#16a34a", fontWeight: 700, textTransform: "uppercase" }}>Operations logs</span>
                 </div>
               </div>
 
@@ -1337,7 +1337,7 @@ export default function AdminDashboard() {
                 }
               }}
               className="action-btn"
-              style={{ width: "100%", minHeight: 48, background: "transparent", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 14, color: "#f87171", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit,sans-serif" }}
+              style={{ width: "100%", minHeight: 48, background: "transparent", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 14, color: "#dc2626", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit,sans-serif" }}
             >
               Secure Sign Out
             </button>
@@ -1447,7 +1447,7 @@ export default function AdminDashboard() {
                           <p style={{ fontWeight: 700, fontSize: 15, color: "var(--text)", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.full_name}</p>
                           <p style={{ fontSize: 12, color: "var(--dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</p>
                         </div>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: roleColor(u.role), background: `${roleColor(u.role)}18`, border: `1px solid ${roleColor(u.role)}30`, borderRadius: 8, padding: "3px 9px", flexShrink: 0, textTransform: "capitalize" }}>{u.role}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", background: `${roleColor(u.role)}18`, border: `1px solid ${roleColor(u.role)}30`, borderRadius: 8, padding: "3px 9px", flexShrink: 0, textTransform: "capitalize" }}>{u.role}</span>
                       </div>
                       
                       <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
@@ -1463,7 +1463,7 @@ export default function AdminDashboard() {
                           onClick={() => blockUser(u.id)}
                           disabled={blocking === u.id}
                           className="action-btn"
-                          style={{ minWidth: 70, minHeight: 40, background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10, color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit,sans-serif", opacity: blocking === u.id ? 0.6 : 1 }}
+                          style={{ minWidth: 70, minHeight: 40, background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10, color: "#dc2626", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit,sans-serif", opacity: blocking === u.id ? 0.6 : 1 }}
                         >
                           {blocking === u.id ? "..." : "Block"}
                         </button>
@@ -1557,7 +1557,7 @@ export default function AdminDashboard() {
                       </div>
 
                       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                        <span style={{ fontSize: 10, fontWeight: 800, color: roleColor(u.role), textTransform: "uppercase", background: `${roleColor(u.role)}12`, padding: "4px 8px", borderRadius: 6, border: `1px solid ${roleColor(u.role)}20` }}>{u.role}</span>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: "var(--text)", textTransform: "uppercase", background: `${roleColor(u.role)}12`, padding: "4px 8px", borderRadius: 6, border: `1px solid ${roleColor(u.role)}20` }}>{u.role}</span>
                         <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--dim)" }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                         </div>
@@ -1627,7 +1627,7 @@ export default function AdminDashboard() {
                             width: 32,
                             height: 32,
                             borderRadius: "50%",
-                            background: "linear-gradient(135deg, #1e293b, #0f172a)",
+                            background: "linear-gradient(135deg, #f8fafc, #e2e8f0)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -1649,7 +1649,7 @@ export default function AdminDashboard() {
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
                           {isActive ? (
                             <>
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(34,197,94,0.15)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 6, padding: "2px 6px", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(34,197,94,0.15)", color: "#15803d", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 6, padding: "2px 6px", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>
                                 <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} /> Active
                               </span>
                               {w.recordedAt && (
@@ -1812,7 +1812,7 @@ export default function AdminDashboard() {
                           <p style={{ fontSize: 11, color: roleColor(radarSelectedWorker.role), fontWeight: 700, margin: "2px 0 0", textTransform: "uppercase" }}>{radarSelectedWorker.role}</p>
                         </div>
                         {radarSelectedWorker.status === "active" ? (
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(34,197,94,0.12)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, padding: "4px 10px", fontSize: 11, fontWeight: 800, textTransform: "uppercase" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(34,197,94,0.12)", color: "#15803d", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, padding: "4px 10px", fontSize: 11, fontWeight: 800, textTransform: "uppercase" }}>
                             🟢 Connected
                           </span>
                         ) : (
@@ -1935,24 +1935,24 @@ export default function AdminDashboard() {
                             width: 32,
                             height: 32,
                             borderRadius: "50%",
-                            background: "linear-gradient(135deg, #1e293b, #0f172a)",
+                            background: "linear-gradient(135deg, #f8fafc, #e2e8f0)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             fontSize: 12,
                             fontWeight: 800,
-                            color: roleColor(u.role),
-                            border: `1.5px solid ${roleColor(u.role)}30`,
+                            color: "var(--text)",
+                            border: "1px solid var(--border)",
                             textTransform: "uppercase"
                           }}>
                             {u.full_name.charAt(0)}
                           </div>
                           <div style={{ minWidth: 0 }}>
-                            <p style={{ fontSize: 13, fontWeight: 750, color: isSelected ? "#a78bfa" : "#f1f5f9", margin: 0 }}>{u.full_name}</p>
+                            <p style={{ fontSize: 13, fontWeight: 750, color: isSelected ? "var(--violet)" : "var(--text)", margin: 0 }}>{u.full_name}</p>
                             <span style={{ fontSize: 9, color: "var(--dim)", fontFamily: "monospace" }}>{u.login_id}</span>
                           </div>
                         </div>
-                        <span style={{ fontSize: 9, fontWeight: 800, color: roleColor(u.role), textTransform: "uppercase", background: `${roleColor(u.role)}12`, padding: "2px 6px", borderRadius: 4 }}>{u.role}</span>
+                        <span style={{ fontSize: 9, fontWeight: 800, color: "var(--text)", textTransform: "uppercase", background: `${roleColor(u.role)}12`, padding: "2px 6px", borderRadius: 4 }}>{u.role}</span>
                       </div>
                     );
                   })}
@@ -2116,9 +2116,9 @@ export default function AdminDashboard() {
                                 return (
                                   <tr key={index} style={{ borderBottom: "1px solid var(--border)", color: "var(--muted)" }}>
                                     <td style={{ padding: "12px 8px", fontWeight: 700 }}>{log.dateStr}</td>
-                                    <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#4ade80" }}>{log.signInTime}</td>
+                                    <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#15803d" }}>{log.signInTime}</td>
                                     <td style={{ padding: "12px 8px", fontFamily: "monospace", color: log.signOutTime !== "--" ? "#f87171" : "#64748b" }}>{log.signOutTime}</td>
-                                    <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#fbbf24", fontWeight: 700 }}>{durationStr}</td>
+                                    <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#d97706", fontWeight: 700 }}>{durationStr}</td>
                                     <td style={{ padding: "12px 8px" }}>
                                       <span style={{
                                         fontSize: 9,
@@ -2202,7 +2202,7 @@ export default function AdminDashboard() {
                     padding: "6px 12px",
                     fontSize: 11,
                     fontWeight: 750,
-                    color: "#67e8f9",
+                    color: "#0284c7",
                     cursor: "pointer",
                     fontFamily: "Outfit, sans-serif"
                   }}
@@ -2218,7 +2218,7 @@ export default function AdminDashboard() {
                     padding: "6px 12px",
                     fontSize: 11,
                     fontWeight: 700,
-                    color: "#fca5a5",
+                    color: "#dc2626",
                     cursor: "pointer",
                     fontFamily: "Outfit, sans-serif"
                   }}
@@ -2253,7 +2253,7 @@ export default function AdminDashboard() {
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                       <h3 style={{ fontSize: 14, fontWeight: 800, color: isSelected ? "var(--violet)" : "var(--text)", margin: 0 }}>{p.name}</h3>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: "#67e8f9", background: "rgba(6, 182, 212, 0.12)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "2px 6px", textTransform: "uppercase", fontFamily: "monospace", flexShrink: 0 }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "#0284c7", background: "rgba(6, 182, 212, 0.12)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "2px 6px", textTransform: "uppercase", fontFamily: "monospace", flexShrink: 0 }}>
                         {p.code}
                       </span>
                     </div>
@@ -2303,8 +2303,8 @@ export default function AdminDashboard() {
                   marginTop: 4
                 }}
               >
-                <span style={{ fontSize: 18, color: "#67e8f9" }}>➕</span>
-                <span style={{ fontSize: 13, fontWeight: 800, color: "#67e8f9", letterSpacing: "0.05em", textTransform: "uppercase" }}>Add New Corridor Project</span>
+                <span style={{ fontSize: 18, color: "#0284c7" }}>➕</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: "#0284c7", letterSpacing: "0.05em", textTransform: "uppercase" }}>Add New Corridor Project</span>
               </div>
             </div>
 
@@ -2454,12 +2454,12 @@ export default function AdminDashboard() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, background: "var(--surface)", border: "1px solid var(--border)", padding: 16, borderRadius: 16 }}>
                   <div>
                     <span style={{ fontSize: 9, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase" }}>Start Position</span>
-                    <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 750, color: "#4ade80" }}>{selectedProjectItem.startLabel}</p>
+                    <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 750, color: "#15803d" }}>{selectedProjectItem.startLabel}</p>
                     <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--dim)" }}>{selectedProjectItem.startCoords[0]}° N, {selectedProjectItem.startCoords[1]}° E</span>
                   </div>
                   <div>
                     <span style={{ fontSize: 9, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase" }}>End Position</span>
-                    <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 750, color: "#f87171" }}>{selectedProjectItem.endLabel}</p>
+                    <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 750, color: "#dc2626" }}>{selectedProjectItem.endLabel}</p>
                     <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--dim)" }}>{selectedProjectItem.endCoords[0]}° N, {selectedProjectItem.endCoords[1]}° E</span>
                   </div>
                 </div>
@@ -3262,7 +3262,7 @@ export default function AdminDashboard() {
 
                     {/* SECTION 3: PHYSICAL WORK-IN-PROGRESS (WIP) METRICS */}
                     <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 16 }}>
-                      <span style={{ fontSize: 10, fontWeight: 900, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step B: Work-in-Progress Lengths & Progress Photos</span>
+                      <span style={{ fontSize: 10, fontWeight: 900, color: "#d97706", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step B: Work-in-Progress Lengths & Progress Photos</span>
                       
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {[
@@ -3298,7 +3298,7 @@ export default function AdminDashboard() {
                                 </div>
                               </div>
                               <div style={{ textAlign: "right", flexShrink: 0 }}>
-                                <span style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", display: "block" }}>{m.val}</span>
+                                <span style={{ fontSize: 12, fontWeight: 800, color: "#d97706", display: "block" }}>{m.val}</span>
                                 {m.key === "terminations" && selectedReport.terminationGpsLat && (
                                   <span style={{ fontSize: 8, color: "var(--dim)", fontFamily: "monospace" }}>
                                     🎯 [{selectedReport.terminationGpsLat.toFixed(4)}, {selectedReport.terminationGpsLng.toFixed(4)}]
@@ -3353,7 +3353,7 @@ export default function AdminDashboard() {
 
                     {/* SECTION 5: PLANNING REQUESTS, ROADBLOCKS & IMPREST REQUEST */}
                     <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 16 }}>
-                      <span style={{ fontSize: 10, fontWeight: 900, color: "#f87171", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step D: Planning, Hurdles & Cash Requests</span>
+                      <span style={{ fontSize: 10, fontWeight: 900, color: "#dc2626", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step D: Planning, Hurdles & Cash Requests</span>
                       
                       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                         {/* Next day plans */}
@@ -3366,15 +3366,15 @@ export default function AdminDashboard() {
 
                         {/* Site problems / roadblocks */}
                         <div style={{ background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 12, padding: 12 }}>
-                          <span style={{ fontSize: 9, color: "#fca5a5", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>⚠️ Site Roadblocks / Impediments</span>
-                          <p style={{ margin: 0, fontSize: 11, color: "#fca5a5", lineHeight: 1.5, fontWeight: 600 }}>
+                          <span style={{ fontSize: 9, color: "#dc2626", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>⚠️ Site Roadblocks / Impediments</span>
+                          <p style={{ margin: 0, fontSize: 11, color: "#dc2626", lineHeight: 1.5, fontWeight: 600 }}>
                             {reqs.problems || "No site obstacles logged."}
                           </p>
                         </div>
 
                         {/* Urgent concerns */}
                         <div style={{ background: "var(--surface)", border: "1px solid var(--surface)", borderRadius: 12, padding: 12 }}>
-                          <span style={{ fontSize: 9, color: "#fbbf24", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>🚨 Direct Administrative Concerns</span>
+                          <span style={{ fontSize: 9, color: "#d97706", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>🚨 Direct Administrative Concerns</span>
                           <p style={{ margin: 0, fontSize: 11, color: "var(--muted)", lineHeight: 1.5 }}>
                             {reqs.adminConcerns || "No administrative issues logged."}
                           </p>
@@ -3383,7 +3383,7 @@ export default function AdminDashboard() {
                         {/* Finance Refills */}
                         <div style={{ background: "rgba(16, 185, 129, 0.03)", border: "1px solid rgba(16, 185, 129, 0.12)", borderRadius: 12, padding: 12, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                           <div style={{ minWidth: 200 }}>
-                            <span style={{ fontSize: 9, color: "#4ade80", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>💳 Imprest Refill & Cash Requests</span>
+                            <span style={{ fontSize: 9, color: "#15803d", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>💳 Imprest Refill & Cash Requests</span>
                             <p style={{ margin: 0, fontSize: 11, color: "var(--muted)", lineHeight: 1.5 }}>
                               {reqs.financeAmount ? `Refill Amount: ₹${reqs.financeAmount}` : "No finance imprest requests submitted."}
                             </p>
@@ -3400,7 +3400,7 @@ export default function AdminDashboard() {
                                 background: "rgba(16, 185, 129, 0.1)",
                                 border: "1px solid rgba(16, 185, 129, 0.25)",
                                 borderRadius: 8,
-                                color: "#4ade80",
+                                color: "#15803d",
                                 fontSize: 10,
                                 fontWeight: 800,
                                 padding: "6px 12px",
@@ -3497,13 +3497,13 @@ export default function AdminDashboard() {
                         <tr key={row.id} style={{ borderBottom: "1px solid var(--border)", color: "var(--muted)" }}>
                           <td style={{ padding: "12px 8px", fontWeight: 700 }}>{row.ledgerDate}</td>
                           <td style={{ padding: "12px 8px" }}>
-                            <span style={{ fontSize: 10, background: "rgba(245,158,11,0.1)", color: "#fbbf24", border: "1px solid rgba(217, 119, 6, 0.2)", borderRadius: 4, padding: "2px 6px", fontWeight: 800 }}>
+                            <span style={{ fontSize: 10, background: "rgba(245,158,11,0.1)", color: "#d97706", border: "1px solid rgba(217, 119, 6, 0.2)", borderRadius: 4, padding: "2px 6px", fontWeight: 800 }}>
                               {row.approvedReportsCount} reports
                             </span>
                           </td>
                           <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#10b981", fontWeight: 750 }}>₹{row.totalWages}</td>
                           <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "var(--muted)" }}>{row.totalExcavation}m</td>
-                          <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#fbbf24", fontWeight: 750 }}>{row.totalHdd}m</td>
+                          <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#d97706", fontWeight: 750 }}>{row.totalHdd}m</td>
                           <td style={{ padding: "12px 8px", fontFamily: "monospace" }}>{row.totalCableLaying}m / {row.totalCableMounding}m</td>
                           <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "var(--cyan)" }}>{row.totalTerminations}</td>
                           <td style={{ padding: "12px 8px", fontSize: 10, color: "var(--dim)" }}>{new Date(row.updatedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</td>
@@ -3523,10 +3523,10 @@ export default function AdminDashboard() {
         // Dynamic banner aesthetics based on active drawing tool selection
         const getBannerStyle = () => {
           switch (activePinMode) {
-            case "start": return { border: "1px solid rgba(34, 197, 94, 0.3)", background: "rgba(22, 163, 74, 0.08)", color: "#4ade80" };
-            case "end": return { border: "1px solid rgba(239, 68, 68, 0.3)", background: "rgba(220, 38, 38, 0.08)", color: "#f87171" };
+            case "start": return { border: "1px solid rgba(34, 197, 94, 0.3)", background: "rgba(22, 163, 74, 0.08)", color: "#15803d" };
+            case "end": return { border: "1px solid rgba(239, 68, 68, 0.3)", background: "rgba(220, 38, 38, 0.08)", color: "#dc2626" };
             case "hdd": return { border: "1px solid rgba(251, 191, 36, 0.3)", background: "rgba(217, 119, 6, 0.08)", color: "#fcd34d" };
-            case "termination": return { border: "1px solid rgba(37, 99, 235, 0.3)", background: "rgba(37, 99, 235, 0.08)", color: "#60a5fa" };
+            case "termination": return { border: "1px solid rgba(37, 99, 235, 0.3)", background: "rgba(37, 99, 235, 0.08)", color: "#2563eb" };
             case "trench": return { border: "1px solid rgba(249, 115, 22, 0.3)", background: "rgba(249, 115, 22, 0.08)", color: "#ff9d5c" };
             case "utility": return { border: "1px solid rgba(168, 85, 247, 0.3)", background: "rgba(124, 58, 237, 0.08)", color: "#c084fc" };
             default: return { border: "1px solid var(--border)", background: "var(--surface)", color: "var(--dim)" };
@@ -3566,7 +3566,7 @@ export default function AdminDashboard() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: 11, fontWeight: 800, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.03em" }}>Interactive GIS Tools</span>
-                    <span style={{ fontSize: 10, color: "#fbbf24", background: "rgba(217, 119, 6, 0.08)", border: "1px solid rgba(217, 119, 6, 0.2)", borderRadius: 6, padding: "2px 6px", fontWeight: 700 }}>
+                    <span style={{ fontSize: 10, color: "#d97706", background: "rgba(217, 119, 6, 0.08)", border: "1px solid rgba(217, 119, 6, 0.2)", borderRadius: 6, padding: "2px 6px", fontWeight: 700 }}>
                       Live Drag & Placement Mode
                     </span>
                   </div>
@@ -3586,7 +3586,7 @@ export default function AdminDashboard() {
                     <button
                       type="submit"
                       disabled={searchingMap}
-                      style={{ minWidth: 90, background: "rgba(14, 165, 233, 0.08)", border: "1px solid rgba(14, 165, 233, 0.3)", borderRadius: 10, color: "#67e8f9", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                      style={{ minWidth: 90, background: "rgba(14, 165, 233, 0.08)", border: "1px solid rgba(14, 165, 233, 0.3)", borderRadius: 10, color: "#0284c7", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
                     >
                       {searchingMap ? "Searching..." : "Center Map"}
                     </button>
@@ -3950,7 +3950,7 @@ export default function AdminDashboard() {
                           setHddPoints([]);
                           showToast("🧹 HDD Pins cleared!");
                         }}
-                        style={{ width: "100%", background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#fca5a5", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                        style={{ width: "100%", background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
                       >
                         Clear HDD Pins
                       </button>
@@ -3962,7 +3962,7 @@ export default function AdminDashboard() {
                           setTerminationPoints([]);
                           showToast("🧹 Grid Terminations cleared!");
                         }}
-                        style={{ width: "100%", background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#fca5a5", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                        style={{ width: "100%", background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
                       >
                         Clear Terminations
                       </button>
@@ -4022,7 +4022,7 @@ export default function AdminDashboard() {
                     <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 11, color: "var(--dim)", lineHeight: 1.5 }}>
                       <div>
                         <strong style={{ color: "var(--text)", display: "block", marginBottom: 2 }}>📍 Drag & Change Locations:</strong>
-                        Grab the <span style={{ color: "#4ade80" }}>Green Start Pin</span> or <span style={{ color: "#f87171" }}>Red End Pin</span> directly on the map with your hand/mouse and drag to change coordinates. Input fields sync automatically!
+                        Grab the <span style={{ color: "#15803d" }}>Green Start Pin</span> or <span style={{ color: "#dc2626" }}>Red End Pin</span> directly on the map with your hand/mouse and drag to change coordinates. Input fields sync automatically!
                       </div>
                       <div>
                         <strong style={{ color: "var(--text)", display: "block", marginBottom: 2 }}>⚡ Place HDD & Terminations:</strong>
@@ -4110,7 +4110,7 @@ export default function AdminDashboard() {
 
                   {/* Start Location Parameters */}
                   <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: "#4ade80", textTransform: "uppercase" }}>Start Position Parameters</span>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: "#15803d", textTransform: "uppercase" }}>Start Position Parameters</span>
                     <div style={{ marginTop: 6 }}>
                       <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Junction/Station Label</label>
                       <input
@@ -4153,7 +4153,7 @@ export default function AdminDashboard() {
 
                   {/* End Location Parameters */}
                   <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: "#f87171", textTransform: "uppercase" }}>End Position Parameters</span>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: "#dc2626", textTransform: "uppercase" }}>End Position Parameters</span>
                     <div style={{ marginTop: 6 }}>
                       <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Junction/Station Label</label>
                       <input
@@ -4289,7 +4289,7 @@ export default function AdminDashboard() {
                 color: "var(--text)",
                 fontSize: 24,
                 fontWeight: 800,
-                border: "2px solid rgba(255,255,255,0.1)",
+                border: "2px solid var(--border)",
                 textTransform: "uppercase",
                 marginBottom: 8
               }}>
@@ -4374,7 +4374,7 @@ export default function AdminDashboard() {
                   <button
                     type="button"
                     onClick={handleTerminateUser}
-                    style={{ flex: 1, minHeight: 40, background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: 10, color: "#fca5a5", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                    style={{ flex: 1, minHeight: 40, background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: 10, color: "#dc2626", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
                   >
                     🚫 Terminate
                   </button>
@@ -4393,7 +4393,7 @@ export default function AdminDashboard() {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(3, 4, 9, 0.95)",
+            background: "var(--surface)",
             backdropFilter: "blur(12px)",
             display: "flex",
             flexDirection: "column",
@@ -4450,7 +4450,7 @@ export default function AdminDashboard() {
               ✕
             </button>
           </div>
-          <div style={{ maxWidth: "90%", maxHeight: "80%", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", background: "#05070c", boxShadow: "0 24px 70px rgba(0,0,0,0.8)" }}>
+          <div style={{ maxWidth: "90%", maxHeight: "80%", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", background: "var(--bg)", boxShadow: "0 24px 70px rgba(0,0,0,0.8)" }}>
             <img 
               src={adminActiveImagePreview} 
               alt="High resolution receipt / attachment preview" 

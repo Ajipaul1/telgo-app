@@ -337,7 +337,7 @@ export default function FinanceDashboard() {
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-                      <h3 style={{ fontSize: 13, fontWeight: 800, color: isSelected ? "#facc15" : "#f1f5f9", margin: 0 }}>{p.name}</h3>
+                      <h3 style={{ fontSize: 13, fontWeight: 800, color: isSelected ? "#d97706" : "var(--text)", margin: 0 }}>{p.name}</h3>
                       <span style={{ fontSize: 9, fontWeight: 800, color: "#d97706", background: "rgba(217, 119, 6, 0.08)", border: "1px solid rgba(217, 119, 6, 0.2)", borderRadius: 6, padding: "2px 6px", textTransform: "uppercase", fontFamily: "monospace", flexShrink: 0 }}>
                         {p.code}
                       </span>
@@ -476,7 +476,7 @@ export default function FinanceDashboard() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: "var(--surface)", border: "1px solid var(--border)", padding: 12, borderRadius: 14 }}>
                   <div>
                     <span style={{ fontSize: 8, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase" }}>Start Position</span>
-                    <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 750, color: "#4ade80" }}>{selectedProjectItem.startLabel}</p>
+                    <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 750, color: "#15803d" }}>{selectedProjectItem.startLabel}</p>
                     <span style={{ fontSize: 9, fontFamily: "monospace", color: "var(--dim)" }}>{selectedProjectItem.startCoords[0]}° N, {selectedProjectItem.startCoords[1]}° E</span>
                   </div>
                   <div>
@@ -788,7 +788,7 @@ export default function FinanceDashboard() {
                   background: "linear-gradient(135deg, #facc15 0%, #7c3aed 100%)",
                   border: "none",
                   borderRadius: 12,
-                  color: "white",
+                  color: "var(--text)",
                   fontSize: 14,
                   fontWeight: 800,
                   cursor: checkingIn ? "not-allowed" : "pointer",
@@ -874,7 +874,7 @@ export default function FinanceDashboard() {
 
       {/* Toast Notification */}
       {toast && (
-        <div style={{ position: "fixed", bottom: 24, left: 16, right: 16, background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: "14px 18px", fontSize: 13, fontWeight: 600, color: "var(--text)", zIndex: 10000, textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.5)", animation: "fadeIn 0.3s ease" }}>
+        <div style={{ position: "fixed", bottom: 24, left: 16, right: 16, background: "#1e293b", border: "1px solid var(--border)", borderRadius: 14, padding: "14px 18px", fontSize: 13, fontWeight: 600, color: "var(--text)", zIndex: 10000, textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.5)", animation: "fadeIn 0.3s ease" }}>
           {toast}
         </div>
       )}

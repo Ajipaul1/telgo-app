@@ -842,7 +842,7 @@ export default function SupervisorDashboard() {
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                       <h3 style={{ fontSize: 13, fontWeight: 800, color: isSelected ? "#06b6d4" : "#f1f5f9", margin: 0 }}>{p.name}</h3>
-                      <span style={{ fontSize: 9, fontWeight: 800, color: "#67e8f9", background: "rgba(6, 182, 212, 0.12)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "2px 6px", textTransform: "uppercase", fontFamily: "monospace", flexShrink: 0 }}>
+                      <span style={{ fontSize: 9, fontWeight: 800, color: "#0284c7", background: "rgba(6, 182, 212, 0.12)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "2px 6px", textTransform: "uppercase", fontFamily: "monospace", flexShrink: 0 }}>
                         {p.code}
                       </span>
                     </div>
@@ -980,12 +980,12 @@ export default function SupervisorDashboard() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: "var(--surface)", border: "1px solid var(--border)", padding: 12, borderRadius: 14 }}>
                   <div>
                     <span style={{ fontSize: 8, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase" }}>Start Position</span>
-                    <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 750, color: "#4ade80" }}>{selectedProjectItem.startLabel}</p>
+                    <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 750, color: "#15803d" }}>{selectedProjectItem.startLabel}</p>
                     <span style={{ fontSize: 9, fontFamily: "monospace", color: "var(--dim)" }}>{selectedProjectItem.startCoords[0]}° N, {selectedProjectItem.startCoords[1]}° E</span>
                   </div>
                   <div>
                     <span style={{ fontSize: 8, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase" }}>End Position</span>
-                    <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 750, color: "#f87171" }}>{selectedProjectItem.endLabel}</p>
+                    <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 750, color: "#dc2626" }}>{selectedProjectItem.endLabel}</p>
                     <span style={{ fontSize: 9, fontFamily: "monospace", color: "var(--dim)" }}>{selectedProjectItem.endCoords[0]}° N, {selectedProjectItem.endCoords[1]}° E</span>
                   </div>
                 </div>
@@ -1010,7 +1010,7 @@ export default function SupervisorDashboard() {
                 fontSize: 26,
                 fontWeight: 800,
                 boxShadow: "0 10px 28px rgba(6,182,212,0.2)",
-                border: "2px solid rgba(255,255,255,0.1)",
+                border: "2px solid var(--border)",
                 textTransform: "uppercase"
               }}>
                 {(user?.fullName || "U").charAt(0)}
@@ -1184,7 +1184,7 @@ export default function SupervisorDashboard() {
                 </div>
                 <div>
                   <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "0 0 2px" }}>Daily Report</h4>
-                  <span style={{ fontSize: 9, color: "#fbbf24", fontWeight: 700 }}>Site Update</span>
+                  <span style={{ fontSize: 9, color: "#d97706", fontWeight: 700 }}>Site Update</span>
                 </div>
               </div>
 
@@ -1229,7 +1229,7 @@ export default function SupervisorDashboard() {
                 background: "rgba(239, 68, 68, 0.06)",
                 border: "1px solid rgba(239, 68, 68, 0.2)",
                 borderRadius: 14,
-                color: "#f87171",
+                color: "#dc2626",
                 fontSize: 13,
                 fontWeight: 750,
                 cursor: "pointer",
@@ -1446,7 +1446,7 @@ export default function SupervisorDashboard() {
             {/* Modal Header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: 12 }}>
               <div>
-                <span style={{ fontSize: 9, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.1em" }}>DAILY OPERATION HUB</span>
+                <span style={{ fontSize: 9, fontWeight: 800, color: "#d97706", textTransform: "uppercase", letterSpacing: "0.1em" }}>DAILY OPERATION HUB</span>
                 <h3 style={{ fontSize: 16, fontWeight: 900, color: "var(--text)", margin: "2px 0 0" }}>Daily Report Wizard</h3>
               </div>
               <button 
@@ -1490,7 +1490,7 @@ export default function SupervisorDashboard() {
 
             {/* Project Selection Dropdown - Visible on EVERY page */}
             <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 12, borderRadius: 16 }}>
-              <label style={{ display: "block", fontSize: 10, fontWeight: 800, color: "#67e8f9", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Active Project Corridor</label>
+              <label style={{ display: "block", fontSize: 10, fontWeight: 800, color: "#0284c7", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Active Project Corridor</label>
               <select
                 value={reportProjectId}
                 onChange={(e) => setReportProjectId(e.target.value)}
@@ -1508,7 +1508,7 @@ export default function SupervisorDashboard() {
               {/* STEP 1: LABOR, OVERTIME & EXPENSES */}
               {reportStep === 1 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: 0 }}>Step 1: Labor & Expenses</h4>
+                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#d97706", textTransform: "uppercase", margin: 0 }}>Step 1: Labor & Expenses</h4>
                   
                   {/* Date picker */}
                   <div>
@@ -1606,7 +1606,7 @@ export default function SupervisorDashboard() {
                               <button
                                 type="button"
                                 onClick={() => setOtWorkers(otWorkers.filter((x) => x.id !== item.id))}
-                                style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
+                                style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
                               >
                                 Remove
                               </button>
@@ -1699,7 +1699,7 @@ export default function SupervisorDashboard() {
                           <button
                             type="button"
                             onClick={() => setFuelExpensesList(fuelExpensesList.filter((x) => x.id !== item.id))}
-                            style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
+                            style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
                           >
                             Remove
                           </button>
@@ -1769,7 +1769,7 @@ export default function SupervisorDashboard() {
                           <button
                             type="button"
                             onClick={() => setTravelExpensesList(travelExpensesList.filter((x) => x.id !== item.id))}
-                            style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
+                            style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
                           >
                             Remove
                           </button>
@@ -1839,7 +1839,7 @@ export default function SupervisorDashboard() {
                           <button
                             type="button"
                             onClick={() => setRoomRentList(roomRentList.filter((x) => x.id !== item.id))}
-                            style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
+                            style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
                           >
                             Remove
                           </button>
@@ -1909,7 +1909,7 @@ export default function SupervisorDashboard() {
                           <button
                             type="button"
                             onClick={() => setToolRentList(toolRentList.filter((x) => x.id !== item.id))}
-                            style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
+                            style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
                           >
                             Remove
                           </button>
@@ -1971,11 +1971,11 @@ export default function SupervisorDashboard() {
                   {/* Dynamic Expenses Builder - Other Uncategorized Expenses */}
                   <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.05em" }}>Other Misc Expenses</span>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "#d97706", textTransform: "uppercase", letterSpacing: "0.05em" }}>Other Misc Expenses</span>
                       <button
                         type="button"
                         onClick={() => setOtherExpensesList([...otherExpensesList, { id: Math.random().toString(), name: "", amount: "", narration: "", billImage: "" }])}
-                        style={{ fontSize: 10, fontWeight: 800, color: "#fbbf24", background: "rgba(217, 119, 6, 0.08)", border: "1px solid rgba(217, 119, 6, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
+                        style={{ fontSize: 10, fontWeight: 800, color: "#d97706", background: "rgba(217, 119, 6, 0.08)", border: "1px solid rgba(217, 119, 6, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
                       >
                         ➕ Add Misc Expense
                       </button>
@@ -1984,11 +1984,11 @@ export default function SupervisorDashboard() {
                     {otherExpensesList.map((item, idx) => (
                       <div key={item.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: 10, color: "#fbbf24", fontWeight: 700 }}>Misc Expense #{idx + 1}</span>
+                          <span style={{ fontSize: 10, color: "#d97706", fontWeight: 700 }}>Misc Expense #{idx + 1}</span>
                           <button
                             type="button"
                             onClick={() => setOtherExpensesList(otherExpensesList.filter((x) => x.id !== item.id))}
-                            style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
+                            style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
                           >
                             Remove
                           </button>
@@ -2063,7 +2063,7 @@ export default function SupervisorDashboard() {
               {/* STEP 2: WIP PROGRESS (TRENCHING & METRICS) */}
               {reportStep === 2 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: 0 }}>Step 2: WIP Operational Progress</h4>
+                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#d97706", textTransform: "uppercase", margin: 0 }}>Step 2: WIP Operational Progress</h4>
 
                   {/* Dynamic Metrics List */}
                   {[
@@ -2193,7 +2193,7 @@ export default function SupervisorDashboard() {
               {/* STEP 3: STATUTORY CLEARANCES */}
               {reportStep === 3 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: 0 }}>Step 3: Clearance & Authority Approvals</h4>
+                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#d97706", textTransform: "uppercase", margin: 0 }}>Step 3: Clearance & Authority Approvals</h4>
                   
                   {/* PWD */}
                   <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 12, borderRadius: 14, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -2320,7 +2320,7 @@ export default function SupervisorDashboard() {
               {/* STEP 4: PLANNING & REQUESTS */}
               {reportStep === 4 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: 0 }}>Step 4: Operational Requests & Notes</h4>
+                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#d97706", textTransform: "uppercase", margin: 0 }}>Step 4: Operational Requests & Notes</h4>
                   
                   {/* Problems encountered */}
                   <div>
@@ -2346,7 +2346,7 @@ export default function SupervisorDashboard() {
 
                   {/* Urgent Finance request */}
                   <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <span style={{ fontSize: 10, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.05em" }}>💵 Urgent Finance / Fund Request</span>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: "#d97706", textTransform: "uppercase", letterSpacing: "0.05em" }}>💵 Urgent Finance / Fund Request</span>
                     
                     <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
                       <input
@@ -2405,7 +2405,7 @@ export default function SupervisorDashboard() {
               {/* STEP 5: REVIEW MULTI-PROJECT DRAFTS & SUBMIT */}
               {reportStep === 5 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: 0 }}>Step 5: Review & Submit All Drafts</h4>
+                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#d97706", textTransform: "uppercase", margin: 0 }}>Step 5: Review & Submit All Drafts</h4>
 
                   {/* Active Drafts list */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -2440,7 +2440,7 @@ export default function SupervisorDashboard() {
                                 <h5 style={{ fontSize: 13, fontWeight: 900, color: "var(--text)", margin: 0 }}>{d.project.name}</h5>
                                 <span style={{ fontSize: 9, fontFamily: "monospace", color: "var(--dim)" }}>ID: {d.project.id} | Date: {d.data.reportDate || "Today"}</span>
                               </div>
-                              <span style={{ fontSize: 9, fontWeight: 800, color: "#67e8f9", background: "rgba(6, 182, 212, 0.12)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "2px 6px" }}>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: "#0284c7", background: "rgba(6, 182, 212, 0.12)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "2px 6px" }}>
                                 DRAFT
                               </span>
                             </div>
@@ -2492,7 +2492,7 @@ export default function SupervisorDashboard() {
                     })()}
                   </div>
 
-                  <p style={{ margin: "4px 0 0", fontSize: 10, color: "#fbbf24", textAlign: "center", lineHeight: 1.4 }}>
+                  <p style={{ margin: "4px 0 0", fontSize: 10, color: "#d97706", textAlign: "center", lineHeight: 1.4 }}>
                     ⚠️ Verify all active drafts. Once submitted, daily project operation logs are locked for that date!
                   </p>
                 </div>

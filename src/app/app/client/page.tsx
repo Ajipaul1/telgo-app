@@ -204,7 +204,7 @@ export default function ClientDashboard() {
                 background: "linear-gradient(135deg, #10b981 0%, #06b6d4 100%)",
                 border: "none",
                 borderRadius: 14,
-                color: "white",
+                color: "var(--text)",
                 fontSize: 14,
                 fontWeight: 750,
                 cursor: loadingRadar ? "not-allowed" : "pointer",
@@ -355,7 +355,7 @@ export default function ClientDashboard() {
               <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", color: "var(--dim)", letterSpacing: "0.08em", margin: "0 0 4px" }}>Field Operations Roster</p>
               
               {workers.length === 0 ? (
-                <div style={{ textAlign: "center", padding: 20, color: "#475569", fontSize: 13 }}>
+                <div style={{ textAlign: "center", padding: 20, color: "var(--muted)", fontSize: 13 }}>
                   No workers in database registry.
                 </div>
               ) : (
@@ -386,7 +386,7 @@ export default function ClientDashboard() {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        color: "white",
+                        color: "var(--text)",
                         fontSize: 13,
                         fontWeight: 800
                       }}>
@@ -562,7 +562,7 @@ export default function ClientDashboard() {
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                       <div className="glass" style={{ padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 10 }}>
                         <span style={{ fontSize: 8, color: "var(--dim)", textTransform: "uppercase", fontWeight: 700 }}>Telemetry Coordinates</span>
-                        <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 700, fontFamily: "monospace", color: "#e2e8f0" }}>
+                        <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 700, fontFamily: "monospace", color: "var(--text)" }}>
                           {selectedWorker.latitude.toFixed(6)}° N<br/>
                           {selectedWorker.longitude.toFixed(6)}° E
                         </p>
@@ -603,7 +603,7 @@ export default function ClientDashboard() {
             ) : (
               <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 30, background: "var(--surface)", color: "var(--dim)", textAlign: "center" }}>
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#1e293b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 16 }}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                <p style={{ fontSize: 13, color: "#475569", margin: 0, maxWidth: 280 }}>
+                <p style={{ fontSize: 13, color: "var(--muted)", margin: 0, maxWidth: 280 }}>
                   Select an active supervisor or finance controller from the field roster above to initialize their Zomato-style live tracking radar path.
                 </p>
               </div>

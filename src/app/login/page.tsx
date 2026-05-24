@@ -115,7 +115,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px 20px", background: "linear-gradient(160deg, #0d0621 0%, #060912 50%, #040d1a 100%)" }}>
+    <main style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px 20px", background: "linear-gradient(165deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%)" }}>
       {/* Logo area */}
       <div className="fade-in" style={{ textAlign: "center", marginBottom: 36 }}>
         <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg,#7c3aed,#06b6d4)", marginBottom: 16, boxShadow: "0 12px 32px rgba(124,58,237,0.4)" }}>
@@ -124,33 +124,33 @@ export default function LoginPage() {
           </svg>
         </div>
         <h1 style={{ fontSize: 28, fontWeight: 900, letterSpacing: 3, background: "linear-gradient(90deg,#06b6d4,#7c3aed)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", margin: 0 }}>TELGO HUB</h1>
-        <p style={{ color: "#64748b", fontSize: 13, marginTop: 6, fontWeight: 500 }}>Enterprise Operations Platform</p>
+        <p style={{ color: "var(--dim)", fontSize: 13, marginTop: 6, fontWeight: 500 }}>Enterprise Operations Platform</p>
       </div>
 
       {/* Card */}
       <div className="glass fade-in" style={{ width: "100%", maxWidth: 420, padding: "32px 28px", animationDelay: "0.1s" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24 }}>
           <div className="dot-pulse" style={{ background: "#06b6d4" }} />
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#64748b" }}>Secure Login</span>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--dim)" }}>Secure Login</span>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {/* Email */}
           <div>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#94a3b8", marginBottom: 8 }}>Email Address</label>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--dim)", marginBottom: 8 }}>Email Address</label>
             <div style={{ position: "relative" }}>
-              <svg style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#475569" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              <svg style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--muted)" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
               <input className="input-base" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="yourname@email.com" style={{ paddingLeft: 44 }} required autoComplete="email" />
             </div>
           </div>
 
           {/* Password */}
           <div>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#94a3b8", marginBottom: 8 }}>Password</label>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--dim)", marginBottom: 8 }}>Password</label>
             <div style={{ position: "relative" }}>
-              <svg style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#475569" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <svg style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--muted)" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
               <input className="input-base" type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password" style={{ paddingLeft: 44, paddingRight: 44 }} required autoComplete="current-password" />
-              <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#475569", display: "flex" }}>
+              <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--muted)", display: "flex" }}>
                 {showPw
                   ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                   : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -161,7 +161,7 @@ export default function LoginPage() {
 
           {/* Error */}
           {state === "error" && (
-            <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "12px 14px", fontSize: 13, color: "#fca5a5", display: "flex", gap: 8, alignItems: "flex-start" }}>
+            <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "12px 14px", fontSize: 13, color: "#dc2626", display: "flex", gap: 8, alignItems: "flex-start" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               {msg}
             </div>
@@ -179,9 +179,9 @@ export default function LoginPage() {
         </form>
 
         <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "24px 0", color: "#334155" }}>
-          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
-          <span style={{ fontSize: 12, color: "#475569" }}>New to Telgo?</span>
-          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
+          <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+          <span style={{ fontSize: 12, color: "var(--muted)" }}>New to Telgo?</span>
+          <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
         </div>
 
         <a href="/request-access" className="btn-ghost" style={{ textDecoration: "none" }}>
@@ -193,9 +193,9 @@ export default function LoginPage() {
         {!isWebView && (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "24px 0 16px", color: "#334155" }}>
-              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
-              <span style={{ fontSize: 11, color: "#64748b", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>Native Mobile App</span>
-              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
+              <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+              <span style={{ fontSize: 11, color: "var(--dim)", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>Native Mobile App</span>
+              <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
             </div>
 
             <a href="/downloads/telgo-hub.apk" download="telgo-hub.apk" className="btn-primary" style={{ textDecoration: "none", background: "linear-gradient(135deg, #10b981, #06b6d4)", boxShadow: "0 8px 24px rgba(16,185,129,0.25)" }}>
@@ -211,9 +211,9 @@ export default function LoginPage() {
 
         {/* PWA Fullscreen Installation Guidance */}
         {!isWebView && (
-          <div className="glass" style={{ marginTop: 24, padding: "12px 14px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, background: "rgba(255,255,255,0.01)", textAlign: "left" }}>
+          <div className="glass" style={{ marginTop: 24, padding: "12px 14px", border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)", textAlign: "left" }}>
             <span style={{ fontSize: 9, color: "#a78bfa", textTransform: "uppercase", fontWeight: 800, display: "block", marginBottom: 4 }}>💡 Run in Fullscreen App Mode</span>
-            <p style={{ margin: 0, fontSize: 11, color: "#94a3b8", lineHeight: 1.4 }}>
+            <p style={{ margin: 0, fontSize: 11, color: "var(--dim)", lineHeight: 1.4 }}>
               To hide the browser address bar and run Telgo Hub in complete fullscreen PWA mode:<br/>
               • <strong>Android</strong>: Tap the 3-dots menu on Chrome and select <strong>'Add to Home screen'</strong>.<br/>
               • <strong>iOS</strong>: Tap Safari's Share button and select <strong>'Add to Home Screen'</strong>.
@@ -222,7 +222,7 @@ export default function LoginPage() {
         )}
       </div>
 
-      <p style={{ marginTop: 24, fontSize: 11, color: "#475569", textAlign: "center" }}>© 2026 Telgo Power Projects. All rights reserved.</p>
+      <p style={{ marginTop: 24, fontSize: 11, color: "var(--muted)", textAlign: "center" }}>© 2026 Telgo Power Projects. All rights reserved.</p>
     </main>
   );
 }
