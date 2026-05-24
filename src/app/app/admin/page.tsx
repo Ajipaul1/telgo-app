@@ -97,7 +97,7 @@ export default function AdminDashboard() {
   const [projEndLng, setProjEndLng] = useState("");
 
   // Upgraded GIS Marks & Drawing State parameters
-  const [activePinMode, setActivePinMode] = useState<"start" | "end" | "hdd" | "termination" | "trench" | "utility">("start");
+  const [activePinMode, setActivePinMode] = useState<"start" | "end" | "project_start" | "project_end" | "road_segment" | "hdd" | "hdd_segment" | "trench" | "trench_segment" | "termination" | "utility">("start");
   const [hddPoints, setHddPoints] = useState<[number, number][]>([]);
   const [terminationPoints, setTerminationPoints] = useState<[number, number][]>([]);
   const [trenchingLine, setTrenchingLine] = useState<[number, number][]>([]);
