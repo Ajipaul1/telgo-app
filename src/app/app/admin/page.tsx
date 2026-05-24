@@ -953,7 +953,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="page" style={{ background: "#060912", minHeight: "100vh", position: "relative", color: "#f1f5f9" }}>
+    <div className="page" style={{ background: "var(--bg)", minHeight: "100vh", position: "relative", color: "var(--text)" }}>
       <style>{`
         .module-card {
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1057,7 +1057,7 @@ export default function AdminDashboard() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <div>
                 <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: "#06b6d4", marginBottom: 4 }}>TELGO OPERATIONS</p>
-                <h1 style={{ fontSize: 24, fontWeight: 900, color: "#f1f5f9", margin: 0, letterSpacing: "-0.5px" }}>Control Center</h1>
+                <h1 style={{ fontSize: 24, fontWeight: 900, color: "var(--text)", margin: 0, letterSpacing: "-0.5px" }}>Control Center</h1>
               </div>
               
               {/* Premium Circular Profile Photo Button */}
@@ -1081,10 +1081,10 @@ export default function AdminDashboard() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: "white",
+                  color: "var(--text)",
                   fontSize: 16,
                   fontWeight: 800,
-                  border: "1.5px solid rgba(255,255,255,0.15)",
+                  border: "1.5px solid var(--border)",
                   boxShadow: "0 4px 15px rgba(124, 58, 237, 0.3)",
                   textTransform: "uppercase"
                 }}>
@@ -1094,25 +1094,25 @@ export default function AdminDashboard() {
             </div>
 
             {/* Greeting & Subtitle */}
-            <div className="glass" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: 14, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, background: "linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.04) 100%)", marginBottom: 24 }}>
+            <div className="glass" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: 14, border: "1px solid var(--border)", borderRadius: 16, background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)", marginBottom: 24 }}>
               <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#10b981", boxShadow: "0 0 10px #10b981" }} />
               <div>
-                <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", margin: 0 }}>{getGreeting()}, {adminSelf?.fullName || "Control"}</h2>
-                <p style={{ fontSize: 12, color: "#94a3b8", margin: "2px 0 0" }}>System is online. Click your avatar to manage your profile.</p>
+                <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", margin: 0 }}>{getGreeting()}, {adminSelf?.fullName || "Control"}</h2>
+                <p style={{ fontSize: 12, color: "var(--dim)", margin: "2px 0 0" }}>System is online. Click your avatar to manage your profile.</p>
               </div>
             </div>
           </div>
 
           {/* Quick Metrics Banner */}
           <div style={{ padding: "0 16px 24px" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#475569", marginBottom: 12 }}>Active Telemetry</p>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 12 }}>Active Telemetry</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div className="glass" style={{ padding: "16px 18px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Crews</span>
-                <p style={{ fontSize: 32, fontWeight: 900, color: "#f1f5f9", margin: "4px 0 0", letterSpacing: "-1px" }}>{users.length}</p>
+              <div className="glass" style={{ padding: "16px 18px", border: "1px solid var(--border)" }}>
+                <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Crews</span>
+                <p style={{ fontSize: 32, fontWeight: 900, color: "var(--text)", margin: "4px 0 0", letterSpacing: "-1px" }}>{users.length}</p>
               </div>
-              <div className="glass" style={{ padding: "16px 18px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Active Mailers</span>
+              <div className="glass" style={{ padding: "16px 18px", border: "1px solid var(--border)" }}>
+                <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Active Mailers</span>
                 <p style={{ fontSize: 15, fontWeight: 700, color: "#4ade80", margin: "16px 0 0", display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e" }} />
                   SMTP Ready
@@ -1123,7 +1123,7 @@ export default function AdminDashboard() {
 
           {/* Core System Grid */}
           <div style={{ padding: "0 16px" }}>
-            <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "#64748b", marginBottom: 14 }}>System Modules</p>
+            <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--dim)", marginBottom: 14 }}>System Modules</p>
             
             <div className="admin-grid">
               
@@ -1154,8 +1154,8 @@ export default function AdminDashboard() {
                   )}
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>Access Control</h4>
-                  <span style={{ fontSize: 10, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>
+                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>Access Control</h4>
+                  <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>
                     {pending.length > 0 ? `${pending.length} Pending` : "Personnel Directory"}
                   </span>
                 </div>
@@ -1168,8 +1168,8 @@ export default function AdminDashboard() {
                 style={{ 
                   padding: "18px 14px", 
                   borderRadius: 16,
-                  border: "1px solid rgba(255,255,255,0.05)",
-                  background: "rgba(255,255,255,0.01)",
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -1181,7 +1181,7 @@ export default function AdminDashboard() {
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="10" r="3"/></svg>
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>Live Radar Map</h4>
+                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>Live Radar Map</h4>
                   <span style={{ fontSize: 10, color: "#06b6d4", fontWeight: 800, textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 4 }}>
                     <span className="dot-pulse" style={{ background: "#06b6d4", width: 5, height: 5 }} /> Radar Active
                   </span>
@@ -1195,8 +1195,8 @@ export default function AdminDashboard() {
                 style={{ 
                   padding: "18px 14px", 
                   borderRadius: 16,
-                  border: "1px solid rgba(255,255,255,0.05)",
-                  background: "rgba(255,255,255,0.01)",
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -1208,7 +1208,7 @@ export default function AdminDashboard() {
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>Attendance Ledger</h4>
+                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>Attendance Ledger</h4>
                   <span style={{ fontSize: 10, color: "#a78bfa", fontWeight: 700, textTransform: "uppercase" }}>Monthly registry</span>
                 </div>
               </div>
@@ -1220,8 +1220,8 @@ export default function AdminDashboard() {
                 style={{ 
                   padding: "18px 14px", 
                   borderRadius: 16,
-                  border: "1px solid rgba(255,255,255,0.05)",
-                  background: "rgba(255,255,255,0.01)",
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -1233,7 +1233,7 @@ export default function AdminDashboard() {
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>Metrics Hub</h4>
+                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>Metrics Hub</h4>
                   <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 700, textTransform: "uppercase" }}>Operations logs</span>
                 </div>
               </div>
@@ -1245,8 +1245,8 @@ export default function AdminDashboard() {
                 style={{ 
                   padding: "18px 14px", 
                   borderRadius: 16,
-                  border: "1px solid rgba(255,255,255,0.05)",
-                  background: "rgba(255,255,255,0.01)",
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -1258,7 +1258,7 @@ export default function AdminDashboard() {
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>Projects Hub</h4>
+                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>Projects Hub</h4>
                   <span style={{ fontSize: 10, color: "#a78bfa", fontWeight: 700, textTransform: "uppercase" }}>Corridor mapping</span>
                 </div>
               </div>
@@ -1270,8 +1270,8 @@ export default function AdminDashboard() {
                 style={{ 
                   padding: "18px 14px", 
                   borderRadius: 16,
-                  border: "1px solid rgba(255,255,255,0.05)",
-                  background: "rgba(255,255,255,0.01)",
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -1288,7 +1288,7 @@ export default function AdminDashboard() {
                   </svg>
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>Daily Reports</h4>
+                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>Daily Reports</h4>
                   <span style={{ fontSize: 10, color: "#10b981", fontWeight: 700, textTransform: "uppercase" }}>Verification</span>
                 </div>
               </div>
@@ -1300,8 +1300,8 @@ export default function AdminDashboard() {
                 style={{ 
                   padding: "18px 14px", 
                   borderRadius: 16,
-                  border: "1px solid rgba(255,255,255,0.05)",
-                  background: "rgba(255,255,255,0.01)",
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -1317,7 +1317,7 @@ export default function AdminDashboard() {
                   </svg>
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>Master Ledger</h4>
+                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>Master Ledger</h4>
                   <span style={{ fontSize: 10, color: "#f59e0b", fontWeight: 700, textTransform: "uppercase" }}>Aggregates</span>
                 </div>
               </div>
@@ -1353,18 +1353,18 @@ export default function AdminDashboard() {
         <div className="fade-in" style={{ paddingBottom: 60 }}>
           
           {/* Sub Header */}
-          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(6,9,18,0.6)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
+          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid var(--border)", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <button 
                 onClick={() => setActiveView("hub")}
                 className="back-btn"
-                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f1f5f9", cursor: "pointer" }}
+                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)", cursor: "pointer" }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
               </button>
               <div>
                 <p style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>System Management</p>
-                <h1 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Access Control</h1>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Access Control</h1>
               </div>
             </div>
           </div>
@@ -1427,28 +1427,28 @@ export default function AdminDashboard() {
           {approvalsTab === "pending" && (
             <div style={{ padding: "20px 16px 0" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#94a3b8" }}>Pending Approvals</p>
+                <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--dim)" }}>Pending Approvals</p>
                 {pending.length > 0 && <span className="badge badge-pending">{pending.length} waiting</span>}
               </div>
 
               {loading ? (
-                <div style={{ textAlign: "center", padding: "40px 0", color: "#475569" }}>
+                <div style={{ textAlign: "center", padding: "40px 0", color: "var(--muted)" }}>
                   <div className="spinner" style={{ margin: "0 auto 12px" }} />
                   Loading Database...
                 </div>
               ) : pending.length === 0 ? (
-                <div className="glass" style={{ padding: "24px 18px", textAlign: "center", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <div className="glass" style={{ padding: "24px 18px", textAlign: "center", border: "1px solid var(--border)" }}>
                   <div style={{ fontSize: 28, marginBottom: 6 }}>✨</div>
-                  <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>No pending onboarding requests.</p>
+                  <p style={{ color: "var(--dim)", fontSize: 13, margin: 0 }}>No pending onboarding requests.</p>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {pending.map(u => (
-                    <div key={u.id} className="approval-card fade-in" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: 16 }}>
+                    <div key={u.id} className="approval-card fade-in" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 16 }}>
                       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 4 }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontWeight: 700, fontSize: 15, color: "#f1f5f9", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.full_name}</p>
-                          <p style={{ fontSize: 12, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</p>
+                          <p style={{ fontWeight: 700, fontSize: 15, color: "var(--text)", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.full_name}</p>
+                          <p style={{ fontSize: 12, color: "var(--dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</p>
                         </div>
                         <span style={{ fontSize: 11, fontWeight: 700, color: roleColor(u.role), background: `${roleColor(u.role)}18`, border: `1px solid ${roleColor(u.role)}30`, borderRadius: 8, padding: "3px 9px", flexShrink: 0, textTransform: "capitalize" }}>{u.role}</span>
                       </div>
@@ -1458,7 +1458,7 @@ export default function AdminDashboard() {
                           onClick={() => approve(u.id)}
                           disabled={approving === u.id}
                           className="action-btn"
-                          style={{ flex: 1, minHeight: 40, background: "linear-gradient(135deg,#16a34a,#15803d)", border: "none", borderRadius: 10, color: "white", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit,sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: approving === u.id ? 0.6 : 1 }}
+                          style={{ flex: 1, minHeight: 40, background: "linear-gradient(135deg,#16a34a,#15803d)", border: "none", borderRadius: 10, color: "var(--text)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit,sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: approving === u.id ? 0.6 : 1 }}
                         >
                           {approving === u.id ? <><div className="spinner" style={{ width: 14, height: 14 }} /> Approving...</> : <>✓ Approve</>}
                         </button>
@@ -1481,7 +1481,7 @@ export default function AdminDashboard() {
           {/* Tab B: Active Crew Directory */}
           {approvalsTab === "active" && (
             <div style={{ padding: "20px 16px 0" }}>
-              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#94a3b8", marginBottom: 12 }}>Authorized Personnel Directory</p>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--dim)", marginBottom: 12 }}>Authorized Personnel Directory</p>
               
               {/* Search Box */}
               <div style={{ marginBottom: 14 }}>
@@ -1494,11 +1494,11 @@ export default function AdminDashboard() {
                   style={{ 
                     width: "100%", 
                     height: 44, 
-                    background: "rgba(0,0,0,0.3)", 
-                    border: "1px solid rgba(255,255,255,0.08)", 
+                    background: "#ffffff", 
+                    border: "1px solid var(--border)", 
                     borderRadius: 12, 
                     padding: "0 14px", 
-                    color: "#f1f5f9", 
+                    color: "var(--text)", 
                     fontSize: 13, 
                     outline: "none", 
                     fontFamily: "Outfit, sans-serif" 
@@ -1507,12 +1507,12 @@ export default function AdminDashboard() {
               </div>
 
               {loading ? (
-                <div style={{ textAlign: "center", padding: "20px 0", color: "#475569" }}>
+                <div style={{ textAlign: "center", padding: "20px 0", color: "var(--muted)" }}>
                   Loading Users...
                 </div>
               ) : filteredActive.length === 0 ? (
-                <div className="glass" style={{ padding: "20px", textAlign: "center", border: "1px solid rgba(255,255,255,0.05)" }}>
-                  <p style={{ color: "#64748b", fontSize: 12, margin: 0 }}>
+                <div className="glass" style={{ padding: "20px", textAlign: "center", border: "1px solid var(--border)" }}>
+                  <p style={{ color: "var(--dim)", fontSize: 12, margin: 0 }}>
                     {searchQuery ? "No matching crew members found." : "No active crew members authorized yet."}
                   </p>
                 </div>
@@ -1529,9 +1529,9 @@ export default function AdminDashboard() {
                         alignItems: "center", 
                         justifyContent: "space-between", 
                         gap: 12, 
-                        border: "1px solid rgba(255,255,255,0.04)",
+                        border: "1px solid var(--border)",
                         borderRadius: 14,
-                        background: "rgba(255,255,255,0.01)"
+                        background: "var(--surface)"
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
@@ -1544,24 +1544,24 @@ export default function AdminDashboard() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          color: "white",
+                          color: "var(--text)",
                           fontSize: 14,
                           fontWeight: 800,
-                          border: "1px solid rgba(255,255,255,0.1)",
+                          border: "1px solid var(--border)",
                           textTransform: "uppercase"
                         }}>
                           {u.full_name.charAt(0)}
                         </div>
                         
                         <div style={{ minWidth: 0, flex: 1 }}>
-                          <p style={{ fontWeight: 700, fontSize: 14, color: "#e2e8f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 }}>{u.full_name}</p>
-                          <p style={{ fontSize: 11, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "2px 0 0" }}>{u.email}</p>
+                          <p style={{ fontWeight: 700, fontSize: 14, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 }}>{u.full_name}</p>
+                          <p style={{ fontSize: 11, color: "var(--dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "2px 0 0" }}>{u.email}</p>
                         </div>
                       </div>
 
                       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
                         <span style={{ fontSize: 10, fontWeight: 800, color: roleColor(u.role), textTransform: "uppercase", background: `${roleColor(u.role)}12`, padding: "4px 8px", borderRadius: 6, border: `1px solid ${roleColor(u.role)}20` }}>{u.role}</span>
-                        <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
+                        <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--dim)" }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                         </div>
                       </div>
@@ -1578,18 +1578,18 @@ export default function AdminDashboard() {
       {activeView === "map" && (
         <div className="fade-in" style={{ paddingBottom: 60 }}>
           {/* Header */}
-          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(6,9,18,0.6)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
+          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid var(--border)", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <button 
                 onClick={() => { setActiveView("hub"); setRadarSelectedWorker(null); }}
                 className="back-btn"
-                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f1f5f9", cursor: "pointer" }}
+                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)", cursor: "pointer" }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
               </button>
               <div>
                 <p style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Operations tactical map</p>
-                <h1 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Field Crew Radar</h1>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Field Crew Radar</h1>
               </div>
             </div>
           </div>
@@ -1599,9 +1599,9 @@ export default function AdminDashboard() {
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               
               {/* Roster Section */}
-              <div className="glass" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
+              <div className="glass" style={{ padding: 20, border: "1px solid var(--border)", borderRadius: 20 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                  <h2 style={{ fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8", margin: 0 }}>Operational Crew Roster</h2>
+                  <h2 style={{ fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--dim)", margin: 0 }}>Operational Crew Roster</h2>
                 </div>
                 
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1662,7 +1662,7 @@ export default function AdminDashboard() {
                               )}
                             </>
                           ) : (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.02)", color: "#64748b", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 6, padding: "2px 6px", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--surface)", color: "var(--dim)", border: "1px solid var(--border)", borderRadius: 6, padding: "2px 6px", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>
                               Offline
                             </span>
                           )}
@@ -1674,10 +1674,10 @@ export default function AdminDashboard() {
               </div>
 
               {/* Map Tactical Module */}
-              <div className="glass glow-cyan" style={{ padding: 0, border: "1px solid rgba(6,182,212,0.15)", borderRadius: 24, overflow: "hidden", background: "#080b13" }}>
+              <div className="glass glow-cyan" style={{ padding: 0, border: "1px solid rgba(6,182,212,0.15)", borderRadius: 24, overflow: "hidden", background: "var(--bg)" }}>
                 
                 {/* Visual Leaflet Map Container */}
-                <div style={{ position: "relative", height: 280, width: "100%", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                <div style={{ position: "relative", height: 280, width: "100%", borderBottom: "1px solid var(--border)" }}>
                   {radarSelectedWorker ? (
                     <div style={{ width: "100%", height: "100%", position: "relative" }}>
                       
@@ -1777,29 +1777,29 @@ export default function AdminDashboard() {
                       />
 
                       {/* Map Hub Info Tag Overlay */}
-                      <div style={{ position: "absolute", top: 12, left: 12, padding: "6px 12px", background: "rgba(6,9,18,0.75)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, display: "flex", alignItems: "center", gap: 6, zIndex: 1000 }}>
+                      <div style={{ position: "absolute", top: 12, left: 12, padding: "6px 12px", background: "rgba(6,9,18,0.75)", border: "1px solid var(--border)", borderRadius: 10, display: "flex", alignItems: "center", gap: 6, zIndex: 1000 }}>
                         <span className="dot-pulse" style={{ background: radarSelectedWorker.status === "active" ? "#06b6d4" : "#64748b" }} />
-                        <span style={{ fontSize: 10, fontWeight: 700, fontFamily: "monospace", color: "#94a3b8" }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, fontFamily: "monospace", color: "var(--dim)" }}>
                           {radarSelectedWorker.status === "active" ? "RADAR LIVE: SCANNING" : "OFFLINE: HISTORICAL"}
                         </span>
                       </div>
 
                       {/* Map Coordinate telemetry readouts Overlay */}
-                      <div style={{ position: "absolute", bottom: 12, right: 12, padding: "6px 10px", background: "rgba(6,9,18,0.75)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, textAlign: "right", zIndex: 1000 }}>
-                        <p style={{ fontSize: 9, fontFamily: "monospace", color: "#64748b", margin: 0 }}>COORDINATES</p>
-                        <p style={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, color: "#cbd5e1", margin: 0 }}>
+                      <div style={{ position: "absolute", bottom: 12, right: 12, padding: "6px 10px", background: "rgba(6,9,18,0.75)", border: "1px solid var(--border)", borderRadius: 10, textAlign: "right", zIndex: 1000 }}>
+                        <p style={{ fontSize: 9, fontFamily: "monospace", color: "var(--dim)", margin: 0 }}>COORDINATES</p>
+                        <p style={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, color: "var(--muted)", margin: 0 }}>
                           {`${radarSelectedWorker.latitude.toFixed(5)}° N, ${radarSelectedWorker.longitude.toFixed(5)}° E`}
                         </p>
                       </div>
                     </div>
                   ) : (
                     /* Circular Radar Sweep Placeholder */
-                    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, boxSizing: "border-box", background: "#060912" }}>
+                    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, boxSizing: "border-box", background: "var(--bg)" }}>
                       <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(6, 182, 212, 0.05)", border: "1.5px dashed rgba(6, 182, 212, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16.2 7.8-2.9 2.9-2.9-2.9"/></svg>
                       </div>
-                      <h4 style={{ fontSize: 13, fontWeight: 800, color: "#cbd5e1", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Operational Radar Standby</h4>
-                      <p style={{ fontSize: 11, color: "#64748b", margin: 0, textAlign: "center", maxWidth: 280, lineHeight: 1.4 }}>Select an active worker from the roster above to trace real-time tactical operations telemetry.</p>
+                      <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--muted)", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Operational Radar Standby</h4>
+                      <p style={{ fontSize: 11, color: "var(--dim)", margin: 0, textAlign: "center", maxWidth: 280, lineHeight: 1.4 }}>Select an active worker from the roster above to trace real-time tactical operations telemetry.</p>
                     </div>
                   )}
                 </div>
@@ -1811,7 +1811,7 @@ export default function AdminDashboard() {
                       {/* Worker & Status Row */}
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                         <div>
-                          <h3 style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", margin: 0 }}>{radarSelectedWorker.fullName}</h3>
+                          <h3 style={{ fontSize: 16, fontWeight: 900, color: "var(--text)", margin: 0 }}>{radarSelectedWorker.fullName}</h3>
                           <p style={{ fontSize: 11, color: roleColor(radarSelectedWorker.role), fontWeight: 700, margin: "2px 0 0", textTransform: "uppercase" }}>{radarSelectedWorker.role}</p>
                         </div>
                         {radarSelectedWorker.status === "active" ? (
@@ -1819,32 +1819,32 @@ export default function AdminDashboard() {
                             🟢 Connected
                           </span>
                         ) : (
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.03)", color: "#64748b", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "4px 10px", fontSize: 11, fontWeight: 800, textTransform: "uppercase" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "var(--surface)", color: "var(--dim)", border: "1px solid var(--border)", borderRadius: 10, padding: "4px 10px", fontSize: 11, fontWeight: 800, textTransform: "uppercase" }}>
                             Offline
                           </span>
                         )}
                       </div>
 
                       {/* Monospace telemetry data block */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: 14 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, background: "#ffffff", border: "1px solid var(--border)", borderRadius: 16, padding: 14 }}>
                         <div>
-                          <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Associated Project</span>
-                          <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 750, color: "#e2e8f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{radarSelectedWorker.projectName}</p>
+                          <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Associated Project</span>
+                          <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 750, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{radarSelectedWorker.projectName}</p>
                         </div>
                         <div>
-                          <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Geofence Check</span>
+                          <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Geofence Check</span>
                           <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 800, color: radarSelectedWorker.withinGeofence ? "#4ade80" : "#fbbf24" }}>
                             {radarSelectedWorker.withinGeofence ? "WITHIN RANGE" : "OUTSIDE RANGE"}
                           </p>
                         </div>
                         <div>
-                          <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Duty Status</span>
+                          <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Duty Status</span>
                           <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 750, color: radarSelectedWorker.status === "active" ? "#06b6d4" : "#94a3b8" }}>
                             {radarSelectedWorker.status === "active" ? "ACTIVE / WATCH" : "STANDBY"}
                           </p>
                         </div>
                         <div>
-                          <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Drift telemetry</span>
+                          <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Drift telemetry</span>
                           <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 700, fontFamily: "monospace", color: "#a78bfa" }}>
                             {radarSelectedWorker.status === "active" ? `${radarSelectedWorker.distanceFromSiteM} meters` : "0.00m"}
                           </p>
@@ -1862,7 +1862,7 @@ export default function AdminDashboard() {
                       )}
                     </div>
                   ) : (
-                    <div style={{ textAlign: "center", color: "#475569", fontSize: 12, padding: "10px 0" }}>
+                    <div style={{ textAlign: "center", color: "var(--muted)", fontSize: 12, padding: "10px 0" }}>
                       No active telemetry feed.
                     </div>
                   )}
@@ -1879,26 +1879,26 @@ export default function AdminDashboard() {
       {activeView === "attendance" && (
         <div className="fade-in" style={{ paddingBottom: 60 }}>
           {/* Header */}
-          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(6,9,18,0.6)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
+          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid var(--border)", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <button 
                 onClick={() => { setActiveView("hub"); setSelectedAttendanceWorker(null); setAttendanceRecords([]); }}
                 className="back-btn"
-                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f1f5f9", cursor: "pointer" }}
+                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)", cursor: "pointer" }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
               </button>
               <div>
                 <p style={{ fontSize: 10, fontWeight: 800, color: "#a78bfa", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>On-Site Registry Ledger</p>
-                <h1 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Crew Attendance Logs</h1>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Crew Attendance Logs</h1>
               </div>
             </div>
           </div>
 
           <div style={{ padding: "16px", display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
             {/* Roster Selection Panel */}
-            <div className="glass" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
-              <h2 style={{ fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8", margin: "0 0 14px" }}>Operational Crew Members</h2>
+            <div className="glass" style={{ padding: 20, border: "1px solid var(--border)", borderRadius: 20 }}>
+              <h2 style={{ fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--dim)", margin: "0 0 14px" }}>Operational Crew Members</h2>
               
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {active
@@ -1952,7 +1952,7 @@ export default function AdminDashboard() {
                           </div>
                           <div style={{ minWidth: 0 }}>
                             <p style={{ fontSize: 13, fontWeight: 750, color: isSelected ? "#a78bfa" : "#f1f5f9", margin: 0 }}>{u.full_name}</p>
-                            <span style={{ fontSize: 9, color: "#64748b", fontFamily: "monospace" }}>{u.login_id}</span>
+                            <span style={{ fontSize: 9, color: "var(--dim)", fontFamily: "monospace" }}>{u.login_id}</span>
                           </div>
                         </div>
                         <span style={{ fontSize: 9, fontWeight: 800, color: roleColor(u.role), textTransform: "uppercase", background: `${roleColor(u.role)}12`, padding: "2px 6px", borderRadius: 4 }}>{u.role}</span>
@@ -1963,7 +1963,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Attendance Logs Details Table */}
-            <div className="glass" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
+            <div className="glass" style={{ padding: 20, border: "1px solid var(--border)", borderRadius: 20 }}>
               {selectedAttendanceWorker ? (() => {
                 const getProcessedDailyLogs = () => {
                   const shifts: {
@@ -2052,8 +2052,8 @@ export default function AdminDashboard() {
                   <div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                       <div>
-                        <h3 style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", margin: 0 }}>{selectedAttendanceWorker.full_name}</h3>
-                        <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0" }}>Monthly Duty summary (100% Real Database logs)</p>
+                        <h3 style={{ fontSize: 16, fontWeight: 900, color: "var(--text)", margin: 0 }}>{selectedAttendanceWorker.full_name}</h3>
+                        <p style={{ fontSize: 11, color: "var(--dim)", margin: "2px 0 0" }}>Monthly Duty summary (100% Real Database logs)</p>
                       </div>
                       <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 6, padding: "3px 8px" }}>
                         {attendanceRecords.length} Raw Logs
@@ -2061,31 +2061,31 @@ export default function AdminDashboard() {
                     </div>
 
                     {loadingAttendance ? (
-                      <div style={{ textAlign: "center", padding: "40px 0", color: "#64748b" }}>
+                      <div style={{ textAlign: "center", padding: "40px 0", color: "var(--dim)" }}>
                         <div className="spinner" style={{ margin: "0 auto 12px", borderColor: "#a78bfa", borderTopColor: "transparent" }} />
                         Retrieving Database Ledger...
                       </div>
                     ) : processedLogs.length === 0 ? (
-                      <div style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: "32px 20px", textAlign: "center" }}>
+                      <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "32px 20px", textAlign: "center" }}>
                         <span style={{ fontSize: 24, display: "block", marginBottom: 8 }}>📅</span>
-                        <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>No active check-in history found in the database for this user in the current month.</p>
+                        <p style={{ fontSize: 13, color: "var(--dim)", margin: 0 }}>No active check-in history found in the database for this user in the current month.</p>
                       </div>
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                         {/* Premium Stats Grid */}
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-                          <div className="glass" style={{ padding: "12px 14px", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 12, background: "rgba(255,255,255,0.01)" }}>
-                            <span style={{ fontSize: 8, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Days Present</span>
-                            <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#cbd5e1" }}>{totalDays} <span style={{ fontSize: 10, fontWeight: 650, color: "#64748b" }}>Days</span></p>
+                          <div className="glass" style={{ padding: "12px 14px", border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)" }}>
+                            <span style={{ fontSize: 8, color: "var(--dim)", textTransform: "uppercase", fontWeight: 700 }}>Days Present</span>
+                            <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "var(--muted)" }}>{totalDays} <span style={{ fontSize: 10, fontWeight: 650, color: "var(--dim)" }}>Days</span></p>
                           </div>
-                          <div className="glass" style={{ padding: "12px 14px", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 12, background: "rgba(255,255,255,0.01)" }}>
-                            <span style={{ fontSize: 8, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>On-Site Rating</span>
+                          <div className="glass" style={{ padding: "12px 14px", border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)" }}>
+                            <span style={{ fontSize: 8, color: "var(--dim)", textTransform: "uppercase", fontWeight: 700 }}>On-Site Rating</span>
                             <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: onSiteRate >= 80 ? "#4ade80" : "#fbbf24" }}>{onSiteRate}%</p>
                           </div>
-                          <div className="glass" style={{ padding: "12px 14px", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 12, background: "rgba(255,255,255,0.01)" }}>
-                            <span style={{ fontSize: 8, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Total Shifts</span>
+                          <div className="glass" style={{ padding: "12px 14px", border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface)" }}>
+                            <span style={{ fontSize: 8, color: "var(--dim)", textTransform: "uppercase", fontWeight: 700 }}>Total Shifts</span>
                             <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#a78bfa" }}>
-                              {processedLogs.length} <span style={{ fontSize: 10, fontWeight: 650, color: "#64748b" }}>Runs</span>
+                              {processedLogs.length} <span style={{ fontSize: 10, fontWeight: 650, color: "var(--dim)" }}>Runs</span>
                             </p>
                           </div>
                         </div>
@@ -2094,7 +2094,7 @@ export default function AdminDashboard() {
                         <div style={{ overflowX: "auto" }}>
                           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 12 }}>
                             <thead>
-                              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", color: "#64748b", textTransform: "uppercase", fontSize: 10, fontWeight: 800 }}>
+                              <tr style={{ borderBottom: "1px solid var(--border)", color: "var(--dim)", textTransform: "uppercase", fontSize: 10, fontWeight: 800 }}>
                                 <th style={{ padding: "10px 8px" }}>Date</th>
                                 <th style={{ padding: "10px 8px" }}>Sign In</th>
                                 <th style={{ padding: "10px 8px" }}>Sign Out</th>
@@ -2117,7 +2117,7 @@ export default function AdminDashboard() {
                                 })();
 
                                 return (
-                                  <tr key={index} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", color: "#cbd5e1" }}>
+                                  <tr key={index} style={{ borderBottom: "1px solid var(--border)", color: "var(--muted)" }}>
                                     <td style={{ padding: "12px 8px", fontWeight: 700 }}>{log.dateStr}</td>
                                     <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#4ade80" }}>{log.signInTime}</td>
                                     <td style={{ padding: "12px 8px", fontFamily: "monospace", color: log.signOutTime !== "--" ? "#f87171" : "#64748b" }}>{log.signOutTime}</td>
@@ -2150,7 +2150,7 @@ export default function AdminDashboard() {
                   </div>
                 );
               })() : (
-                <div style={{ textAlign: "center", color: "#64748b", padding: "20px 0" }}>
+                <div style={{ textAlign: "center", color: "var(--dim)", padding: "20px 0" }}>
                   <p style={{ fontSize: 13, margin: 0 }}>Select a crew member from the directory above to display their monthly database check-in history records.</p>
                 </div>
               )}
@@ -2163,18 +2163,18 @@ export default function AdminDashboard() {
       {activeView === "projects" && (
         <div className="fade-in" style={{ paddingBottom: 60 }}>
           {/* Header */}
-          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(6,9,18,0.6)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
+          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid var(--border)", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <button 
                 onClick={() => { setActiveView("hub"); setSelectedProjectItem(null); }}
                 className="back-btn"
-                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f1f5f9", cursor: "pointer" }}
+                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)", cursor: "pointer" }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
               </button>
               <div style={{ flex: 1 }}>
                 <p style={{ fontSize: 10, fontWeight: 800, color: "#a78bfa", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Telgo Power Corridors</p>
-                <h1 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Projects Directory</h1>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Projects Directory</h1>
               </div>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <button
@@ -2260,7 +2260,7 @@ export default function AdminDashboard() {
                         {p.code}
                       </span>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#94a3b8" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--dim)" }}>
                       <span>📍 District: <b>{p.district}</b></span>
                       <span>📏 Est: <b>{p.distance}</b></span>
                     </div>
@@ -2313,11 +2313,11 @@ export default function AdminDashboard() {
 
             {/* Selected Project Detailed Corridor View & Map */}
             {selectedProjectItem && (
-              <div className="glass fade-in" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 24, background: "rgba(255,255,255,0.01)" }}>
+              <div className="glass fade-in" style={{ padding: 20, border: "1px solid var(--border)", borderRadius: 24, background: "var(--surface)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 16 }}>
                   <div>
-                    <h2 style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", margin: 0 }}>{selectedProjectItem.name}</h2>
-                    <p style={{ fontSize: 12, color: "#94a3b8", margin: "4px 0 0" }}>{selectedProjectItem.description}</p>
+                    <h2 style={{ fontSize: 16, fontWeight: 900, color: "var(--text)", margin: 0 }}>{selectedProjectItem.name}</h2>
+                    <p style={{ fontSize: 12, color: "var(--dim)", margin: "4px 0 0" }}>{selectedProjectItem.description}</p>
                   </div>
                   <button
                     onClick={() => setEditingProjectItem(selectedProjectItem)}
@@ -2339,7 +2339,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Map Display Card */}
-                <div className="glass" style={{ padding: 0, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, overflow: "hidden", background: "#080b13", marginBottom: 20 }}>
+                <div className="glass" style={{ padding: 0, border: "1px solid var(--border)", borderRadius: 20, overflow: "hidden", background: "var(--bg)", marginBottom: 20 }}>
                   <div style={{ position: "relative", height: 260, width: "100%" }}>
                     <iframe
                       title="Project Corridor Map"
@@ -2454,16 +2454,16 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Corridor Coords Details Card */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.04)", padding: 16, borderRadius: 16 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, background: "var(--surface)", border: "1px solid var(--border)", padding: 16, borderRadius: 16 }}>
                   <div>
-                    <span style={{ fontSize: 9, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Start Position</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase" }}>Start Position</span>
                     <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 750, color: "#4ade80" }}>{selectedProjectItem.startLabel}</p>
-                    <span style={{ fontSize: 10, fontFamily: "monospace", color: "#64748b" }}>{selectedProjectItem.startCoords[0]}° N, {selectedProjectItem.startCoords[1]}° E</span>
+                    <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--dim)" }}>{selectedProjectItem.startCoords[0]}° N, {selectedProjectItem.startCoords[1]}° E</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: 9, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>End Position</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase" }}>End Position</span>
                     <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 750, color: "#f87171" }}>{selectedProjectItem.endLabel}</p>
-                    <span style={{ fontSize: 10, fontFamily: "monospace", color: "#64748b" }}>{selectedProjectItem.endCoords[0]}° N, {selectedProjectItem.endCoords[1]}° E</span>
+                    <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--dim)" }}>{selectedProjectItem.endCoords[0]}° N, {selectedProjectItem.endCoords[1]}° E</span>
                   </div>
                 </div>
               </div>
@@ -2476,43 +2476,43 @@ export default function AdminDashboard() {
       {activeView === "reports" && (
         <div className="fade-in" style={{ paddingBottom: 60 }}>
           {/* Header */}
-          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(6,9,18,0.6)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
+          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid var(--border)", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <button 
                 onClick={() => { setActiveView("hub"); setSelectedReport(null); }}
                 className="back-btn"
-                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f1f5f9", cursor: "pointer" }}
+                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)", cursor: "pointer" }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
               </button>
               <div>
                 <p style={{ fontSize: 10, fontWeight: 800, color: "#10b981", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Daily Reports Hub</p>
-                <h1 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Staging Verification</h1>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Staging Verification</h1>
               </div>
             </div>
           </div>
 
           <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 16 }}>
             {/* STRICT FUNNEL NAVIGATION BAR */}
-            <div className="glass" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
-              <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8", margin: "0 0 14px", textAlign: "left" }}>1. Verification Funnel Filter</h2>
+            <div className="glass" style={{ padding: 20, border: "1px solid var(--border)", borderRadius: 20 }}>
+              <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--dim)", margin: "0 0 14px", textAlign: "left" }}>1. Verification Funnel Filter</h2>
               
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
-                  <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 6, fontWeight: 700, textTransform: "uppercase" }}>Select Date</label>
+                  <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 6, fontWeight: 700, textTransform: "uppercase" }}>Select Date</label>
                   <input
                     type="date"
                     value={reportFilterDate}
                     onChange={(e) => setReportFilterDate(e.target.value)}
-                    style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none", fontFamily: "monospace" }}
+                    style={{ width: "100%", height: 38, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 10px", color: "var(--muted)", fontSize: 12, outline: "none", fontFamily: "monospace" }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 6, fontWeight: 700, textTransform: "uppercase" }}>Select Corridor</label>
+                  <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 6, fontWeight: 700, textTransform: "uppercase" }}>Select Corridor</label>
                   <select
                     value={reportFilterProjectId}
                     onChange={(e) => setReportFilterProjectId(e.target.value)}
-                    style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 8px", color: "#cbd5e1", fontSize: 12, outline: "none", cursor: "pointer" }}
+                    style={{ width: "100%", height: 38, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 8px", color: "var(--muted)", fontSize: 12, outline: "none", cursor: "pointer" }}
                   >
                     <option value="">-- Choose Project --</option>
                     {projectsList.map(p => (
@@ -2524,18 +2524,18 @@ export default function AdminDashboard() {
             </div>
 
             {/* ROSTER GRID SECTION */}
-            <div className="glass" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
-              <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8", margin: "0 0 14px", textAlign: "left" }}>2. Submitting Crew Roster</h2>
+            <div className="glass" style={{ padding: 20, border: "1px solid var(--border)", borderRadius: 20 }}>
+              <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--dim)", margin: "0 0 14px", textAlign: "left" }}>2. Submitting Crew Roster</h2>
 
               {loadingReports ? (
-                <div style={{ textAlign: "center", padding: "40px 0", color: "#64748b" }}>
+                <div style={{ textAlign: "center", padding: "40px 0", color: "var(--dim)" }}>
                   <div className="spinner" style={{ margin: "0 auto 12px", borderColor: "#10b981", borderTopColor: "transparent" }} />
                   Retrieving Pending Crew Logs...
                 </div>
               ) : pendingReports.length === 0 ? (
-                <div style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: "32px 20px", textAlign: "center" }}>
+                <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "32px 20px", textAlign: "center" }}>
                   <span style={{ fontSize: 24, display: "block", marginBottom: 8 }}>✨</span>
-                  <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>No pending reports submitted for this date and project corridor.</p>
+                  <p style={{ fontSize: 13, color: "var(--dim)", margin: 0 }}>No pending reports submitted for this date and project corridor.</p>
                 </div>
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
@@ -2559,11 +2559,11 @@ export default function AdminDashboard() {
                       >
                         <div style={{ textAlign: "left" }}>
                           <h4 style={{ fontSize: 13, fontWeight: 800, color: isSelected ? "#10b981" : "#f1f5f9", margin: 0 }}>{r.supervisorName}</h4>
-                          <span style={{ fontSize: 9, color: "#64748b", fontFamily: "monospace" }}>Staged: {new Date(r.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+                          <span style={{ fontSize: 9, color: "var(--dim)", fontFamily: "monospace" }}>Staged: {new Date(r.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
                         </div>
                         <div style={{ textAlign: "right" }}>
                           <span style={{ fontSize: 10, fontWeight: 750, color: "#10b981", display: "block" }}>₹{r.calculatedWages}</span>
-                          <span style={{ fontSize: 9, color: "#64748b" }}>{r.excavationLength}m trench | {r.hddLength}m HDD</span>
+                          <span style={{ fontSize: 9, color: "var(--dim)" }}>{r.excavationLength}m trench | {r.hddLength}m HDD</span>
                         </div>
                       </div>
                     );
@@ -3067,13 +3067,13 @@ export default function AdminDashboard() {
               };
 
               return (
-                <div className="glass fade-in" style={{ padding: "24px 20px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 24, textAlign: "left", background: "rgba(10,14,26,0.5)" }}>
+                <div className="glass fade-in" style={{ padding: "24px 20px", border: "1px solid var(--border)", borderRadius: 24, textAlign: "left", background: "var(--surface)" }}>
                   {/* Title Bar with controls */}
-                  <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 16, marginBottom: 20, gap: 12 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: 16, marginBottom: 20, gap: 12 }}>
                     <div>
                       <span style={{ fontSize: 9, fontWeight: 900, color: "#10b981", letterSpacing: "0.15em", textTransform: "uppercase" }}>Selected Staged Update</span>
-                      <h3 style={{ fontSize: 18, fontWeight: 900, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>{selectedReport.supervisorName}</h3>
-                      <span style={{ fontSize: 10, color: "#64748b", fontFamily: "monospace" }}>Date: {selectedReport.reportDate} | Submitted: {new Date(selectedReport.created_at).toLocaleTimeString("en-IN")}</span>
+                      <h3 style={{ fontSize: 18, fontWeight: 900, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>{selectedReport.supervisorName}</h3>
+                      <span style={{ fontSize: 10, color: "var(--dim)", fontFamily: "monospace" }}>Date: {selectedReport.reportDate} | Submitted: {new Date(selectedReport.created_at).toLocaleTimeString("en-IN")}</span>
                     </div>
 
                     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
@@ -3083,7 +3083,7 @@ export default function AdminDashboard() {
                           background: "rgba(255, 255, 255, 0.03)",
                           border: "1px solid rgba(255, 255, 255, 0.08)",
                           borderRadius: 10,
-                          color: "#cbd5e1",
+                          color: "var(--muted)",
                           fontSize: 12,
                           fontWeight: 750,
                           padding: "8px 14px",
@@ -3126,7 +3126,7 @@ export default function AdminDashboard() {
                           background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
                           border: "none",
                           borderRadius: 10,
-                          color: "white",
+                          color: "var(--text)",
                           fontSize: 12,
                           fontWeight: 800,
                           padding: "8px 18px",
@@ -3146,63 +3146,63 @@ export default function AdminDashboard() {
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20 }}>
                     {/* SECTION 1: LABOUR & WAGES BREAKDOWN */}
-                    <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: 16 }}>
+                    <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 16 }}>
                       <span style={{ fontSize: 10, fontWeight: 900, color: "#10b981", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step A: Crew Labour & Wages</span>
                       
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 14 }}>
-                        <div style={{ background: "rgba(0,0,0,0.15)", padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,0.02)" }}>
-                          <span style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Standard Crew Roster</span>
-                          <p style={{ fontSize: 13, fontWeight: 800, color: "#e2e8f0", margin: "2px 0 0" }}>
+                        <div style={{ background: "var(--surface)", padding: 12, borderRadius: 12, border: "1px solid var(--border)" }}>
+                          <span style={{ fontSize: 9, color: "var(--dim)", textTransform: "uppercase", fontWeight: 700 }}>Standard Crew Roster</span>
+                          <p style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "2px 0 0" }}>
                             {selectedReport.laborCount - (rich.includeSupervisor ? 1 : 0)} Labours
                           </p>
-                          <span style={{ fontSize: 9, color: "#475569" }}>₹900 base wage per worker</span>
+                          <span style={{ fontSize: 9, color: "var(--muted)" }}>₹900 base wage per worker</span>
                         </div>
 
-                        <div style={{ background: "rgba(0,0,0,0.15)", padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,0.02)" }}>
-                          <span style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Supervisor Status</span>
+                        <div style={{ background: "var(--surface)", padding: 12, borderRadius: 12, border: "1px solid var(--border)" }}>
+                          <span style={{ fontSize: 9, color: "var(--dim)", textTransform: "uppercase", fontWeight: 700 }}>Supervisor Status</span>
                           <p style={{ fontSize: 13, fontWeight: 800, color: rich.includeSupervisor ? "#10b981" : "#94a3b8", margin: "2px 0 0" }}>
                             {rich.includeSupervisor ? "Active Presence" : "Absent / Inactive"}
                           </p>
-                          <span style={{ fontSize: 9, color: "#475569" }}>₹1200 supervisor rate</span>
+                          <span style={{ fontSize: 9, color: "var(--muted)" }}>₹1200 supervisor rate</span>
                         </div>
 
-                        <div style={{ background: "rgba(0,0,0,0.15)", padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,0.02)" }}>
-                          <span style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Calculated Wages Log</span>
+                        <div style={{ background: "var(--surface)", padding: 12, borderRadius: 12, border: "1px solid var(--border)" }}>
+                          <span style={{ fontSize: 9, color: "var(--dim)", textTransform: "uppercase", fontWeight: 700 }}>Calculated Wages Log</span>
                           <p style={{ fontSize: 15, fontWeight: 900, color: "#10b981", margin: "2px 0 0" }}>
                             ₹{selectedReport.calculatedWages}
                           </p>
-                          <span style={{ fontSize: 9, color: "#475569" }}>Standard wages + OT totals</span>
+                          <span style={{ fontSize: 9, color: "var(--muted)" }}>Standard wages + OT totals</span>
                         </div>
                       </div>
 
                       {rich.laborWagesNarration && (
-                        <div style={{ fontSize: 11, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", padding: "8px 12px", borderRadius: 10, color: "#cbd5e1", marginBottom: 10 }}>
+                        <div style={{ fontSize: 11, background: "var(--surface)", border: "1px solid var(--border)", padding: "8px 12px", borderRadius: 10, color: "var(--muted)", marginBottom: 10 }}>
                           <span style={{ fontWeight: 800, color: "#10b981", marginRight: 6 }}>Labour Wages Note:</span>
                           {rich.laborWagesNarration}
                         </div>
                       )}
 
                       {rich.supervisorNarration && (
-                        <div style={{ fontSize: 11, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", padding: "8px 12px", borderRadius: 10, color: "#cbd5e1", marginBottom: 12 }}>
+                        <div style={{ fontSize: 11, background: "var(--surface)", border: "1px solid var(--border)", padding: "8px 12px", borderRadius: 10, color: "var(--muted)", marginBottom: 12 }}>
                           <span style={{ fontWeight: 800, color: "#10b981", marginRight: 6 }}>Supervisor Note:</span>
                           {rich.supervisorNarration}
                         </div>
                       )}
 
                       {/* Overtime breakdowns lists */}
-                      <span style={{ fontSize: 9, fontWeight: 900, color: "#94a3b8", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Overtime Worker Segments</span>
+                      <span style={{ fontSize: 9, fontWeight: 900, color: "var(--dim)", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Overtime Worker Segments</span>
                       {otList.length === 0 ? (
-                        <p style={{ fontSize: 11, color: "#475569", fontStyle: "italic", margin: 0 }}>No overtime worker records registered for this date.</p>
+                        <p style={{ fontSize: 11, color: "var(--muted)", fontStyle: "italic", margin: 0 }}>No overtime worker records registered for this date.</p>
                       ) : (
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                           {otList.map((o: any, idx: number) => (
                             <div key={idx} style={{ display: "flex", flexDirection: "column", background: "rgba(0,0,0,0.1)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 10, padding: 10 }}>
                               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 700 }}>
-                                <span style={{ color: "#e2e8f0" }}>⚡ Group #{idx+1}: {o.workerCount} workers x {o.hours} hrs</span>
-                                <span style={{ color: "#10b981" }}>₹{Number(o.workerCount) * Number(o.hours) * Number(o.rate)} <span style={{ color: "#475569", fontWeight: 500 }}>(@ ₹{o.rate}/hr)</span></span>
+                                <span style={{ color: "var(--text)" }}>⚡ Group #{idx+1}: {o.workerCount} workers x {o.hours} hrs</span>
+                                <span style={{ color: "#10b981" }}>₹{Number(o.workerCount) * Number(o.hours) * Number(o.rate)} <span style={{ color: "var(--muted)", fontWeight: 500 }}>(@ ₹{o.rate}/hr)</span></span>
                               </div>
                               {o.narration && (
-                                <p style={{ margin: "4px 0 0", fontSize: 10, color: "#94a3b8", fontStyle: "italic" }}>Note: {o.narration}</p>
+                                <p style={{ margin: "4px 0 0", fontSize: 10, color: "var(--dim)", fontStyle: "italic" }}>Note: {o.narration}</p>
                               )}
                             </div>
                           ))}
@@ -3211,7 +3211,7 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* SECTION 2: LOGISTICS, RENTAL & IMPREST EXPENSES LIST */}
-                    <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: 16 }}>
+                    <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 16 }}>
                       <span style={{ fontSize: 10, fontWeight: 900, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step A.2: Logistics & Rental Receipts</span>
                       
                       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
@@ -3223,7 +3223,7 @@ export default function AdminDashboard() {
                           ...toolList,
                           ...otherList
                         ].length === 0 ? (
-                          <p style={{ fontSize: 11, color: "#475569", fontStyle: "italic", margin: 0 }}>No rental or logistics receipt transactions submitted.</p>
+                          <p style={{ fontSize: 11, color: "var(--muted)", fontStyle: "italic", margin: 0 }}>No rental or logistics receipt transactions submitted.</p>
                         ) : (
                           [
                             ...fuelList.map((item: any, i: number) => ({ cat: "⛽ Fuel", name: `Fuel Log #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage })),
@@ -3232,26 +3232,26 @@ export default function AdminDashboard() {
                             ...toolList.map((item: any, i: number) => ({ cat: "🔧 Tool Rental", name: item.toolName || `Tool #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage })),
                             ...otherList.map((item: any, i: number) => ({ cat: "💡 Miscellaneous", name: item.expenseName || `Misc #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage }))
                           ].map((item: any, idx: number) => (
-                            <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
+                            <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--surface)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
                               <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
                                 {item.img ? (
                                   <div 
                                     onClick={() => setAdminActiveImagePreview(item.img)}
-                                    style={{ width: 44, height: 44, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-in", flexShrink: 0 }}
+                                    style={{ width: 44, height: 44, borderRadius: 8, background: "var(--surface)", border: "1px solid var(--border)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-in", flexShrink: 0 }}
                                   >
                                     <img src={item.img} alt="Receipt thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                   </div>
                                 ) : (
-                                  <div style={{ width: 44, height: 44, borderRadius: 8, background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", fontSize: 14, flexShrink: 0 }}>
+                                  <div style={{ width: 44, height: 44, borderRadius: 8, background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", fontSize: 14, flexShrink: 0 }}>
                                     🚫
                                   </div>
                                 )}
                                 <div style={{ minWidth: 0 }}>
                                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                    <span style={{ fontSize: 10, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>{item.cat}</span>
-                                    <span style={{ fontSize: 11, color: "#cbd5e1", fontWeight: 800 }}>({item.name})</span>
+                                    <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>{item.cat}</span>
+                                    <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 800 }}>({item.name})</span>
                                   </div>
-                                  <p style={{ margin: "2px 0 0", fontSize: 11, color: "#94a3b8", fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--dim)", fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                     {item.narration || "No narration details added."}
                                   </p>
                                 </div>
@@ -3264,7 +3264,7 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* SECTION 3: PHYSICAL WORK-IN-PROGRESS (WIP) METRICS */}
-                    <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: 16 }}>
+                    <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 16 }}>
                       <span style={{ fontSize: 10, fontWeight: 900, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step B: Work-in-Progress Lengths & Progress Photos</span>
                       
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -3279,23 +3279,23 @@ export default function AdminDashboard() {
                         ].map((m: any) => {
                           const log = wip[m.key] || {};
                           return (
-                            <div key={m.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
+                            <div key={m.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--surface)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
                               <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
                                 {log.photo ? (
                                   <div 
                                     onClick={() => setAdminActiveImagePreview(log.photo)}
-                                    style={{ width: 44, height: 44, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-in", flexShrink: 0 }}
+                                    style={{ width: 44, height: 44, borderRadius: 8, background: "var(--surface)", border: "1px solid var(--border)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-in", flexShrink: 0 }}
                                   >
                                     <img src={log.photo} alt="Progress log thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                   </div>
                                 ) : (
-                                  <div style={{ width: 44, height: 44, borderRadius: 8, background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", fontSize: 13, flexShrink: 0 }}>
+                                  <div style={{ width: 44, height: 44, borderRadius: 8, background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", fontSize: 13, flexShrink: 0 }}>
                                     📷
                                   </div>
                                 )}
                                 <div style={{ minWidth: 0 }}>
-                                  <span style={{ fontSize: 11, color: "#cbd5e1", fontWeight: 800 }}>{m.name}</span>
-                                  <p style={{ margin: "2px 0 0", fontSize: 10, color: "#94a3b8", fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 800 }}>{m.name}</span>
+                                  <p style={{ margin: "2px 0 0", fontSize: 10, color: "var(--dim)", fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                     {log.narration || "No narration details added."}
                                   </p>
                                 </div>
@@ -3303,7 +3303,7 @@ export default function AdminDashboard() {
                               <div style={{ textAlign: "right", flexShrink: 0 }}>
                                 <span style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", display: "block" }}>{m.val}</span>
                                 {m.key === "terminations" && selectedReport.terminationGpsLat && (
-                                  <span style={{ fontSize: 8, color: "#64748b", fontFamily: "monospace" }}>
+                                  <span style={{ fontSize: 8, color: "var(--dim)", fontFamily: "monospace" }}>
                                     🎯 [{selectedReport.terminationGpsLat.toFixed(4)}, {selectedReport.terminationGpsLng.toFixed(4)}]
                                   </span>
                                 )}
@@ -3315,38 +3315,38 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* SECTION 4: CLEARANCE LIFECYCLES */}
-                    <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: 16 }}>
+                    <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 16 }}>
                       <span style={{ fontSize: 10, fontWeight: 900, color: "#c084fc", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step C: Statutory Clearances Documents</span>
                       
                       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
                         {Object.keys(clearances).length === 0 ? (
-                          <p style={{ fontSize: 11, color: "#475569", fontStyle: "italic", margin: 0 }}>No statutory clearances stages submitted.</p>
+                          <p style={{ fontSize: 11, color: "var(--muted)", fontStyle: "italic", margin: 0 }}>No statutory clearances stages submitted.</p>
                         ) : (
                           Object.keys(clearances).map((agency) => {
                             const info = clearances[agency] || {};
                             return (
-                              <div key={agency} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
+                              <div key={agency} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--surface)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
                                   {info.receipt ? (
                                     <div 
                                       onClick={() => setAdminActiveImagePreview(info.receipt)}
-                                      style={{ width: 44, height: 44, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-in", flexShrink: 0 }}
+                                      style={{ width: 44, height: 44, borderRadius: 8, background: "var(--surface)", border: "1px solid var(--border)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-in", flexShrink: 0 }}
                                     >
                                       <img src={info.receipt} alt="Clearance receipt thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                     </div>
                                   ) : (
-                                    <div style={{ width: 44, height: 44, borderRadius: 8, background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", fontSize: 13, flexShrink: 0 }}>
+                                    <div style={{ width: 44, height: 44, borderRadius: 8, background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", fontSize: 13, flexShrink: 0 }}>
                                       📄
                                     </div>
                                   )}
                                   <div style={{ minWidth: 0 }}>
-                                    <span style={{ fontSize: 11, color: "#cbd5e1", fontWeight: 800 }}>{agency} Authority Permission</span>
-                                    <p style={{ margin: "2px 0 0", fontSize: 10, color: "#94a3b8" }}>
+                                    <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 800 }}>{agency} Authority Permission</span>
+                                    <p style={{ margin: "2px 0 0", fontSize: 10, color: "var(--dim)" }}>
                                       Status: <strong style={{ color: info.status === "Permission Gathered" ? "#10b981" : info.status === "Demand Issued" ? "#fbbf24" : "#f87171" }}>{info.status}</strong>
                                     </p>
                                   </div>
                                 </div>
-                                <span style={{ fontSize: 10, color: "#64748b", fontWeight: 700 }}>STAGE COMPLETED</span>
+                                <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700 }}>STAGE COMPLETED</span>
                               </div>
                             );
                           })
@@ -3355,14 +3355,14 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* SECTION 5: PLANNING REQUESTS, ROADBLOCKS & IMPREST REQUEST */}
-                    <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: 16 }}>
+                    <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 16 }}>
                       <span style={{ fontSize: 10, fontWeight: 900, color: "#f87171", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step D: Planning, Hurdles & Cash Requests</span>
                       
                       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                         {/* Next day plans */}
-                        <div style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: 12 }}>
+                        <div style={{ background: "var(--surface)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: 12 }}>
                           <span style={{ fontSize: 9, color: "#10b981", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>📝 Next-Day Operational Plans</span>
-                          <p style={{ margin: 0, fontSize: 11, color: "#cbd5e1", lineHeight: 1.5 }}>
+                          <p style={{ margin: 0, fontSize: 11, color: "var(--muted)", lineHeight: 1.5 }}>
                             {reqs.plans || "No planning requests logged."}
                           </p>
                         </div>
@@ -3376,9 +3376,9 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Urgent concerns */}
-                        <div style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: 12 }}>
+                        <div style={{ background: "var(--surface)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: 12 }}>
                           <span style={{ fontSize: 9, color: "#fbbf24", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>🚨 Direct Administrative Concerns</span>
-                          <p style={{ margin: 0, fontSize: 11, color: "#cbd5e1", lineHeight: 1.5 }}>
+                          <p style={{ margin: 0, fontSize: 11, color: "var(--muted)", lineHeight: 1.5 }}>
                             {reqs.adminConcerns || "No administrative issues logged."}
                           </p>
                         </div>
@@ -3387,11 +3387,11 @@ export default function AdminDashboard() {
                         <div style={{ background: "rgba(16, 185, 129, 0.03)", border: "1px solid rgba(16, 185, 129, 0.12)", borderRadius: 12, padding: 12, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                           <div style={{ minWidth: 200 }}>
                             <span style={{ fontSize: 9, color: "#4ade80", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>💳 Imprest Refill & Cash Requests</span>
-                            <p style={{ margin: 0, fontSize: 11, color: "#cbd5e1", lineHeight: 1.5 }}>
+                            <p style={{ margin: 0, fontSize: 11, color: "var(--muted)", lineHeight: 1.5 }}>
                               {reqs.financeAmount ? `Refill Amount: ₹${reqs.financeAmount}` : "No finance imprest requests submitted."}
                             </p>
                             {reqs.financeNarration && (
-                              <p style={{ margin: "2px 0 0", fontSize: 10, color: "#94a3b8", fontStyle: "italic" }}>
+                              <p style={{ margin: "2px 0 0", fontSize: 10, color: "var(--dim)", fontStyle: "italic" }}>
                                 Details: {reqs.financeNarration}
                               </p>
                             )}
@@ -3429,33 +3429,33 @@ export default function AdminDashboard() {
       {activeView === "ledger" && (
         <div className="fade-in" style={{ paddingBottom: 60 }}>
           {/* Header */}
-          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(6,9,18,0.6)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
+          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid var(--border)", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <button 
                 onClick={() => { setActiveView("hub"); }}
                 className="back-btn"
-                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f1f5f9", cursor: "pointer" }}
+                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)", cursor: "pointer" }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
               </button>
               <div>
                 <p style={{ fontSize: 10, fontWeight: 800, color: "#f59e0b", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Consolidated Timeline</p>
-                <h1 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Master Project Ledger</h1>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Master Project Ledger</h1>
               </div>
             </div>
           </div>
 
           <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 16 }}>
             {/* Select Corridor Dropdown */}
-            <div className="glass" style={{ padding: 18, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", textAlign: "left" }}>Select Project Corridor</label>
+            <div className="glass" style={{ padding: 18, border: "1px solid var(--border)", borderRadius: 20 }}>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", textAlign: "left" }}>Select Project Corridor</label>
               <select
                 value={selectedLedgerProject}
                 onChange={(e) => {
                   setSelectedLedgerProject(e.target.value);
                   fetchMasterLedger(e.target.value);
                 }}
-                style={{ width: "100%", height: 40, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 13, outline: "none", cursor: "pointer" }}
+                style={{ width: "100%", height: 40, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 10px", color: "var(--muted)", fontSize: 13, outline: "none", cursor: "pointer" }}
               >
                 <option value="">-- Choose Project Corridor --</option>
                 {projectsList.map(p => (
@@ -3465,26 +3465,26 @@ export default function AdminDashboard() {
             </div>
 
             {/* Ledger Table grid */}
-            <div className="glass" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
-              <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8", margin: "0 0 16px", textAlign: "left" }}>Aggregated Ledger Sheet</h2>
+            <div className="glass" style={{ padding: 20, border: "1px solid var(--border)", borderRadius: 20 }}>
+              <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--dim)", margin: "0 0 16px", textAlign: "left" }}>Aggregated Ledger Sheet</h2>
 
               {loadingLedger ? (
-                <div style={{ textAlign: "center", padding: "40px 0", color: "#64748b" }}>
+                <div style={{ textAlign: "center", padding: "40px 0", color: "var(--dim)" }}>
                   <div className="spinner" style={{ margin: "0 auto 12px", borderColor: "#f59e0b", borderTopColor: "transparent" }} />
                   Loading Consolidated Ledger Timeline...
                 </div>
               ) : !selectedLedgerProject ? (
-                <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>Please select a project corridor from the dropdown above to display the aggregated daily ledger list.</p>
+                <p style={{ fontSize: 12, color: "var(--dim)", margin: 0 }}>Please select a project corridor from the dropdown above to display the aggregated daily ledger list.</p>
               ) : masterLedgerList.length === 0 ? (
-                <div style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: "32px 20px", textAlign: "center" }}>
+                <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "32px 20px", textAlign: "center" }}>
                   <span style={{ fontSize: 24, display: "block", marginBottom: 8 }}>📊</span>
-                  <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>No consolidated daily ledger aggregates found for this project corridor corridor yet.</p>
+                  <p style={{ fontSize: 13, color: "var(--dim)", margin: 0 }}>No consolidated daily ledger aggregates found for this project corridor corridor yet.</p>
                 </div>
               ) : (
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 12, minWidth: 600 }}>
                     <thead>
-                      <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", color: "#64748b", textTransform: "uppercase", fontSize: 10, fontWeight: 800 }}>
+                      <tr style={{ borderBottom: "1px solid var(--border)", color: "var(--dim)", textTransform: "uppercase", fontSize: 10, fontWeight: 800 }}>
                         <th style={{ padding: "10px 8px" }}>Date</th>
                         <th style={{ padding: "10px 8px" }}>Reports</th>
                         <th style={{ padding: "10px 8px" }}>Total Wages</th>
@@ -3497,7 +3497,7 @@ export default function AdminDashboard() {
                     </thead>
                     <tbody>
                       {masterLedgerList.map((row) => (
-                        <tr key={row.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", color: "#cbd5e1" }}>
+                        <tr key={row.id} style={{ borderBottom: "1px solid var(--border)", color: "var(--muted)" }}>
                           <td style={{ padding: "12px 8px", fontWeight: 700 }}>{row.ledgerDate}</td>
                           <td style={{ padding: "12px 8px" }}>
                             <span style={{ fontSize: 10, background: "rgba(245,158,11,0.1)", color: "#fbbf24", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 4, padding: "2px 6px", fontWeight: 800 }}>
@@ -3505,11 +3505,11 @@ export default function AdminDashboard() {
                             </span>
                           </td>
                           <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#10b981", fontWeight: 750 }}>₹{row.totalWages}</td>
-                          <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#cbd5e1" }}>{row.totalExcavation}m</td>
+                          <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "var(--muted)" }}>{row.totalExcavation}m</td>
                           <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#fbbf24", fontWeight: 750 }}>{row.totalHdd}m</td>
                           <td style={{ padding: "12px 8px", fontFamily: "monospace" }}>{row.totalCableLaying}m / {row.totalCableMounding}m</td>
                           <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#06b6d4" }}>{row.totalTerminations}</td>
-                          <td style={{ padding: "12px 8px", fontSize: 10, color: "#64748b" }}>{new Date(row.updatedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</td>
+                          <td style={{ padding: "12px 8px", fontSize: 10, color: "var(--dim)" }}>{new Date(row.updatedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -3532,7 +3532,7 @@ export default function AdminDashboard() {
             case "termination": return { border: "1px solid rgba(37, 99, 235, 0.3)", background: "rgba(37, 99, 235, 0.08)", color: "#60a5fa" };
             case "trench": return { border: "1px solid rgba(249, 115, 22, 0.3)", background: "rgba(249, 115, 22, 0.08)", color: "#ff9d5c" };
             case "utility": return { border: "1px solid rgba(168, 85, 247, 0.3)", background: "rgba(168, 85, 247, 0.08)", color: "#c084fc" };
-            default: return { border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)", color: "#94a3b8" };
+            default: return { border: "1px solid var(--border)", background: "var(--surface)", color: "var(--dim)" };
           }
         };
 
@@ -3549,16 +3549,16 @@ export default function AdminDashboard() {
         };
 
         return (
-          <div style={{ position: "fixed", inset: 0, background: "rgba(6,9,18,0.85)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1100, animation: "fadeIn 0.2s ease" }}>
-            <div className="glass glow-cyan" style={{ width: "100%", maxWidth: "1000px", maxHeight: "95vh", overflowY: "auto", padding: "28px 24px", background: "linear-gradient(135deg, #0d0621 0%, #060912 100%)", borderRadius: 24, border: "1px solid rgba(255, 255, 255, 0.08)", boxShadow: "0 24px 64px rgba(0, 0, 0, 0.75)", color: "#f1f5f9" }}>
+          <div style={{ position: "fixed", inset: 0, background: "rgba(255,255,255,0.9)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1100, animation: "fadeIn 0.2s ease" }}>
+            <div className="glass glow-cyan" style={{ width: "100%", maxWidth: "1000px", maxHeight: "95vh", overflowY: "auto", padding: "28px 24px", background: "linear-gradient(135deg, #0d0621 0%, #060912 100%)", borderRadius: 24, border: "1px solid rgba(255, 255, 255, 0.08)", boxShadow: "0 24px 64px rgba(0, 0, 0, 0.75)", color: "var(--text)" }}>
               
               {/* Modal Header */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, borderBottom: "1px solid var(--border)", paddingBottom: 14 }}>
                 <div>
                   <h3 style={{ fontSize: 20, fontWeight: 900, letterSpacing: "-0.5px", margin: 0, background: "linear-gradient(90deg, #c4b5fd, #06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Corridor GIS Editor</h3>
-                  <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Operational Map & Project Parameters</p>
+                  <p style={{ fontSize: 11, color: "var(--dim)", margin: "2px 0 0", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Operational Map & Project Parameters</p>
                 </div>
-                <button onClick={() => setEditingProjectItem(null)} style={{ background: "rgba(255, 255, 255, 0.04)", border: "1px solid rgba(255, 255, 255, 0.08)", width: 32, height: 32, borderRadius: "50%", color: "#94a3b8", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <button onClick={() => setEditingProjectItem(null)} style={{ background: "rgba(255, 255, 255, 0.04)", border: "1px solid rgba(255, 255, 255, 0.08)", width: 32, height: 32, borderRadius: "50%", color: "var(--dim)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
@@ -3568,7 +3568,7 @@ export default function AdminDashboard() {
                 {/* LEFT COLUMN: INTERACTIVE GIS MAP, GEOLOCATION SEARCH, TOOLBAR */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>Interactive GIS Tools</span>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.03em" }}>Interactive GIS Tools</span>
                     <span style={{ fontSize: 10, color: "#fbbf24", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 6, padding: "2px 6px", fontWeight: 700 }}>
                       Live Drag & Placement Mode
                     </span>
@@ -3583,7 +3583,7 @@ export default function AdminDashboard() {
                         placeholder="Search Kerala locations (e.g. Kakkanad, Munnar, Cherthala)..."
                         value={searchQueryMap}
                         onChange={(e) => setSearchQueryMap(e.target.value)}
-                        style={{ width: "100%", height: 38, background: "rgba(0, 0, 0, 0.4)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px 0 34px", color: "#f1f5f9", fontSize: 12, outline: "none", fontFamily: "Outfit, sans-serif" }}
+                        style={{ width: "100%", height: 38, background: "rgba(0, 0, 0, 0.4)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px 0 34px", color: "var(--text)", fontSize: 12, outline: "none", fontFamily: "Outfit, sans-serif" }}
                       />
                     </div>
                     <button
@@ -3688,7 +3688,7 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Large Interactive Iframe Map */}
-                  <div className="glass" style={{ padding: 0, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, overflow: "hidden", background: "#080b13" }}>
+                  <div className="glass" style={{ padding: 0, border: "1px solid var(--border)", borderRadius: 20, overflow: "hidden", background: "var(--bg)" }}>
                     <div style={{ position: "relative", height: "350px", width: "100%" }}>
                       <iframe
                         id="gis-editor-iframe"
@@ -3988,7 +3988,7 @@ export default function AdminDashboard() {
                         type="button"
                         onClick={handleUndoTrenchPoint}
                         disabled={trenchingLine.length === 0}
-                        style={{ flex: 0.8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: trenchingLine.length > 0 ? "#cbd5e1" : "#475569", cursor: trenchingLine.length > 0 ? "pointer" : "default" }}
+                        style={{ flex: 0.8, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: trenchingLine.length > 0 ? "#cbd5e1" : "#475569", cursor: trenchingLine.length > 0 ? "pointer" : "default" }}
                       >
                         ⏪ Undo
                       </button>
@@ -4010,7 +4010,7 @@ export default function AdminDashboard() {
                         type="button"
                         onClick={handleUndoUtilityPoint}
                         disabled={utilityPath.length === 0}
-                        style={{ flex: 0.8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: utilityPath.length > 0 ? "#cbd5e1" : "#475569", cursor: utilityPath.length > 0 ? "pointer" : "default" }}
+                        style={{ flex: 0.8, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: utilityPath.length > 0 ? "#cbd5e1" : "#475569", cursor: utilityPath.length > 0 ? "pointer" : "default" }}
                       >
                         ⏪ Undo
                       </button>
@@ -4018,25 +4018,25 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Upgraded "How-To GIS Guide" instructional widget */}
-                  <div className="glass" style={{ padding: "16px", borderRadius: 16, border: "1px solid rgba(255,255,255,0.06)", background: "rgba(255, 255, 255, 0.01)", marginTop: 4 }}>
+                  <div className="glass" style={{ padding: "16px", borderRadius: 16, border: "1px solid var(--border)", background: "rgba(255, 255, 255, 0.01)", marginTop: 4 }}>
                     <h4 style={{ fontSize: 12, fontWeight: 800, color: "#a78bfa", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 10px", display: "flex", alignItems: "center", gap: 6 }}>
                       <span>📖 Interactive Map Quick Guide</span>
                     </h4>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 11, color: "#94a3b8", lineHeight: 1.5 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 11, color: "var(--dim)", lineHeight: 1.5 }}>
                       <div>
-                        <strong style={{ color: "#f1f5f9", display: "block", marginBottom: 2 }}>📍 Drag & Change Locations:</strong>
+                        <strong style={{ color: "var(--text)", display: "block", marginBottom: 2 }}>📍 Drag & Change Locations:</strong>
                         Grab the <span style={{ color: "#4ade80" }}>Green Start Pin</span> or <span style={{ color: "#f87171" }}>Red End Pin</span> directly on the map with your hand/mouse and drag to change coordinates. Input fields sync automatically!
                       </div>
                       <div>
-                        <strong style={{ color: "#f1f5f9", display: "block", marginBottom: 2 }}>⚡ Place HDD & Terminations:</strong>
+                        <strong style={{ color: "var(--text)", display: "block", marginBottom: 2 }}>⚡ Place HDD & Terminations:</strong>
                         Select <b>HDD PIN</b> or <b>GRID TERM</b> above, then click anywhere on the map to add yellow dots or blue squares.
                       </div>
                       <div>
-                        <strong style={{ color: "#f1f5f9", display: "block", marginBottom: 2 }}>🛣️ Draw Trenching & Utility Paths:</strong>
+                        <strong style={{ color: "var(--text)", display: "block", marginBottom: 2 }}>🛣️ Draw Trenching & Utility Paths:</strong>
                         Select <b>TRENCH LINE</b> or <b>UTILITY LINK</b>, and click step-by-step on the map. They will join together into beautiful, professional lines.
                       </div>
                       <div>
-                        <strong style={{ color: "#f1f5f9", display: "block", marginBottom: 2 }}>⏪ Undo & Clear (Delete Lines):</strong>
+                        <strong style={{ color: "var(--text)", display: "block", marginBottom: 2 }}>⏪ Undo & Clear (Delete Lines):</strong>
                         Use <b>Undo Last Point</b> buttons to erase the last clicked point on a line. Use the red <b>Clear</b> buttons to delete whole paths/pins instantly.
                       </div>
                     </div>
@@ -4045,55 +4045,55 @@ export default function AdminDashboard() {
 
                 {/* RIGHT COLUMN: PARAMETERS EDITOR FORM */}
                 <form onSubmit={handleUpdateProject} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>Project parameters</span>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.03em" }}>Project parameters</span>
 
                   {/* Project Name */}
                   <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Project Name</label>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Project Name</label>
                     <input
                       type="text"
                       value={projName}
                       onChange={(e) => setProjName(e.target.value)}
                       required
-                      style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
+                      style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
                     />
                   </div>
 
                   {/* Code & District */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Corridor ID</label>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Corridor ID</label>
                       <input
                         type="text"
                         value={projCode}
                         onChange={(e) => setProjCode(e.target.value)}
                         required
-                        style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "monospace", outline: "none" }}
+                        style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 13, fontFamily: "monospace", outline: "none" }}
                       />
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>District</label>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>District</label>
                       <input
                         type="text"
                         value={projDistrict}
                         onChange={(e) => setProjDistrict(e.target.value)}
                         required
-                        style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
+                        style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
                       />
                     </div>
                   </div>
 
                   {/* Distance calculation display */}
                   <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Calculated Corridor Distance</label>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Calculated Corridor Distance</label>
                     <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                       <input
                         type="text"
                         value={projDistance}
                         readOnly
-                        style={{ flex: 1, height: 40, background: "rgba(0,0,0,0.4)", border: "1px solid rgba(6,182,212,0.2)", borderRadius: 12, padding: "0 14px", color: "#06b6d4", fontSize: 14, fontWeight: 800, fontFamily: "monospace", outline: "none" }}
+                        style={{ flex: 1, height: 40, background: "#ffffff", border: "1px solid rgba(6,182,212,0.2)", borderRadius: 12, padding: "0 14px", color: "#06b6d4", fontSize: 14, fontWeight: 800, fontFamily: "monospace", outline: "none" }}
                       />
-                      <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", width: 110, lineHeight: 1.2 }}>
+                      <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", width: 110, lineHeight: 1.2 }}>
                         📏 Great-Circle spherical calc
                       </span>
                     </div>
@@ -4101,32 +4101,32 @@ export default function AdminDashboard() {
 
                   {/* Description */}
                   <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Description</label>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Description</label>
                     <textarea
                       value={projDesc}
                       onChange={(e) => setProjDesc(e.target.value)}
                       required
                       rows={2}
-                      style={{ width: "100%", background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "10px 14px", color: "#f1f5f9", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none", resize: "none" }}
+                      style={{ width: "100%", background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "10px 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none", resize: "none" }}
                     />
                   </div>
 
                   {/* Start Location Parameters */}
-                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
+                  <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
                     <span style={{ fontSize: 11, fontWeight: 800, color: "#4ade80", textTransform: "uppercase" }}>Start Position Parameters</span>
                     <div style={{ marginTop: 6 }}>
-                      <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Junction/Station Label</label>
+                      <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Junction/Station Label</label>
                       <input
                         type="text"
                         value={projStartLabel}
                         onChange={(e) => setProjStartLabel(e.target.value)}
                         required
-                        style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, outline: "none" }}
+                        style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, outline: "none" }}
                       />
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
                       <div>
-                        <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Latitude</label>
+                        <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Latitude</label>
                         <input
                           type="text"
                           value={projStartLat}
@@ -4135,11 +4135,11 @@ export default function AdminDashboard() {
                             updateCalculatedDistance(e.target.value, projStartLng, projEndLat, projEndLng, trenchingLine);
                           }}
                           required
-                          style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                          style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
                         />
                       </div>
                       <div>
-                        <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Longitude</label>
+                        <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Longitude</label>
                         <input
                           type="text"
                           value={projStartLng}
@@ -4148,28 +4148,28 @@ export default function AdminDashboard() {
                             updateCalculatedDistance(projStartLat, e.target.value, projEndLat, projEndLng, trenchingLine);
                           }}
                           required
-                          style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                          style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
                         />
                       </div>
                     </div>
                   </div>
 
                   {/* End Location Parameters */}
-                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
+                  <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
                     <span style={{ fontSize: 11, fontWeight: 800, color: "#f87171", textTransform: "uppercase" }}>End Position Parameters</span>
                     <div style={{ marginTop: 6 }}>
-                      <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Junction/Station Label</label>
+                      <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Junction/Station Label</label>
                       <input
                         type="text"
                         value={projEndLabel}
                         onChange={(e) => setProjEndLabel(e.target.value)}
                         required
-                        style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, outline: "none" }}
+                        style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, outline: "none" }}
                       />
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
                       <div>
-                        <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Latitude</label>
+                        <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Latitude</label>
                         <input
                           type="text"
                           value={projEndLat}
@@ -4178,11 +4178,11 @@ export default function AdminDashboard() {
                             updateCalculatedDistance(projStartLat, projStartLng, e.target.value, projEndLng, trenchingLine);
                           }}
                           required
-                          style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                          style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
                         />
                       </div>
                       <div>
-                        <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 700 }}>Longitude</label>
+                        <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Longitude</label>
                         <input
                           type="text"
                           value={projEndLng}
@@ -4191,24 +4191,24 @@ export default function AdminDashboard() {
                             updateCalculatedDistance(projStartLat, projStartLng, projEndLat, e.target.value, trenchingLine);
                           }}
                           required
-                          style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "#f1f5f9", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                          style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
                         />
                       </div>
                     </div>
                   </div>
 
                   {/* Submit Action Buttons */}
-                  <div style={{ display: "flex", gap: 12, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 14, marginTop: 6 }}>
+                  <div style={{ display: "flex", gap: 12, borderTop: "1px solid var(--border)", paddingTop: 14, marginTop: 6 }}>
                     <button
                       type="button"
                       onClick={() => setEditingProjectItem(null)}
-                      style={{ flex: 0.8, minHeight: 44, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#94a3b8", fontSize: 13, fontWeight: 750, cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                      style={{ flex: 0.8, minHeight: 44, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--dim)", fontSize: 13, fontWeight: 750, cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      style={{ flex: 1.2, minHeight: 44, background: "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)", border: "none", borderRadius: 12, color: "white", fontSize: 13, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 15px rgba(6, 182, 212, 0.25)" }}
+                      style={{ flex: 1.2, minHeight: 44, background: "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)", border: "none", borderRadius: 12, color: "var(--text)", fontSize: 13, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 15px rgba(6, 182, 212, 0.25)" }}
                     >
                       ✓ Save Project & GIS
                     </button>
@@ -4223,28 +4223,28 @@ export default function AdminDashboard() {
 
       {/* Credentials Modal */}
       {approvedCreds && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(6,9,18,0.85)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1000, animation: "fadeIn 0.2s ease" }}>
-          <div className="glass glow-cyan" style={{ width: "100%", maxWidth: 400, padding: 30, background: "linear-gradient(135deg, #0e0829 0%, #060912 100%)", borderRadius: 24, textAlign: "center", border: "1px solid rgba(6,182,212,0.3)" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(255,255,255,0.9)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1000, animation: "fadeIn 0.2s ease" }}>
+          <div className="glass glow-cyan" style={{ width: "100%", maxWidth: 400, padding: 30, background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)", borderRadius: 24, textAlign: "center", border: "1px solid rgba(6,182,212,0.3)" }}>
             <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(6,182,212,0.15)", border: "1px solid rgba(6,182,212,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
-            <h3 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", marginBottom: 8 }}>Credentials Active!</h3>
-            <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 20, lineHeight: 1.5 }}>
+            <h3 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", marginBottom: 8 }}>Credentials Active!</h3>
+            <p style={{ fontSize: 13, color: "var(--dim)", marginBottom: 20, lineHeight: 1.5 }}>
               Account is active. The credentials have been sent via email from <strong style={{ color: "#06b6d4" }}>ajipaul96@gmail.com</strong>! You can also copy them below:
             </p>
             
-            <div style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: 18, marginBottom: 24, textAlign: "left", display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ background: "#ffffff", border: "1px solid var(--border)", borderRadius: 16, padding: 18, marginBottom: 24, textAlign: "left", display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" }}>Login Email</span>
-                  <p style={{ fontSize: 14, fontFamily: "monospace", color: "#e2e8f0", margin: "2px 0 0" }}>{approvedCreds.email}</p>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Login Email</span>
+                  <p style={{ fontSize: 14, fontFamily: "monospace", color: "var(--text)", margin: "2px 0 0" }}>{approvedCreds.email}</p>
                 </div>
                 <button onClick={() => { navigator.clipboard.writeText(approvedCreds.email); showToast("📋 Email copied!"); }} style={{ background: "rgba(6,182,212,0.1)", border: "1px solid rgba(6,182,212,0.2)", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 600, color: "#06b6d4", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}>Copy</button>
               </div>
-              <div style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
+              <div style={{ height: 1, background: "var(--surface)" }} />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" }}>Password</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Password</span>
                   <p style={{ fontSize: 16, fontFamily: "monospace", fontWeight: 800, color: "#a78bfa", margin: "2px 0 0", letterSpacing: "1px" }}>{approvedCreds.password}</p>
                 </div>
                 <button onClick={() => { navigator.clipboard.writeText(approvedCreds.password); showToast("📋 Password copied!"); }} style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 600, color: "#a78bfa", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}>Copy</button>
@@ -4268,13 +4268,13 @@ export default function AdminDashboard() {
 
       {/* ADMINISTRATIVE USER MANAGEMENT MODAL */}
       {selectedUser && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(6,9,18,0.85)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1100, animation: "fadeIn 0.2s ease" }}>
-          <div className="glass" style={{ width: "100%", maxWidth: 420, padding: "28px 24px", background: "linear-gradient(135deg, #0f082e 0%, #060912 100%)", borderRadius: 24, border: "1px solid rgba(255, 255, 255, 0.08)", boxShadow: "0 24px 64px rgba(0, 0, 0, 0.7)", color: "#f1f5f9" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(255,255,255,0.9)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1100, animation: "fadeIn 0.2s ease" }}>
+          <div className="glass" style={{ width: "100%", maxWidth: 420, padding: "28px 24px", background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)", borderRadius: 24, border: "1px solid rgba(255, 255, 255, 0.08)", boxShadow: "0 24px 64px rgba(0, 0, 0, 0.7)", color: "var(--text)" }}>
             
             {/* Modal Header */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
               <h3 style={{ fontSize: 18, fontWeight: 900, letterSpacing: "-0.02em", margin: 0 }}>Manage Crew Profile</h3>
-              <button onClick={() => setSelectedUser(null)} style={{ background: "rgba(255, 255, 255, 0.04)", border: "1px solid rgba(255, 255, 255, 0.08)", width: 32, height: 32, borderRadius: "50%", color: "#94a3b8", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button onClick={() => setSelectedUser(null)} style={{ background: "rgba(255, 255, 255, 0.04)", border: "1px solid rgba(255, 255, 255, 0.08)", width: 32, height: 32, borderRadius: "50%", color: "var(--dim)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
@@ -4289,7 +4289,7 @@ export default function AdminDashboard() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "white",
+                color: "var(--text)",
                 fontSize: 24,
                 fontWeight: 800,
                 border: "2px solid rgba(255,255,255,0.1)",
@@ -4304,35 +4304,35 @@ export default function AdminDashboard() {
             <form onSubmit={handleUpdateUser} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {/* Name field */}
               <div>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Display Name</label>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Display Name</label>
                 <input
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   required
-                  style={{ width: "100%", height: 44, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 14, fontFamily: "Outfit, sans-serif", outline: "none" }}
+                  style={{ width: "100%", height: 44, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 14, fontFamily: "Outfit, sans-serif", outline: "none" }}
                 />
               </div>
 
               {/* Email field */}
               <div>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Email Address</label>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Email Address</label>
                 <input
                   type="email"
                   value={editEmail}
                   onChange={(e) => setEditEmail(e.target.value)}
                   required
-                  style={{ width: "100%", height: 44, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 14, fontFamily: "monospace", outline: "none" }}
+                  style={{ width: "100%", height: 44, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 14, fontFamily: "monospace", outline: "none" }}
                 />
               </div>
 
               {/* Role selector field */}
               <div>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Security & Operations Role</label>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Security & Operations Role</label>
                 <select
                   value={editRole}
                   onChange={(e) => setEditRole(e.target.value)}
-                  style={{ width: "100%", height: 44, background: "#060912", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "#f1f5f9", fontSize: 14, outline: "none", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                  style={{ width: "100%", height: 44, background: "var(--bg)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 14, outline: "none", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
                 >
                   <option value="supervisor">Supervisor (Field Engineer)</option>
                   <option value="client">Client (KSEB / Board Member)</option>
@@ -4344,11 +4344,11 @@ export default function AdminDashboard() {
               {/* Account Status Display */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 4 }}>
                 <div>
-                  <span style={{ fontSize: 10, color: "#475569", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Operational ID</span>
-                  <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 700, fontFamily: "monospace", color: "#94a3b8" }}>{(selectedUser as any).login_id}</p>
+                  <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Operational ID</span>
+                  <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 700, fontFamily: "monospace", color: "var(--dim)" }}>{(selectedUser as any).login_id}</p>
                 </div>
                 <div>
-                  <span style={{ fontSize: 10, color: "#475569", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</span>
+                  <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</span>
                   <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 800, color: editStatus === "blocked" ? "#f87171" : "#4ade80", textTransform: "uppercase" }}>{editStatus}</p>
                 </div>
               </div>
@@ -4358,7 +4358,7 @@ export default function AdminDashboard() {
                 <button
                   type="submit"
                   disabled={savingUser}
-                  style={{ width: "100%", minHeight: 44, background: "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)", border: "none", borderRadius: 12, color: "white", fontSize: 14, fontWeight: 750, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 15px rgba(6, 182, 212, 0.2)" }}
+                  style={{ width: "100%", minHeight: 44, background: "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)", border: "none", borderRadius: 12, color: "var(--text)", fontSize: 14, fontWeight: 750, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 15px rgba(6, 182, 212, 0.2)" }}
                 >
                   {savingUser ? <div className="spinner" style={{ width: 14, height: 14 }} /> : "✓ Apply & Save Changes"}
                 </button>
@@ -4420,10 +4420,10 @@ export default function AdminDashboard() {
                 document.body.removeChild(link);
               }}
               style={{
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.12)",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
                 borderRadius: 10,
-                color: "#e2e8f0",
+                color: "var(--text)",
                 fontSize: 12,
                 fontWeight: 750,
                 padding: "8px 16px",
@@ -4439,9 +4439,9 @@ export default function AdminDashboard() {
                 width: 38,
                 height: 38,
                 borderRadius: "50%",
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.15)",
-                color: "white",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                color: "var(--text)",
                 fontSize: 18,
                 fontWeight: "bold",
                 cursor: "pointer",
@@ -4453,7 +4453,7 @@ export default function AdminDashboard() {
               ✕
             </button>
           </div>
-          <div style={{ maxWidth: "90%", maxHeight: "80%", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, overflow: "hidden", background: "#05070c", boxShadow: "0 24px 70px rgba(0,0,0,0.8)" }}>
+          <div style={{ maxWidth: "90%", maxHeight: "80%", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", background: "#05070c", boxShadow: "0 24px 70px rgba(0,0,0,0.8)" }}>
             <img 
               src={adminActiveImagePreview} 
               alt="High resolution receipt / attachment preview" 
@@ -4461,13 +4461,13 @@ export default function AdminDashboard() {
               onClick={(e) => e.stopPropagation()}
             />
           </div>
-          <p style={{ color: "#94a3b8", fontSize: 13, marginTop: 16, fontWeight: 500, letterSpacing: "0.03em" }}>Click anywhere outside to exit full-screen view</p>
+          <p style={{ color: "var(--dim)", fontSize: 13, marginTop: 16, fontWeight: 500, letterSpacing: "0.03em" }}>Click anywhere outside to exit full-screen view</p>
         </div>
       )}
 
       {/* Toast */}
       {toast && (
-        <div style={{ position: "fixed", bottom: 24, left: 16, right: 16, background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "#f1f5f9", zIndex: 10000, textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.5)", animation: "fadeIn 0.3s ease" }}>
+        <div style={{ position: "fixed", bottom: 24, left: 16, right: 16, background: "#1e293b", border: "1px solid var(--border)", borderRadius: 14, padding: "14px 18px", fontSize: 14, fontWeight: 600, color: "var(--text)", zIndex: 10000, textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.5)", animation: "fadeIn 0.3s ease" }}>
           {toast}
         </div>
       )}

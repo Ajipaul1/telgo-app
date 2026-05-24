@@ -774,7 +774,7 @@ export default function SupervisorDashboard() {
   }
 
   return (
-    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", background: "#060912", color: "#e2e8f0" }}>
+    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", background: "var(--bg)", color: "var(--text)" }}>
       <style>{`
         .menu-grid {
           display: grid;
@@ -808,13 +808,13 @@ export default function SupervisorDashboard() {
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
               <button 
                 onClick={() => { setIsProjectsOpen(false); setSelectedProjectItem(null); }}
-                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f1f5f9", cursor: "pointer" }}
+                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)", cursor: "pointer" }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
               </button>
               <div>
                 <p style={{ fontSize: 9, fontWeight: 800, color: "#06b6d4", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Telgo Power Corridors</p>
-                <h1 style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Projects Directory</h1>
+                <h1 style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Projects Directory</h1>
               </div>
             </div>
 
@@ -846,7 +846,7 @@ export default function SupervisorDashboard() {
                         {p.code}
                       </span>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#94a3b8" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--dim)" }}>
                       <span>District: <b>{p.district}</b></span>
                       <span>Distance: <b>{p.distance}</b></span>
                     </div>
@@ -857,12 +857,12 @@ export default function SupervisorDashboard() {
 
             {/* Selected Project Map (Read-Only) */}
             {selectedProjectItem && (
-              <div className="glass fade-in" style={{ padding: 18, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, background: "rgba(255,255,255,0.01)", textAlign: "left" }}>
-                <h2 style={{ fontSize: 14, fontWeight: 900, color: "#f1f5f9", margin: 0 }}>{selectedProjectItem.name}</h2>
-                <p style={{ fontSize: 11, color: "#94a3b8", margin: "4px 0 14px" }}>{selectedProjectItem.description}</p>
+              <div className="glass fade-in" style={{ padding: 18, border: "1px solid var(--border)", borderRadius: 20, background: "var(--surface)", textAlign: "left" }}>
+                <h2 style={{ fontSize: 14, fontWeight: 900, color: "var(--text)", margin: 0 }}>{selectedProjectItem.name}</h2>
+                <p style={{ fontSize: 11, color: "var(--dim)", margin: "4px 0 14px" }}>{selectedProjectItem.description}</p>
 
                 {/* Map Display Card */}
-                <div className="glass" style={{ padding: 0, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, overflow: "hidden", background: "#080b13", marginBottom: 14 }}>
+                <div className="glass" style={{ padding: 0, border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", background: "var(--bg)", marginBottom: 14 }}>
                   <div style={{ position: "relative", height: 220, width: "100%" }}>
                     <iframe
                       title="Project Corridor Map"
@@ -977,16 +977,16 @@ export default function SupervisorDashboard() {
                 </div>
 
                 {/* Corridor Coords Details Card */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: "var(--surface)", border: "1px solid var(--border)", padding: 12, borderRadius: 14 }}>
                   <div>
-                    <span style={{ fontSize: 8, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Start Position</span>
+                    <span style={{ fontSize: 8, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase" }}>Start Position</span>
                     <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 750, color: "#4ade80" }}>{selectedProjectItem.startLabel}</p>
-                    <span style={{ fontSize: 9, fontFamily: "monospace", color: "#64748b" }}>{selectedProjectItem.startCoords[0]}° N, {selectedProjectItem.startCoords[1]}° E</span>
+                    <span style={{ fontSize: 9, fontFamily: "monospace", color: "var(--dim)" }}>{selectedProjectItem.startCoords[0]}° N, {selectedProjectItem.startCoords[1]}° E</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: 8, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>End Position</span>
+                    <span style={{ fontSize: 8, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase" }}>End Position</span>
                     <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 750, color: "#f87171" }}>{selectedProjectItem.endLabel}</p>
-                    <span style={{ fontSize: 9, fontFamily: "monospace", color: "#64748b" }}>{selectedProjectItem.endCoords[0]}° N, {selectedProjectItem.endCoords[1]}° E</span>
+                    <span style={{ fontSize: 9, fontFamily: "monospace", color: "var(--dim)" }}>{selectedProjectItem.endCoords[0]}° N, {selectedProjectItem.endCoords[1]}° E</span>
                   </div>
                 </div>
               </div>
@@ -1006,7 +1006,7 @@ export default function SupervisorDashboard() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "white",
+                color: "var(--text)",
                 fontSize: 26,
                 fontWeight: 800,
                 boxShadow: "0 10px 28px rgba(6,182,212,0.2)",
@@ -1015,8 +1015,8 @@ export default function SupervisorDashboard() {
               }}>
                 {(user?.fullName || "U").charAt(0)}
               </div>
-              <h2 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", margin: "12px 0 2px" }}>{user?.fullName}</h2>
-              <p style={{ fontSize: 12, color: "#64748b", margin: 0, fontFamily: "monospace" }}>{user?.loginId}</p>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "12px 0 2px" }}>{user?.fullName}</h2>
+              <p style={{ fontSize: 12, color: "var(--dim)", margin: 0, fontFamily: "monospace" }}>{user?.loginId}</p>
             </div>
 
             {/* GRID OF MODULES */}
@@ -1057,7 +1057,7 @@ export default function SupervisorDashboard() {
                   </svg>
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", margin: "0 0 2px" }}>Attendance</h4>
+                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "0 0 2px" }}>Attendance</h4>
                   <span style={{ fontSize: 9, color: isShiftActive ? "#a78bfa" : "#64748b", fontWeight: 700 }}>
                     {isShiftActive ? `Active (${checkInTime})` : "Pending Sign In"}
                   </span>
@@ -1068,8 +1068,8 @@ export default function SupervisorDashboard() {
               <div 
                 onClick={() => { setIsProjectsOpen(true); if (projectsList.length > 0) setSelectedProjectItem(projectsList[0]); }}
                 style={{
-                  background: "rgba(255,255,255,0.01)",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
                   borderRadius: 18,
                   padding: "18px 14px",
                   cursor: "pointer",
@@ -1099,7 +1099,7 @@ export default function SupervisorDashboard() {
                   </svg>
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", margin: "0 0 2px" }}>Projects</h4>
+                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "0 0 2px" }}>Projects</h4>
                   <span style={{ fontSize: 9, color: "#06b6d4", fontWeight: 700 }}>Corridors</span>
                 </div>
               </div>
@@ -1107,8 +1107,8 @@ export default function SupervisorDashboard() {
               {/* MODULE 3: PROJECT ASSIGNMENT DETAILS */}
               <div 
                 style={{
-                  background: "rgba(255,255,255,0.01)",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
                   borderRadius: 18,
                   padding: "18px 14px",
                   display: "flex",
@@ -1135,7 +1135,7 @@ export default function SupervisorDashboard() {
                   </svg>
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", margin: "0 0 2px" }}>Corridor</h4>
+                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "0 0 2px" }}>Corridor</h4>
                   <span style={{ fontSize: 9, color: "#06b6d4", fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100, display: "block" }}>Vadakkekotta</span>
                 </div>
               </div>
@@ -1150,8 +1150,8 @@ export default function SupervisorDashboard() {
                   setReportStep(1);
                 }}
                 style={{
-                  background: "rgba(255,255,255,0.01)",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
                   borderRadius: 18,
                   padding: "18px 14px",
                   cursor: "pointer",
@@ -1183,7 +1183,7 @@ export default function SupervisorDashboard() {
                   </svg>
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", margin: "0 0 2px" }}>Daily Report</h4>
+                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "0 0 2px" }}>Daily Report</h4>
                   <span style={{ fontSize: 9, color: "#fbbf24", fontWeight: 700 }}>Site Update</span>
                 </div>
               </div>
@@ -1196,10 +1196,10 @@ export default function SupervisorDashboard() {
               style={{
                 width: "100%",
                 minHeight: 46,
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.06)",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
                 borderRadius: 14,
-                color: "#94a3b8",
+                color: "var(--dim)",
                 fontSize: 13,
                 fontWeight: 750,
                 cursor: "pointer",
@@ -1262,7 +1262,7 @@ export default function SupervisorDashboard() {
             width: "100%",
             maxWidth: 400,
             background: "linear-gradient(135deg, #0e0828 0%, #060912 100%)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            border: "1px solid var(--border)",
             borderRadius: 24,
             padding: 30,
             textAlign: "center",
@@ -1270,16 +1270,16 @@ export default function SupervisorDashboard() {
           }}>
             {/* Header */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-              <span style={{ fontSize: 10, fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" }}>Duty Registry</span>
+              <span style={{ fontSize: 10, fontWeight: 800, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Duty Registry</span>
               <button 
                 onClick={() => setIsAttendanceOpen(false)}
                 style={{
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
                   width: 28,
                   height: 28,
                   borderRadius: "50%",
-                  color: "#94a3b8",
+                  color: "var(--dim)",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
@@ -1309,11 +1309,11 @@ export default function SupervisorDashboard() {
               </svg>
             </div>
 
-            <h3 style={{ fontSize: 18, fontWeight: 900, color: "#f1f5f9", margin: "0 0 8px" }}>On-Site Duty Shift</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 900, color: "var(--text)", margin: "0 0 8px" }}>On-Site Duty Shift</h3>
             
             {isShiftActive ? (
               <div style={{ marginBottom: 24 }}>
-                <p style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.5, margin: "0 0 16px" }}>
+                <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5, margin: "0 0 16px" }}>
                   Your daily attendance was successfully marked at <strong style={{ color: "#a78bfa" }}>{checkInTime}</strong>. Silent background telemetry is running to verify operations coverage.
                 </p>
                 <div style={{ background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.15)", borderRadius: 12, padding: "10px 12px", display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -1323,7 +1323,7 @@ export default function SupervisorDashboard() {
               </div>
             ) : (
               <div style={{ marginBottom: 24 }}>
-                <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.5, margin: 0 }}>
+                <p style={{ fontSize: 13, color: "var(--dim)", lineHeight: 1.5, margin: 0 }}>
                   Click below to sign in and mark your daily attendance. The system will securely verify your device coordinates and synchronize background logs.
                 </p>
               </div>
@@ -1340,7 +1340,7 @@ export default function SupervisorDashboard() {
                   background: "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)",
                   border: "none",
                   borderRadius: 12,
-                  color: "white",
+                  color: "var(--text)",
                   fontSize: 14,
                   fontWeight: 800,
                   cursor: checkingIn ? "not-allowed" : "pointer",
@@ -1403,7 +1403,7 @@ export default function SupervisorDashboard() {
                 minHeight: 40,
                 background: "transparent",
                 border: "none",
-                color: "#64748b",
+                color: "var(--dim)",
                 fontSize: 13,
                 fontWeight: 700,
                 cursor: "pointer",
@@ -1434,7 +1434,7 @@ export default function SupervisorDashboard() {
             width: "100%",
             maxWidth: 460,
             background: "linear-gradient(135deg, #0e0828 0%, #060912 100%)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            border: "1px solid var(--border)",
             borderRadius: 24,
             padding: "24px 20px",
             boxShadow: "0 24px 64px rgba(0,0,0,0.8)",
@@ -1444,10 +1444,10 @@ export default function SupervisorDashboard() {
             gap: 16
           }}>
             {/* Modal Header */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: 12 }}>
               <div>
                 <span style={{ fontSize: 9, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.1em" }}>DAILY OPERATION HUB</span>
-                <h3 style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", margin: "2px 0 0" }}>Daily Report Wizard</h3>
+                <h3 style={{ fontSize: 16, fontWeight: 900, color: "var(--text)", margin: "2px 0 0" }}>Daily Report Wizard</h3>
               </div>
               <button 
                 onClick={() => {
@@ -1455,14 +1455,14 @@ export default function SupervisorDashboard() {
                     setIsDailyReportOpen(false);
                   }
                 }}
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", width: 28, height: 28, borderRadius: "50%", color: "#94a3b8", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                style={{ background: "var(--surface)", border: "1px solid var(--border)", width: 28, height: 28, borderRadius: "50%", color: "var(--dim)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
 
             {/* Step Progress Bar */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: "10px 14px", borderRadius: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--surface)", border: "1px solid var(--border)", padding: "10px 14px", borderRadius: 14 }}>
               {[1, 2, 3, 4, 5].map((step) => (
                 <div key={step} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <div style={{
@@ -1476,25 +1476,25 @@ export default function SupervisorDashboard() {
                     justifyContent: "center",
                     fontSize: 10,
                     fontWeight: 800,
-                    color: "white"
+                    color: "var(--text)"
                   }}>
                     {reportStep > step ? "✓" : step}
                   </div>
                   {step < 5 && <div style={{ width: 14, height: 1, background: reportStep > step ? "#10b981" : "rgba(255,255,255,0.08)" }} />}
                 </div>
               ))}
-              <span style={{ fontSize: 10, fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>
+              <span style={{ fontSize: 10, fontWeight: 800, color: "var(--dim)", textTransform: "uppercase" }}>
                 Step {reportStep} of 5
               </span>
             </div>
 
             {/* Project Selection Dropdown - Visible on EVERY page */}
-            <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", padding: 12, borderRadius: 16 }}>
+            <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 12, borderRadius: 16 }}>
               <label style={{ display: "block", fontSize: 10, fontWeight: 800, color: "#67e8f9", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Active Project Corridor</label>
               <select
                 value={reportProjectId}
                 onChange={(e) => setReportProjectId(e.target.value)}
-                style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none", cursor: "pointer", fontWeight: 700 }}
+                style={{ width: "100%", height: 38, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 10px", color: "var(--muted)", fontSize: 12, outline: "none", cursor: "pointer", fontWeight: 700 }}
               >
                 {projectsList.map((p) => (
                   <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
@@ -1512,7 +1512,7 @@ export default function SupervisorDashboard() {
                   
                   {/* Date picker */}
                   <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Report Date</label>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase" }}>Report Date</label>
                     <input
                       type="date"
                       value={reportDate}
@@ -1523,27 +1523,27 @@ export default function SupervisorDashboard() {
                         d.setDate(d.getDate() - 7);
                         return d.toISOString().split("T")[0];
                       })()}
-                      style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none", fontWeight: 700 }}
+                      style={{ width: "100%", height: 38, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 10px", color: "var(--muted)", fontSize: 12, outline: "none", fontWeight: 700 }}
                       required
                     />
                   </div>
 
                   {/* Labor Wages Section */}
-                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 10 }}>
                     <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Labor Count & Attendance</span>
                     
                     {/* Crew count */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 12, color: "#cbd5e1" }}>On-Site Crew Count</span>
+                      <span style={{ fontSize: 12, color: "var(--muted)" }}>On-Site Crew Count</span>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <button type="button" onClick={() => setLaborCount(Math.max(0, laborCount - 1))} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "white", cursor: "pointer", fontWeight: 900 }}>-</button>
+                        <button type="button" onClick={() => setLaborCount(Math.max(0, laborCount - 1))} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", cursor: "pointer", fontWeight: 900 }}>-</button>
                         <input
                           type="number"
                           value={laborCount}
                           onChange={(e) => setLaborCount(Math.max(0, parseInt(e.target.value) || 0))}
-                          style={{ width: 40, height: 28, background: "transparent", border: "none", color: "white", fontSize: 14, fontWeight: 800, textAlign: "center", outline: "none" }}
+                          style={{ width: 40, height: 28, background: "transparent", border: "none", color: "var(--text)", fontSize: 14, fontWeight: 800, textAlign: "center", outline: "none" }}
                         />
-                        <button type="button" onClick={() => setLaborCount(laborCount + 1)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "white", cursor: "pointer", fontWeight: 900 }}>+</button>
+                        <button type="button" onClick={() => setLaborCount(laborCount + 1)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", cursor: "pointer", fontWeight: 900 }}>+</button>
                       </div>
                     </div>
 
@@ -1556,7 +1556,7 @@ export default function SupervisorDashboard() {
                           onChange={(e) => setIncludeSupervisor(e.target.checked)}
                           style={{ accentColor: "#06b6d4", width: 16, height: 16 }}
                         />
-                        <span style={{ fontSize: 12, color: "#cbd5e1", fontWeight: 700 }}>Include Supervisor attendance (₹1200)</span>
+                        <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 700 }}>Include Supervisor attendance (₹1200)</span>
                       </label>
                       {includeSupervisor && (
                         <input
@@ -1564,26 +1564,26 @@ export default function SupervisorDashboard() {
                           placeholder="Supervisor narration note..."
                           value={supervisorNarration}
                           onChange={(e) => setSupervisorNarration(e.target.value)}
-                          style={{ width: "100%", height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 10px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                          style={{ width: "100%", height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 10px", color: "var(--muted)", fontSize: 11, outline: "none" }}
                         />
                       )}
                     </div>
 
                     {/* Wages Narration */}
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <span style={{ fontSize: 9, color: "#64748b", fontWeight: 800, textTransform: "uppercase" }}>Wages / Attendance Narration</span>
+                      <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 800, textTransform: "uppercase" }}>Wages / Attendance Narration</span>
                       <input
                         type="text"
                         placeholder="General wages narration notes..."
                         value={laborWagesNarration}
                         onChange={(e) => setLaborWagesNarration(e.target.value)}
-                        style={{ width: "100%", height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 10px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                        style={{ width: "100%", height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 10px", color: "var(--muted)", fontSize: 11, outline: "none" }}
                       />
                     </div>
                   </div>
 
                   {/* Overtime Workers Section */}
-                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Overtime Workers</span>
                       <button
@@ -1596,11 +1596,11 @@ export default function SupervisorDashboard() {
                     </div>
 
                     {otWorkers.length === 0 ? (
-                      <p style={{ margin: 0, fontSize: 11, color: "#64748b", textAlign: "center" }}>No active overtime entries.</p>
+                      <p style={{ margin: 0, fontSize: 11, color: "var(--dim)", textAlign: "center" }}>No active overtime entries.</p>
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {otWorkers.map((item, idx) => (
-                          <div key={item.id} style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                          <div key={item.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <span style={{ fontSize: 10, color: "#a78bfa", fontWeight: 800 }}>Group #{idx + 1}</span>
                               <button
@@ -1613,7 +1613,7 @@ export default function SupervisorDashboard() {
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
                               <div>
-                                <span style={{ fontSize: 9, color: "#64748b" }}>Qty</span>
+                                <span style={{ fontSize: 9, color: "var(--dim)" }}>Qty</span>
                                 <input
                                   type="number"
                                   min="1"
@@ -1622,11 +1622,11 @@ export default function SupervisorDashboard() {
                                     const val = Math.max(1, parseInt(e.target.value) || 1);
                                     setOtWorkers(otWorkers.map((x) => x.id === item.id ? { ...x, workerCount: val } : x));
                                   }}
-                                  style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 6px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                                  style={{ width: "100%", height: 28, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 6px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                                 />
                               </div>
                               <div>
-                                <span style={{ fontSize: 9, color: "#64748b" }}>Rate (₹/hr)</span>
+                                <span style={{ fontSize: 9, color: "var(--dim)" }}>Rate (₹/hr)</span>
                                 <input
                                   type="number"
                                   value={item.rate}
@@ -1634,11 +1634,11 @@ export default function SupervisorDashboard() {
                                     const val = Math.max(0, parseInt(e.target.value) || 0);
                                     setOtWorkers(otWorkers.map((x) => x.id === item.id ? { ...x, rate: val } : x));
                                   }}
-                                  style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 6px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                                  style={{ width: "100%", height: 28, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 6px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                                 />
                               </div>
                               <div>
-                                <span style={{ fontSize: 9, color: "#64748b" }}>Hours</span>
+                                <span style={{ fontSize: 9, color: "var(--dim)" }}>Hours</span>
                                 <input
                                   type="number"
                                   value={item.hours}
@@ -1646,7 +1646,7 @@ export default function SupervisorDashboard() {
                                     const val = Math.max(0, parseFloat(e.target.value) || 0);
                                     setOtWorkers(otWorkers.map((x) => x.id === item.id ? { ...x, hours: val } : x));
                                   }}
-                                  style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 6px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                                  style={{ width: "100%", height: 28, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 6px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                                 />
                               </div>
                             </div>
@@ -1657,7 +1657,7 @@ export default function SupervisorDashboard() {
                               onChange={(e) => {
                                 setOtWorkers(otWorkers.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
                               }}
-                              style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                              style={{ width: "100%", height: 28, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 8px", color: "var(--muted)", fontSize: 11, outline: "none" }}
                             />
                             <div style={{ fontSize: 10, color: "#10b981", textAlign: "right", fontWeight: 700 }}>
                               Subtotal: ₹{item.workerCount * item.rate * item.hours}
@@ -1672,7 +1672,7 @@ export default function SupervisorDashboard() {
                   <div style={{ background: "rgba(16, 185, 129, 0.05)", border: "1px solid rgba(16, 185, 129, 0.15)", padding: 12, borderRadius: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
                       <span style={{ fontSize: 10, color: "#10b981", fontWeight: 800, textTransform: "uppercase" }}>Total Wages Sum</span>
-                      <p style={{ margin: 0, fontSize: 8, color: "#64748b" }}>(Crew + Supervisor + OT)</p>
+                      <p style={{ margin: 0, fontSize: 8, color: "var(--dim)" }}>(Crew + Supervisor + OT)</p>
                     </div>
                     <span style={{ fontSize: 18, fontWeight: 950, color: "#10b981" }}>
                       ₹{calculatedWages}
@@ -1680,7 +1680,7 @@ export default function SupervisorDashboard() {
                   </div>
 
                   {/* Dynamic Expenses Builder - Fuel */}
-                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Fuel Expenses</span>
                       <button
@@ -1693,9 +1693,9 @@ export default function SupervisorDashboard() {
                     </div>
 
                     {fuelExpensesList.map((item, idx) => (
-                      <div key={item.id} style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div key={item.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700 }}>Fuel #{idx + 1}</span>
+                          <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700 }}>Fuel #{idx + 1}</span>
                           <button
                             type="button"
                             onClick={() => setFuelExpensesList(fuelExpensesList.filter((x) => x.id !== item.id))}
@@ -1712,7 +1712,7 @@ export default function SupervisorDashboard() {
                             onChange={(e) => {
                               setFuelExpensesList(fuelExpensesList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
                             }}
-                            style={{ height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                            style={{ height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                           />
                           <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -1733,7 +1733,7 @@ export default function SupervisorDashboard() {
                         </div>
                         {item.billImage && (
                           <div style={{ textAlign: "center" }}>
-                            <img src={item.billImage} alt="bill thumb" style={{ maxWidth: 80, maxHeight: 60, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                            <img src={item.billImage} alt="bill thumb" style={{ maxWidth: 80, maxHeight: 60, borderRadius: 6, border: "1px solid var(--border)" }} />
                           </div>
                         )}
                         <input
@@ -1743,14 +1743,14 @@ export default function SupervisorDashboard() {
                           onChange={(e) => {
                             setFuelExpensesList(fuelExpensesList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
                           }}
-                          style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                          style={{ width: "100%", height: 28, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 8px", color: "var(--muted)", fontSize: 11, outline: "none" }}
                         />
                       </div>
                     ))}
                   </div>
 
                   {/* Dynamic Expenses Builder - Travel */}
-                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Travel Expenses</span>
                       <button
@@ -1763,9 +1763,9 @@ export default function SupervisorDashboard() {
                     </div>
 
                     {travelExpensesList.map((item, idx) => (
-                      <div key={item.id} style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div key={item.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700 }}>Travel #{idx + 1}</span>
+                          <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700 }}>Travel #{idx + 1}</span>
                           <button
                             type="button"
                             onClick={() => setTravelExpensesList(travelExpensesList.filter((x) => x.id !== item.id))}
@@ -1782,7 +1782,7 @@ export default function SupervisorDashboard() {
                             onChange={(e) => {
                               setTravelExpensesList(travelExpensesList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
                             }}
-                            style={{ height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                            style={{ height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                           />
                           <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -1803,7 +1803,7 @@ export default function SupervisorDashboard() {
                         </div>
                         {item.billImage && (
                           <div style={{ textAlign: "center" }}>
-                            <img src={item.billImage} alt="bill thumb" style={{ maxWidth: 80, maxHeight: 60, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                            <img src={item.billImage} alt="bill thumb" style={{ maxWidth: 80, maxHeight: 60, borderRadius: 6, border: "1px solid var(--border)" }} />
                           </div>
                         )}
                         <input
@@ -1813,14 +1813,14 @@ export default function SupervisorDashboard() {
                           onChange={(e) => {
                             setTravelExpensesList(travelExpensesList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
                           }}
-                          style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                          style={{ width: "100%", height: 28, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 8px", color: "var(--muted)", fontSize: 11, outline: "none" }}
                         />
                       </div>
                     ))}
                   </div>
 
                   {/* Dynamic Expenses Builder - Room Rent */}
-                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Room Rent Expenses</span>
                       <button
@@ -1833,9 +1833,9 @@ export default function SupervisorDashboard() {
                     </div>
 
                     {roomRentList.map((item, idx) => (
-                      <div key={item.id} style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div key={item.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700 }}>Room Rent #{idx + 1}</span>
+                          <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700 }}>Room Rent #{idx + 1}</span>
                           <button
                             type="button"
                             onClick={() => setRoomRentList(roomRentList.filter((x) => x.id !== item.id))}
@@ -1852,7 +1852,7 @@ export default function SupervisorDashboard() {
                             onChange={(e) => {
                               setRoomRentList(roomRentList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
                             }}
-                            style={{ height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                            style={{ height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                           />
                           <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -1873,7 +1873,7 @@ export default function SupervisorDashboard() {
                         </div>
                         {item.billImage && (
                           <div style={{ textAlign: "center" }}>
-                            <img src={item.billImage} alt="bill thumb" style={{ maxWidth: 80, maxHeight: 60, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                            <img src={item.billImage} alt="bill thumb" style={{ maxWidth: 80, maxHeight: 60, borderRadius: 6, border: "1px solid var(--border)" }} />
                           </div>
                         )}
                         <input
@@ -1883,14 +1883,14 @@ export default function SupervisorDashboard() {
                           onChange={(e) => {
                             setRoomRentList(roomRentList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
                           }}
-                          style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                          style={{ width: "100%", height: 28, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 8px", color: "var(--muted)", fontSize: 11, outline: "none" }}
                         />
                       </div>
                     ))}
                   </div>
 
                   {/* Dynamic Expenses Builder - Tool Rent */}
-                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tool Rent Box</span>
                       <button
@@ -1903,9 +1903,9 @@ export default function SupervisorDashboard() {
                     </div>
 
                     {toolRentList.map((item, idx) => (
-                      <div key={item.id} style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div key={item.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700 }}>Tool Rent #{idx + 1}</span>
+                          <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700 }}>Tool Rent #{idx + 1}</span>
                           <button
                             type="button"
                             onClick={() => setToolRentList(toolRentList.filter((x) => x.id !== item.id))}
@@ -1921,7 +1921,7 @@ export default function SupervisorDashboard() {
                           onChange={(e) => {
                             setToolRentList(toolRentList.map((x) => x.id === item.id ? { ...x, toolName: e.target.value } : x));
                           }}
-                          style={{ width: "100%", height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                          style={{ width: "100%", height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                         />
                         <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
                           <input
@@ -1931,7 +1931,7 @@ export default function SupervisorDashboard() {
                             onChange={(e) => {
                               setToolRentList(toolRentList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
                             }}
-                            style={{ height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                            style={{ height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                           />
                           <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -1952,7 +1952,7 @@ export default function SupervisorDashboard() {
                         </div>
                         {item.billImage && (
                           <div style={{ textAlign: "center" }}>
-                            <img src={item.billImage} alt="bill thumb" style={{ maxWidth: 80, maxHeight: 60, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                            <img src={item.billImage} alt="bill thumb" style={{ maxWidth: 80, maxHeight: 60, borderRadius: 6, border: "1px solid var(--border)" }} />
                           </div>
                         )}
                         <input
@@ -1962,14 +1962,14 @@ export default function SupervisorDashboard() {
                           onChange={(e) => {
                             setToolRentList(toolRentList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
                           }}
-                          style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                          style={{ width: "100%", height: 28, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 8px", color: "var(--muted)", fontSize: 11, outline: "none" }}
                         />
                       </div>
                     ))}
                   </div>
 
                   {/* Dynamic Expenses Builder - Other Uncategorized Expenses */}
-                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 10, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.05em" }}>Other Misc Expenses</span>
                       <button
@@ -1982,7 +1982,7 @@ export default function SupervisorDashboard() {
                     </div>
 
                     {otherExpensesList.map((item, idx) => (
-                      <div key={item.id} style={{ background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div key={item.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <span style={{ fontSize: 10, color: "#fbbf24", fontWeight: 700 }}>Misc Expense #{idx + 1}</span>
                           <button
@@ -2000,7 +2000,7 @@ export default function SupervisorDashboard() {
                           onChange={(e) => {
                             setOtherExpensesList(otherExpensesList.map((x) => x.id === item.id ? { ...x, name: e.target.value } : x));
                           }}
-                          style={{ width: "100%", height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                          style={{ width: "100%", height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                         />
                         <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
                           <input
@@ -2010,7 +2010,7 @@ export default function SupervisorDashboard() {
                             onChange={(e) => {
                               setOtherExpensesList(otherExpensesList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
                             }}
-                            style={{ height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                            style={{ height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                           />
                           <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -2031,7 +2031,7 @@ export default function SupervisorDashboard() {
                         </div>
                         {item.billImage && (
                           <div style={{ textAlign: "center" }}>
-                            <img src={item.billImage} alt="bill thumb" style={{ maxWidth: 80, maxHeight: 60, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                            <img src={item.billImage} alt="bill thumb" style={{ maxWidth: 80, maxHeight: 60, borderRadius: 6, border: "1px solid var(--border)" }} />
                           </div>
                         )}
                         <input
@@ -2041,7 +2041,7 @@ export default function SupervisorDashboard() {
                           onChange={(e) => {
                             setOtherExpensesList(otherExpensesList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
                           }}
-                          style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                          style={{ width: "100%", height: 28, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 8px", color: "var(--muted)", fontSize: 11, outline: "none" }}
                         />
                       </div>
                     ))}
@@ -2051,7 +2051,7 @@ export default function SupervisorDashboard() {
                   <div style={{ background: "rgba(6, 182, 212, 0.05)", border: "1px solid rgba(6, 182, 212, 0.15)", padding: 12, borderRadius: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
                       <span style={{ fontSize: 10, color: "#06b6d4", fontWeight: 800, textTransform: "uppercase" }}>Total Logistics Expenses</span>
-                      <p style={{ margin: 0, fontSize: 8, color: "#64748b" }}>(Fuel+Travel+Room+Tool+Misc)</p>
+                      <p style={{ margin: 0, fontSize: 8, color: "var(--dim)" }}>(Fuel+Travel+Room+Tool+Misc)</p>
                     </div>
                     <span style={{ fontSize: 18, fontWeight: 950, color: "#06b6d4" }}>
                       ₹{totalFuel + totalTravel + totalRoomRent + totalToolRent + totalOtherRent}
@@ -2075,9 +2075,9 @@ export default function SupervisorDashboard() {
                     { label: "RMU Foundations", val: wipRmuValue, setVal: setWipRmuValue, narr: wipRmuNarration, setNarr: setWipRmuNarration, pic: wipRmuPhoto, setPic: setWipRmuPhoto },
                     { label: "Terminations (Qty)", val: wipTerminationsValue, setVal: setWipTerminationsValue, narr: wipTerminationsNarration, setNarr: setWipTerminationsNarration, pic: wipTerminationsPhoto, setPic: setWipTerminationsPhoto }
                   ].map((m, idx) => (
-                    <div key={idx} style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div key={idx} style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 12, borderRadius: 16, display: "flex", flexDirection: "column", gap: 8 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: "#cbd5e1", textTransform: "uppercase" }}>{m.label}</span>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "var(--muted)", textTransform: "uppercase" }}>{m.label}</span>
                       </div>
                       
                       <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
@@ -2086,7 +2086,7 @@ export default function SupervisorDashboard() {
                           placeholder="0.00"
                           value={m.val}
                           onChange={(e) => m.setVal(e.target.value)}
-                          style={{ height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                          style={{ height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                         />
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: m.pic ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: m.pic ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: m.pic ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -2108,7 +2108,7 @@ export default function SupervisorDashboard() {
 
                       {m.pic && (
                         <div style={{ textAlign: "center" }}>
-                          <img src={m.pic} alt="wip preview" style={{ maxWidth: 100, maxHeight: 80, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                          <img src={m.pic} alt="wip preview" style={{ maxWidth: 100, maxHeight: 80, borderRadius: 6, border: "1px solid var(--border)" }} />
                         </div>
                       )}
 
@@ -2117,13 +2117,13 @@ export default function SupervisorDashboard() {
                         placeholder="Progress narration note..."
                         value={m.narr}
                         onChange={(e) => m.setNarr(e.target.value)}
-                        style={{ width: "100%", height: 28, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                        style={{ width: "100%", height: 28, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 8px", color: "var(--muted)", fontSize: 11, outline: "none" }}
                       />
                     </div>
                   ))}
 
                   {/* GPS snaps coordinates */}
-                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 10 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Snapped GPS Coordinates</span>
                       <button
@@ -2154,35 +2154,35 @@ export default function SupervisorDashboard() {
 
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr 1.2fr", gap: 6 }}>
                       <div>
-                        <span style={{ fontSize: 9, color: "#64748b" }}>Endpoints (Qty)</span>
+                        <span style={{ fontSize: 9, color: "var(--dim)" }}>Endpoints (Qty)</span>
                         <input
                           type="number"
                           placeholder="0"
                           value={wipTerminationsValue}
                           onChange={(e) => setWipTerminationsValue(e.target.value)}
-                          style={{ width: "100%", height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                          style={{ width: "100%", height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 6px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                         />
                       </div>
                       <div>
-                        <span style={{ fontSize: 9, color: "#64748b" }}>Latitude</span>
+                        <span style={{ fontSize: 9, color: "var(--dim)" }}>Latitude</span>
                         <input
                           type="number"
                           step="0.000001"
                           placeholder="9.9538"
                           value={terminationGpsLat}
                           onChange={(e) => setTerminationGpsLat(e.target.value)}
-                          style={{ width: "100%", height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                          style={{ width: "100%", height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 6px", color: "var(--muted)", fontSize: 11, outline: "none" }}
                         />
                       </div>
                       <div>
-                        <span style={{ fontSize: 9, color: "#64748b" }}>Longitude</span>
+                        <span style={{ fontSize: 9, color: "var(--dim)" }}>Longitude</span>
                         <input
                           type="number"
                           step="0.000001"
                           placeholder="76.3428"
                           value={terminationGpsLng}
                           onChange={(e) => setTerminationGpsLng(e.target.value)}
-                          style={{ width: "100%", height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                          style={{ width: "100%", height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 6px", color: "var(--muted)", fontSize: 11, outline: "none" }}
                         />
                       </div>
                     </div>
@@ -2196,16 +2196,16 @@ export default function SupervisorDashboard() {
                   <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: 0 }}>Step 3: Clearance & Authority Approvals</h4>
                   
                   {/* PWD */}
-                  <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 12, borderRadius: 14, display: "flex", flexDirection: "column", gap: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: "#cbd5e1" }}>PWD Authority</span>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: "var(--muted)" }}>PWD Authority</span>
                       <span style={{ fontSize: 9, fontWeight: 700, color: pwdClearance === "Permission Gathered" ? "#10b981" : pwdClearance === "Demand Issued" ? "#fbbf24" : "#64748b" }}>{pwdClearance}</span>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
                       <select
                         value={pwdClearance}
                         onChange={(e) => setPwdClearance(e.target.value)}
-                        style={{ height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "#cbd5e1", fontSize: 11, cursor: "pointer", outline: "none" }}
+                        style={{ height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 6px", color: "var(--muted)", fontSize: 11, cursor: "pointer", outline: "none" }}
                       >
                         <option value="None">None / Initiated</option>
                         <option value="Demand Issued">Demand Note Issued</option>
@@ -2230,22 +2230,22 @@ export default function SupervisorDashboard() {
                     </div>
                     {pwdReceipt && (
                       <div style={{ textAlign: "center" }}>
-                        <img src={pwdReceipt} alt="pwd receipt" style={{ maxWidth: 100, maxHeight: 80, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                        <img src={pwdReceipt} alt="pwd receipt" style={{ maxWidth: 100, maxHeight: 80, borderRadius: 6, border: "1px solid var(--border)" }} />
                       </div>
                     )}
                   </div>
 
                   {/* KSEB */}
-                  <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 12, borderRadius: 14, display: "flex", flexDirection: "column", gap: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: "#cbd5e1" }}>KSEB Grid Access</span>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: "var(--muted)" }}>KSEB Grid Access</span>
                       <span style={{ fontSize: 9, fontWeight: 700, color: ksebClearance === "Permission Gathered" ? "#10b981" : ksebClearance === "Demand Issued" ? "#fbbf24" : "#64748b" }}>{ksebClearance}</span>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
                       <select
                         value={ksebClearance}
                         onChange={(e) => setKsebClearance(e.target.value)}
-                        style={{ height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "#cbd5e1", fontSize: 11, cursor: "pointer", outline: "none" }}
+                        style={{ height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 6px", color: "var(--muted)", fontSize: 11, cursor: "pointer", outline: "none" }}
                       >
                         <option value="None">None / Initiated</option>
                         <option value="Demand Issued">Demand Note Issued</option>
@@ -2270,22 +2270,22 @@ export default function SupervisorDashboard() {
                     </div>
                     {ksebReceipt && (
                       <div style={{ textAlign: "center" }}>
-                        <img src={ksebReceipt} alt="kseb receipt" style={{ maxWidth: 100, maxHeight: 80, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                        <img src={ksebReceipt} alt="kseb receipt" style={{ maxWidth: 100, maxHeight: 80, borderRadius: 6, border: "1px solid var(--border)" }} />
                       </div>
                     )}
                   </div>
 
                   {/* NH Authority */}
-                  <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 12, borderRadius: 14, display: "flex", flexDirection: "column", gap: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: "#cbd5e1" }}>National Highway</span>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: "var(--muted)" }}>National Highway</span>
                       <span style={{ fontSize: 9, fontWeight: 700, color: nhClearance === "Permission Gathered" ? "#10b981" : nhClearance === "Demand Issued" ? "#fbbf24" : "#64748b" }}>{nhClearance}</span>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
                       <select
                         value={nhClearance}
                         onChange={(e) => setNhClearance(e.target.value)}
-                        style={{ height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "#cbd5e1", fontSize: 11, cursor: "pointer", outline: "none" }}
+                        style={{ height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 6px", color: "var(--muted)", fontSize: 11, cursor: "pointer", outline: "none" }}
                       >
                         <option value="None">None / Initiated</option>
                         <option value="Demand Issued">Demand Note Issued</option>
@@ -2310,7 +2310,7 @@ export default function SupervisorDashboard() {
                     </div>
                     {nhReceipt && (
                       <div style={{ textAlign: "center" }}>
-                        <img src={nhReceipt} alt="nh receipt" style={{ maxWidth: 100, maxHeight: 80, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                        <img src={nhReceipt} alt="nh receipt" style={{ maxWidth: 100, maxHeight: 80, borderRadius: 6, border: "1px solid var(--border)" }} />
                       </div>
                     )}
                   </div>
@@ -2324,28 +2324,28 @@ export default function SupervisorDashboard() {
                   
                   {/* Problems encountered */}
                   <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Problems / Impediments Encountered</label>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase" }}>Problems / Impediments Encountered</label>
                     <textarea
                       placeholder="List any problems, traffic delays, utility clashing, public disputes or raw material shortages..."
                       value={reqProblems}
                       onChange={(e) => setReqProblems(e.target.value)}
-                      style={{ width: "100%", height: 80, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: 10, color: "#cbd5e1", fontSize: 12, outline: "none", resize: "none" }}
+                      style={{ width: "100%", height: 80, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: 10, color: "var(--muted)", fontSize: 12, outline: "none", resize: "none" }}
                     />
                   </div>
 
                   {/* Plans for tomorrow */}
                   <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Work Plans for Tomorrow</label>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase" }}>Work Plans for Tomorrow</label>
                     <textarea
                       placeholder="Mention expected trenching meters, planned HDD points, or clearance permissions required..."
                       value={reqPlans}
                       onChange={(e) => setReqPlans(e.target.value)}
-                      style={{ width: "100%", height: 80, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: 10, color: "#cbd5e1", fontSize: 12, outline: "none", resize: "none" }}
+                      style={{ width: "100%", height: 80, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: 10, color: "var(--muted)", fontSize: 12, outline: "none", resize: "none" }}
                     />
                   </div>
 
                   {/* Urgent Finance request */}
-                  <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 10 }}>
                     <span style={{ fontSize: 10, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.05em" }}>💵 Urgent Finance / Fund Request</span>
                     
                     <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
@@ -2354,7 +2354,7 @@ export default function SupervisorDashboard() {
                         placeholder="Request Amount (₹)"
                         value={reqFinanceAmount}
                         onChange={(e) => setReqFinanceAmount(e.target.value)}
-                        style={{ height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
+                        style={{ height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                       />
                       <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: reqFinanceReceipt ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: reqFinanceReceipt ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: reqFinanceReceipt ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -2376,7 +2376,7 @@ export default function SupervisorDashboard() {
 
                     {reqFinanceReceipt && (
                       <div style={{ textAlign: "center" }}>
-                        <img src={reqFinanceReceipt} alt="finance doc" style={{ maxWidth: 100, maxHeight: 80, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }} />
+                        <img src={reqFinanceReceipt} alt="finance doc" style={{ maxWidth: 100, maxHeight: 80, borderRadius: 6, border: "1px solid var(--border)" }} />
                       </div>
                     )}
 
@@ -2385,18 +2385,18 @@ export default function SupervisorDashboard() {
                       placeholder="Purpose / Reason for fund request..."
                       value={reqFinanceNarration}
                       onChange={(e) => setReqFinanceNarration(e.target.value)}
-                      style={{ width: "100%", height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 10px", color: "#cbd5e1", fontSize: 11, outline: "none" }}
+                      style={{ width: "100%", height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 10px", color: "var(--muted)", fontSize: 11, outline: "none" }}
                     />
                   </div>
 
                   {/* General concerns / Admin notes */}
                   <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Critical Notes for Admin Concern</label>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase" }}>Critical Notes for Admin Concern</label>
                     <textarea
                       placeholder="Type any message, warnings, safety concerns, or equipment requirements that the Telgo Admin board should address..."
                       value={reqAdminConcerns}
                       onChange={(e) => setReqAdminConcerns(e.target.value)}
-                      style={{ width: "100%", height: 80, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: 10, color: "#cbd5e1", fontSize: 12, outline: "none", resize: "none" }}
+                      style={{ width: "100%", height: 80, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: 10, color: "var(--muted)", fontSize: 12, outline: "none", resize: "none" }}
                     />
                   </div>
                 </div>
@@ -2409,15 +2409,15 @@ export default function SupervisorDashboard() {
 
                   {/* Active Drafts list */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    <span style={{ fontSize: 10, fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Consolidated Active Drafts</span>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Consolidated Active Drafts</span>
                     
                     {(() => {
                       const drafts = getActiveDrafts();
                       if (drafts.length === 0) {
                         return (
-                          <div className="glass" style={{ padding: 20, textAlign: "center", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16 }}>
-                            <p style={{ margin: 0, fontSize: 12, color: "#64748b" }}>No active project drafts found.</p>
-                            <p style={{ margin: "4px 0 0", fontSize: 11, color: "#cbd5e1" }}>Go back to Step 1 to fill in wages or WIP operational progress.</p>
+                          <div className="glass" style={{ padding: 20, textAlign: "center", border: "1px solid var(--border)", borderRadius: 16 }}>
+                            <p style={{ margin: 0, fontSize: 12, color: "var(--dim)" }}>No active project drafts found.</p>
+                            <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--muted)" }}>Go back to Step 1 to fill in wages or WIP operational progress.</p>
                           </div>
                         );
                       }
@@ -2434,29 +2434,29 @@ export default function SupervisorDashboard() {
                           (d.data.otherExpensesList || []).reduce((sum: number, x: any) => sum + Number(x.amount || 0), 0);
 
                         return (
-                          <div key={d.project.id} className="glass" style={{ padding: 14, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, background: "rgba(255,255,255,0.01)", display: "flex", flexDirection: "column", gap: 8 }}>
+                          <div key={d.project.id} className="glass" style={{ padding: 14, border: "1px solid var(--border)", borderRadius: 16, background: "var(--surface)", display: "flex", flexDirection: "column", gap: 8 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                               <div>
-                                <h5 style={{ fontSize: 13, fontWeight: 900, color: "#f1f5f9", margin: 0 }}>{d.project.name}</h5>
-                                <span style={{ fontSize: 9, fontFamily: "monospace", color: "#64748b" }}>ID: {d.project.id} | Date: {d.data.reportDate || "Today"}</span>
+                                <h5 style={{ fontSize: 13, fontWeight: 900, color: "var(--text)", margin: 0 }}>{d.project.name}</h5>
+                                <span style={{ fontSize: 9, fontFamily: "monospace", color: "var(--dim)" }}>ID: {d.project.id} | Date: {d.data.reportDate || "Today"}</span>
                               </div>
                               <span style={{ fontSize: 9, fontWeight: 800, color: "#67e8f9", background: "rgba(6, 182, 212, 0.12)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 6, padding: "2px 6px" }}>
                                 DRAFT
                               </span>
                             </div>
 
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, background: "rgba(0,0,0,0.15)", padding: 8, borderRadius: 10, fontSize: 11 }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, background: "var(--surface)", padding: 8, borderRadius: 10, fontSize: 11 }}>
                               <div>
-                                <span style={{ color: "#94a3b8" }}>Calculated Wages:</span>
+                                <span style={{ color: "var(--dim)" }}>Calculated Wages:</span>
                                 <span style={{ display: "block", color: "#10b981", fontWeight: 800 }}>₹{wagesSum}</span>
                               </div>
                               <div>
-                                <span style={{ color: "#94a3b8" }}>Total Expenses:</span>
+                                <span style={{ color: "var(--dim)" }}>Total Expenses:</span>
                                 <span style={{ display: "block", color: "#06b6d4", fontWeight: 800 }}>₹{expSum}</span>
                               </div>
                               <div style={{ gridColumn: "span 2", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: 4, marginTop: 4 }}>
-                                <span style={{ color: "#94a3b8" }}>WIP Metrics Entered:</span>
-                                <span style={{ display: "block", color: "white", fontWeight: 700, fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                <span style={{ color: "var(--dim)" }}>WIP Metrics Entered:</span>
+                                <span style={{ display: "block", color: "var(--text)", fontWeight: 700, fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                   {[
                                     d.data.wipTrenchingValue ? `${d.data.wipTrenchingValue}m Trench` : "",
                                     d.data.wipHddValue ? `${d.data.wipHddValue}m HDD` : "",
@@ -2474,14 +2474,14 @@ export default function SupervisorDashboard() {
                                   setReportProjectId(d.project.id);
                                   setReportStep(1);
                                 }}
-                                style={{ flex: 1, height: 32, background: "transparent", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, color: "#cbd5e1", fontSize: 11, fontWeight: 750, cursor: "pointer" }}
+                                style={{ flex: 1, height: 32, background: "transparent", border: "1px solid var(--border)", borderRadius: 8, color: "var(--muted)", fontSize: 11, fontWeight: 750, cursor: "pointer" }}
                               >
                                 Edit Draft
                               </button>
                               <button
                                 type="button"
                                 onClick={() => submitReportForProject(d.project.id, d.data)}
-                                style={{ flex: 1.5, height: 32, background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", border: "none", borderRadius: 8, color: "white", fontSize: 11, fontWeight: 800, cursor: "pointer", boxShadow: "0 2px 8px rgba(16, 185, 129, 0.15)" }}
+                                style={{ flex: 1.5, height: 32, background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", border: "none", borderRadius: 8, color: "var(--text)", fontSize: 11, fontWeight: 800, cursor: "pointer", boxShadow: "0 2px 8px rgba(16, 185, 129, 0.15)" }}
                               >
                                 Submit This
                               </button>
@@ -2501,12 +2501,12 @@ export default function SupervisorDashboard() {
             </div>
 
             {/* Modal Footer (Controls) */}
-            <div style={{ display: "flex", gap: 10, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 14 }}>
+            <div style={{ display: "flex", gap: 10, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
               {reportStep > 1 && (
                 <button
                   type="button"
                   onClick={() => setReportStep(reportStep - 1)}
-                  style={{ flex: 0.8, height: 42, background: "transparent", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 12, color: "#cbd5e1", fontSize: 13, fontWeight: 750, cursor: "pointer" }}
+                  style={{ flex: 0.8, height: 42, background: "transparent", border: "1px solid var(--border)", borderRadius: 12, color: "var(--muted)", fontSize: 13, fontWeight: 750, cursor: "pointer" }}
                 >
                   Back
                 </button>
@@ -2528,7 +2528,7 @@ export default function SupervisorDashboard() {
                     }
                     setReportStep(reportStep + 1);
                   }}
-                  style={{ flex: 1.2, height: 42, background: "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)", border: "none", borderRadius: 12, color: "white", fontSize: 13, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px rgba(6, 182, 212, 0.25)" }}
+                  style={{ flex: 1.2, height: 42, background: "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)", border: "none", borderRadius: 12, color: "var(--text)", fontSize: 13, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px rgba(6, 182, 212, 0.25)" }}
                 >
                   Continue ➔
                 </button>
@@ -2537,7 +2537,7 @@ export default function SupervisorDashboard() {
                   type="button"
                   onClick={submitAllActiveDrafts}
                   disabled={submittingReport || getActiveDrafts().length === 0}
-                  style={{ flex: 1.2, height: 42, background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", border: "none", borderRadius: 12, color: "white", fontSize: 13, fontWeight: 800, cursor: submittingReport || getActiveDrafts().length === 0 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px rgba(16, 185, 129, 0.25)" }}
+                  style={{ flex: 1.2, height: 42, background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", border: "none", borderRadius: 12, color: "var(--text)", fontSize: 13, fontWeight: 800, cursor: submittingReport || getActiveDrafts().length === 0 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px rgba(16, 185, 129, 0.25)" }}
                 >
                   {submittingReport ? (
                     <>
@@ -2564,7 +2564,7 @@ export default function SupervisorDashboard() {
 
       {/* Toast Notification */}
       {toast && (
-        <div style={{ position: "fixed", bottom: 24, left: 16, right: 16, background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: "14px 18px", fontSize: 13, fontWeight: 600, color: "#f1f5f9", zIndex: 10000, textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.5)", animation: "fadeIn 0.3s ease" }}>
+        <div style={{ position: "fixed", bottom: 24, left: 16, right: 16, background: "#1e293b", border: "1px solid var(--border)", borderRadius: 14, padding: "14px 18px", fontSize: 13, fontWeight: 600, color: "var(--text)", zIndex: 10000, textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.5)", animation: "fadeIn 0.3s ease" }}>
           {toast}
         </div>
       )}
