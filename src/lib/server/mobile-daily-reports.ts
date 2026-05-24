@@ -143,8 +143,7 @@ export async function getDailyReports(projectId: string, reportDate: string): Pr
       .from("pending_daily_reports")
       .select("*")
       .eq("project_id", projectId)
-      .eq("report_date", reportDate)
-      .eq("status", "pending");
+      .eq("report_date", reportDate);
 
     if (!error && data) {
       return data.map(mapDbRowToReport);
@@ -157,7 +156,7 @@ export async function getDailyReports(projectId: string, reportDate: string): Pr
   // Fallback
   const store = await getLocalStore();
   return store.reports.filter(
-    (r) => r.projectId === projectId && r.reportDate === reportDate && r.status === "pending"
+    (r) => r.projectId === projectId && r.reportDate === reportDate
   );
 }
 
