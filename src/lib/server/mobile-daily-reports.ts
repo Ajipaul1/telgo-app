@@ -1,6 +1,3 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
-import os from "node:os";
 import { getMobileAccessClient } from "./mobile-access";
 
 export interface DailyReport {
@@ -55,285 +52,156 @@ export interface LedgerRow {
   updatedAt: string;
 }
 
-const STORE_PATH = path.join(os.tmpdir(), "telgo-reports-store.json");
-
-async function getLocalStore() {
-  try {
-    const data = await fs.readFile(STORE_PATH, "utf8");
-    return JSON.parse(data) as { reports: DailyReport[]; ledger: LedgerRow[] };
-  } catch {
-    // If not exists or malformed, return empty layout
-    const initial = { reports: [], ledger: [] };
-    await fs.mkdir(path.dirname(STORE_PATH), { recursive: true }).catch(() => {});
-    await fs.writeFile(STORE_PATH, JSON.stringify(initial, null, 2), "utf8");
-    return initial;
-  }
-}
-
-async function saveLocalStore(store: { reports: DailyReport[]; ledger: LedgerRow[] }) {
-  await fs.mkdir(path.dirname(STORE_PATH), { recursive: true }).catch(() => {});
-  await fs.writeFile(STORE_PATH, JSON.stringify(store, null, 2), "utf8");
-}
-
 export async function createDailyReport(input: Omit<DailyReport, "id" | "createdAt" | "status">): Promise<DailyReport> {
-  const newReport: DailyReport = {
-    ...input,
-    id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36),
-    createdAt: new Date().toISOString(),
-    status: "pending",
-  };
+  const supabase = getMobileAccessClient();
+  const { data, error } = await supabase
+    .from("pending_daily_reports")
+    .insert({
+      report_date: input.reportDate,
+      project_id: input.projectId,
+      supervisor_id: input.supervisorId,
+      supervisor_name: input.supervisorName,
+      labor_count: input.laborCount,
+      ot_hours: input.otHours,
+      calculated_wages: input.calculatedWages,
+      fuel_expenses: input.fuelExpenses,
+      travel_expenses: input.travelExpenses,
+      room_rent: input.roomRent,
+      room_rent_receipt: input.roomRentReceipt || null,
+      tool_rent: input.toolRent,
+      tool_rent_receipt: input.toolRentReceipt || null,
+      excavation_length: input.excavationLength,
+      hdd_length: input.hddLength,
+      cable_laying_length: input.cableLayingLength,
+      cable_mounding_length: input.cableMoundingLength,
+      joining_links_completed: input.joiningLinksCompleted,
+      rmu_foundation_status: input.rmuFoundationStatus,
+      termination_endpoints: input.terminationEndpoints,
+      termination_gps_lat: input.terminationGpsLat || null,
+      termination_gps_lng: input.terminationGpsLng || null,
+      stock_available: input.stockAvailable,
+      clearances: input.clearances,
+      status: "pending"
+    })
+    .select("*")
+    .single();
 
-  // Attempt Supabase
-  try {
-    const supabase = getMobileAccessClient();
-    const { data, error } = await supabase
-      .from("pending_daily_reports")
-      .insert({
-        report_date: newReport.reportDate,
-        project_id: newReport.projectId,
-        supervisor_id: newReport.supervisorId,
-        supervisor_name: newReport.supervisorName,
-        labor_count: newReport.laborCount,
-        ot_hours: newReport.otHours,
-        calculated_wages: newReport.calculatedWages,
-        fuel_expenses: newReport.fuelExpenses,
-        travel_expenses: newReport.travelExpenses,
-        room_rent: newReport.roomRent,
-        room_rent_receipt: newReport.roomRentReceipt || null,
-        tool_rent: newReport.toolRent,
-        tool_rent_receipt: newReport.toolRentReceipt || null,
-        excavation_length: newReport.excavationLength,
-        hdd_length: newReport.hddLength,
-        cable_laying_length: newReport.cableLayingLength,
-        cable_mounding_length: newReport.cableMoundingLength,
-        joining_links_completed: newReport.joiningLinksCompleted,
-        rmu_foundation_status: newReport.rmuFoundationStatus,
-        termination_endpoints: newReport.terminationEndpoints,
-        termination_gps_lat: newReport.terminationGpsLat || null,
-        termination_gps_lng: newReport.terminationGpsLng || null,
-        stock_available: newReport.stockAvailable,
-        clearances: newReport.clearances,
-        status: "pending"
-      })
-      .select("*")
-      .single();
-
-    if (!error && data) {
-      console.log("✓ Daily report stored successfully in Supabase DB");
-      return mapDbRowToReport(data);
-    }
-    console.warn("Supabase insert error, falling back to local storage:", error?.message);
-  } catch (err) {
-    console.warn("Supabase connection error, falling back to local storage:", err);
+  if (error) {
+    console.error("Supabase insert error in createDailyReport:", error);
+    throw new Error(`Failed to save daily report in Supabase database: ${error.message}`);
   }
 
-  // Fallback to Local JSON store
-  const store = await getLocalStore();
-  store.reports.push(newReport);
-  await saveLocalStore(store);
-  console.log("✓ Daily report stored successfully in Local JSON File Store");
-  return newReport;
+  if (!data) {
+    throw new Error("Failed to save daily report: Database returned no data.");
+  }
+
+  console.log("✓ Daily report stored successfully in Supabase DB");
+  return mapDbRowToReport(data);
 }
 
 export async function getDailyReports(projectId: string, reportDate: string): Promise<DailyReport[]> {
-  // Attempt Supabase
-  try {
-    const supabase = getMobileAccessClient();
-    const { data, error } = await supabase
-      .from("pending_daily_reports")
-      .select("*")
-      .eq("project_id", projectId)
-      .eq("report_date", reportDate);
+  const supabase = getMobileAccessClient();
+  const { data, error } = await supabase
+    .from("pending_daily_reports")
+    .select("*")
+    .eq("project_id", projectId)
+    .eq("report_date", reportDate);
 
-    if (!error && data) {
-      return data.map(mapDbRowToReport);
-    }
-    console.warn("Supabase fetch reports failed, using local store fallback:", error?.message);
-  } catch (err) {
-    console.warn("Supabase connection error, using local store fallback:", err);
+  if (error) {
+    console.error("Supabase fetch reports failed in getDailyReports:", error);
+    throw new Error(`Failed to retrieve daily reports from Supabase: ${error.message}`);
   }
 
-  // Fallback
-  const store = await getLocalStore();
-  return store.reports.filter(
-    (r) => r.projectId === projectId && r.reportDate === reportDate
-  );
+  return (data || []).map(mapDbRowToReport);
 }
 
 export async function approveDailyReport(reportId: string): Promise<{ ok: boolean; message?: string }> {
-  let matchedReport: DailyReport | null = null;
+  const supabase = getMobileAccessClient();
 
-  // 1. Try to find and update the pending report
-  try {
-    const supabase = getMobileAccessClient();
-    const { data, error } = await supabase
-      .from("pending_daily_reports")
-      .update({ status: "approved", approved_at: new Date().toISOString() })
-      .eq("id", reportId)
-      .select("*")
-      .maybeSingle();
+  // 1. Update the pending report to status 'approved'
+  const { data: matchedReportRow, error: updateError } = await supabase
+    .from("pending_daily_reports")
+    .update({ status: "approved", approved_at: new Date().toISOString() })
+    .eq("id", reportId)
+    .select("*")
+    .maybeSingle();
 
-    if (!error && data) {
-      matchedReport = mapDbRowToReport(data);
-      console.log("✓ Report status updated to APPROVED in Supabase DB");
-    } else {
-      console.warn("Supabase approve update failed, trying local store search:", error?.message);
-    }
-  } catch (err) {
-    console.warn("Supabase error during report approval, searching local store:", err);
+  if (updateError) {
+    console.error("Supabase error during report approval:", updateError);
+    throw new Error(`Failed to approve daily report in Supabase: ${updateError.message}`);
   }
 
-  const store = await getLocalStore();
-  if (!matchedReport) {
-    const idx = store.reports.findIndex((r) => r.id === reportId);
-    if (idx !== -1) {
-      store.reports[idx].status = "approved";
-      matchedReport = store.reports[idx];
-      console.log("✓ Report status updated to APPROVED in Local JSON File Store");
-    }
-  } else {
-    // If found in Supabase, make sure to sync status locally too in case it was stored locally
-    const idx = store.reports.findIndex((r) => r.id === reportId);
-    if (idx !== -1) {
-      store.reports[idx].status = "approved";
-    }
-  }
-
-  if (!matchedReport) {
+  if (!matchedReportRow) {
     return { ok: false, message: "Report not found." };
   }
 
-  // 2. Perform Atomic Sum Consolidation into the Master Ledger
+  const matchedReport = mapDbRowToReport(matchedReportRow);
   const { projectId, reportDate } = matchedReport;
 
-  // Supabase Ledger Upsert
-  try {
-    const supabase = getMobileAccessClient();
-    // Fetch existing ledger row for same project & date
-    const { data: existing, error: fetchErr } = await supabase
-      .from("master_project_ledger")
-      .select("*")
-      .eq("project_id", projectId)
-      .eq("ledger_date", reportDate)
-      .maybeSingle();
+  // 2. Perform Atomic Sum Consolidation into the Master Ledger
+  // Fetch existing ledger row for same project & date
+  const { data: existing, error: fetchErr } = await supabase
+    .from("master_project_ledger")
+    .select("*")
+    .eq("project_id", projectId)
+    .eq("ledger_date", reportDate)
+    .maybeSingle();
 
-    if (!fetchErr) {
-      const consolidated = {
-        ledger_date: reportDate,
-        project_id: projectId,
-        total_labor_count: (existing?.total_labor_count ?? 0) + matchedReport.laborCount,
-        total_ot_hours: (existing?.total_ot_hours ?? 0) + matchedReport.otHours,
-        total_wages: Number(existing?.total_wages ?? 0) + matchedReport.calculatedWages,
-        total_fuel: Number(existing?.total_fuel ?? 0) + matchedReport.fuelExpenses,
-        total_travel: Number(existing?.total_travel ?? 0) + matchedReport.travelExpenses,
-        total_room_rent: Number(existing?.total_room_rent ?? 0) + matchedReport.roomRent,
-        total_tool_rent: Number(existing?.total_tool_rent ?? 0) + matchedReport.toolRent,
-        total_excavation: Number(existing?.total_excavation ?? 0) + matchedReport.excavationLength,
-        total_hdd: Number(existing?.total_hdd ?? 0) + matchedReport.hddLength,
-        total_cable_laying: Number(existing?.total_cable_laying ?? 0) + matchedReport.cableLayingLength,
-        total_cable_mounding: Number(existing?.total_cable_mounding ?? 0) + matchedReport.cableMoundingLength,
-        total_joining_links: (existing?.total_joining_links ?? 0) + matchedReport.joiningLinksCompleted,
-        total_rmu_foundations: (existing?.total_rmu_foundations ?? 0) + matchedReport.rmuFoundationStatus,
-        total_terminations: (existing?.total_terminations ?? 0) + matchedReport.terminationEndpoints,
-        approved_reports_count: (existing?.approved_reports_count ?? 0) + 1,
-        updated_at: new Date().toISOString()
-      };
-
-      const { error: upsertErr } = await supabase
-        .from("master_project_ledger")
-        .upsert(consolidated, { onConflict: "ledger_date,project_id" });
-
-      if (!upsertErr) {
-        console.log("✓ Ledger row atomically consolidated and saved to Supabase DB");
-      } else {
-        console.warn("Supabase ledger upsert failed, consolidating locally:", upsertErr.message);
-      }
-    } else {
-      console.warn("Supabase ledger fetch failed, consolidating locally:", fetchErr.message);
-    }
-  } catch (err) {
-    console.warn("Supabase ledger integration failed, consolidating locally:", err);
+  if (fetchErr) {
+    console.error("Supabase ledger fetch failed during consolidation:", fetchErr);
+    throw new Error(`Failed to consolidate to ledger (fetch failed): ${fetchErr.message}`);
   }
 
-  // Local JSON Ledger Upsert
-  const ledgerIdx = store.ledger.findIndex(
-    (l) => l.projectId === projectId && l.ledgerDate === reportDate
-  );
+  const consolidated = {
+    ledger_date: reportDate,
+    project_id: projectId,
+    total_labor_count: (existing?.total_labor_count ?? 0) + matchedReport.laborCount,
+    total_ot_hours: (existing?.total_ot_hours ?? 0) + matchedReport.otHours,
+    total_wages: Number(existing?.total_wages ?? 0) + matchedReport.calculatedWages,
+    total_fuel: Number(existing?.total_fuel ?? 0) + matchedReport.fuelExpenses,
+    total_travel: Number(existing?.total_travel ?? 0) + matchedReport.travelExpenses,
+    total_room_rent: Number(existing?.total_room_rent ?? 0) + matchedReport.roomRent,
+    total_tool_rent: Number(existing?.total_tool_rent ?? 0) + matchedReport.toolRent,
+    total_excavation: Number(existing?.total_excavation ?? 0) + matchedReport.excavationLength,
+    total_hdd: Number(existing?.total_hdd ?? 0) + matchedReport.hddLength,
+    total_cable_laying: Number(existing?.total_cable_laying ?? 0) + matchedReport.cableLayingLength,
+    total_cable_mounding: Number(existing?.total_cable_mounding ?? 0) + matchedReport.cableMoundingLength,
+    total_joining_links: (existing?.total_joining_links ?? 0) + matchedReport.joiningLinksCompleted,
+    total_rmu_foundations: (existing?.total_rmu_foundations ?? 0) + matchedReport.rmuFoundationStatus,
+    total_terminations: (existing?.total_terminations ?? 0) + matchedReport.terminationEndpoints,
+    approved_reports_count: (existing?.approved_reports_count ?? 0) + 1,
+    updated_at: new Date().toISOString()
+  };
 
-  if (ledgerIdx !== -1) {
-    const existing = store.ledger[ledgerIdx];
-    store.ledger[ledgerIdx] = {
-      ...existing,
-      totalLaborCount: existing.totalLaborCount + matchedReport.laborCount,
-      totalOtHours: existing.totalOtHours + matchedReport.otHours,
-      totalWages: existing.totalWages + matchedReport.calculatedWages,
-      totalFuel: existing.totalFuel + matchedReport.fuelExpenses,
-      totalTravel: existing.totalTravel + matchedReport.travelExpenses,
-      totalRoomRent: existing.totalRoomRent + matchedReport.roomRent,
-      totalToolRent: existing.totalToolRent + matchedReport.toolRent,
-      totalExcavation: existing.totalExcavation + matchedReport.excavationLength,
-      totalHdd: existing.totalHdd + matchedReport.hddLength,
-      totalCableLaying: existing.totalCableLaying + matchedReport.cableLayingLength,
-      totalCableMounding: existing.totalCableMounding + matchedReport.cableMoundingLength,
-      totalJoiningLinks: existing.totalJoiningLinks + matchedReport.joiningLinksCompleted,
-      totalRmuFoundations: existing.totalRmuFoundations + matchedReport.rmuFoundationStatus,
-      totalTerminations: existing.totalTerminations + matchedReport.terminationEndpoints,
-      approvedReportsCount: existing.approvedReportsCount + 1,
-      updatedAt: new Date().toISOString(),
-    };
-  } else {
-    store.ledger.push({
-      id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36),
-      ledgerDate: reportDate,
-      projectId: projectId,
-      totalLaborCount: matchedReport.laborCount,
-      totalOtHours: matchedReport.otHours,
-      totalWages: matchedReport.calculatedWages,
-      totalFuel: matchedReport.fuelExpenses,
-      totalTravel: matchedReport.travelExpenses,
-      totalRoomRent: matchedReport.roomRent,
-      totalToolRent: matchedReport.toolRent,
-      totalExcavation: matchedReport.excavationLength,
-      totalHdd: matchedReport.hddLength,
-      totalCableLaying: matchedReport.cableLayingLength,
-      totalCableMounding: matchedReport.cableMoundingLength,
-      totalJoiningLinks: matchedReport.joiningLinksCompleted,
-      totalRmuFoundations: matchedReport.rmuFoundationStatus,
-      totalTerminations: matchedReport.terminationEndpoints,
-      approvedReportsCount: 1,
-      updatedAt: new Date().toISOString(),
-    });
+  const { error: upsertErr } = await supabase
+    .from("master_project_ledger")
+    .upsert(consolidated, { onConflict: "ledger_date,project_id" });
+
+  if (upsertErr) {
+    console.error("Supabase ledger upsert failed:", upsertErr);
+    throw new Error(`Failed to consolidate to ledger (upsert failed): ${upsertErr.message}`);
   }
 
-  await saveLocalStore(store);
-  console.log("✓ Ledger row atomically consolidated and saved in Local JSON File Store");
+  console.log("✓ Ledger row atomically consolidated and saved to Supabase DB");
   return { ok: true };
 }
 
 export async function getMasterLedger(projectId: string): Promise<LedgerRow[]> {
-  // Attempt Supabase
-  try {
-    const supabase = getMobileAccessClient();
-    const { data, error } = await supabase
-      .from("master_project_ledger")
-      .select("*")
-      .eq("project_id", projectId)
-      .order("ledger_date", { ascending: true });
+  const supabase = getMobileAccessClient();
+  const { data, error } = await supabase
+    .from("master_project_ledger")
+    .select("*")
+    .eq("project_id", projectId)
+    .order("ledger_date", { ascending: true });
 
-    if (!error && data) {
-      return data.map(mapDbRowToLedgerRow);
-    }
-    console.warn("Supabase fetch ledger failed, using local store fallback:", error?.message);
-  } catch (err) {
-    console.warn("Supabase connection error, using local store fallback:", err);
+  if (error) {
+    console.error("Supabase fetch ledger failed in getMasterLedger:", error);
+    throw new Error(`Failed to retrieve master ledger: ${error.message}`);
   }
 
-  // Fallback
-  const store = await getLocalStore();
-  return store.ledger
-    .filter((l) => l.projectId === projectId)
-    .sort((a, b) => new Date(a.ledgerDate).getTime() - new Date(b.ledgerDate).getTime());
+  return (data || []).map(mapDbRowToLedgerRow);
 }
+
 
 // Helpers to map DB snake_case naming schema into standard frontend camelCase objects
 function mapDbRowToReport(row: any): DailyReport {
