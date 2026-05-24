@@ -2158,8 +2158,8 @@ export default function SupervisorDashboard() {
                         <input
                           type="number"
                           placeholder="0"
-                          value={terminationEndpoints}
-                          onChange={(e) => setTerminationEndpoints(e.target.value)}
+                          value={wipTerminationsValue}
+                          onChange={(e) => setWipTerminationsValue(e.target.value)}
                           style={{ width: "100%", height: 32, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "white", fontSize: 11, outline: "none", fontWeight: 700 }}
                         />
                       </div>
