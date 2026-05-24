@@ -565,7 +565,7 @@ export default function SupervisorDashboard() {
       setProjectsList(DEFAULT_PROJECTS);
       setSelectedProjectItem(DEFAULT_PROJECTS[0]);
     }
-  }, [isProjectsOpen]);
+  }, [isProjectsOpen, isDailyReportOpen]);
 
   // Load draft from localStorage when reportProjectId is selected
   useEffect(() => {

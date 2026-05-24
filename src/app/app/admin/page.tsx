@@ -27,7 +27,7 @@ export default function AdminDashboard() {
   const [mapAnimateProgress, setMapAnimateProgress] = useState(0);
   
   // Navigation & Multi-View State
-  const [activeView, setActiveView] = useState<"hub" | "approvals" | "map" | "settings" | "attendance" | "projects" | "reports" | "ledger">("hub");
+  const [activeView, setActiveView] = useState<"hub" | "approvals" | "map" | "settings" | "attendance" | "projects" | "reports" | "ledger" | "progress">("hub");
 
   // Daily Reports & Master Ledger States
   const [pendingReports, setPendingReports] = useState<any[]>([]);
@@ -67,6 +67,21 @@ export default function AdminDashboard() {
   const [projectsList, setProjectsList] = useState<any[]>([]);
   const [selectedProjectItem, setSelectedProjectItem] = useState<any | null>(null);
   const [editingProjectItem, setEditingProjectItem] = useState<any | null>(null);
+  
+  // Advanced Segment-based GIS planning states
+  const [roadChangeSegments, setRoadChangeSegments] = useState<[[number, number], [number, number]][]>([]);
+  const [hddSegments, setHddSegments] = useState<[[number, number], [number, number]][]>([]);
+  const [trenchingSegments, setTrenchingSegments] = useState<[[number, number], [number, number]][]>([]);
+  const [tempRoadStart, setTempRoadStart] = useState<[number, number] | null>(null);
+  const [tempHddStart, setTempHddStart] = useState<[number, number] | null>(null);
+  const [tempTrenchStart, setTempTrenchStart] = useState<[number, number] | null>(null);
+
+  // Daily Progress logger & documents states
+  const [progressDate, setProgressDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [progressType, setProgressType] = useState<"trenching" | "hdd">("trenching");
+  const [progressMeters, setProgressMeters] = useState("");
+  const [progressNote, setProgressNote] = useState("");
+  const [progressActiveTab, setProgressActiveTab] = useState<"log" | "docs">("log");
   
   // Edit Project fields
   const [projName, setProjName] = useState("");
@@ -389,6 +404,7 @@ export default function AdminDashboard() {
   };
 
   // Real-time postMessage listener to capture pins from interactive iframe map editor
+  // Real-time postMessage listener to capture pins from interactive iframe map editor
   useEffect(() => {
     const handleMapMessage = (e: MessageEvent) => {
       if (!e.data) return;
@@ -398,21 +414,49 @@ export default function AdminDashboard() {
         const latStr = lat.toFixed(6);
         const lngStr = lng.toFixed(6);
 
-        if (activePinMode === "start") {
+        if (activePinMode === "start" || activePinMode === "project_start") {
           setProjStartLat(latStr);
           setProjStartLng(lngStr);
-          updateCalculatedDistance(latStr, projStartLng, projEndLat, projEndLng, trenchingLine);
-          showToast(`🟢 Start Coordinate updated: [${latStr}, ${lngStr}]`);
-        } else if (activePinMode === "end") {
+          showToast(`🟢 Project Start Position set: [${latStr}, ${lngStr}]`);
+        } else if (activePinMode === "end" || activePinMode === "project_end") {
           setProjEndLat(latStr);
           setProjEndLng(lngStr);
-          updateCalculatedDistance(projStartLat, projStartLng, latStr, projEndLng, trenchingLine);
-          showToast(`🔴 End Coordinate updated: [${latStr}, ${lngStr}]`);
-        } else if (activePinMode === "hdd") {
-          setHddPoints(prev => {
-            const next = [...prev, [lat, lng] as [number, number]];
-            showToast(`🟡 HDD Drilling location marked.`);
-            return next;
+          showToast(`🔴 Project End Position set: [${latStr}, ${lngStr}]`);
+        } else if (activePinMode === "road_segment") {
+          setTempRoadStart(prev => {
+            if (!prev) {
+              showToast("📍 Road change start marked. Now click end point!");
+              return [lat, lng];
+            } else {
+              const newSeg: [[number, number], [number, number]] = [prev, [lat, lng]];
+              setRoadChangeSegments(curr => [...curr, newSeg]);
+              showToast("🛣️ Road change segment conformed and added to project!");
+              return null;
+            }
+          });
+        } else if (activePinMode === "hdd" || activePinMode === "hdd_segment") {
+          setTempHddStart(prev => {
+            if (!prev) {
+              showToast("📍 HDD crossing start marked. Now click end point!");
+              return [lat, lng];
+            } else {
+              const newSeg: [[number, number], [number, number]] = [prev, [lat, lng]];
+              setHddSegments(curr => [...curr, newSeg]);
+              showToast("🟡 HDD crossing segment conformed!");
+              return null;
+            }
+          });
+        } else if (activePinMode === "trench" || activePinMode === "trench_segment") {
+          setTempTrenchStart(prev => {
+            if (!prev) {
+              showToast("📍 Trench planning start marked. Now click end point!");
+              return [lat, lng];
+            } else {
+              const newSeg: [[number, number], [number, number]] = [prev, [lat, lng]];
+              setTrenchingSegments(curr => [...curr, newSeg]);
+              showToast("🟠 Trenching planning segment conformed!");
+              return null;
+            }
           });
         } else if (activePinMode === "termination") {
           setTerminationPoints(prev => {
@@ -420,8 +464,6 @@ export default function AdminDashboard() {
             showToast(`🔵 Grid Termination location marked.`);
             return next;
           });
-        } else if (activePinMode === "trench") {
-          appendSnappedTrenchPoint(lat, lng);
         } else if (activePinMode === "utility") {
           appendSnappedUtilityPoint(lat, lng);
         }
@@ -433,20 +475,33 @@ export default function AdminDashboard() {
         if (target === "start") {
           setProjStartLat(latStr);
           setProjStartLng(lngStr);
-          updateCalculatedDistance(latStr, projStartLng, projEndLat, projEndLng, trenchingLine);
-          showToast(`🟢 Start Coordinate dragged to: [${latStr}, ${lngStr}]`);
+          showToast(`🟢 Start Position dragged to: [${latStr}, ${lngStr}]`);
         } else if (target === "end") {
           setProjEndLat(latStr);
           setProjEndLng(lngStr);
-          updateCalculatedDistance(projStartLat, projStartLng, latStr, projEndLng, trenchingLine);
-          showToast(`🔴 End Coordinate dragged to: [${latStr}, ${lngStr}]`);
+          showToast(`🔴 End Position dragged to: [${latStr}, ${lngStr}]`);
+        }
+      } else if (e.data.type === "DELETE_SEGMENT") {
+        const { segmentType, index } = e.data;
+        if (segmentType === "road") {
+          setRoadChangeSegments(prev => prev.filter((_, idx) => idx !== index));
+          showToast("🗑️ Road segment deleted.");
+        } else if (segmentType === "hdd") {
+          setHddSegments(prev => prev.filter((_, idx) => idx !== index));
+          showToast("🗑️ HDD crossing segment deleted.");
+        } else if (segmentType === "trench") {
+          setTrenchingSegments(prev => prev.filter((_, idx) => idx !== index));
+          showToast("🗑️ Trench segment deleted.");
+        } else if (segmentType === "termination") {
+          setTerminationPoints(prev => prev.filter((_, idx) => idx !== index));
+          showToast("🗑️ Termination point deleted.");
         }
       }
     };
 
     window.addEventListener("message", handleMapMessage);
     return () => window.removeEventListener("message", handleMapMessage);
-  }, [activePinMode, projStartLat, projStartLng, projEndLat, projEndLng, trenchingLine, utilityPath]);
+  }, [activePinMode, projStartLat, projStartLng, projEndLat, projEndLng, trenchingLine, utilityPath, tempRoadStart, tempHddStart, tempTrenchStart]);
 
   // Bi-directional state transmitter to iframe map frame
   useEffect(() => {
@@ -468,13 +523,19 @@ export default function AdminDashboard() {
           hddPoints,
           terminationPoints,
           trenchingLine,
-          utilityPath
+          utilityPath,
+          roadChangeSegments,
+          hddSegments,
+          trenchingSegments,
+          tempRoadStart,
+          tempHddStart,
+          tempTrenchStart
         }, '*');
       }
     }, 50); // slight debounce for fluent text typing and dragging updates
 
     return () => clearTimeout(timer);
-  }, [projStartLat, projStartLng, projEndLat, projEndLng, hddPoints, terminationPoints, trenchingLine, utilityPath, editingProjectItem]);
+  }, [projStartLat, projStartLng, projEndLat, projEndLng, hddPoints, terminationPoints, trenchingLine, utilityPath, roadChangeSegments, hddSegments, trenchingSegments, tempRoadStart, tempHddStart, tempTrenchStart, editingProjectItem]);
 
   // OSM Location Nominatim Geocoder
   const handleSearchMap = async (e: React.FormEvent) => {
@@ -547,7 +608,16 @@ export default function AdminDashboard() {
       setTerminationPoints(editingProjectItem.terminationPoints ?? []);
       setTrenchingLine(editingProjectItem.trenchingLine ?? []);
       setUtilityPath(editingProjectItem.utilityPath ?? []);
-      setActivePinMode("start"); // default active mode
+      
+      // Load segment mappings
+      setRoadChangeSegments(editingProjectItem.roadChangeSegments ?? []);
+      setHddSegments(editingProjectItem.hddSegments ?? []);
+      setTrenchingSegments(editingProjectItem.trenchingSegments ?? []);
+      setTempRoadStart(null);
+      setTempHddStart(null);
+      setTempTrenchStart(null);
+
+      setActivePinMode("project_start"); // default active mode
     }
   }, [editingProjectItem]);
 
@@ -579,7 +649,10 @@ export default function AdminDashboard() {
       hddPoints,
       terminationPoints,
       trenchingLine,
-      utilityPath
+      utilityPath,
+      roadChangeSegments,
+      hddSegments,
+      trenchingSegments
     };
 
     const isNew = !projectsList.some(p => p.id === editingProjectItem.id);
@@ -596,6 +669,41 @@ export default function AdminDashboard() {
     setEditingProjectItem(null);
     localStorage.setItem("telgo_custom_projects", JSON.stringify(nextList));
   };
+
+  // Automatic project distance calculation helper including intermediate road changes
+  const updateProjectLength = (
+    sLat: string,
+    sLng: string,
+    eLat: string,
+    eLng: string,
+    roadSegs: [[number, number], [number, number]][]
+  ) => {
+    const lat1 = parseFloat(sLat);
+    const lng1 = parseFloat(sLng);
+    const lat2 = parseFloat(eLat);
+    const lng2 = parseFloat(eLng);
+    
+    let baseDist = 0;
+    if (!isNaN(lat1) && !isNaN(lng1) && !isNaN(lat2) && !isNaN(lng2)) {
+      baseDist = calculateHaversineDistance(lat1, lng1, lat2, lng2);
+    }
+    
+    let roadDist = 0;
+    if (roadSegs && roadSegs.length > 0) {
+      roadSegs.forEach(seg => {
+        roadDist += calculateHaversineDistance(seg[0][0], seg[0][1], seg[1][0], seg[1][1]);
+      });
+    }
+    
+    const totalDist = baseDist + roadDist;
+    setProjDistance(`${totalDist.toFixed(2)} km`);
+  };
+
+  useEffect(() => {
+    if (editingProjectItem) {
+      updateProjectLength(projStartLat, projStartLng, projEndLat, projEndLng, roadChangeSegments);
+    }
+  }, [projStartLat, projStartLng, projEndLat, projEndLng, roadChangeSegments, editingProjectItem]);
 
   // Fetch admin self profile
   useEffect(() => {
@@ -1210,10 +1318,10 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* MODULE 4: SYSTEM METRICS */}
+              {/* MODULE 4: PROJECTS PROGRESS */}
               <div 
                 className="glass module-card"
-                onClick={() => showToast("📊 Log analytics are being collected in the secure cloud.")}
+                onClick={() => { setActiveView("progress"); if (projectsList.length > 0) setSelectedProjectItem(projectsList[0]); }}
                 style={{ 
                   padding: "18px 14px", 
                   borderRadius: 16,
@@ -1223,15 +1331,20 @@ export default function AdminDashboard() {
                   flexDirection: "column",
                   alignItems: "center",
                   textAlign: "center",
-                  gap: 10
+                  gap: 10,
+                  cursor: "pointer"
                 }}
               >
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(34, 197, 94, 0.1)", border: "1px solid rgba(34, 197, 94, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(16, 185, 129, 0.1)", border: "1px solid rgba(16, 185, 129, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10"/>
+                    <line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="14"/>
+                  </svg>
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>Metrics Hub</h4>
-                  <span style={{ fontSize: 10, color: "#16a34a", fontWeight: 700, textTransform: "uppercase" }}>Operations logs</span>
+                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>Projects Progress</h4>
+                  <span style={{ fontSize: 10, color: "#10b981", fontWeight: 700, textTransform: "uppercase" }}>Planning & Docs</span>
                 </div>
               </div>
 
@@ -2425,6 +2538,28 @@ export default function AdminDashboard() {
                                 L.circle(pt, { color: '#f97316', fillColor: '#f97316', fillOpacity: 0.8, radius: 3 }).addTo(map);
                               });
                             }
+
+                            // Plot segments
+                            const roadSegs = ${JSON.stringify(selectedProjectItem.roadChangeSegments ?? [])};
+                            if (roadSegs && roadSegs.length > 0) {
+                              roadSegs.forEach((seg, idx) => {
+                                L.polyline(seg, { color: '#8b5cf6', weight: 4.5, opacity: 0.95, lineJoin: 'round' }).addTo(map).bindPopup('<b>Road Change Segment ' + (idx + 1) + '</b>');
+                              });
+                            }
+
+                            const hddSegs = ${JSON.stringify(selectedProjectItem.hddSegments ?? [])};
+                            if (hddSegs && hddSegs.length > 0) {
+                              hddSegs.forEach((seg, idx) => {
+                                L.polyline(seg, { color: '#d97706', weight: 4.5, opacity: 0.95, dashArray: '5, 5', lineJoin: 'round' }).addTo(map).bindPopup('<b>HDD Crossing Segment ' + (idx + 1) + '</b>');
+                              });
+                            }
+
+                            const trenchSegs = ${JSON.stringify(selectedProjectItem.trenchingSegments ?? [])};
+                            if (trenchSegs && trenchSegs.length > 0) {
+                              trenchSegs.forEach((seg, idx) => {
+                                L.polyline(seg, { color: '#f97316', weight: 4.5, opacity: 0.95, lineJoin: 'round' }).addTo(map).bindPopup('<b>Trench Planning Segment ' + (idx + 1) + '</b>');
+                              });
+                            }
                             
                             const startIcon = L.divIcon({ className: 'start-pulse', iconSize: [12, 12] });
                             L.marker(start, { icon: startIcon }).addTo(map).bindPopup('<b>Start:</b> ${selectedProjectItem.startLabel}');
@@ -2438,6 +2573,9 @@ export default function AdminDashboard() {
                             if (customUtility && customUtility.length > 0) customUtility.forEach(pt => bounds.push(pt));
                             if (hddPts && hddPts.length > 0) hddPts.forEach(pt => bounds.push(pt));
                             if (termPts && termPts.length > 0) termPts.forEach(pt => bounds.push(pt));
+                            if (roadSegs && roadSegs.length > 0) roadSegs.forEach(seg => seg.forEach(pt => bounds.push(pt)));
+                            if (hddSegs && hddSegs.length > 0) hddSegs.forEach(seg => seg.forEach(pt => bounds.push(pt)));
+                            if (trenchSegs && trenchSegs.length > 0) trenchSegs.forEach(seg => seg.forEach(pt => bounds.push(pt)));
 
                             try {
                               map.fitBounds(bounds, { padding: [30, 30] });
@@ -2463,6 +2601,588 @@ export default function AdminDashboard() {
                     <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--dim)" }}>{selectedProjectItem.endCoords[0]}° N, {selectedProjectItem.endCoords[1]}° E</span>
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* VIEW 5.5: PROJECTS PROGRESS CONSOLE */}
+      {activeView === "progress" && (
+        <div className="fade-in" style={{ paddingBottom: 60 }}>
+          {/* Header */}
+          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid var(--border)", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <button 
+                onClick={() => { setActiveView("hub"); setSelectedProjectItem(null); }}
+                className="back-btn"
+                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)", cursor: "pointer" }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              </button>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 10, fontWeight: 800, color: "#10b981", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Telgo Operations</p>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Projects Progress console</h1>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Sidebar list of projects */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.03em" }}>Corridor Projects</span>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
+                {projectsList.map(p => {
+                  const isSelected = selectedProjectItem?.id === p.id;
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => setSelectedProjectItem(p)}
+                      className="glass module-card"
+                      style={{
+                        padding: "14px 16px",
+                        borderRadius: 16,
+                        background: isSelected ? "rgba(16, 185, 129, 0.08)" : "var(--surface)",
+                        border: isSelected ? "1px solid rgba(16, 185, 129, 0.3)" : "1px solid var(--border)",
+                        cursor: "pointer",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        transition: "all 0.2s ease"
+                      }}
+                    >
+                      <div>
+                        <h3 style={{ fontSize: 14, fontWeight: 800, color: isSelected ? "#10b981" : "var(--text)", margin: 0 }}>{p.name}</h3>
+                        <p style={{ fontSize: 11, color: "var(--dim)", margin: "2px 0 0" }}>📍 {p.district} • 📏 {p.distance}</p>
+                      </div>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "#10b981", background: "rgba(16, 185, 129, 0.1)", border: "1px solid rgba(16, 185, 129, 0.2)", borderRadius: 6, padding: "2px 6px", fontFamily: "monospace" }}>
+                        {p.code}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Selected Project Console */}
+            {selectedProjectItem ? (() => {
+              const p = selectedProjectItem;
+              
+              // Sum completed progress
+              const log = p.progressLog || [];
+              const totalTrenchingDone = log.filter((e: any) => e.type === "trenching").reduce((acc: number, curr: any) => acc + curr.value, 0);
+              const totalHddDone = log.filter((e: any) => e.type === "hdd").reduce((acc: number, curr: any) => acc + curr.value, 0);
+
+              // Documents count
+              const docs = p.permissions || {};
+              const uploadedDocsCount = Object.keys(docs).length;
+
+              return (
+                <div className="glass fade-in" style={{ padding: 20, border: "1px solid var(--border)", borderRadius: 24, background: "var(--surface)", display: "flex", flexDirection: "column", gap: 20 }}>
+                  {/* Project Info */}
+                  <div>
+                    <h2 style={{ fontSize: 18, fontWeight: 900, color: "var(--text)", margin: 0 }}>{p.name}</h2>
+                    <p style={{ fontSize: 12, color: "var(--dim)", margin: "4px 0 0" }}>{p.description}</p>
+                  </div>
+
+                  {/* Visual Progress Status Gauges */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 16, padding: 14 }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase" }}>Trenching completed</span>
+                      <p style={{ margin: "2px 0 4px", fontSize: 20, fontWeight: 900, color: "#f97316" }}>{totalTrenchingDone} m</p>
+                      <div style={{ width: "100%", height: 6, background: "var(--border)", borderRadius: 3, overflow: "hidden" }}>
+                        <div style={{ width: `${Math.min(100, (totalTrenchingDone / 2000) * 100)}%`, height: "100%", background: "#f97316", borderRadius: 3 }} />
+                      </div>
+                      <span style={{ fontSize: 9, color: "var(--dim)", display: "block", marginTop: 4 }}>Dynamic target planning status</span>
+                    </div>
+
+                    <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 16, padding: 14 }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase" }}>HDD crossing completed</span>
+                      <p style={{ margin: "2px 0 4px", fontSize: 20, fontWeight: 900, color: "#d97706" }}>{totalHddDone} m</p>
+                      <div style={{ width: "100%", height: 6, background: "var(--border)", borderRadius: 3, overflow: "hidden" }}>
+                        <div style={{ width: `${Math.min(100, (totalHddDone / 500) * 100)}%`, height: "100%", background: "#d97706", borderRadius: 3 }} />
+                      </div>
+                      <span style={{ fontSize: 9, color: "var(--dim)", display: "block", marginTop: 4 }}>Planned horizontal directional drilling progress</span>
+                    </div>
+                  </div>
+
+                  {/* Read-Only Map iframe displaying all active segments */}
+                  <div className="glass" style={{ padding: 0, border: "1px solid var(--border)", borderRadius: 20, overflow: "hidden", background: "var(--bg)" }}>
+                    <div style={{ position: "relative", height: 260, width: "100%" }}>
+                      <iframe
+                        key={p.id} // forces reload on switching projects
+                        title="Project Corridor Progress Map"
+                        style={{ width: "100%", height: "100%", border: "none" }}
+                        srcDoc={`
+                          <!DOCTYPE html>
+                          <html>
+                          <head>
+                            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                            <style>
+                              html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #f8fafc; }
+                              .leaflet-control-attribution { display: none !important; }
+                              .leaflet-container { background: #f8fafc !important; }
+                              .leaflet-bar a { background-color: #ffffff !important; color: #334155 !important; border-color: #e2e8f0 !important; }
+                              .leaflet-bar a:hover { background-color: #f1f5f9 !important; }
+                              
+                              .start-pulse {
+                                background: #22c55e;
+                                border: 2px solid #ffffff;
+                                border-radius: 50%;
+                                box-shadow: 0 0 10px rgba(34, 197, 94, 0.7);
+                              }
+                              .end-pulse {
+                                background: #ef4444;
+                                border: 2px solid #ffffff;
+                                border-radius: 50%;
+                                box-shadow: 0 0 10px rgba(239, 68, 68, 0.7);
+                              }
+                              .term-dot {
+                                background: #2563eb;
+                                border: 1.5px solid #ffffff;
+                                border-radius: 3px;
+                                box-shadow: 0 0 8px rgba(37, 99, 235, 0.6);
+                              }
+                            </style>
+                          </head>
+                          <body>
+                            <div id="map"></div>
+                            <script>
+                              const start = [${p.startCoords[0]}, ${p.startCoords[1]}];
+                              const end = [${p.endCoords[0]}, ${p.endCoords[1]}];
+                              const map = L.map('map').setView([(start[0] + end[0]) / 2, (start[1] + end[1]) / 2], 14);
+                              
+                              L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                                maxZoom: 20
+                              }).addTo(map);
+
+                              // Primary Route (Purple utilityPath if present, else straight line)
+                              const customUtility = ${JSON.stringify(p.utilityPath ?? [])};
+                              if (customUtility && customUtility.length >= 2) {
+                                L.polyline(customUtility, { color: '#a855f7', weight: 4, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                              } else {
+                                L.polyline([start, end], { color: '#a855f7', weight: 4, opacity: 0.8, lineJoin: 'round' }).addTo(map);
+                              }
+
+                              // Plot Grid Terminations
+                              const termPts = ${JSON.stringify(p.terminationPoints ?? [])};
+                              const termIcon = L.divIcon({ className: 'term-dot', iconSize: [10, 10] });
+                              if (termPts && termPts.length > 0) {
+                                termPts.forEach((pt, idx) => {
+                                  L.marker(pt, { icon: termIcon }).addTo(map).bindPopup("<b>Grid Termination " + (idx + 1) + "</b>");
+                                });
+                              }
+
+                              // Plot segments
+                              const roadSegs = ${JSON.stringify(p.roadChangeSegments ?? [])};
+                              if (roadSegs && roadSegs.length > 0) {
+                                roadSegs.forEach((seg, idx) => {
+                                  L.polyline(seg, { color: '#8b5cf6', weight: 4.5, opacity: 0.95, lineJoin: 'round' }).addTo(map).bindPopup('<b>Road Change Segment ' + (idx + 1) + '</b>');
+                                });
+                              }
+
+                              const hddSegs = ${JSON.stringify(p.hddSegments ?? [])};
+                              if (hddSegs && hddSegs.length > 0) {
+                                hddSegs.forEach((seg, idx) => {
+                                  L.polyline(seg, { color: '#d97706', weight: 4.5, opacity: 0.95, dashArray: '5, 5', lineJoin: 'round' }).addTo(map).bindPopup('<b>HDD Crossing Segment ' + (idx + 1) + '</b>');
+                                });
+                              }
+
+                              const trenchSegs = ${JSON.stringify(p.trenchingSegments ?? [])};
+                              if (trenchSegs && trenchSegs.length > 0) {
+                                trenchSegs.forEach((seg, idx) => {
+                                  L.polyline(seg, { color: '#f97316', weight: 4.5, opacity: 0.95, lineJoin: 'round' }).addTo(map).bindPopup('<b>Trench Planning Segment ' + (idx + 1) + '</b>');
+                                });
+                              }
+                              
+                              const startIcon = L.divIcon({ className: 'start-pulse', iconSize: [12, 12] });
+                              L.marker(start, { icon: startIcon }).addTo(map).bindPopup('<b>Start:</b> ${p.startLabel}');
+                              
+                              const endIcon = L.divIcon({ className: 'end-pulse', iconSize: [12, 12] });
+                              L.marker(end, { icon: endIcon }).addTo(map).bindPopup('<b>End:</b> ${p.endLabel}');
+                              
+                              // Auto zoom to all markers
+                              const bounds = [start, end];
+                              if (customUtility && customUtility.length > 0) customUtility.forEach(pt => bounds.push(pt));
+                              if (termPts && termPts.length > 0) termPts.forEach(pt => bounds.push(pt));
+                              if (roadSegs && roadSegs.length > 0) roadSegs.forEach(seg => seg.forEach(pt => bounds.push(pt)));
+                              if (hddSegs && hddSegs.length > 0) hddSegs.forEach(seg => seg.forEach(pt => bounds.push(pt)));
+                              if (trenchSegs && trenchSegs.length > 0) trenchSegs.forEach(seg => seg.forEach(pt => bounds.push(pt)));
+
+                              try {
+                                map.fitBounds(bounds, { padding: [30, 30] });
+                              } catch(e) {}
+                            </script>
+                          </body>
+                          </html>
+                        `}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Tabs bar */}
+                  <div style={{ display: "flex", borderBottom: "1px solid var(--border)", paddingBottom: 6 }}>
+                    <button
+                      onClick={() => setProgressActiveTab("log")}
+                      style={{
+                        flex: 1,
+                        padding: "8px 12px",
+                        background: "none",
+                        border: "none",
+                        fontSize: 13,
+                        fontWeight: 800,
+                        color: progressActiveTab === "log" ? "#10b981" : "var(--dim)",
+                        borderBottom: progressActiveTab === "log" ? "2.5px solid #10b981" : "none",
+                        cursor: "pointer",
+                        fontFamily: "Outfit, sans-serif"
+                      }}
+                    >
+                      📊 Daily Progress Log
+                    </button>
+                    <button
+                      onClick={() => setProgressActiveTab("docs")}
+                      style={{
+                        flex: 1,
+                        padding: "8px 12px",
+                        background: "none",
+                        border: "none",
+                        fontSize: 13,
+                        fontWeight: 800,
+                        color: progressActiveTab === "docs" ? "#10b981" : "var(--dim)",
+                        borderBottom: progressActiveTab === "docs" ? "2.5px solid #10b981" : "none",
+                        cursor: "pointer",
+                        fontFamily: "Outfit, sans-serif"
+                      }}
+                    >
+                      📂 Permission Documents ({uploadedDocsCount}/5)
+                    </button>
+                  </div>
+
+                  {/* TAB CONTENT: PROGRESS LOG */}
+                  {progressActiveTab === "log" && (
+                    <div className="fade-in" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                      {/* Add entry form */}
+                      <form onSubmit={(e) => {
+                        e.preventDefault();
+                        const metersVal = parseFloat(progressMeters);
+                        if (isNaN(metersVal) || metersVal <= 0) {
+                          showToast("❌ Please enter a valid number of meters!");
+                          return;
+                        }
+                        const newEntry = {
+                          id: "PRG-" + Date.now(),
+                          date: progressDate,
+                          type: progressType,
+                          value: metersVal,
+                          notes: progressNote.trim()
+                        };
+                        const updated = {
+                          ...p,
+                          progressLog: [newEntry, ...(p.progressLog || [])]
+                        };
+                        const nextList = projectsList.map(pr => pr.id === p.id ? updated : pr);
+                        setProjectsList(nextList);
+                        setSelectedProjectItem(updated);
+                        localStorage.setItem("telgo_custom_projects", JSON.stringify(nextList));
+                        
+                        setProgressMeters("");
+                        setProgressNote("");
+                        showToast("📈 Daily progress entry logged!");
+                      }} style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 16, borderRadius: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "var(--dim)", textTransform: "uppercase" }}>Add Progress Entry</span>
+                        
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Select Date</label>
+                            <input
+                              type="date"
+                              value={progressDate}
+                              onChange={(e) => setProgressDate(e.target.value)}
+                              required
+                              style={{ width: "100%", height: 38, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 10px", color: "var(--text)", fontSize: 12 }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Select Metric</label>
+                            <select
+                              value={progressType}
+                              onChange={(e) => setProgressType(e.target.value as any)}
+                              style={{ width: "100%", height: 38, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 10px", color: "var(--text)", fontSize: 12, cursor: "pointer" }}
+                            >
+                              <option value="trenching">Trenching Completed (m)</option>
+                              <option value="hdd">HDD Completed (m)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Distance in Meters</label>
+                            <input
+                              type="number"
+                              placeholder="e.g. 150"
+                              value={progressMeters}
+                              onChange={(e) => setProgressMeters(e.target.value)}
+                              required
+                              style={{ width: "100%", height: 38, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 10px", color: "var(--text)", fontSize: 12 }}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Optional Notes</label>
+                          <input
+                            type="text"
+                            placeholder="Shift details, crew names, ground conditions..."
+                            value={progressNote}
+                            onChange={(e) => setProgressNote(e.target.value)}
+                            style={{ width: "100%", height: 38, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12 }}
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          style={{ width: "100%", height: 40, background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", border: "none", borderRadius: 10, color: "white", fontSize: 12, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 10px rgba(16,185,129,0.2)" }}
+                        >
+                          ➕ Add Progress Entry
+                        </button>
+                      </form>
+
+                      {/* Entries Log List */}
+                      <div>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "var(--dim)", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Chronological Daily Log</span>
+                        {log.length === 0 ? (
+                          <div style={{ background: "var(--bg)", border: "1px dashed var(--border)", borderRadius: 16, padding: "24px 16px", textAlign: "center", color: "var(--dim)", fontSize: 12 }}>
+                            No daily progress entries submitted yet. Submit using the form above.
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: "250px", overflowY: "auto", paddingRight: 4 }}>
+                            {log.map((entry: any) => (
+                              <div
+                                key={entry.id}
+                                style={{
+                                  background: "var(--surface)",
+                                  border: "1px solid var(--border)",
+                                  borderRadius: 14,
+                                  padding: "10px 14px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  gap: 12
+                                }}
+                              >
+                                <div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                    <span style={{
+                                      fontSize: 9,
+                                      fontWeight: 800,
+                                      background: entry.type === "trenching" ? "rgba(249,115,22,0.1)" : "rgba(217,119,6,0.1)",
+                                      color: entry.type === "trenching" ? "#f97316" : "#d97706",
+                                      border: `1.5px solid ${entry.type === "trenching" ? "rgba(249,115,22,0.2)" : "rgba(217,119,6,0.2)"}`,
+                                      padding: "1.5px 5px",
+                                      borderRadius: 4,
+                                      textTransform: "uppercase"
+                                    }}>{entry.type}</span>
+                                    <span style={{ fontSize: 13, fontWeight: 900, color: "var(--text)" }}>{entry.value} meters</span>
+                                  </div>
+                                  <div style={{ fontSize: 10, color: "var(--dim)", marginTop: 4 }}>
+                                    📅 <b>{entry.date}</b> {entry.notes && `• 💬 ${entry.notes}`}
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (confirm("Are you sure you want to delete this progress entry?")) {
+                                      const updatedLog = log.filter((e: any) => e.id !== entry.id);
+                                      const updated = { ...p, progressLog: updatedLog };
+                                      const nextList = projectsList.map(pr => pr.id === p.id ? updated : pr);
+                                      setProjectsList(nextList);
+                                      setSelectedProjectItem(updated);
+                                      localStorage.setItem("telgo_custom_projects", JSON.stringify(nextList));
+                                      showToast("🗑️ Progress entry removed.");
+                                    }
+                                  }}
+                                  style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", display: "flex", padding: 6 }}
+                                >
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB CONTENT: DOCUMENTS UPLOAD */}
+                  {progressActiveTab === "docs" && (
+                    <div className="fade-in" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: "var(--dim)", textTransform: "uppercase" }}>Clearance Documents</span>
+                      
+                      {[
+                        { key: "pwd", label: "PWD Permission", color: "#3b82f6", desc: "Public Works Department road excavation permit" },
+                        { key: "kseb", label: "KSEB Permission", color: "#10b981", desc: "Kerala State Electricity Board utility permission" },
+                        { key: "nh", label: "NH Authority Permission", color: "#f59e0b", desc: "National Highway authority bypass trenching NOC" },
+                        { key: "police", label: "Police NOC", color: "#8b5cf6", desc: "Local Police highway traffic management clearance" },
+                        { key: "municipal", label: "Municipal Clearance", color: "#ec4899", desc: "Municipal corporation local pathway utility NOC" }
+                      ].map(doc => {
+                        const fileInfo = docs[doc.key];
+                        return (
+                          <div
+                            key={doc.key}
+                            style={{
+                              background: "var(--surface)",
+                              border: "1px solid var(--border)",
+                              borderRadius: 16,
+                              padding: "14px 16px",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 10
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                              <div>
+                                <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: 0 }}>{doc.label}</h4>
+                                <p style={{ fontSize: 10, color: "var(--dim)", margin: "2px 0 0" }}>{doc.desc}</p>
+                              </div>
+                              {fileInfo ? (
+                                <span style={{ fontSize: 9, fontWeight: 800, color: "#10b981", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 6, padding: "2px 6px", textTransform: "uppercase" }}>
+                                  ✅ ACTIVE
+                                </span>
+                              ) : (
+                                <span style={{ fontSize: 9, fontWeight: 800, color: "var(--dim)", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "2px 6px", textTransform: "uppercase" }}>
+                                  ⚠️ PENDING
+                                </span>
+                              )}
+                            </div>
+
+                            {fileInfo && (
+                              <div style={{ background: "var(--bg)", border: "1px solid var(--border)", padding: "8px 12px", borderRadius: 10, fontSize: 11, color: "var(--muted)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <span style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", maxWidth: "200px" }}>📄 <b>{fileInfo.name}</b></span>
+                                <span style={{ fontSize: 9, color: "var(--dim)" }}>{new Date(fileInfo.uploadedAt).toLocaleDateString()}</span>
+                              </div>
+                            )}
+
+                            <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+                              <input
+                                id={`file-input-${doc.key}`}
+                                type="file"
+                                accept=".pdf,image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => {
+                                    const base64 = event.target?.result as string;
+                                    const updated = {
+                                      ...p,
+                                      permissions: {
+                                        ...(p.permissions || {}),
+                                        [doc.key]: {
+                                          name: file.name,
+                                          uploadedAt: new Date().toISOString(),
+                                          data: base64
+                                        }
+                                      }
+                                    };
+                                    const nextList = projectsList.map(pr => pr.id === p.id ? updated : pr);
+                                    setProjectsList(nextList);
+                                    setSelectedProjectItem(updated);
+                                    localStorage.setItem("telgo_custom_projects", JSON.stringify(nextList));
+                                    showToast(`📂 Uploaded ${file.name} successfully!`);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }}
+                                style={{ display: "none" }}
+                              />
+
+                              <button
+                                type="button"
+                                onClick={() => document.getElementById(`file-input-${doc.key}`)?.click()}
+                                style={{
+                                  flex: 1,
+                                  height: 34,
+                                  background: "none",
+                                  border: "1px solid var(--border)",
+                                  borderRadius: 8,
+                                  color: "var(--text)",
+                                  fontSize: 11,
+                                  fontWeight: 750,
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  gap: 6
+                                }}
+                              >
+                                📤 Upload Document
+                              </button>
+
+                              {fileInfo && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setAdminActiveImagePreview(fileInfo.data);
+                                    }}
+                                    style={{
+                                      flex: 0.8,
+                                      height: 34,
+                                      background: "rgba(16,185,129,0.08)",
+                                      border: "1px solid rgba(16,185,129,0.2)",
+                                      borderRadius: 8,
+                                      color: "#10b981",
+                                      fontSize: 11,
+                                      fontWeight: 750,
+                                      cursor: "pointer"
+                                    }}
+                                  >
+                                    👁️ Preview
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (confirm(`Remove document for ${doc.label}?`)) {
+                                        const updatedDocs = { ...docs };
+                                        delete updatedDocs[doc.key];
+                                        const updated = { ...p, permissions: updatedDocs };
+                                        const nextList = projectsList.map(pr => pr.id === p.id ? updated : pr);
+                                        setProjectsList(nextList);
+                                        setSelectedProjectItem(updated);
+                                        localStorage.setItem("telgo_custom_projects", JSON.stringify(nextList));
+                                        showToast(`🗑️ Removed ${doc.label} document.`);
+                                      }
+                                    }}
+                                    style={{
+                                      width: 34,
+                                      height: 34,
+                                      background: "rgba(220,38,38,0.08)",
+                                      border: "1px solid rgba(239,68,68,0.2)",
+                                      borderRadius: 8,
+                                      color: "#ef4444",
+                                      cursor: "pointer",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center"
+                                    }}
+                                  >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                </div>
+              );
+            })() : (
+              <div style={{ textShadow: "none", color: "var(--dim)", padding: "40px 20px", textAlign: "center", background: "var(--surface)", border: "1px dashed var(--border)", borderRadius: 24 }}>
+                Select a project corridor from the directory roster above to log progress or manage document checklists.
               </div>
             )}
           </div>
@@ -3552,9 +4272,12 @@ export default function AdminDashboard() {
           switch (activePinMode) {
             case "start": return { border: "1px solid rgba(34, 197, 94, 0.3)", background: "rgba(22, 163, 74, 0.08)", color: "#15803d" };
             case "end": return { border: "1px solid rgba(239, 68, 68, 0.3)", background: "rgba(220, 38, 38, 0.08)", color: "#dc2626" };
-            case "hdd": return { border: "1px solid rgba(251, 191, 36, 0.3)", background: "rgba(217, 119, 6, 0.08)", color: "#fcd34d" };
+            case "road_segment": return { border: "1px solid rgba(139, 92, 246, 0.3)", background: "rgba(139, 92, 246, 0.08)", color: "#8b5cf6" };
+            case "hdd":
+            case "hdd_segment": return { border: "1px solid rgba(251, 191, 36, 0.3)", background: "rgba(217, 119, 6, 0.08)", color: "#fcd34d" };
+            case "trench":
+            case "trench_segment": return { border: "1px solid rgba(249, 115, 22, 0.3)", background: "rgba(249, 115, 22, 0.08)", color: "#ff9d5c" };
             case "termination": return { border: "1px solid rgba(37, 99, 235, 0.3)", background: "rgba(37, 99, 235, 0.08)", color: "#2563eb" };
-            case "trench": return { border: "1px solid rgba(249, 115, 22, 0.3)", background: "rgba(249, 115, 22, 0.08)", color: "#ff9d5c" };
             case "utility": return { border: "1px solid rgba(168, 85, 247, 0.3)", background: "rgba(124, 58, 237, 0.08)", color: "#c084fc" };
             default: return { border: "1px solid var(--border)", background: "var(--surface)", color: "var(--dim)" };
           }
@@ -3562,11 +4285,14 @@ export default function AdminDashboard() {
 
         const getBannerText = () => {
           switch (activePinMode) {
-            case "start": return "🟢 Pin Start: Click any location on the map to set the Start Junction. You can also drag the green marker with your mouse/hand directly.";
-            case "end": return "🔴 Pin End: Click any location on the map to set the End Junction. You can also drag the red marker with your mouse/hand directly.";
-            case "hdd": return "🟡 HDD Drilling: Click on the map to add yellow HDD points at locations requiring horizontal directional drilling.";
+            case "start": return "🟢 Pin Start: Click any location on the map to set the Start Junction. You can also drag the green marker directly.";
+            case "end": return "🔴 Pin End: Click any location on the map to set the End Junction. You can also drag the red marker directly.";
+            case "road_segment": return "🛣️ Road Changes Segment: Click start point and end point on map to mark road change segment. Its distance adds to project length!";
+            case "hdd_segment": return "🟡 HDD Crossing Segment: Click start point and end point on map to clearly mark a horizontal directional drilling crossing segment.";
+            case "trench_segment": return "🟠 Trenching Segment Planning: Click start point and end point on map to mark planned trenching segments.";
+            case "hdd": return "🟡 HDD Drilling: Click on map to add yellow HDD points at locations requiring horizontal directional drilling.";
             case "termination": return "🔵 Grid Termination: Click on the map to place blue square termination boxes at substation interfaces.";
-            case "trench": return "🟠 Trench Line: Click sequential locations on the map to draw the dashed trenching line path. Estimated distance accumulates in real-time.";
+            case "trench": return "🟠 Trench Line: Click sequential locations on the map to draw the dashed trenching line path.";
             case "utility": return "🟣 Utility Link: Click sequential locations on the map to draw the custom purple utility cable routing path.";
             default: return "";
           }
@@ -3663,15 +4389,39 @@ export default function AdminDashboard() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setActivePinMode("hdd")}
+                      onClick={() => setActivePinMode("road_segment")}
                       className="tool-btn"
                       style={{
-                        borderColor: activePinMode === "hdd" ? "#eab308" : "var(--border)",
-                        background: activePinMode === "hdd" ? "rgba(234,179,8,0.12)" : "var(--surface)",
-                        color: activePinMode === "hdd" ? "#fcd34d" : "#94a3b8"
+                        borderColor: activePinMode === "road_segment" ? "#8b5cf6" : "var(--border)",
+                        background: activePinMode === "road_segment" ? "rgba(139,92,246,0.12)" : "var(--surface)",
+                        color: activePinMode === "road_segment" ? "#a78bfa" : "#94a3b8"
                       }}
                     >
-                      🟡 HDD Pin
+                      🛣️ Road Changes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActivePinMode("hdd_segment")}
+                      className="tool-btn"
+                      style={{
+                        borderColor: activePinMode === "hdd_segment" ? "#eab308" : "var(--border)",
+                        background: activePinMode === "hdd_segment" ? "rgba(234,179,8,0.12)" : "var(--surface)",
+                        color: activePinMode === "hdd_segment" ? "#fcd34d" : "#94a3b8"
+                      }}
+                    >
+                      🟡 HDD Crossing
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActivePinMode("trench_segment")}
+                      className="tool-btn"
+                      style={{
+                        borderColor: activePinMode === "trench_segment" ? "#f97316" : "var(--border)",
+                        background: activePinMode === "trench_segment" ? "rgba(249,115,22,0.12)" : "var(--surface)",
+                        color: activePinMode === "trench_segment" ? "#ff9d5c" : "#94a3b8"
+                      }}
+                    >
+                      🟠 Trench Plan
                     </button>
                     <button
                       type="button"
@@ -3687,24 +4437,13 @@ export default function AdminDashboard() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setActivePinMode("trench")}
-                      className="tool-btn"
-                      style={{
-                        borderColor: activePinMode === "trench" ? "#f97316" : "var(--border)",
-                        background: activePinMode === "trench" ? "rgba(249,115,22,0.12)" : "var(--surface)",
-                        color: activePinMode === "trench" ? "#ff9d5c" : "#94a3b8"
-                      }}
-                    >
-                      🟠 Trench Line
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => setActivePinMode("utility")}
                       className="tool-btn"
                       style={{
                         borderColor: activePinMode === "utility" ? "#a855f7" : "var(--border)",
                         background: activePinMode === "utility" ? "rgba(168,85,247,0.12)" : "var(--surface)",
-                        color: activePinMode === "utility" ? "#c084fc" : "#94a3b8"
+                        color: activePinMode === "utility" ? "#c084fc" : "#94a3b8",
+                        gridColumn: "span 3"
                       }}
                     >
                       🟣 Utility Link
@@ -3742,12 +4481,6 @@ export default function AdminDashboard() {
                                 border: 2.5px solid #ffffff;
                                 border-radius: 50%;
                                 box-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
-                              }
-                              .hdd-marker {
-                                background: #eab308;
-                                border: 2px solid #ffffff;
-                                border-radius: 50%;
-                                box-shadow: 0 0 10px rgba(234, 179, 8, 0.6);
                               }
                               .term-marker {
                                 background: #2563eb;
@@ -3789,7 +4522,6 @@ export default function AdminDashboard() {
 
                               const startIcon = L.divIcon({ className: 'start-marker', iconSize: [14, 14] });
                               const endIcon = L.divIcon({ className: 'end-marker', iconSize: [14, 14] });
-                              const hddIcon = L.divIcon({ className: 'hdd-marker', iconSize: [12, 12] });
                               const termIcon = L.divIcon({ className: 'term-marker', iconSize: [12, 12] });
 
                               let startMarker = null;
@@ -3797,8 +4529,12 @@ export default function AdminDashboard() {
                               let utilityPolyline = null;
                               let trenchPolyline = null;
                               let trenchCircles = [];
-                              let hddMarkers = [];
                               let termMarkers = [];
+
+                              let roadSegLayers = [];
+                              let hddSegLayers = [];
+                              let trenchSegLayers = [];
+                              let tempMarkerLayers = [];
 
                               // Plot Start Coordinates
                               if (hasStart) {
@@ -3826,40 +4562,84 @@ export default function AdminDashboard() {
                                 utilityPolyline = L.polyline([[startLat, startLng], [endLat, endLng]], { color: '#a855f7', weight: 4.5, opacity: 0.8, lineJoin: 'round' }).addTo(map);
                               }
 
-                              // Plot HDD Points
-                              const hddPts = ${JSON.stringify(hddPoints)};
-                              if (hddPts && hddPts.length > 0) {
-                                hddPts.forEach((pt, idx) => {
-                                  const m = L.marker(pt, { icon: hddIcon }).addTo(map).bindPopup("<b>HDD Location " + (idx + 1) + "</b>");
-                                  hddMarkers.push(m);
-                                });
-                              }
-
                               // Plot Grid Terminations
                               const termPts = ${JSON.stringify(terminationPoints)};
                               if (termPts && termPts.length > 0) {
                                 termPts.forEach((pt, idx) => {
-                                  const m = L.marker(pt, { icon: termIcon }).addTo(map).bindPopup("<b>Grid Termination " + (idx + 1) + "</b>");
+                                  const m = L.marker(pt, { icon: termIcon }).addTo(map).bindPopup("<b>Grid Termination " + (idx + 1) + "</b><br/><button onclick=\\"window.parent.postMessage({ type: 'DELETE_SEGMENT', segmentType: 'termination', index: " + idx + " }, '*');\\" style=\\"background:#ef4444;color:white;border:none;padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer;margin-top:6px;width:100%;\\">Delete</button>");
                                   termMarkers.push(m);
                                 });
                               }
 
-                              // Plot Trenching Lines
-                              const trenchLine = ${JSON.stringify(trenchingLine)};
-                              if (trenchLine && trenchLine.length >= 2) {
-                                trenchPolyline = L.polyline(trenchLine, { color: '#f97316', dashArray: '6, 6', weight: 3.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
-                                trenchLine.forEach(pt => {
-                                  const c = L.circle(pt, { color: '#f97316', fillColor: '#f97316', fillOpacity: 0.8, radius: 4 }).addTo(map);
-                                  trenchCircles.push(c);
-                                });
+                              // Function to redraw segments
+                              function drawSegments(roadSegs, hddSegs, trenchSegs, tempRoad, tempHdd, tempTrench) {
+                                roadSegLayers.forEach(l => map.removeLayer(l));
+                                roadSegLayers = [];
+                                hddSegLayers.forEach(l => map.removeLayer(l));
+                                hddSegLayers = [];
+                                trenchSegLayers.forEach(l => map.removeLayer(l));
+                                trenchSegLayers = [];
+                                tempMarkerLayers.forEach(l => map.removeLayer(l));
+                                tempMarkerLayers = [];
+
+                                // Draw road changes
+                                if (roadSegs && roadSegs.length > 0) {
+                                  roadSegs.forEach((seg, idx) => {
+                                    const poly = L.polyline(seg, { color: '#8b5cf6', weight: 5, opacity: 0.9, lineJoin: 'round' }).addTo(map);
+                                    poly.bindPopup('<b>🛣️ Road Change Segment ' + (idx + 1) + '</b><br/><button onclick="window.parent.postMessage({ type: \\\'DELETE_SEGMENT\\\', segmentType: \\\'road\\\', index: ' + idx + ' }, \\\'*\\\');" style="background:#ef4444;color:white;border:none;padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer;margin-top:6px;width:100%;">Delete Segment</button>');
+                                    roadSegLayers.push(poly);
+                                  });
+                                }
+
+                                // Draw HDD crossings
+                                if (hddSegs && hddSegs.length > 0) {
+                                  hddSegs.forEach((seg, idx) => {
+                                    const poly = L.polyline(seg, { color: '#d97706', weight: 5, opacity: 0.9, dashArray: '6, 8', lineJoin: 'round' }).addTo(map);
+                                    poly.bindPopup('<b>🟡 HDD Crossing Segment ' + (idx + 1) + '</b><br/><button onclick="window.parent.postMessage({ type: \\\'DELETE_SEGMENT\\\', segmentType: \\\'hdd\\\', index: ' + idx + ' }, \\\'*\\\');" style="background:#ef4444;color:white;border:none;padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer;margin-top:6px;width:100%;">Delete Segment</button>');
+                                    hddSegLayers.push(poly);
+                                  });
+                                }
+
+                                // Draw trenching plans
+                                if (trenchSegs && trenchSegs.length > 0) {
+                                  trenchSegs.forEach((seg, idx) => {
+                                    const poly = L.polyline(seg, { color: '#f97316', weight: 5, opacity: 0.9, lineJoin: 'round' }).addTo(map);
+                                    poly.bindPopup('<b>🟠 Trench Planning Segment ' + (idx + 1) + '</b><br/><button onclick="window.parent.postMessage({ type: \\\'DELETE_SEGMENT\\\', segmentType: \\\'trench\\\', index: ' + idx + ' }, \\\'*\\\');" style="background:#ef4444;color:white;border:none;padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer;margin-top:6px;width:100%;">Delete Segment</button>');
+                                    trenchSegLayers.push(poly);
+                                  });
+                                }
+
+                                // Indicators for half-built segments
+                                if (tempRoad) {
+                                  const c = L.circleMarker(tempRoad, { radius: 8, color: '#8b5cf6', fillColor: '#c084fc', fillOpacity: 0.8 }).addTo(map).bindPopup('<b>Road Segment Start Marked</b><br/>Click the next point on map to draw the segment.');
+                                  tempMarkerLayers.push(c);
+                                }
+                                if (tempHdd) {
+                                  const c = L.circleMarker(tempHdd, { radius: 8, color: '#d97706', fillColor: '#fbbf24', fillOpacity: 0.8 }).addTo(map).bindPopup('<b>HDD Segment Start Marked</b><br/>Click the next point on map to draw the segment.');
+                                  tempMarkerLayers.push(c);
+                                }
+                                if (tempTrench) {
+                                  const c = L.circleMarker(tempTrench, { radius: 8, color: '#f97316', fillColor: '#ffedd5', fillOpacity: 0.8 }).addTo(map).bindPopup('<b>Trench Segment Start Marked</b><br/>Click the next point on map to draw the segment.');
+                                  tempMarkerLayers.push(c);
+                                }
                               }
+
+                              // Initial Draw
+                              drawSegments(
+                                ${JSON.stringify(roadChangeSegments)},
+                                ${JSON.stringify(hddSegments)},
+                                ${JSON.stringify(trenchingSegments)},
+                                ${JSON.stringify(tempRoadStart)},
+                                ${JSON.stringify(tempHddStart)},
+                                ${JSON.stringify(tempTrenchStart)}
+                              );
 
                               // Message handler for updates and geocoding zooms
                               window.addEventListener('message', function(e) {
                                 if (!e.data) return;
                                 
                                 if (e.data.type === 'UPDATE_MARKERS') {
-                                  const { startLat, startLng, endLat, endLng, hddPoints, terminationPoints, trenchingLine, utilityPath } = e.data;
+                                  const { startLat, startLng, endLat, endLng, terminationPoints, utilityPath, roadChangeSegments, hddSegments, trenchingSegments, tempRoadStart, tempHddStart, tempTrenchStart } = e.data;
                                   
                                   // 1. Start marker
                                   if (startLat && startLng) {
@@ -3906,40 +4686,19 @@ export default function AdminDashboard() {
                                     utilityPolyline = L.polyline([[startLat, startLng], [endLat, endLng]], { color: '#a855f7', weight: 4.5, opacity: 0.8, lineJoin: 'round' }).addTo(map);
                                   }
 
-                                  // 4. Trench polyline
-                                  if (trenchPolyline) {
-                                    map.removeLayer(trenchPolyline);
-                                    trenchPolyline = null;
-                                  }
-                                  trenchCircles.forEach(c => map.removeLayer(c));
-                                  trenchCircles = [];
-                                  if (trenchingLine && trenchingLine.length >= 2) {
-                                    trenchPolyline = L.polyline(trenchingLine, { color: '#f97316', dashArray: '6, 6', weight: 3.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
-                                    trenchingLine.forEach(pt => {
-                                      const c = L.circle(pt, { color: '#f97316', fillColor: '#f97316', fillOpacity: 0.8, radius: 4 }).addTo(map);
-                                      trenchCircles.push(c);
-                                    });
-                                  }
-
-                                  // 5. HDD markers
-                                  hddMarkers.forEach(m => map.removeLayer(m));
-                                  hddMarkers = [];
-                                  if (hddPoints && hddPoints.length > 0) {
-                                    hddPoints.forEach((pt, idx) => {
-                                      const m = L.marker(pt, { icon: hddIcon }).addTo(map).bindPopup("<b>HDD Location " + (idx + 1) + "</b>");
-                                      hddMarkers.push(m);
-                                    });
-                                  }
-
-                                  // 6. Grid terminations
+                                  // 4. Grid terminations
                                   termMarkers.forEach(m => map.removeLayer(m));
                                   termMarkers = [];
                                   if (terminationPoints && terminationPoints.length > 0) {
                                     terminationPoints.forEach((pt, idx) => {
-                                      const m = L.marker(pt, { icon: termIcon }).addTo(map).bindPopup("<b>Grid Termination " + (idx + 1) + "</b>");
+                                      const m = L.marker(pt, { icon: termIcon }).addTo(map).bindPopup("<b>Grid Termination " + (idx + 1) + "</b><br/><button onclick=\\"window.parent.postMessage({ type: 'DELETE_SEGMENT', segmentType: 'termination', index: " + idx + " }, '*');\\" style=\\"background:#ef4444;color:white;border:none;padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer;margin-top:6px;width:100%;\\">Delete</button>");
                                       termMarkers.push(m);
                                     });
                                   }
+
+                                  // 5. Draw dynamically updated custom segments
+                                  drawSegments(roadChangeSegments, hddSegments, trenchingSegments, tempRoadStart, tempHddStart, tempTrenchStart);
+
                                 } else if (e.data.type === 'FLY_TO') {
                                   const { lat, lng } = e.data;
                                   map.setView([lat, lng], 15, { animate: true });
@@ -3952,7 +4711,6 @@ export default function AdminDashboard() {
                               const bounds = [];
                               if (hasStart) bounds.push([startLat, startLng]);
                               if (hasEnd) bounds.push([endLat, endLng]);
-                              if (trenchLine && trenchLine.length > 0) trenchLine.forEach(pt => bounds.push(pt));
                               if (customUtilityPath && customUtilityPath.length > 0) customUtilityPath.forEach(pt => bounds.push(pt));
                               
                               if (bounds.length > 1) {
@@ -3969,76 +4727,73 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Drawing Actions & Clear/Undo buttons */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setHddPoints([]);
-                          showToast("🧹 HDD Pins cleared!");
-                        }}
-                        style={{ width: "100%", background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
-                      >
-                        Clear HDD Pins
-                      </button>
-                    </div>
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTerminationPoints([]);
-                          showToast("🧹 Grid Terminations cleared!");
-                        }}
-                        style={{ width: "100%", background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
-                      >
-                        Clear Terminations
-                      </button>
-                    </div>
-
-                    {/* Trench Controls with Undo */}
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTrenchingLine([]);
-                          updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, []);
-                          showToast("🧹 Trenching path cleared!");
-                        }}
-                        style={{ flex: 1.2, background: "rgba(249, 115, 22, 0.08)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#ffb07a", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
-                      >
-                        Clear Trench
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleUndoTrenchPoint}
-                        disabled={trenchingLine.length === 0}
-                        style={{ flex: 0.8, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: trenchingLine.length > 0 ? "#cbd5e1" : "#475569", cursor: trenchingLine.length > 0 ? "pointer" : "default" }}
-                      >
-                        ⏪ Undo
-                      </button>
-                    </div>
-
-                    {/* Utility Controls with Undo */}
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setUtilityPath([]);
-                          showToast("🧹 Utility Shift path cleared!");
-                        }}
-                        style={{ flex: 1.2, background: "rgba(124, 58, 237, 0.08)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#d8b4fe", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
-                      >
-                        Clear Utility
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleUndoUtilityPoint}
-                        disabled={utilityPath.length === 0}
-                        style={{ flex: 0.8, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: utilityPath.length > 0 ? "#cbd5e1" : "#475569", cursor: utilityPath.length > 0 ? "pointer" : "default" }}
-                      >
-                        ⏪ Undo
-                      </button>
-                    </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProjStartLat("");
+                        setProjStartLng("");
+                        setProjEndLat("");
+                        setProjEndLng("");
+                        showToast("🧹 Start/End Pins cleared!");
+                      }}
+                      style={{ background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                    >
+                      Clear Start/End Pins
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRoadChangeSegments([]);
+                        setTempRoadStart(null);
+                        showToast("🧹 Road Change segments cleared!");
+                      }}
+                      style={{ background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                    >
+                      Clear Road Changes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHddSegments([]);
+                        setTempHddStart(null);
+                        showToast("🧹 HDD crossing segments cleared!");
+                      }}
+                      style={{ background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                    >
+                      Clear HDD Segments
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTrenchingSegments([]);
+                        setTempTrenchStart(null);
+                        showToast("🧹 Trench planning segments cleared!");
+                      }}
+                      style={{ background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                    >
+                      Clear Trench planning
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTerminationPoints([]);
+                        showToast("🧹 Grid Terminations cleared!");
+                      }}
+                      style={{ background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                    >
+                      Clear Terminations
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUtilityPath([]);
+                        showToast("🧹 Utility Shift path cleared!");
+                      }}
+                      style={{ background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                    >
+                      Clear Utility Link
+                    </button>
                   </div>
 
                   {/* Upgraded "How-To GIS Guide" instructional widget */}
