@@ -270,7 +270,7 @@ export default function FinanceDashboard() {
   }
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#060912", display: "flex", flexDirection: "column", color: "#f1f5f9", fontFamily: "Outfit, sans-serif" }}>
+    <div style={{ minHeight: "100dvh", background: "var(--bg)", display: "flex", flexDirection: "column", color: "var(--text)", fontFamily: "Outfit, sans-serif" }}>
       <style>{`
         .menu-grid {
           display: grid;
@@ -304,13 +304,13 @@ export default function FinanceDashboard() {
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
               <button 
                 onClick={() => { setIsProjectsOpen(false); setSelectedProjectItem(null); }}
-                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f1f5f9", cursor: "pointer" }}
+                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)", cursor: "pointer" }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
               </button>
               <div>
-                <p style={{ fontSize: 9, fontWeight: 800, color: "#facc15", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Telgo Power Corridors</p>
-                <h1 style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Projects Directory</h1>
+                <p style={{ fontSize: 9, fontWeight: 800, color: "#d97706", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Telgo Power Corridors</p>
+                <h1 style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Projects Directory</h1>
               </div>
             </div>
 
@@ -338,11 +338,11 @@ export default function FinanceDashboard() {
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                       <h3 style={{ fontSize: 13, fontWeight: 800, color: isSelected ? "#facc15" : "#f1f5f9", margin: 0 }}>{p.name}</h3>
-                      <span style={{ fontSize: 9, fontWeight: 800, color: "#facc15", background: "rgba(250, 204, 21, 0.12)", border: "1px solid rgba(250, 204, 21, 0.2)", borderRadius: 6, padding: "2px 6px", textTransform: "uppercase", fontFamily: "monospace", flexShrink: 0 }}>
+                      <span style={{ fontSize: 9, fontWeight: 800, color: "#d97706", background: "rgba(217, 119, 6, 0.08)", border: "1px solid rgba(217, 119, 6, 0.2)", borderRadius: 6, padding: "2px 6px", textTransform: "uppercase", fontFamily: "monospace", flexShrink: 0 }}>
                         {p.code}
                       </span>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#94a3b8" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--dim)" }}>
                       <span>District: <b>{p.district}</b></span>
                       <span>Distance: <b>{p.distance}</b></span>
                     </div>
@@ -353,12 +353,12 @@ export default function FinanceDashboard() {
 
             {/* Selected Project Map (Read-Only) */}
             {selectedProjectItem && (
-              <div className="glass fade-in" style={{ padding: 18, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, background: "rgba(255,255,255,0.01)", textAlign: "left" }}>
-                <h2 style={{ fontSize: 14, fontWeight: 900, color: "#f1f5f9", margin: 0 }}>{selectedProjectItem.name}</h2>
-                <p style={{ fontSize: 11, color: "#94a3b8", margin: "4px 0 14px" }}>{selectedProjectItem.description}</p>
+              <div className="glass fade-in" style={{ padding: 18, border: "1px solid var(--border)", borderRadius: 20, background: "var(--surface)", textAlign: "left" }}>
+                <h2 style={{ fontSize: 14, fontWeight: 900, color: "var(--text)", margin: 0 }}>{selectedProjectItem.name}</h2>
+                <p style={{ fontSize: 11, color: "var(--dim)", margin: "4px 0 14px" }}>{selectedProjectItem.description}</p>
 
                 {/* Map Display Card */}
-                <div className="glass" style={{ padding: 0, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, overflow: "hidden", background: "#080b13", marginBottom: 14 }}>
+                <div className="glass" style={{ padding: 0, border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", background: "var(--bg)", marginBottom: 14 }}>
                   <div style={{ position: "relative", height: 220, width: "100%" }}>
                     <iframe
                       title="Project Corridor Map"
@@ -370,11 +370,11 @@ export default function FinanceDashboard() {
                           <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
                           <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
                           <style>
-                            html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #060912; }
+                            html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #f8fafc; }
                             .leaflet-control-attribution { display: none !important; }
-                            .leaflet-container { background: #060912 !important; }
-                            .leaflet-bar a { background-color: #0b0f19 !important; color: #fff !important; border-color: rgba(255,255,255,0.15) !important; }
-                            .leaflet-bar a:hover { background-color: #121826 !important; }
+                            .leaflet-container { background: #f8fafc !important; }
+                            .leaflet-bar a { background-color: #ffffff !important; color: #334155 !important; border-color: #e2e8f0 !important; }
+                            .leaflet-bar a:hover { background-color: #f1f5f9 !important; }
                             
                             .start-pulse {
                               background: #22c55e;
@@ -409,7 +409,7 @@ export default function FinanceDashboard() {
                             const end = [${selectedProjectItem.endCoords[0]}, ${selectedProjectItem.endCoords[1]}];
                             const map = L.map('map').setView([(start[0] + end[0]) / 2, (start[1] + end[1]) / 2], 14);
                             
-                            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                               maxZoom: 20
                             }).addTo(map);
 
@@ -418,7 +418,7 @@ export default function FinanceDashboard() {
                             if (customUtility && customUtility.length >= 2) {
                               L.polyline(customUtility, { color: '#a855f7', weight: 4, opacity: 0.95, lineJoin: 'round' }).addTo(map);
                             } else {
-                              L.polyline([start, end], { color: '#facc15', weight: 4, opacity: 0.8, lineJoin: 'round' }).addTo(map);
+                              L.polyline([start, end], { color: "#d97706", weight: 4, opacity: 0.8, lineJoin: 'round' }).addTo(map);
                             }
 
                             // Plot HDD Points
@@ -473,16 +473,16 @@ export default function FinanceDashboard() {
                 </div>
 
                 {/* Corridor Coords Details Card */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: "var(--surface)", border: "1px solid var(--border)", padding: 12, borderRadius: 14 }}>
                   <div>
-                    <span style={{ fontSize: 8, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Start Position</span>
+                    <span style={{ fontSize: 8, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase" }}>Start Position</span>
                     <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 750, color: "#4ade80" }}>{selectedProjectItem.startLabel}</p>
-                    <span style={{ fontSize: 9, fontFamily: "monospace", color: "#64748b" }}>{selectedProjectItem.startCoords[0]}° N, {selectedProjectItem.startCoords[1]}° E</span>
+                    <span style={{ fontSize: 9, fontFamily: "monospace", color: "var(--dim)" }}>{selectedProjectItem.startCoords[0]}° N, {selectedProjectItem.startCoords[1]}° E</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: 8, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>End Position</span>
-                    <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 750, color: "#f87171" }}>{selectedProjectItem.endLabel}</p>
-                    <span style={{ fontSize: 9, fontFamily: "monospace", color: "#64748b" }}>{selectedProjectItem.endCoords[0]}° N, {selectedProjectItem.endCoords[1]}° E</span>
+                    <span style={{ fontSize: 8, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase" }}>End Position</span>
+                    <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 750, color: "var(--red)" }}>{selectedProjectItem.endLabel}</p>
+                    <span style={{ fontSize: 9, fontFamily: "monospace", color: "var(--dim)" }}>{selectedProjectItem.endCoords[0]}° N, {selectedProjectItem.endCoords[1]}° E</span>
                   </div>
                 </div>
               </div>
@@ -498,7 +498,7 @@ export default function FinanceDashboard() {
                 width: 64,
                 height: 64,
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, #ca8a04, #facc15)",
+                background: "linear-gradient(135deg, #d97706, #fbbf24)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -506,13 +506,13 @@ export default function FinanceDashboard() {
                 fontSize: 26,
                 fontWeight: 800,
                 boxShadow: "0 10px 28px rgba(250,204,21,0.2)",
-                border: "2px solid rgba(255,255,255,0.1)",
+                border: "2px solid var(--border)",
                 textTransform: "uppercase"
               }}>
                 {(user?.fullName || "U").charAt(0)}
               </div>
-              <h2 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", margin: "12px 0 2px" }}>{user?.fullName}</h2>
-              <p style={{ fontSize: 12, color: "#64748b", margin: 0, fontFamily: "monospace" }}>{user?.loginId}</p>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "12px 0 2px" }}>{user?.fullName}</h2>
+              <p style={{ fontSize: 12, color: "var(--dim)", margin: 0, fontFamily: "monospace" }}>{user?.loginId}</p>
             </div>
 
             {/* GRID OF MODULES */}
@@ -553,7 +553,7 @@ export default function FinanceDashboard() {
                   </svg>
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", margin: "0 0 2px" }}>Attendance</h4>
+                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "0 0 2px" }}>Attendance</h4>
                   <span style={{ fontSize: 9, color: isShiftActive ? "#facc15" : "#64748b", fontWeight: 700 }}>
                     {isShiftActive ? `Active (${checkInTime})` : "Pending Sign In"}
                   </span>
@@ -564,8 +564,8 @@ export default function FinanceDashboard() {
               <div 
                 onClick={() => { setIsProjectsOpen(true); if (projectsList.length > 0) setSelectedProjectItem(projectsList[0]); }}
                 style={{
-                  background: "rgba(255,255,255,0.01)",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
                   borderRadius: 18,
                   padding: "18px 14px",
                   cursor: "pointer",
@@ -595,7 +595,7 @@ export default function FinanceDashboard() {
                   </svg>
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", margin: "0 0 2px" }}>Projects</h4>
+                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "0 0 2px" }}>Projects</h4>
                   <span style={{ fontSize: 9, color: "#06b6d4", fontWeight: 700 }}>Corridors</span>
                 </div>
               </div>
@@ -603,8 +603,8 @@ export default function FinanceDashboard() {
               {/* MODULE 3: PROJECT ASSIGNMENT DETAILS */}
               <div 
                 style={{
-                  background: "rgba(255,255,255,0.01)",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
                   borderRadius: 18,
                   padding: "18px 14px",
                   display: "flex",
@@ -631,7 +631,7 @@ export default function FinanceDashboard() {
                   </svg>
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", margin: "0 0 2px" }}>Corridor</h4>
+                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "0 0 2px" }}>Corridor</h4>
                   <span style={{ fontSize: 9, color: "#06b6d4", fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100, display: "block" }}>Vadakkekotta</span>
                 </div>
               </div>
@@ -644,10 +644,10 @@ export default function FinanceDashboard() {
               style={{
                 width: "100%",
                 minHeight: 46,
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.06)",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
                 borderRadius: 14,
-                color: "#94a3b8",
+                color: "var(--dim)",
                 fontSize: 13,
                 fontWeight: 750,
                 cursor: "pointer",
@@ -677,7 +677,7 @@ export default function FinanceDashboard() {
                 background: "rgba(239, 68, 68, 0.06)",
                 border: "1px solid rgba(239, 68, 68, 0.2)",
                 borderRadius: 14,
-                color: "#f87171",
+                color: "var(--red)",
                 fontSize: 13,
                 fontWeight: 750,
                 cursor: "pointer",
@@ -697,7 +697,7 @@ export default function FinanceDashboard() {
         <div style={{
           position: "fixed",
           inset: 0,
-          background: "rgba(6, 9, 18, 0.85)",
+          background: "rgba(15, 23, 42, 0.3)",
           backdropFilter: "blur(12px)",
           display: "flex",
           alignItems: "center",
@@ -709,25 +709,25 @@ export default function FinanceDashboard() {
           <div className="glass fade-in" style={{
             width: "100%",
             maxWidth: 400,
-            background: "linear-gradient(135deg, #0e0828 0%, #060912 100%)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+            border: "1px solid var(--border)",
             borderRadius: 24,
             padding: 30,
             textAlign: "center",
-            boxShadow: "0 24px 64px rgba(0,0,0,0.7)"
+            boxShadow: "0 8px 32px rgba(15, 23, 42, 0.06)"
           }}>
             {/* Header */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-              <span style={{ fontSize: 10, fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" }}>Duty Registry</span>
+              <span style={{ fontSize: 10, fontWeight: 800, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Duty Registry</span>
               <button 
                 onClick={() => setIsAttendanceOpen(false)}
                 style={{
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
                   width: 28,
                   height: 28,
                   borderRadius: "50%",
-                  color: "#94a3b8",
+                  color: "var(--dim)",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
@@ -757,21 +757,21 @@ export default function FinanceDashboard() {
               </svg>
             </div>
 
-            <h3 style={{ fontSize: 18, fontWeight: 900, color: "#f1f5f9", margin: "0 0 8px" }}>On-Site Duty Shift</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 900, color: "var(--text)", margin: "0 0 8px" }}>On-Site Duty Shift</h3>
             
             {isShiftActive ? (
               <div style={{ marginBottom: 24 }}>
-                <p style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.5, margin: "0 0 16px" }}>
-                  Your daily attendance was successfully marked at <strong style={{ color: "#facc15" }}>{checkInTime}</strong>. Silent background telemetry is running to verify operations coverage.
+                <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5, margin: "0 0 16px" }}>
+                  Your daily attendance was successfully marked at <strong style={{ color: "#d97706" }}>{checkInTime}</strong>. Silent background telemetry is running to verify operations coverage.
                 </p>
-                <div style={{ background: "rgba(250,204,21,0.06)", border: "1px solid rgba(250,204,21,0.15)", borderRadius: 12, padding: "10px 12px", display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <div style={{ background: "rgba(217, 119, 6, 0.08)", border: "1px solid rgba(217, 119, 6, 0.15)", borderRadius: 12, padding: "10px 12px", display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                   <div className="dot-pulse" style={{ background: "#facc15" }} />
-                  <span style={{ fontSize: 11, color: "#facc15", fontWeight: 750 }}>Shift Active — completed ✓</span>
+                  <span style={{ fontSize: 11, color: "#d97706", fontWeight: 750 }}>Shift Active — completed ✓</span>
                 </div>
               </div>
             ) : (
               <div style={{ marginBottom: 24 }}>
-                <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.5, margin: 0 }}>
+                <p style={{ fontSize: 13, color: "var(--dim)", lineHeight: 1.5, margin: 0 }}>
                   Click below to sign in and mark your daily attendance. The system will securely verify your device coordinates and synchronize background logs.
                 </p>
               </div>
@@ -788,7 +788,7 @@ export default function FinanceDashboard() {
                   background: "linear-gradient(135deg, #facc15 0%, #7c3aed 100%)",
                   border: "none",
                   borderRadius: 12,
-                  color: "#060912",
+                  color: "white",
                   fontSize: 14,
                   fontWeight: 800,
                   cursor: checkingIn ? "not-allowed" : "pointer",
@@ -821,7 +821,7 @@ export default function FinanceDashboard() {
                 background: isShiftActive ? "rgba(239,68,68,0.08)" : "linear-gradient(135deg, #facc15 0%, #7c3aed 100%)",
                 border: isShiftActive ? "1px solid rgba(239,68,68,0.2)" : "none",
                 borderRadius: 12,
-                color: isShiftActive ? "#f87171" : "#060912",
+                color: isShiftActive ? "var(--red)" : "white",
                 fontSize: 14,
                 fontWeight: 800,
                 cursor: checkingIn ? "not-allowed" : "pointer",
@@ -851,7 +851,7 @@ export default function FinanceDashboard() {
                 minHeight: 40,
                 background: "transparent",
                 border: "none",
-                color: "#64748b",
+                color: "var(--dim)",
                 fontSize: 13,
                 fontWeight: 700,
                 cursor: "pointer",
@@ -874,7 +874,7 @@ export default function FinanceDashboard() {
 
       {/* Toast Notification */}
       {toast && (
-        <div style={{ position: "fixed", bottom: 24, left: 16, right: 16, background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: "14px 18px", fontSize: 13, fontWeight: 600, color: "#f1f5f9", zIndex: 10000, textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.5)", animation: "fadeIn 0.3s ease" }}>
+        <div style={{ position: "fixed", bottom: 24, left: 16, right: 16, background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: "14px 18px", fontSize: 13, fontWeight: 600, color: "var(--text)", zIndex: 10000, textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.5)", animation: "fadeIn 0.3s ease" }}>
           {toast}
         </div>
       )}

@@ -789,7 +789,7 @@ export default function SupervisorDashboard() {
         .module-card:hover {
           transform: translateY(-4px) scale(1.02);
           border-color: rgba(6, 182, 212, 0.3) !important;
-          background: rgba(255, 255, 255, 0.04) !important;
+          background: var(--surface) !important;
         }
       `}</style>
       {/* Immersive Header */}
@@ -813,7 +813,7 @@ export default function SupervisorDashboard() {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
               </button>
               <div>
-                <p style={{ fontSize: 9, fontWeight: 800, color: "#06b6d4", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Telgo Power Corridors</p>
+                <p style={{ fontSize: 9, fontWeight: 800, color: "var(--cyan)", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Telgo Power Corridors</p>
                 <h1 style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Projects Directory</h1>
               </div>
             </div>
@@ -830,8 +830,8 @@ export default function SupervisorDashboard() {
                     style={{
                       padding: "14px 16px",
                       borderRadius: 16,
-                      background: isSelected ? "rgba(6, 182, 212, 0.08)" : "rgba(255,255,255,0.01)",
-                      border: isSelected ? "1px solid rgba(6, 182, 212, 0.3)" : "1px solid rgba(255,255,255,0.04)",
+                      background: isSelected ? "rgba(14, 165, 233, 0.08)" : "var(--surface)",
+                      border: isSelected ? "1px solid rgba(14, 165, 233, 0.3)" : "1px solid var(--border)",
                       cursor: "pointer",
                       display: "flex",
                       flexDirection: "column",
@@ -842,7 +842,7 @@ export default function SupervisorDashboard() {
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                       <h3 style={{ fontSize: 13, fontWeight: 800, color: isSelected ? "#06b6d4" : "#f1f5f9", margin: 0 }}>{p.name}</h3>
-                      <span style={{ fontSize: 9, fontWeight: 800, color: "#67e8f9", background: "rgba(6, 182, 212, 0.12)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 6, padding: "2px 6px", textTransform: "uppercase", fontFamily: "monospace", flexShrink: 0 }}>
+                      <span style={{ fontSize: 9, fontWeight: 800, color: "#67e8f9", background: "rgba(6, 182, 212, 0.12)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "2px 6px", textTransform: "uppercase", fontFamily: "monospace", flexShrink: 0 }}>
                         {p.code}
                       </span>
                     </div>
@@ -874,11 +874,11 @@ export default function SupervisorDashboard() {
                           <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
                           <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
                           <style>
-                            html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #060912; }
+                            html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #f8fafc; }
                             .leaflet-control-attribution { display: none !important; }
-                            .leaflet-container { background: #060912 !important; }
-                            .leaflet-bar a { background-color: #0b0f19 !important; color: #fff !important; border-color: rgba(255,255,255,0.15) !important; }
-                            .leaflet-bar a:hover { background-color: #121826 !important; }
+                            .leaflet-container { background: #f8fafc !important; }
+                            .leaflet-bar a { background-color: #ffffff !important; color: #334155 !important; border-color: #e2e8f0 !important; }
+                            .leaflet-bar a:hover { background-color: #f1f5f9 !important; }
                             
                             .start-pulse {
                               background: #22c55e;
@@ -913,7 +913,7 @@ export default function SupervisorDashboard() {
                             const end = [${selectedProjectItem.endCoords[0]}, ${selectedProjectItem.endCoords[1]}];
                             const map = L.map('map').setView([(start[0] + end[0]) / 2, (start[1] + end[1]) / 2], 14);
                             
-                            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                               maxZoom: 20
                             }).addTo(map);
 
@@ -922,7 +922,7 @@ export default function SupervisorDashboard() {
                             if (customUtility && customUtility.length >= 2) {
                               L.polyline(customUtility, { color: '#a855f7', weight: 4, opacity: 0.95, lineJoin: 'round' }).addTo(map);
                             } else {
-                              L.polyline([start, end], { color: '#06b6d4', weight: 4, opacity: 0.8, lineJoin: 'round' }).addTo(map);
+                              L.polyline([start, end], { color: "var(--cyan)", weight: 4, opacity: 0.8, lineJoin: 'round' }).addTo(map);
                             }
 
                             // Plot HDD Points
@@ -1026,8 +1026,8 @@ export default function SupervisorDashboard() {
               <div 
                 onClick={() => setIsAttendanceOpen(true)}
                 style={{
-                  background: isShiftActive ? "rgba(167, 139, 250, 0.02)" : "rgba(255,255,255,0.01)",
-                  border: isShiftActive ? "1px solid rgba(167, 139, 250, 0.25)" : "1px solid rgba(255,255,255,0.06)",
+                  background: isShiftActive ? "rgba(167, 139, 250, 0.02)" : "var(--surface)",
+                  border: isShiftActive ? "1px solid rgba(167, 139, 250, 0.25)" : "1px solid var(--border)",
                   borderRadius: 18,
                   padding: "18px 14px",
                   cursor: "pointer",
@@ -1051,14 +1051,14 @@ export default function SupervisorDashboard() {
                   justifyContent: "center",
                   flexShrink: 0
                 }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isShiftActive ? "#a78bfa" : "#06b6d4"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isShiftActive ? "var(--violet)" : "var(--cyan)"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                     <circle cx="12" cy="10" r="3"/>
                   </svg>
                 </div>
                 <div>
                   <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "0 0 2px" }}>Attendance</h4>
-                  <span style={{ fontSize: 9, color: isShiftActive ? "#a78bfa" : "#64748b", fontWeight: 700 }}>
+                  <span style={{ fontSize: 9, color: isShiftActive ? "var(--violet)" : "var(--dim)", fontWeight: 700 }}>
                     {isShiftActive ? `Active (${checkInTime})` : "Pending Sign In"}
                   </span>
                 </div>
@@ -1085,8 +1085,8 @@ export default function SupervisorDashboard() {
                   width: 44,
                   height: 44,
                   borderRadius: 12,
-                  background: "rgba(6, 182, 212, 0.08)",
-                  border: "1px solid rgba(6, 182, 212, 0.2)",
+                  background: "rgba(14, 165, 233, 0.08)",
+                  border: "1px solid rgba(14, 165, 233, 0.2)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1100,7 +1100,7 @@ export default function SupervisorDashboard() {
                 </div>
                 <div>
                   <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "0 0 2px" }}>Projects</h4>
-                  <span style={{ fontSize: 9, color: "#06b6d4", fontWeight: 700 }}>Corridors</span>
+                  <span style={{ fontSize: 9, color: "var(--cyan)", fontWeight: 700 }}>Corridors</span>
                 </div>
               </div>
 
@@ -1123,8 +1123,8 @@ export default function SupervisorDashboard() {
                   width: 44,
                   height: 44,
                   borderRadius: 12,
-                  background: "rgba(6, 182, 212, 0.08)",
-                  border: "1px solid rgba(6, 182, 212, 0.2)",
+                  background: "rgba(14, 165, 233, 0.08)",
+                  border: "1px solid rgba(14, 165, 233, 0.2)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1136,7 +1136,7 @@ export default function SupervisorDashboard() {
                 </div>
                 <div>
                   <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "0 0 2px" }}>Corridor</h4>
-                  <span style={{ fontSize: 9, color: "#06b6d4", fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100, display: "block" }}>Vadakkekotta</span>
+                  <span style={{ fontSize: 9, color: "var(--cyan)", fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100, display: "block" }}>Vadakkekotta</span>
                 </div>
               </div>
 
@@ -1167,8 +1167,8 @@ export default function SupervisorDashboard() {
                   width: 44,
                   height: 44,
                   borderRadius: 12,
-                  background: "rgba(245, 158, 11, 0.08)",
-                  border: "1px solid rgba(245, 158, 11, 0.2)",
+                  background: "rgba(217, 119, 6, 0.08)",
+                  border: "1px solid rgba(217, 119, 6, 0.2)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1303,7 +1303,7 @@ export default function SupervisorDashboard() {
               margin: "0 auto 16px",
               boxShadow: isShiftActive ? "0 0 20px rgba(167,139,250,0.2)" : "0 0 20px rgba(6,182,212,0.2)"
             }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isShiftActive ? "#a78bfa" : "#06b6d4"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isShiftActive ? "var(--violet)" : "var(--cyan)"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 <circle cx="12" cy="10" r="3"/>
               </svg>
@@ -1316,7 +1316,7 @@ export default function SupervisorDashboard() {
                 <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5, margin: "0 0 16px" }}>
                   Your daily attendance was successfully marked at <strong style={{ color: "#a78bfa" }}>{checkInTime}</strong>. Silent background telemetry is running to verify operations coverage.
                 </p>
-                <div style={{ background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.15)", borderRadius: 12, padding: "10px 12px", display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <div style={{ background: "rgba(124, 58, 237, 0.08)", border: "1px solid rgba(124, 58, 237, 0.2)", borderRadius: 12, padding: "10px 12px", display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                   <div className="dot-pulse" style={{ background: "#a78bfa" }} />
                   <span style={{ fontSize: 11, color: "#a78bfa", fontWeight: 750 }}>Shift Active — completed ✓</span>
                 </div>
@@ -1469,7 +1469,7 @@ export default function SupervisorDashboard() {
                     width: 22,
                     height: 22,
                     borderRadius: "50%",
-                    background: reportStep === step ? "linear-gradient(135deg, #06b6d4, #7c3aed)" : reportStep > step ? "#10b981" : "rgba(255,255,255,0.05)",
+                    background: reportStep === step ? "linear-gradient(135deg, #06b6d4, #7c3aed)" : reportStep > step ? "#10b981" : "var(--border)",
                     border: reportStep === step ? "none" : "1px solid rgba(255,255,255,0.1)",
                     display: "flex",
                     alignItems: "center",
@@ -1480,7 +1480,7 @@ export default function SupervisorDashboard() {
                   }}>
                     {reportStep > step ? "✓" : step}
                   </div>
-                  {step < 5 && <div style={{ width: 14, height: 1, background: reportStep > step ? "#10b981" : "rgba(255,255,255,0.08)" }} />}
+                  {step < 5 && <div style={{ width: 14, height: 1, background: reportStep > step ? "#10b981" : "var(--border)" }} />}
                 </div>
               ))}
               <span style={{ fontSize: 10, fontWeight: 800, color: "var(--dim)", textTransform: "uppercase" }}>
@@ -1530,7 +1530,7 @@ export default function SupervisorDashboard() {
 
                   {/* Labor Wages Section */}
                   <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Labor Count & Attendance</span>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Labor Count & Attendance</span>
                     
                     {/* Crew count */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1548,7 +1548,7 @@ export default function SupervisorDashboard() {
                     </div>
 
                     {/* Supervisor Option */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: 10 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
                       <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
                         <input
                           type="checkbox"
@@ -1585,11 +1585,11 @@ export default function SupervisorDashboard() {
                   {/* Overtime Workers Section */}
                   <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Overtime Workers</span>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Overtime Workers</span>
                       <button
                         type="button"
                         onClick={() => setOtWorkers([...otWorkers, { id: Math.random().toString(), workerCount: 1, rate: 150, hours: 1, narration: "" }])}
-                        style={{ fontSize: 10, fontWeight: 800, color: "#a78bfa", background: "rgba(167, 139, 250, 0.08)", border: "1px solid rgba(167, 139, 250, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
+                        style={{ fontSize: 10, fontWeight: 800, color: "#a78bfa", background: "rgba(124, 58, 237, 0.08)", border: "1px solid rgba(124, 58, 237, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
                       >
                         ➕ Add OT Worker
                       </button>
@@ -1669,7 +1669,7 @@ export default function SupervisorDashboard() {
                   </div>
 
                   {/* Wages Live Total Glow Panel */}
-                  <div style={{ background: "rgba(16, 185, 129, 0.05)", border: "1px solid rgba(16, 185, 129, 0.15)", padding: 12, borderRadius: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ background: "rgba(22, 163, 74, 0.08)", border: "1px solid rgba(22, 163, 74, 0.2)", padding: 12, borderRadius: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
                       <span style={{ fontSize: 10, color: "#10b981", fontWeight: 800, textTransform: "uppercase" }}>Total Wages Sum</span>
                       <p style={{ margin: 0, fontSize: 8, color: "var(--dim)" }}>(Crew + Supervisor + OT)</p>
@@ -1682,11 +1682,11 @@ export default function SupervisorDashboard() {
                   {/* Dynamic Expenses Builder - Fuel */}
                   <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Fuel Expenses</span>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Fuel Expenses</span>
                       <button
                         type="button"
                         onClick={() => setFuelExpensesList([...fuelExpensesList, { id: Math.random().toString(), amount: "", narration: "", billImage: "" }])}
-                        style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", background: "rgba(6, 182, 212, 0.08)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
+                        style={{ fontSize: 10, fontWeight: 800, color: "var(--cyan)", background: "rgba(14, 165, 233, 0.08)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
                       >
                         ➕ Add Fuel Expense
                       </button>
@@ -1714,7 +1714,7 @@ export default function SupervisorDashboard() {
                             }}
                             style={{ height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                           />
-                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "var(--surface)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                             {item.billImage ? "Bill ✓" : "Bill Receipt"}
                             <input
@@ -1752,11 +1752,11 @@ export default function SupervisorDashboard() {
                   {/* Dynamic Expenses Builder - Travel */}
                   <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Travel Expenses</span>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Travel Expenses</span>
                       <button
                         type="button"
                         onClick={() => setTravelExpensesList([...travelExpensesList, { id: Math.random().toString(), amount: "", narration: "", billImage: "" }])}
-                        style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", background: "rgba(6, 182, 212, 0.08)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
+                        style={{ fontSize: 10, fontWeight: 800, color: "var(--cyan)", background: "rgba(14, 165, 233, 0.08)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
                       >
                         ➕ Add Travel Expense
                       </button>
@@ -1784,7 +1784,7 @@ export default function SupervisorDashboard() {
                             }}
                             style={{ height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                           />
-                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "var(--surface)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                             {item.billImage ? "Bill ✓" : "Bill Receipt"}
                             <input
@@ -1822,11 +1822,11 @@ export default function SupervisorDashboard() {
                   {/* Dynamic Expenses Builder - Room Rent */}
                   <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Room Rent Expenses</span>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Room Rent Expenses</span>
                       <button
                         type="button"
                         onClick={() => setRoomRentList([...roomRentList, { id: Math.random().toString(), amount: "", narration: "", billImage: "" }])}
-                        style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", background: "rgba(6, 182, 212, 0.08)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
+                        style={{ fontSize: 10, fontWeight: 800, color: "var(--cyan)", background: "rgba(14, 165, 233, 0.08)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
                       >
                         ➕ Add Room Rent
                       </button>
@@ -1854,7 +1854,7 @@ export default function SupervisorDashboard() {
                             }}
                             style={{ height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                           />
-                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "var(--surface)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                             {item.billImage ? "Bill ✓" : "Bill Receipt"}
                             <input
@@ -1892,11 +1892,11 @@ export default function SupervisorDashboard() {
                   {/* Dynamic Expenses Builder - Tool Rent */}
                   <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tool Rent Box</span>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tool Rent Box</span>
                       <button
                         type="button"
                         onClick={() => setToolRentList([...toolRentList, { id: Math.random().toString(), toolName: "", amount: "", narration: "", billImage: "" }])}
-                        style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", background: "rgba(6, 182, 212, 0.08)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
+                        style={{ fontSize: 10, fontWeight: 800, color: "var(--cyan)", background: "rgba(14, 165, 233, 0.08)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
                       >
                         ➕ Add Tool Rent
                       </button>
@@ -1933,7 +1933,7 @@ export default function SupervisorDashboard() {
                             }}
                             style={{ height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                           />
-                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "var(--surface)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                             {item.billImage ? "Bill ✓" : "Bill Receipt"}
                             <input
@@ -1975,7 +1975,7 @@ export default function SupervisorDashboard() {
                       <button
                         type="button"
                         onClick={() => setOtherExpensesList([...otherExpensesList, { id: Math.random().toString(), name: "", amount: "", narration: "", billImage: "" }])}
-                        style={{ fontSize: 10, fontWeight: 800, color: "#fbbf24", background: "rgba(251, 191, 36, 0.08)", border: "1px solid rgba(251, 191, 36, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
+                        style={{ fontSize: 10, fontWeight: 800, color: "#fbbf24", background: "rgba(217, 119, 6, 0.08)", border: "1px solid rgba(217, 119, 6, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
                       >
                         ➕ Add Misc Expense
                       </button>
@@ -2012,7 +2012,7 @@ export default function SupervisorDashboard() {
                             }}
                             style={{ height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                           />
-                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: item.billImage ? "rgba(16,185,129,0.08)" : "var(--surface)", border: item.billImage ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: item.billImage ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                             {item.billImage ? "Bill ✓" : "Bill Receipt"}
                             <input
@@ -2048,12 +2048,12 @@ export default function SupervisorDashboard() {
                   </div>
 
                   {/* Expenses Live Total Glow Panel */}
-                  <div style={{ background: "rgba(6, 182, 212, 0.05)", border: "1px solid rgba(6, 182, 212, 0.15)", padding: 12, borderRadius: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ background: "rgba(14, 165, 233, 0.08)", border: "1px solid rgba(14, 165, 233, 0.2)", padding: 12, borderRadius: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <span style={{ fontSize: 10, color: "#06b6d4", fontWeight: 800, textTransform: "uppercase" }}>Total Logistics Expenses</span>
+                      <span style={{ fontSize: 10, color: "var(--cyan)", fontWeight: 800, textTransform: "uppercase" }}>Total Logistics Expenses</span>
                       <p style={{ margin: 0, fontSize: 8, color: "var(--dim)" }}>(Fuel+Travel+Room+Tool+Misc)</p>
                     </div>
-                    <span style={{ fontSize: 18, fontWeight: 950, color: "#06b6d4" }}>
+                    <span style={{ fontSize: 18, fontWeight: 950, color: "var(--cyan)" }}>
                       ₹{totalFuel + totalTravel + totalRoomRent + totalToolRent + totalOtherRent}
                     </span>
                   </div>
@@ -2088,7 +2088,7 @@ export default function SupervisorDashboard() {
                           onChange={(e) => m.setVal(e.target.value)}
                           style={{ height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                         />
-                        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: m.pic ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: m.pic ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: m.pic ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 32, background: m.pic ? "rgba(16,185,129,0.08)" : "var(--surface)", border: m.pic ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: m.pic ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                           {m.pic ? "Photo ✓" : "Upload Photo"}
                           <input
@@ -2125,7 +2125,7 @@ export default function SupervisorDashboard() {
                   {/* GPS snaps coordinates */}
                   <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 10 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.05em" }}>Snapped GPS Coordinates</span>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Snapped GPS Coordinates</span>
                       <button
                         type="button"
                         onClick={() => {
@@ -2146,7 +2146,7 @@ export default function SupervisorDashboard() {
                             showToast("❌ Geolocation not supported by device.");
                           }
                         }}
-                        style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", background: "rgba(6, 182, 212, 0.08)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 6, padding: "3px 8px", cursor: "pointer" }}
+                        style={{ fontSize: 10, fontWeight: 800, color: "var(--cyan)", background: "rgba(14, 165, 233, 0.08)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "3px 8px", cursor: "pointer" }}
                       >
                         ⚡ Fetch GPS
                       </button>
@@ -2211,7 +2211,7 @@ export default function SupervisorDashboard() {
                         <option value="Demand Issued">Demand Note Issued</option>
                         <option value="Permission Gathered">Permission Gathered</option>
                       </select>
-                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: pwdReceipt ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: pwdReceipt ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: pwdReceipt ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: pwdReceipt ? "rgba(16,185,129,0.08)" : "var(--surface)", border: pwdReceipt ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: pwdReceipt ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                         {pwdReceipt ? "Receipt ✓" : "Upload File"}
                         <input
@@ -2251,7 +2251,7 @@ export default function SupervisorDashboard() {
                         <option value="Demand Issued">Demand Note Issued</option>
                         <option value="Permission Gathered">Permission Gathered</option>
                       </select>
-                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: ksebReceipt ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: ksebReceipt ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: ksebReceipt ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: ksebReceipt ? "rgba(16,185,129,0.08)" : "var(--surface)", border: ksebReceipt ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: ksebReceipt ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                         {ksebReceipt ? "Receipt ✓" : "Upload File"}
                         <input
@@ -2291,7 +2291,7 @@ export default function SupervisorDashboard() {
                         <option value="Demand Issued">Demand Note Issued</option>
                         <option value="Permission Gathered">Permission Gathered</option>
                       </select>
-                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: nhReceipt ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: nhReceipt ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: nhReceipt ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: nhReceipt ? "rgba(16,185,129,0.08)" : "var(--surface)", border: nhReceipt ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: nhReceipt ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                         {nhReceipt ? "Receipt ✓" : "Upload File"}
                         <input
@@ -2356,7 +2356,7 @@ export default function SupervisorDashboard() {
                         onChange={(e) => setReqFinanceAmount(e.target.value)}
                         style={{ height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none", fontWeight: 700 }}
                       />
-                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: reqFinanceReceipt ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: reqFinanceReceipt ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: reqFinanceReceipt ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: reqFinanceReceipt ? "rgba(16,185,129,0.08)" : "var(--surface)", border: reqFinanceReceipt ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: reqFinanceReceipt ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                         {reqFinanceReceipt ? "Invoice ✓" : "Upload Invoice"}
                         <input
@@ -2440,7 +2440,7 @@ export default function SupervisorDashboard() {
                                 <h5 style={{ fontSize: 13, fontWeight: 900, color: "var(--text)", margin: 0 }}>{d.project.name}</h5>
                                 <span style={{ fontSize: 9, fontFamily: "monospace", color: "var(--dim)" }}>ID: {d.project.id} | Date: {d.data.reportDate || "Today"}</span>
                               </div>
-                              <span style={{ fontSize: 9, fontWeight: 800, color: "#67e8f9", background: "rgba(6, 182, 212, 0.12)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 6, padding: "2px 6px" }}>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: "#67e8f9", background: "rgba(6, 182, 212, 0.12)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "2px 6px" }}>
                                 DRAFT
                               </span>
                             </div>
@@ -2452,9 +2452,9 @@ export default function SupervisorDashboard() {
                               </div>
                               <div>
                                 <span style={{ color: "var(--dim)" }}>Total Expenses:</span>
-                                <span style={{ display: "block", color: "#06b6d4", fontWeight: 800 }}>₹{expSum}</span>
+                                <span style={{ display: "block", color: "var(--cyan)", fontWeight: 800 }}>₹{expSum}</span>
                               </div>
-                              <div style={{ gridColumn: "span 2", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: 4, marginTop: 4 }}>
+                              <div style={{ gridColumn: "span 2", borderTop: "1px solid var(--border)", paddingTop: 4, marginTop: 4 }}>
                                 <span style={{ color: "var(--dim)" }}>WIP Metrics Entered:</span>
                                 <span style={{ display: "block", color: "var(--text)", fontWeight: 700, fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                   {[

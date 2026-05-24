@@ -105,7 +105,7 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
     <div style={{
       position: "fixed",
       inset: 0,
-      background: "rgba(6, 9, 18, 0.85)",
+      background: "rgba(15, 23, 42, 0.3)",
       backdropFilter: "blur(12px)",
       display: "flex",
       alignItems: "center",
@@ -117,23 +117,23 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
       <div className="glass fade-in" style={{
         width: "100%",
         maxWidth: 420,
-        background: "linear-gradient(135deg, #0f082e 0%, #060912 100%)",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
+        background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+        border: "1px solid var(--border)",
         borderRadius: 24,
         padding: "28px 24px",
-        boxShadow: "0 24px 64px rgba(0, 0, 0, 0.7)",
-        color: "#f1f5f9"
+        boxShadow: "0 8px 32px rgba(15, 23, 42, 0.06)",
+        color: "var(--text)"
       }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <h3 style={{ fontSize: 18, fontWeight: 900, letterSpacing: "-0.02em", margin: 0 }}>Account Settings</h3>
           <button onClick={onClose} style={{
-            background: "rgba(255, 255, 255, 0.04)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
             width: 32,
             height: 32,
             borderRadius: "50%",
-            color: "#94a3b8",
+            color: "var(--muted)",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
@@ -157,19 +157,19 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
             fontSize: 32,
             fontWeight: 800,
             boxShadow: `0 8px 24px ${currentTheme.bg}40`,
-            border: "2px solid rgba(255,255,255,0.15)",
+            border: "2px solid var(--border)",
             textTransform: "uppercase",
             marginBottom: 12
           }}>
             {fullName ? fullName.charAt(0) : (user?.fullName || "U").charAt(0)}
           </div>
-          <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Profile Preview</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Profile Preview</span>
         </div>
 
         <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {/* Avatar Theme Selection */}
           <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#94a3b8", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.03em" }}>Profile Color Theme</label>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.03em" }}>Profile Color Theme</label>
             <div style={{ display: "flex", gap: 8, justifyContent: "space-between" }}>
               {AVATAR_PRESETS.map((preset) => (
                 <button
@@ -181,7 +181,7 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
                     height: 38,
                     borderRadius: "50%",
                     background: preset.grad,
-                    border: selectedAvatar === preset.id ? "3px solid #ffffff" : "2px solid rgba(255, 255, 255, 0.05)",
+                    border: selectedAvatar === preset.id ? "3px solid var(--violet)" : "2px solid var(--border)",
                     cursor: "pointer",
                     boxShadow: selectedAvatar === preset.id ? `0 0 14px ${preset.bg}80` : "none",
                     transform: selectedAvatar === preset.id ? "scale(1.1)" : "scale(1)",
@@ -195,7 +195,7 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
 
           {/* Full Name */}
           <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#94a3b8", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.03em" }}>Display Name</label>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.03em" }}>Display Name</label>
             <input
               type="text"
               value={fullName}
@@ -206,11 +206,11 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
               style={{
                 width: "100%",
                 height: 46,
-                background: "rgba(0, 0, 0, 0.3)",
-                border: "1px solid rgba(255, 255, 255, 0.08)",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
                 borderRadius: 12,
                 padding: "0 14px",
-                color: "#f1f5f9",
+                color: "var(--text)",
                 fontSize: 14,
                 outline: "none",
                 fontFamily: "Outfit, sans-serif"
@@ -220,7 +220,7 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
 
           {/* Email (Read Only) */}
           <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.03em" }}>Email (Operational Identifier)</label>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.03em" }}>Email (Operational Identifier)</label>
             <input
               type="email"
               value={user.email || ""}
@@ -228,11 +228,11 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
               style={{
                 width: "100%",
                 height: 46,
-                background: "rgba(255, 255, 255, 0.02)",
-                border: "1px solid rgba(255, 255, 255, 0.04)",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
                 borderRadius: 12,
                 padding: "0 14px",
-                color: "#64748b",
+                color: "var(--dim)",
                 fontSize: 14,
                 fontFamily: "monospace",
                 cursor: "not-allowed"
@@ -243,12 +243,12 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
           {/* Key Identifiers */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <span style={{ fontSize: 10, color: "#475569", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Operational Role</span>
+              <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Operational Role</span>
               <p style={{ margin: "4px 0 0", fontSize: 13, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase" }}>{user.role}</p>
             </div>
             <div>
-              <span style={{ fontSize: 10, color: "#475569", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Unique Login ID</span>
-              <p style={{ margin: "4px 0 0", fontSize: 13, fontWeight: 700, fontFamily: "monospace", color: "#94a3b8" }}>{user.loginId}</p>
+              <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Unique Login ID</span>
+              <p style={{ margin: "4px 0 0", fontSize: 13, fontWeight: 700, fontFamily: "monospace", color: "var(--muted)" }}>{user.loginId}</p>
             </div>
           </div>
 
@@ -326,9 +326,9 @@ export function ProfileHeaderWidget({ user, onOpenSettings, dashboardTitle }: Pr
       alignItems: "center",
       justifyContent: "space-between",
       padding: "16px 20px",
-      background: "rgba(6, 9, 18, 0.6)",
+      background: "rgba(255, 255, 255, 0.8)",
       backdropFilter: "blur(10px)",
-      borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+      borderBottom: "1px solid var(--border)",
       position: "sticky",
       top: 0,
       zIndex: 100,
@@ -336,7 +336,7 @@ export function ProfileHeaderWidget({ user, onOpenSettings, dashboardTitle }: Pr
     }}>
       <div>
         <p style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", letterSpacing: "0.15em", textTransform: "uppercase", margin: 0 }}>Telgo Operations</p>
-        <h1 style={{ fontSize: 18, fontWeight: 900, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>{dashboardTitle}</h1>
+        <h1 style={{ fontSize: 18, fontWeight: 900, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>{dashboardTitle}</h1>
       </div>
       
       {/* Profile Button */}
@@ -354,8 +354,8 @@ export function ProfileHeaderWidget({ user, onOpenSettings, dashboardTitle }: Pr
         }}
       >
         <div style={{ textAlign: "right", display: "none" /* can show on desktop if needed */ }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: "#f1f5f9", margin: 0 }}>{user.fullName}</p>
-          <p style={{ fontSize: 10, fontWeight: 600, color: "#64748b", margin: 0, textTransform: "capitalize" }}>{user.role}</p>
+          <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", margin: 0 }}>{user.fullName}</p>
+          <p style={{ fontSize: 10, fontWeight: 600, color: "var(--dim)", margin: 0, textTransform: "capitalize" }}>{user.role}</p>
         </div>
         <div style={{
           width: 38,
@@ -368,7 +368,7 @@ export function ProfileHeaderWidget({ user, onOpenSettings, dashboardTitle }: Pr
           color: currentTheme.text,
           fontSize: 15,
           fontWeight: 800,
-          border: "1px solid rgba(255,255,255,0.1)",
+          border: "1px solid var(--border)",
           boxShadow: `0 4px 10px ${currentTheme.bg}25`,
           textTransform: "uppercase"
         }}>

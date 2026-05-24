@@ -164,7 +164,7 @@ export default function ClientDashboard() {
   const workerCoords = getAnimatedCoords();
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#060912", display: "flex", flexDirection: "column", color: "#f1f5f9", fontFamily: "Outfit, sans-serif", overflowX: "hidden" }}>
+    <div style={{ minHeight: "100dvh", background: "var(--bg)", display: "flex", flexDirection: "column", color: "var(--text)", fontFamily: "Outfit, sans-serif", overflowX: "hidden" }}>
       {/* Immersive Header with Circular Avatar Profile Pic */}
       <ProfileHeaderWidget 
         user={user} 
@@ -173,7 +173,7 @@ export default function ClientDashboard() {
       />
 
       <main style={{ flex: 1, padding: "24px 20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        <div className="glass fade-in" style={{ width: "100%", maxWidth: 420, padding: "40px 28px", textAlign: "center", borderRadius: 20, border: "1px solid rgba(255, 255, 255, 0.05)", background: "rgba(255, 255, 255, 0.01)" }}>
+        <div className="glass fade-in" style={{ width: "100%", maxWidth: 420, padding: "40px 28px", textAlign: "center", borderRadius: 20, border: "1px solid var(--border)", background: "var(--surface)" }}>
           <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg,#16a34a,#4ade80)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", boxShadow: "0 8px 24px rgba(74, 222, 128, 0.25)" }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
@@ -182,14 +182,14 @@ export default function ClientDashboard() {
             </svg>
           </div>
           
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: "#f1f5f9", marginBottom: 6 }}>Welcome, {user?.fullName}!</h2>
-          <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>{user?.email}</p>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: "var(--text)", marginBottom: 6 }}>Welcome, {user?.fullName}!</h2>
+          <p style={{ fontSize: 13, color: "var(--dim)", marginBottom: 20 }}>{user?.email}</p>
           
-          <span style={{ display: "inline-block", background: "rgba(74,222,128,0.15)", color: "#86efac", border: "1px solid rgba(74,222,128,0.25)", borderRadius: 8, padding: "4px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", marginBottom: 28 }}>
+          <span style={{ display: "inline-block", background: "rgba(22, 163, 74, 0.08)", color: "var(--green)", border: "1px solid rgba(22, 163, 74, 0.2)", borderRadius: 8, padding: "4px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", marginBottom: 28 }}>
             Client
           </span>
           
-          <p style={{ fontSize: 14, color: "#94a3b8", lineHeight: 1.6, marginBottom: 32 }}>
+          <p style={{ fontSize: 14, color: "var(--dim)", lineHeight: 1.6, marginBottom: 32 }}>
             Review real-time crew positions, pipeline coordinates, and geofence tracking telemetry securely from the operational radar.
           </p>
 
@@ -234,10 +234,10 @@ export default function ClientDashboard() {
               style={{
                 width: "100%",
                 minHeight: 44,
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.08)",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
                 borderRadius: 12,
-                color: "#cbd5e1",
+                color: "var(--muted)",
                 fontSize: 13,
                 fontWeight: 700,
                 cursor: "pointer",
@@ -267,7 +267,7 @@ export default function ClientDashboard() {
                 background: "rgba(239, 68, 68, 0.06)",
                 border: "1px solid rgba(239, 68, 68, 0.2)",
                 borderRadius: 12,
-                color: "#f87171",
+                color: "var(--red)",
                 fontSize: 13,
                 fontWeight: 700,
                 cursor: "pointer",
@@ -286,7 +286,7 @@ export default function ClientDashboard() {
         <div style={{
           position: "fixed",
           inset: 0,
-          background: "rgba(6, 9, 18, 0.85)",
+          background: "rgba(15, 23, 42, 0.3)",
           backdropFilter: "blur(12px)",
           display: "flex",
           flexDirection: "column",
@@ -301,7 +301,7 @@ export default function ClientDashboard() {
             maxHeight: "92dvh",
             height: "100%",
             margin: "0 auto",
-            background: "linear-gradient(180deg, #0b0f19 0%, #060912 100%)",
+            background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
             borderTopLeftRadius: 28,
             borderTopRightRadius: 28,
             border: "1px solid rgba(16, 185, 129, 0.2)",
@@ -309,7 +309,7 @@ export default function ClientDashboard() {
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
-            boxShadow: "0 -20px 60px rgba(0, 0, 0, 0.8)"
+            boxShadow: "0 -4px 20px rgba(0, 0, 0, 0.05)"
           }}>
             {/* Grabber Drag Handle */}
             <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 6px" }}>
@@ -320,17 +320,17 @@ export default function ClientDashboard() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 24px" }}>
               <div>
                 <span style={{ fontSize: 10, fontWeight: 800, color: "#10b981", letterSpacing: "0.15em", textTransform: "uppercase" }}>Geological Radar</span>
-                <h3 style={{ fontSize: 18, fontWeight: 900, margin: "2px 0 0", color: "#f1f5f9" }}>On-Site Deployment</h3>
+                <h3 style={{ fontSize: 18, fontWeight: 900, margin: "2px 0 0", color: "var(--text)" }}>On-Site Deployment</h3>
               </div>
               <button 
                 onClick={() => { setRadarOpen(false); setSelectedWorker(null); }}
                 style={{
-                  background: "rgba(255, 255, 255, 0.04)",
-                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
                   width: 32,
                   height: 32,
                   borderRadius: "50%",
-                  color: "#94a3b8",
+                  color: "var(--dim)",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
@@ -352,7 +352,7 @@ export default function ClientDashboard() {
               gap: 8,
               borderBottom: selectedWorker ? "1px solid rgba(255,255,255,0.06)" : "none"
             }}>
-              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", color: "#64748b", letterSpacing: "0.08em", margin: "0 0 4px" }}>Field Operations Roster</p>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", color: "var(--dim)", letterSpacing: "0.08em", margin: "0 0 4px" }}>Field Operations Roster</p>
               
               {workers.length === 0 ? (
                 <div style={{ textAlign: "center", padding: 20, color: "#475569", fontSize: 13 }}>
@@ -368,8 +368,8 @@ export default function ClientDashboard() {
                       alignItems: "center",
                       justifyContent: "space-between",
                       padding: "12px 14px",
-                      background: selectedWorker?.userId === w.userId ? "rgba(16, 185, 129, 0.06)" : "rgba(255,255,255,0.02)",
-                      border: selectedWorker?.userId === w.userId ? "1px solid rgba(16, 185, 129, 0.25)" : "1px solid rgba(255,255,255,0.05)",
+                      background: selectedWorker?.userId === w.userId ? "rgba(16, 185, 129, 0.08)" : "var(--surface)",
+                      border: selectedWorker?.userId === w.userId ? "1px solid rgba(16, 185, 129, 0.35)" : "1px solid var(--border)",
                       borderRadius: 14,
                       cursor: "pointer",
                       transition: "all 0.2s ease"
@@ -381,8 +381,8 @@ export default function ClientDashboard() {
                         width: 34,
                         height: 34,
                         borderRadius: "50%",
-                        background: "linear-gradient(135deg, #1e293b, #0f172a)",
-                        border: `1.5px solid ${selectedWorker?.userId === w.userId ? "#10b981" : "rgba(255,255,255,0.15)"}`,
+                        background: "linear-gradient(135deg, var(--violet), var(--cyan))",
+                        border: `1.5px solid ${selectedWorker?.userId === w.userId ? "var(--green)" : "var(--border)"}`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -394,18 +394,18 @@ export default function ClientDashboard() {
                       </div>
                       
                       <div style={{ minWidth: 0 }}>
-                        <h4 style={{ fontSize: 13, fontWeight: 700, margin: 0, color: "#f1f5f9" }}>{w.fullName}</h4>
+                        <h4 style={{ fontSize: 13, fontWeight: 700, margin: 0, color: "var(--text)" }}>{w.fullName}</h4>
                         <span style={{ fontSize: 10, fontWeight: 700, color: roleColor(w.role), textTransform: "uppercase" }}>{w.role}</span>
                       </div>
                     </div>
 
                     <div>
                       {w.status === "active" ? (
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(34,197,94,0.12)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 6, padding: "2px 6px", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(22, 163, 74, 0.08)", color: "var(--green)", border: "1px solid rgba(22, 163, 74, 0.2)", borderRadius: 6, padding: "2px 6px", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>
                           <span className="dot-pulse" style={{ background: "#22c55e", width: 5, height: 5 }} /> Active
                         </span>
                       ) : (
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.02)", color: "#64748b", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 6, padding: "2px 6px", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--surface)", color: "var(--dim)", border: "1px solid var(--border)", borderRadius: 6, padding: "2px 6px", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>
                           Offline
                         </span>
                       )}
@@ -417,17 +417,17 @@ export default function ClientDashboard() {
 
             {/* Split 2: Zomato-style Half-screen live moving map */}
             {selectedWorker ? (
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#05070e", position: "relative" }}>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "var(--surface)", position: "relative" }}>
                 
                 {/* Simulated Tactical Geological Vector Map */}
-                <div style={{ flex: 1, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ flex: 1, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "1px solid var(--border)" }}>
                   
                   {/* Grid lines background */}
                   <div style={{
                     position: "absolute",
                     inset: 0,
                     backgroundSize: "30px 30px",
-                    backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.015) 1px, transparent 1px)",
+                    backgroundImage: "linear-gradient(to right, rgba(15,23,42,0.025) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.025) 1px, transparent 1px)",
                     zIndex: 1
                   }} />
 
@@ -508,7 +508,7 @@ export default function ClientDashboard() {
                         <circle cx={workerCoords.x} cy={workerCoords.y} r="10" fill="#7c3aed" filter="url(#glow)" />
                         
                         {/* Mini Circular Photo Border inside pin */}
-                        <circle cx={workerCoords.x} cy={workerCoords.y} r="8" fill="#0f172a" />
+                        <circle cx={workerCoords.x} cy={workerCoords.y} r="8" fill="#ffffff" />
                         <text x={workerCoords.x} y={workerCoords.y + 3} fill="white" fontSize="9" fontWeight="950" textAnchor="middle">
                           {selectedWorker.fullName.charAt(0)}
                         </text>
@@ -523,16 +523,16 @@ export default function ClientDashboard() {
                   </svg>
 
                   {/* Satellite status info overlay */}
-                  <div style={{ position: "absolute", bottom: 12, left: 16, background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "8px 12px", zIndex: 3, display: "flex", gap: 14 }}>
+                  <div style={{ position: "absolute", bottom: 12, left: 16, background: "rgba(255, 255, 255, 0.85)", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 12px", zIndex: 3, display: "flex", gap: 14 }}>
                     <div>
-                      <span style={{ fontSize: 8, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Telemetry Link</span>
+                      <span style={{ fontSize: 8, color: "var(--dim)", textTransform: "uppercase", fontWeight: 700 }}>Telemetry Link</span>
                       <p style={{ margin: "2px 0 0", fontSize: 10, color: selectedWorker.status === "active" ? "#4ade80" : "#64748b", fontWeight: 800 }}>
                         {selectedWorker.status === "active" ? "🟢 ACTIVE (9 Sats)" : "⚫ STANDBY"}
                       </p>
                     </div>
                     <div style={{ width: 1, background: "rgba(255,255,255,0.1)" }} />
                     <div>
-                      <span style={{ fontSize: 8, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Drift Speed</span>
+                      <span style={{ fontSize: 8, color: "var(--dim)", textTransform: "uppercase", fontWeight: 700 }}>Drift Speed</span>
                       <p style={{ margin: "2px 0 0", fontSize: 10, color: selectedWorker.status === "active" ? "#06b6d4" : "#64748b", fontWeight: 800 }}>
                         {selectedWorker.status === "active" ? "1.2 m/s" : "0.0 m/s"}
                       </p>
@@ -541,18 +541,18 @@ export default function ClientDashboard() {
                 </div>
 
                 {/* Bottom Stats Sheet */}
-                <div style={{ padding: 20, background: "linear-gradient(180deg, #0d1222 0%, #060912 100%)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                <div style={{ padding: 20, background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)", borderTop: "1px solid var(--border)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
                     <div>
-                      <h4 style={{ fontSize: 15, fontWeight: 900, color: "#f1f5f9", margin: 0 }}>{selectedWorker.fullName}</h4>
-                      <p style={{ fontSize: 11, color: "#94a3b8", margin: "2px 0 0" }}>{selectedWorker.projectName}</p>
+                      <h4 style={{ fontSize: 15, fontWeight: 900, color: "var(--text)", margin: 0 }}>{selectedWorker.fullName}</h4>
+                      <p style={{ fontSize: 11, color: "var(--dim)", margin: "2px 0 0" }}>{selectedWorker.projectName}</p>
                     </div>
                     {selectedWorker.status === "active" ? (
                       <span style={{ background: selectedWorker.withinGeofence ? "rgba(34,197,94,0.12)" : "rgba(245,158,11,0.12)", color: selectedWorker.withinGeofence ? "#4ade80" : "#fbbf24", border: `1px solid ${selectedWorker.withinGeofence ? "rgba(34,197,94,0.2)" : "rgba(245,158,11,0.2)"}`, borderRadius: 6, padding: "3px 8px", fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>
                         {selectedWorker.withinGeofence ? "Within Site Geofence" : "Outside Geofence"}
                       </span>
                     ) : (
-                      <span style={{ background: "rgba(255,255,255,0.02)", color: "#64748b", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 6, padding: "3px 8px", fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>
+                      <span style={{ background: "var(--surface)", color: "var(--dim)", border: "1px solid var(--border)", borderRadius: 6, padding: "3px 8px", fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>
                         Offline
                       </span>
                     )}
@@ -560,22 +560,22 @@ export default function ClientDashboard() {
 
                   {selectedWorker.status === "active" ? (
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                      <div className="glass" style={{ padding: "10px 12px", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 10 }}>
-                        <span style={{ fontSize: 8, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Telemetry Coordinates</span>
+                      <div className="glass" style={{ padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 10 }}>
+                        <span style={{ fontSize: 8, color: "var(--dim)", textTransform: "uppercase", fontWeight: 700 }}>Telemetry Coordinates</span>
                         <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 700, fontFamily: "monospace", color: "#e2e8f0" }}>
                           {selectedWorker.latitude.toFixed(6)}° N<br/>
                           {selectedWorker.longitude.toFixed(6)}° E
                         </p>
                       </div>
-                      <div className="glass" style={{ padding: "10px 12px", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 10 }}>
-                        <span style={{ fontSize: 8, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Proximity Distance</span>
+                      <div className="glass" style={{ padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 10 }}>
+                        <span style={{ fontSize: 8, color: "var(--dim)", textTransform: "uppercase", fontWeight: 700 }}>Proximity Distance</span>
                         <p style={{ margin: "2px 0 0", fontSize: 16, fontWeight: 900, color: "#a78bfa" }}>
                           {selectedWorker.distanceFromSiteM} <span style={{ fontSize: 10, fontWeight: 600 }}>meters</span>
                         </p>
                       </div>
                     </div>
                   ) : (
-                    <div className="glass" style={{ padding: 14, borderRadius: 10, border: "1px solid rgba(255,255,255,0.04)", textAlign: "center", color: "#64748b", fontSize: 12 }}>
+                    <div className="glass" style={{ padding: 14, borderRadius: 10, border: "1px solid var(--border)", textAlign: "center", color: "var(--dim)", fontSize: 12 }}>
                       ⚠️ Roster member is currently standby off-duty. No live tracking coordinates available.
                     </div>
                   )}
@@ -585,10 +585,10 @@ export default function ClientDashboard() {
                     style={{
                       width: "100%",
                       minHeight: 40,
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
                       borderRadius: 10,
-                      color: "#cbd5e1",
+                      color: "var(--muted)",
                       fontSize: 12,
                       fontWeight: 700,
                       cursor: "pointer",
@@ -601,7 +601,7 @@ export default function ClientDashboard() {
                 </div>
               </div>
             ) : (
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 30, background: "#05070e", color: "#64748b", textAlign: "center" }}>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 30, background: "var(--surface)", color: "var(--dim)", textAlign: "center" }}>
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#1e293b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 16 }}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
                 <p style={{ fontSize: 13, color: "#475569", margin: 0, maxWidth: 280 }}>
                   Select an active supervisor or finance controller from the field roster above to initialize their Zomato-style live tracking radar path.

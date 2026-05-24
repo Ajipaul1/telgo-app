@@ -964,7 +964,7 @@ export default function AdminDashboard() {
         .module-card:hover {
           transform: translateY(-4px) scale(1.015);
           border-color: rgba(124, 58, 237, 0.35) !important;
-          background: rgba(255, 255, 255, 0.06) !important;
+          background: #f1f5f9 !important;
           box-shadow: 0 16px 36px rgba(124, 58, 237, 0.15) !important;
         }
         .search-input {
@@ -973,13 +973,13 @@ export default function AdminDashboard() {
         .search-input:focus {
           border-color: #06b6d4 !important;
           box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2) !important;
-          background: rgba(0, 0, 0, 0.6) !important;
+          background: #ffffff !important;
         }
         .back-btn {
           transition: all 0.2s ease;
         }
         .back-btn:hover {
-          background: rgba(255, 255, 255, 0.08) !important;
+          background: #f1f5f9 !important;
           transform: translateX(-2px);
         }
         .action-btn {
@@ -1035,14 +1035,11 @@ export default function AdminDashboard() {
           align-items: center;
           justify-content: center;
           gap: 8px;
-          border: 1px solid rgba(255,255,255,0.08);
-          background: rgba(255,255,255,0.02);
-          color: #94a3b8;
+          border: 1px solid var(--border); background: var(--surface); color: var(--dim);
         }
         .tool-btn:hover {
           transform: translateY(-2px);
-          background: rgba(255,255,255,0.06);
-          border-color: rgba(255,255,255,0.15);
+          background: #f1f5f9; border-color: #cbd5e1;
         }
         .tool-btn:active {
           transform: translateY(0);
@@ -1056,7 +1053,7 @@ export default function AdminDashboard() {
           <div style={{ padding: "24px 16px 0", paddingTop: "calc(env(safe-area-inset-top, 0px) + 24px)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <div>
-                <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: "#06b6d4", marginBottom: 4 }}>TELGO OPERATIONS</p>
+                <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--cyan)", marginBottom: 4 }}>TELGO OPERATIONS</p>
                 <h1 style={{ fontSize: 24, fontWeight: 900, color: "var(--text)", margin: 0, letterSpacing: "-0.5px" }}>Control Center</h1>
               </div>
               
@@ -1134,8 +1131,8 @@ export default function AdminDashboard() {
                 style={{ 
                   padding: "18px 14px", 
                   borderRadius: 16,
-                  border: pending.length > 0 ? "1px solid rgba(251, 191, 36, 0.35)" : "1px solid rgba(255,255,255,0.05)",
-                  background: pending.length > 0 ? "linear-gradient(135deg, rgba(251,191,36,0.06) 0%, rgba(6,9,18,0.7) 100%)" : "rgba(255,255,255,0.01)",
+                  border: pending.length > 0 ? "1px solid rgba(217, 119, 6, 0.35)" : "1px solid var(--border)",
+                  background: pending.length > 0 ? "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)" : "var(--surface)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -1144,11 +1141,11 @@ export default function AdminDashboard() {
                 }}
               >
                 <div style={{ position: "relative" }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: pending.length > 0 ? "rgba(251,191,36,0.12)" : "rgba(196, 181, 253, 0.1)", border: pending.length > 0 ? "1px solid rgba(251,191,36,0.3)" : "1px solid rgba(196, 181, 253, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={pending.length > 0 ? "#fbbf24" : "#c4b5fd"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: pending.length > 0 ? "rgba(217, 119, 6, 0.12)" : "rgba(124, 58, 237, 0.08)", border: pending.length > 0 ? "1px solid rgba(217, 119, 6, 0.3)" : "1px solid rgba(124, 58, 237, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={pending.length > 0 ? "#d97706" : "#7c3aed"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
                   </div>
                   {pending.length > 0 && (
-                    <span style={{ position: "absolute", top: -4, right: -4, fontSize: 9, fontWeight: 900, background: "#fbbf24", color: "#060912", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", border: "1.5px solid #060912" }}>
+                    <span style={{ position: "absolute", top: -4, right: -4, fontSize: 9, fontWeight: 900, background: "#fbbf24", color: "#ffffff", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", border: "1.5px solid #ffffff" }}>
                       {pending.length}
                     </span>
                   )}
@@ -1177,12 +1174,12 @@ export default function AdminDashboard() {
                   gap: 10
                 }}
               >
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(6, 182, 212, 0.1)", border: "1px solid rgba(6, 182, 212, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(6, 182, 212, 0.1)", border: "1px solid rgba(14, 165, 233, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="10" r="3"/></svg>
                 </div>
                 <div>
                   <h4 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>Live Radar Map</h4>
-                  <span style={{ fontSize: 10, color: "#06b6d4", fontWeight: 800, textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ fontSize: 10, color: "var(--cyan)", fontWeight: 800, textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 4 }}>
                     <span className="dot-pulse" style={{ background: "#06b6d4", width: 5, height: 5 }} /> Radar Active
                   </span>
                 </div>
@@ -1204,7 +1201,7 @@ export default function AdminDashboard() {
                   gap: 10
                 }}
               >
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(167, 139, 250, 0.1)", border: "1px solid rgba(167, 139, 250, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(167, 139, 250, 0.1)", border: "1px solid rgba(124, 58, 237, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 </div>
                 <div>
@@ -1254,7 +1251,7 @@ export default function AdminDashboard() {
                   gap: 10
                 }}
               >
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(167, 139, 250, 0.1)", border: "1px solid rgba(167, 139, 250, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(167, 139, 250, 0.1)", border: "1px solid rgba(124, 58, 237, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
                 </div>
                 <div>
@@ -1309,7 +1306,7 @@ export default function AdminDashboard() {
                   gap: 10
                 }}
               >
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(245, 158, 11, 0.1)", border: "1px solid rgba(245, 158, 11, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(245, 158, 11, 0.1)", border: "1px solid rgba(217, 119, 6, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="20" x2="18" y2="10"/>
                     <line x1="12" y1="20" x2="12" y2="4"/>
@@ -1363,7 +1360,7 @@ export default function AdminDashboard() {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
               </button>
               <div>
-                <p style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>System Management</p>
+                <p style={{ fontSize: 10, fontWeight: 800, color: "var(--cyan)", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>System Management</p>
                 <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Access Control</h1>
               </div>
             </div>
@@ -1376,10 +1373,10 @@ export default function AdminDashboard() {
               style={{
                 flex: 1,
                 minHeight: 40,
-                background: approvalsTab === "pending" ? "rgba(124, 58, 237, 0.15)" : "rgba(255, 255, 255, 0.02)",
-                border: approvalsTab === "pending" ? "1px solid rgba(124, 58, 237, 0.35)" : "1px solid rgba(255, 255, 255, 0.06)",
+                background: approvalsTab === "pending" ? "rgba(124, 58, 237, 0.08)" : "var(--surface)",
+                border: approvalsTab === "pending" ? "1px solid rgba(124, 58, 237, 0.3)" : "1px solid var(--border)",
                 borderRadius: 12,
-                color: approvalsTab === "pending" ? "#c4b5fd" : "#94a3b8",
+                color: approvalsTab === "pending" ? "var(--violet)" : "var(--dim)",
                 fontSize: 13,
                 fontWeight: 700,
                 cursor: "pointer",
@@ -1392,7 +1389,7 @@ export default function AdminDashboard() {
             >
               <span>⏳ Requests</span>
               {pending.length > 0 && (
-                <span style={{ fontSize: 10, background: "#fbbf24", color: "#060912", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>
+                <span style={{ fontSize: 10, background: "#fbbf24", color: "#ffffff", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>
                   {pending.length}
                 </span>
               )}
@@ -1402,10 +1399,10 @@ export default function AdminDashboard() {
               style={{
                 flex: 1,
                 minHeight: 40,
-                background: approvalsTab === "active" ? "rgba(6, 182, 212, 0.15)" : "rgba(255, 255, 255, 0.02)",
-                border: approvalsTab === "active" ? "1px solid rgba(6, 182, 212, 0.35)" : "1px solid rgba(255, 255, 255, 0.06)",
+                background: approvalsTab === "active" ? "rgba(14, 165, 233, 0.08)" : "var(--surface)",
+                border: approvalsTab === "active" ? "1px solid rgba(14, 165, 233, 0.3)" : "1px solid var(--border)",
                 borderRadius: 12,
-                color: approvalsTab === "active" ? "#67e8f9" : "#94a3b8",
+                color: approvalsTab === "active" ? "var(--cyan)" : "var(--dim)",
                 fontSize: 13,
                 fontWeight: 700,
                 cursor: "pointer",
@@ -1417,7 +1414,7 @@ export default function AdminDashboard() {
               }}
             >
               <span>👥 Active Crew</span>
-              <span style={{ fontSize: 10, background: "rgba(6, 182, 212, 0.2)", color: "#06b6d4", borderRadius: 10, padding: "2px 6px", fontWeight: 800 }}>
+              <span style={{ fontSize: 10, background: "rgba(14, 165, 233, 0.12)", color: "var(--cyan)", borderRadius: 10, padding: "2px 6px", fontWeight: 800 }}>
                 {active.length}
               </span>
             </button>
@@ -1466,7 +1463,7 @@ export default function AdminDashboard() {
                           onClick={() => blockUser(u.id)}
                           disabled={blocking === u.id}
                           className="action-btn"
-                          style={{ minWidth: 70, minHeight: 40, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10, color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit,sans-serif", opacity: blocking === u.id ? 0.6 : 1 }}
+                          style={{ minWidth: 70, minHeight: 40, background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10, color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit,sans-serif", opacity: blocking === u.id ? 0.6 : 1 }}
                         >
                           {blocking === u.id ? "..." : "Block"}
                         </button>
@@ -1588,7 +1585,7 @@ export default function AdminDashboard() {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
               </button>
               <div>
-                <p style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Operations tactical map</p>
+                <p style={{ fontSize: 10, fontWeight: 800, color: "var(--cyan)", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Operations tactical map</p>
                 <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Field Crew Radar</h1>
               </div>
             </div>
@@ -1616,8 +1613,8 @@ export default function AdminDashboard() {
                         style={{
                           padding: "12px 14px",
                           borderRadius: 14,
-                          background: isSelected ? "rgba(6, 182, 212, 0.08)" : "rgba(255,255,255,0.01)",
-                          border: isSelected ? "1px solid rgba(6, 182, 212, 0.3)" : "1px solid rgba(255,255,255,0.04)",
+                          background: isSelected ? "rgba(14, 165, 233, 0.08)" : "var(--surface)",
+                          border: isSelected ? "1px solid rgba(14, 165, 233, 0.3)" : "1px solid var(--border)",
                           cursor: "pointer",
                           display: "flex",
                           alignItems: "center",
@@ -1674,7 +1671,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Map Tactical Module */}
-              <div className="glass glow-cyan" style={{ padding: 0, border: "1px solid rgba(6,182,212,0.15)", borderRadius: 24, overflow: "hidden", background: "var(--bg)" }}>
+              <div className="glass glow-cyan" style={{ padding: 0, border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 24, overflow: "hidden", background: "var(--bg)" }}>
                 
                 {/* Visual Leaflet Map Container */}
                 <div style={{ position: "relative", height: 280, width: "100%", borderBottom: "1px solid var(--border)" }}>
@@ -1692,11 +1689,11 @@ export default function AdminDashboard() {
                             <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
                             <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
                             <style>
-                              html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #060912; }
+                              html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #f8fafc; }
                               .leaflet-control-attribution { display: none !important; }
-                              .leaflet-container { background: #060912 !important; }
-                              .leaflet-bar a { background-color: #0b0f19 !important; color: #fff !important; border-color: rgba(255,255,255,0.15) !important; }
-                              .leaflet-bar a:hover { background-color: #121826 !important; }
+                              .leaflet-container { background: #f8fafc !important; }
+                              .leaflet-bar a { background-color: #ffffff !important; color: #334155 !important; border-color: #e2e8f0 !important; }
+                              .leaflet-bar a:hover { background-color: #f1f5f9 !important; }
                               
                               /* Pulsing glow animation for active marker pin */
                               .live-pulse {
@@ -1724,7 +1721,7 @@ export default function AdminDashboard() {
                               const map = L.map('map').setView([${radarSelectedWorker.latitude}, ${radarSelectedWorker.longitude}], 15);
                               
                               // Dark-themed premium street tiles (no API key required)
-                              L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                              L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                                 maxZoom: 20
                               }).addTo(map);
 
@@ -1742,7 +1739,7 @@ export default function AdminDashboard() {
                               if (historyCoords && historyCoords.length > 1) {
                                 // Glow path (thick semi-transparent back)
                                 const polylineGlow = L.polyline(historyCoords, {
-                                  color: '#06b6d4',
+                                  color: "var(--cyan)",
                                   weight: 8,
                                   opacity: 0.3,
                                   lineJoin: 'round'
@@ -1750,7 +1747,7 @@ export default function AdminDashboard() {
 
                                 // Forepath (sharp high-opacity front)
                                 const polylineMain = L.polyline(historyCoords, {
-                                  color: '#06b6d4',
+                                  color: "var(--cyan)",
                                   weight: 3.5,
                                   opacity: 0.95,
                                   lineJoin: 'round'
@@ -1795,7 +1792,7 @@ export default function AdminDashboard() {
                   ) : (
                     /* Circular Radar Sweep Placeholder */
                     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, boxSizing: "border-box", background: "var(--bg)" }}>
-                      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(6, 182, 212, 0.05)", border: "1.5px dashed rgba(6, 182, 212, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+                      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(14, 165, 233, 0.08)", border: "1.5px dashed rgba(6, 182, 212, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16.2 7.8-2.9 2.9-2.9-2.9"/></svg>
                       </div>
                       <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--muted)", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Operational Radar Standby</h4>
@@ -1855,7 +1852,7 @@ export default function AdminDashboard() {
                       {radarSelectedWorker.status === "active" && (
                         <div style={{ marginTop: 14, background: "rgba(6,182,212,0.04)", border: "1px solid rgba(6,182,212,0.12)", borderRadius: 12, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10 }}>
                           <div className="dot-pulse" style={{ background: "#06b6d4", flexShrink: 0 }} />
-                          <span style={{ fontSize: 11, color: "#06b6d4", fontWeight: 700, lineHeight: 1.4 }}>
+                          <span style={{ fontSize: 11, color: "var(--cyan)", fontWeight: 700, lineHeight: 1.4 }}>
                             Trace active. Pulsing dot is moving smoothly along the sn-cable pipeline project site path in Kottayam.
                           </span>
                         </div>
@@ -1924,8 +1921,8 @@ export default function AdminDashboard() {
                         style={{
                           padding: "12px 14px",
                           borderRadius: 14,
-                          background: isSelected ? "rgba(167, 139, 250, 0.08)" : "rgba(255,255,255,0.01)",
-                          border: isSelected ? "1px solid rgba(167, 139, 250, 0.3)" : "1px solid rgba(255,255,255,0.04)",
+                          background: isSelected ? "rgba(124, 58, 237, 0.08)" : "var(--surface)",
+                          border: isSelected ? "1px solid rgba(124, 58, 237, 0.3)" : "1px solid var(--border)",
                           cursor: "pointer",
                           display: "flex",
                           alignItems: "center",
@@ -2055,7 +2052,7 @@ export default function AdminDashboard() {
                         <h3 style={{ fontSize: 16, fontWeight: 900, color: "var(--text)", margin: 0 }}>{selectedAttendanceWorker.full_name}</h3>
                         <p style={{ fontSize: 11, color: "var(--dim)", margin: "2px 0 0" }}>Monthly Duty summary (100% Real Database logs)</p>
                       </div>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 6, padding: "3px 8px" }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(124, 58, 237, 0.2)", borderRadius: 6, padding: "3px 8px" }}>
                         {attendanceRecords.length} Raw Logs
                       </span>
                     </div>
@@ -2200,7 +2197,7 @@ export default function AdminDashboard() {
                   }}
                   style={{
                     background: "rgba(6, 182, 212, 0.12)",
-                    border: "1px solid rgba(6, 182, 212, 0.3)",
+                    border: "1px solid rgba(14, 165, 233, 0.3)",
                     borderRadius: 10,
                     padding: "6px 12px",
                     fontSize: 11,
@@ -2215,7 +2212,7 @@ export default function AdminDashboard() {
                 <button
                   onClick={resetToDefaults}
                   style={{
-                    background: "rgba(239, 68, 68, 0.08)",
+                    background: "rgba(220, 38, 38, 0.08)",
                     border: "1px solid rgba(239, 68, 68, 0.2)",
                     borderRadius: 10,
                     padding: "6px 12px",
@@ -2245,8 +2242,8 @@ export default function AdminDashboard() {
                     style={{
                       padding: "14px 16px",
                       borderRadius: 16,
-                      background: isSelected ? "rgba(124, 58, 237, 0.08)" : "rgba(255,255,255,0.01)",
-                      border: isSelected ? "1px solid rgba(124, 58, 237, 0.3)" : "1px solid rgba(255,255,255,0.04)",
+                      background: isSelected ? "rgba(124, 58, 237, 0.08)" : "var(--surface)",
+                      border: isSelected ? "1px solid rgba(124, 58, 237, 0.3)" : "1px solid var(--border)",
                       cursor: "pointer",
                       display: "flex",
                       flexDirection: "column",
@@ -2255,8 +2252,8 @@ export default function AdminDashboard() {
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-                      <h3 style={{ fontSize: 14, fontWeight: 800, color: isSelected ? "#c4b5fd" : "#f1f5f9", margin: 0 }}>{p.name}</h3>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: "#67e8f9", background: "rgba(6, 182, 212, 0.12)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 6, padding: "2px 6px", textTransform: "uppercase", fontFamily: "monospace", flexShrink: 0 }}>
+                      <h3 style={{ fontSize: 14, fontWeight: 800, color: isSelected ? "var(--violet)" : "var(--text)", margin: 0 }}>{p.name}</h3>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "#67e8f9", background: "rgba(6, 182, 212, 0.12)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "2px 6px", textTransform: "uppercase", fontFamily: "monospace", flexShrink: 0 }}>
                         {p.code}
                       </span>
                     </div>
@@ -2294,7 +2291,7 @@ export default function AdminDashboard() {
                 style={{
                   padding: "16px",
                   borderRadius: 16,
-                  background: "rgba(6, 182, 212, 0.05)",
+                  background: "rgba(14, 165, 233, 0.08)",
                   border: "1px dashed rgba(6, 182, 212, 0.4)",
                   cursor: "pointer",
                   display: "flex",
@@ -2351,11 +2348,11 @@ export default function AdminDashboard() {
                           <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
                           <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
                           <style>
-                            html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #060912; }
+                            html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #f8fafc; }
                             .leaflet-control-attribution { display: none !important; }
-                            .leaflet-container { background: #060912 !important; }
-                            .leaflet-bar a { background-color: #0b0f19 !important; color: #fff !important; border-color: rgba(255,255,255,0.15) !important; }
-                            .leaflet-bar a:hover { background-color: #121826 !important; }
+                            .leaflet-container { background: #f8fafc !important; }
+                            .leaflet-bar a { background-color: #ffffff !important; color: #334155 !important; border-color: #e2e8f0 !important; }
+                            .leaflet-bar a:hover { background-color: #f1f5f9 !important; }
                             
                             .start-pulse {
                               background: #22c55e;
@@ -2390,7 +2387,7 @@ export default function AdminDashboard() {
                             const end = [${selectedProjectItem.endCoords[0]}, ${selectedProjectItem.endCoords[1]}];
                             const map = L.map('map').setView([(start[0] + end[0]) / 2, (start[1] + end[1]) / 2], 14);
                             
-                            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                               maxZoom: 20
                             }).addTo(map);
 
@@ -2548,8 +2545,8 @@ export default function AdminDashboard() {
                         style={{
                           padding: "14px 16px",
                           borderRadius: 16,
-                          background: isSelected ? "rgba(16, 185, 129, 0.08)" : "rgba(255,255,255,0.01)",
-                          border: isSelected ? "1px solid rgba(16, 185, 129, 0.3)" : "1px solid rgba(255,255,255,0.04)",
+                          background: isSelected ? "rgba(22, 163, 74, 0.08)" : "var(--surface)",
+                          border: isSelected ? "1px solid rgba(22, 163, 74, 0.3)" : "1px solid var(--border)",
                           cursor: "pointer",
                           display: "flex",
                           justifyContent: "space-between",
@@ -3080,8 +3077,8 @@ export default function AdminDashboard() {
                       <button
                         onClick={handleExportJSON}
                         style={{
-                          background: "rgba(255, 255, 255, 0.03)",
-                          border: "1px solid rgba(255, 255, 255, 0.08)",
+                          background: "var(--surface)",
+                          border: "1px solid var(--border)",
                           borderRadius: 10,
                           color: "var(--muted)",
                           fontSize: 12,
@@ -3196,7 +3193,7 @@ export default function AdminDashboard() {
                       ) : (
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                           {otList.map((o: any, idx: number) => (
-                            <div key={idx} style={{ display: "flex", flexDirection: "column", background: "rgba(0,0,0,0.1)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 10, padding: 10 }}>
+                            <div key={idx} style={{ display: "flex", flexDirection: "column", background: "rgba(0,0,0,0.1)", border: "1px solid var(--surface)", borderRadius: 10, padding: 10 }}>
                               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 700 }}>
                                 <span style={{ color: "var(--text)" }}>⚡ Group #{idx+1}: {o.workerCount} workers x {o.hours} hrs</span>
                                 <span style={{ color: "#10b981" }}>₹{Number(o.workerCount) * Number(o.hours) * Number(o.rate)} <span style={{ color: "var(--muted)", fontWeight: 500 }}>(@ ₹{o.rate}/hr)</span></span>
@@ -3212,7 +3209,7 @@ export default function AdminDashboard() {
 
                     {/* SECTION 2: LOGISTICS, RENTAL & IMPREST EXPENSES LIST */}
                     <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 16 }}>
-                      <span style={{ fontSize: 10, fontWeight: 900, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step A.2: Logistics & Rental Receipts</span>
+                      <span style={{ fontSize: 10, fontWeight: 900, color: "var(--cyan)", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step A.2: Logistics & Rental Receipts</span>
                       
                       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
                         {/* Render lists dynamically */}
@@ -3232,7 +3229,7 @@ export default function AdminDashboard() {
                             ...toolList.map((item: any, i: number) => ({ cat: "🔧 Tool Rental", name: item.toolName || `Tool #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage })),
                             ...otherList.map((item: any, i: number) => ({ cat: "💡 Miscellaneous", name: item.expenseName || `Misc #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage }))
                           ].map((item: any, idx: number) => (
-                            <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--surface)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
+                            <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--surface)", border: "1px solid var(--surface)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
                               <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
                                 {item.img ? (
                                   <div 
@@ -3256,7 +3253,7 @@ export default function AdminDashboard() {
                                   </p>
                                 </div>
                               </div>
-                              <span style={{ fontSize: 13, fontWeight: 800, color: "#06b6d4", flexShrink: 0 }}>₹{item.amount}</span>
+                              <span style={{ fontSize: 13, fontWeight: 800, color: "var(--cyan)", flexShrink: 0 }}>₹{item.amount}</span>
                             </div>
                           ))
                         )}
@@ -3279,7 +3276,7 @@ export default function AdminDashboard() {
                         ].map((m: any) => {
                           const log = wip[m.key] || {};
                           return (
-                            <div key={m.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--surface)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
+                            <div key={m.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--surface)", border: "1px solid var(--surface)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
                               <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
                                 {log.photo ? (
                                   <div 
@@ -3325,7 +3322,7 @@ export default function AdminDashboard() {
                           Object.keys(clearances).map((agency) => {
                             const info = clearances[agency] || {};
                             return (
-                              <div key={agency} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--surface)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
+                              <div key={agency} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--surface)", border: "1px solid var(--surface)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
                                   {info.receipt ? (
                                     <div 
@@ -3360,7 +3357,7 @@ export default function AdminDashboard() {
                       
                       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                         {/* Next day plans */}
-                        <div style={{ background: "var(--surface)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: 12 }}>
+                        <div style={{ background: "var(--surface)", border: "1px solid var(--surface)", borderRadius: 12, padding: 12 }}>
                           <span style={{ fontSize: 9, color: "#10b981", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>📝 Next-Day Operational Plans</span>
                           <p style={{ margin: 0, fontSize: 11, color: "var(--muted)", lineHeight: 1.5 }}>
                             {reqs.plans || "No planning requests logged."}
@@ -3368,7 +3365,7 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Site problems / roadblocks */}
-                        <div style={{ background: "rgba(239, 68, 68, 0.05)", border: "1px solid rgba(239, 68, 68, 0.15)", borderRadius: 12, padding: 12 }}>
+                        <div style={{ background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 12, padding: 12 }}>
                           <span style={{ fontSize: 9, color: "#fca5a5", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>⚠️ Site Roadblocks / Impediments</span>
                           <p style={{ margin: 0, fontSize: 11, color: "#fca5a5", lineHeight: 1.5, fontWeight: 600 }}>
                             {reqs.problems || "No site obstacles logged."}
@@ -3376,7 +3373,7 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Urgent concerns */}
-                        <div style={{ background: "var(--surface)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: 12 }}>
+                        <div style={{ background: "var(--surface)", border: "1px solid var(--surface)", borderRadius: 12, padding: 12 }}>
                           <span style={{ fontSize: 9, color: "#fbbf24", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>🚨 Direct Administrative Concerns</span>
                           <p style={{ margin: 0, fontSize: 11, color: "var(--muted)", lineHeight: 1.5 }}>
                             {reqs.adminConcerns || "No administrative issues logged."}
@@ -3500,7 +3497,7 @@ export default function AdminDashboard() {
                         <tr key={row.id} style={{ borderBottom: "1px solid var(--border)", color: "var(--muted)" }}>
                           <td style={{ padding: "12px 8px", fontWeight: 700 }}>{row.ledgerDate}</td>
                           <td style={{ padding: "12px 8px" }}>
-                            <span style={{ fontSize: 10, background: "rgba(245,158,11,0.1)", color: "#fbbf24", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 4, padding: "2px 6px", fontWeight: 800 }}>
+                            <span style={{ fontSize: 10, background: "rgba(245,158,11,0.1)", color: "#fbbf24", border: "1px solid rgba(217, 119, 6, 0.2)", borderRadius: 4, padding: "2px 6px", fontWeight: 800 }}>
                               {row.approvedReportsCount} reports
                             </span>
                           </td>
@@ -3508,7 +3505,7 @@ export default function AdminDashboard() {
                           <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "var(--muted)" }}>{row.totalExcavation}m</td>
                           <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#fbbf24", fontWeight: 750 }}>{row.totalHdd}m</td>
                           <td style={{ padding: "12px 8px", fontFamily: "monospace" }}>{row.totalCableLaying}m / {row.totalCableMounding}m</td>
-                          <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#06b6d4" }}>{row.totalTerminations}</td>
+                          <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "var(--cyan)" }}>{row.totalTerminations}</td>
                           <td style={{ padding: "12px 8px", fontSize: 10, color: "var(--dim)" }}>{new Date(row.updatedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</td>
                         </tr>
                       ))}
@@ -3526,12 +3523,12 @@ export default function AdminDashboard() {
         // Dynamic banner aesthetics based on active drawing tool selection
         const getBannerStyle = () => {
           switch (activePinMode) {
-            case "start": return { border: "1px solid rgba(34, 197, 94, 0.3)", background: "rgba(34, 197, 94, 0.08)", color: "#4ade80" };
-            case "end": return { border: "1px solid rgba(239, 68, 68, 0.3)", background: "rgba(239, 68, 68, 0.08)", color: "#f87171" };
-            case "hdd": return { border: "1px solid rgba(251, 191, 36, 0.3)", background: "rgba(251, 191, 36, 0.08)", color: "#fcd34d" };
+            case "start": return { border: "1px solid rgba(34, 197, 94, 0.3)", background: "rgba(22, 163, 74, 0.08)", color: "#4ade80" };
+            case "end": return { border: "1px solid rgba(239, 68, 68, 0.3)", background: "rgba(220, 38, 38, 0.08)", color: "#f87171" };
+            case "hdd": return { border: "1px solid rgba(251, 191, 36, 0.3)", background: "rgba(217, 119, 6, 0.08)", color: "#fcd34d" };
             case "termination": return { border: "1px solid rgba(37, 99, 235, 0.3)", background: "rgba(37, 99, 235, 0.08)", color: "#60a5fa" };
             case "trench": return { border: "1px solid rgba(249, 115, 22, 0.3)", background: "rgba(249, 115, 22, 0.08)", color: "#ff9d5c" };
-            case "utility": return { border: "1px solid rgba(168, 85, 247, 0.3)", background: "rgba(168, 85, 247, 0.08)", color: "#c084fc" };
+            case "utility": return { border: "1px solid rgba(168, 85, 247, 0.3)", background: "rgba(124, 58, 237, 0.08)", color: "#c084fc" };
             default: return { border: "1px solid var(--border)", background: "var(--surface)", color: "var(--dim)" };
           }
         };
@@ -3549,8 +3546,8 @@ export default function AdminDashboard() {
         };
 
         return (
-          <div style={{ position: "fixed", inset: 0, background: "rgba(255,255,255,0.9)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1100, animation: "fadeIn 0.2s ease" }}>
-            <div className="glass glow-cyan" style={{ width: "100%", maxWidth: "1000px", maxHeight: "95vh", overflowY: "auto", padding: "28px 24px", background: "linear-gradient(135deg, #0d0621 0%, #060912 100%)", borderRadius: 24, border: "1px solid rgba(255, 255, 255, 0.08)", boxShadow: "0 24px 64px rgba(0, 0, 0, 0.75)", color: "var(--text)" }}>
+          <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.35)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1100, animation: "fadeIn 0.2s ease" }}>
+            <div className="glass glow-cyan" style={{ width: "100%", maxWidth: "1000px", maxHeight: "95vh", overflowY: "auto", padding: "28px 24px", background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)", borderRadius: 24, border: "1px solid var(--border)", boxShadow: "0 8px 32px rgba(15, 23, 42, 0.06)", color: "var(--text)" }}>
               
               {/* Modal Header */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, borderBottom: "1px solid var(--border)", paddingBottom: 14 }}>
@@ -3558,7 +3555,7 @@ export default function AdminDashboard() {
                   <h3 style={{ fontSize: 20, fontWeight: 900, letterSpacing: "-0.5px", margin: 0, background: "linear-gradient(90deg, #c4b5fd, #06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Corridor GIS Editor</h3>
                   <p style={{ fontSize: 11, color: "var(--dim)", margin: "2px 0 0", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Operational Map & Project Parameters</p>
                 </div>
-                <button onClick={() => setEditingProjectItem(null)} style={{ background: "rgba(255, 255, 255, 0.04)", border: "1px solid rgba(255, 255, 255, 0.08)", width: 32, height: 32, borderRadius: "50%", color: "var(--dim)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <button onClick={() => setEditingProjectItem(null)} style={{ background: "var(--border)", border: "1px solid var(--border)", width: 32, height: 32, borderRadius: "50%", color: "var(--dim)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
@@ -3569,7 +3566,7 @@ export default function AdminDashboard() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: 11, fontWeight: 800, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.03em" }}>Interactive GIS Tools</span>
-                    <span style={{ fontSize: 10, color: "#fbbf24", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 6, padding: "2px 6px", fontWeight: 700 }}>
+                    <span style={{ fontSize: 10, color: "#fbbf24", background: "rgba(217, 119, 6, 0.08)", border: "1px solid rgba(217, 119, 6, 0.2)", borderRadius: 6, padding: "2px 6px", fontWeight: 700 }}>
                       Live Drag & Placement Mode
                     </span>
                   </div>
@@ -3583,13 +3580,13 @@ export default function AdminDashboard() {
                         placeholder="Search Kerala locations (e.g. Kakkanad, Munnar, Cherthala)..."
                         value={searchQueryMap}
                         onChange={(e) => setSearchQueryMap(e.target.value)}
-                        style={{ width: "100%", height: 38, background: "rgba(0, 0, 0, 0.4)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px 0 34px", color: "var(--text)", fontSize: 12, outline: "none", fontFamily: "Outfit, sans-serif" }}
+                        style={{ width: "100%", height: 38, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px 0 34px", color: "var(--text)", fontSize: 12, outline: "none", fontFamily: "Outfit, sans-serif" }}
                       />
                     </div>
                     <button
                       type="submit"
                       disabled={searchingMap}
-                      style={{ minWidth: 90, background: "rgba(6, 182, 212, 0.15)", border: "1px solid rgba(6, 182, 212, 0.3)", borderRadius: 10, color: "#67e8f9", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                      style={{ minWidth: 90, background: "rgba(14, 165, 233, 0.08)", border: "1px solid rgba(14, 165, 233, 0.3)", borderRadius: 10, color: "#67e8f9", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
                     >
                       {searchingMap ? "Searching..." : "Center Map"}
                     </button>
@@ -3618,8 +3615,8 @@ export default function AdminDashboard() {
                       onClick={() => setActivePinMode("start")}
                       className="tool-btn"
                       style={{
-                        borderColor: activePinMode === "start" ? "#22c55e" : "rgba(255,255,255,0.08)",
-                        background: activePinMode === "start" ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.01)",
+                        borderColor: activePinMode === "start" ? "#22c55e" : "var(--border)",
+                        background: activePinMode === "start" ? "rgba(34,197,94,0.12)" : "var(--surface)",
                         color: activePinMode === "start" ? "#4ade80" : "#94a3b8"
                       }}
                     >
@@ -3630,8 +3627,8 @@ export default function AdminDashboard() {
                       onClick={() => setActivePinMode("end")}
                       className="tool-btn"
                       style={{
-                        borderColor: activePinMode === "end" ? "#ef4444" : "rgba(255,255,255,0.08)",
-                        background: activePinMode === "end" ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.01)",
+                        borderColor: activePinMode === "end" ? "#ef4444" : "var(--border)",
+                        background: activePinMode === "end" ? "rgba(239,68,68,0.12)" : "var(--surface)",
                         color: activePinMode === "end" ? "#f87171" : "#94a3b8"
                       }}
                     >
@@ -3642,8 +3639,8 @@ export default function AdminDashboard() {
                       onClick={() => setActivePinMode("hdd")}
                       className="tool-btn"
                       style={{
-                        borderColor: activePinMode === "hdd" ? "#eab308" : "rgba(255,255,255,0.08)",
-                        background: activePinMode === "hdd" ? "rgba(234,179,8,0.12)" : "rgba(255,255,255,0.01)",
+                        borderColor: activePinMode === "hdd" ? "#eab308" : "var(--border)",
+                        background: activePinMode === "hdd" ? "rgba(234,179,8,0.12)" : "var(--surface)",
                         color: activePinMode === "hdd" ? "#fcd34d" : "#94a3b8"
                       }}
                     >
@@ -3654,8 +3651,8 @@ export default function AdminDashboard() {
                       onClick={() => setActivePinMode("termination")}
                       className="tool-btn"
                       style={{
-                        borderColor: activePinMode === "termination" ? "#2563eb" : "rgba(255,255,255,0.08)",
-                        background: activePinMode === "termination" ? "rgba(37,99,235,0.12)" : "rgba(255,255,255,0.01)",
+                        borderColor: activePinMode === "termination" ? "#2563eb" : "var(--border)",
+                        background: activePinMode === "termination" ? "rgba(37,99,235,0.12)" : "var(--surface)",
                         color: activePinMode === "termination" ? "#60a5fa" : "#94a3b8"
                       }}
                     >
@@ -3666,8 +3663,8 @@ export default function AdminDashboard() {
                       onClick={() => setActivePinMode("trench")}
                       className="tool-btn"
                       style={{
-                        borderColor: activePinMode === "trench" ? "#f97316" : "rgba(255,255,255,0.08)",
-                        background: activePinMode === "trench" ? "rgba(249,115,22,0.12)" : "rgba(255,255,255,0.01)",
+                        borderColor: activePinMode === "trench" ? "#f97316" : "var(--border)",
+                        background: activePinMode === "trench" ? "rgba(249,115,22,0.12)" : "var(--surface)",
                         color: activePinMode === "trench" ? "#ff9d5c" : "#94a3b8"
                       }}
                     >
@@ -3678,8 +3675,8 @@ export default function AdminDashboard() {
                       onClick={() => setActivePinMode("utility")}
                       className="tool-btn"
                       style={{
-                        borderColor: activePinMode === "utility" ? "#a855f7" : "rgba(255,255,255,0.08)",
-                        background: activePinMode === "utility" ? "rgba(168,85,247,0.12)" : "rgba(255,255,255,0.01)",
+                        borderColor: activePinMode === "utility" ? "#a855f7" : "var(--border)",
+                        background: activePinMode === "utility" ? "rgba(168,85,247,0.12)" : "var(--surface)",
                         color: activePinMode === "utility" ? "#c084fc" : "#94a3b8"
                       }}
                     >
@@ -3701,11 +3698,11 @@ export default function AdminDashboard() {
                             <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
                             <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
                             <style>
-                              html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #060912; cursor: crosshair; }
+                              html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #f8fafc; cursor: crosshair; }
                               .leaflet-control-attribution { display: none !important; }
-                              .leaflet-container { background: #060912 !important; }
-                              .leaflet-bar a { background-color: #0b0f19 !important; color: #fff !important; border-color: rgba(255,255,255,0.15) !important; }
-                              .leaflet-bar a:hover { background-color: #121826 !important; }
+                              .leaflet-container { background: #f8fafc !important; }
+                              .leaflet-bar a { background-color: #ffffff !important; color: #334155 !important; border-color: #e2e8f0 !important; }
+                              .leaflet-bar a:hover { background-color: #f1f5f9 !important; }
                               
                               .start-marker {
                                 background: #22c55e;
@@ -3750,7 +3747,7 @@ export default function AdminDashboard() {
 
                               const map = L.map('map').setView(center, 14);
                               
-                              L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                              L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                                 maxZoom: 20
                               }).addTo(map);
 
@@ -3919,7 +3916,7 @@ export default function AdminDashboard() {
                                 } else if (e.data.type === 'FLY_TO') {
                                   const { lat, lng } = e.data;
                                   map.setView([lat, lng], 15, { animate: true });
-                                  const tempCircle = L.circle([lat, lng], { color: '#06b6d4', fillColor: '#06b6d4', fillOpacity: 0.15, radius: 150 }).addTo(map);
+                                  const tempCircle = L.circle([lat, lng], { color: "var(--cyan)", fillColor: '#06b6d4', fillOpacity: 0.15, radius: 150 }).addTo(map);
                                   setTimeout(() => { map.removeLayer(tempCircle); }, 3000);
                                 }
                               });
@@ -3953,7 +3950,7 @@ export default function AdminDashboard() {
                           setHddPoints([]);
                           showToast("🧹 HDD Pins cleared!");
                         }}
-                        style={{ width: "100%", background: "rgba(239, 68, 68, 0.05)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#fca5a5", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                        style={{ width: "100%", background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#fca5a5", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
                       >
                         Clear HDD Pins
                       </button>
@@ -3965,7 +3962,7 @@ export default function AdminDashboard() {
                           setTerminationPoints([]);
                           showToast("🧹 Grid Terminations cleared!");
                         }}
-                        style={{ width: "100%", background: "rgba(239, 68, 68, 0.05)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#fca5a5", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                        style={{ width: "100%", background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#fca5a5", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
                       >
                         Clear Terminations
                       </button>
@@ -4002,7 +3999,7 @@ export default function AdminDashboard() {
                           setUtilityPath([]);
                           showToast("🧹 Utility Shift path cleared!");
                         }}
-                        style={{ flex: 1.2, background: "rgba(168, 85, 247, 0.08)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#d8b4fe", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                        style={{ flex: 1.2, background: "rgba(124, 58, 237, 0.08)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#d8b4fe", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
                       >
                         Clear Utility
                       </button>
@@ -4018,7 +4015,7 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Upgraded "How-To GIS Guide" instructional widget */}
-                  <div className="glass" style={{ padding: "16px", borderRadius: 16, border: "1px solid var(--border)", background: "rgba(255, 255, 255, 0.01)", marginTop: 4 }}>
+                  <div className="glass" style={{ padding: "16px", borderRadius: 16, border: "1px solid var(--border)", background: "var(--surface)", marginTop: 4 }}>
                     <h4 style={{ fontSize: 12, fontWeight: 800, color: "#a78bfa", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 10px", display: "flex", alignItems: "center", gap: 6 }}>
                       <span>📖 Interactive Map Quick Guide</span>
                     </h4>
@@ -4055,7 +4052,7 @@ export default function AdminDashboard() {
                       value={projName}
                       onChange={(e) => setProjName(e.target.value)}
                       required
-                      style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
+                      style={{ width: "100%", height: 40, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
                     />
                   </div>
 
@@ -4068,7 +4065,7 @@ export default function AdminDashboard() {
                         value={projCode}
                         onChange={(e) => setProjCode(e.target.value)}
                         required
-                        style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 13, fontFamily: "monospace", outline: "none" }}
+                        style={{ width: "100%", height: 40, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 13, fontFamily: "monospace", outline: "none" }}
                       />
                     </div>
                     <div>
@@ -4078,7 +4075,7 @@ export default function AdminDashboard() {
                         value={projDistrict}
                         onChange={(e) => setProjDistrict(e.target.value)}
                         required
-                        style={{ width: "100%", height: 40, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
+                        style={{ width: "100%", height: 40, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
                       />
                     </div>
                   </div>
@@ -4091,7 +4088,7 @@ export default function AdminDashboard() {
                         type="text"
                         value={projDistance}
                         readOnly
-                        style={{ flex: 1, height: 40, background: "#ffffff", border: "1px solid rgba(6,182,212,0.2)", borderRadius: 12, padding: "0 14px", color: "#06b6d4", fontSize: 14, fontWeight: 800, fontFamily: "monospace", outline: "none" }}
+                        style={{ flex: 1, height: 40, background: "#ffffff", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 12, padding: "0 14px", color: "var(--cyan)", fontSize: 14, fontWeight: 800, fontFamily: "monospace", outline: "none" }}
                       />
                       <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", width: 110, lineHeight: 1.2 }}>
                         📏 Great-Circle spherical calc
@@ -4107,7 +4104,7 @@ export default function AdminDashboard() {
                       onChange={(e) => setProjDesc(e.target.value)}
                       required
                       rows={2}
-                      style={{ width: "100%", background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "10px 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none", resize: "none" }}
+                      style={{ width: "100%", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "10px 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none", resize: "none" }}
                     />
                   </div>
 
@@ -4121,7 +4118,7 @@ export default function AdminDashboard() {
                         value={projStartLabel}
                         onChange={(e) => setProjStartLabel(e.target.value)}
                         required
-                        style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, outline: "none" }}
+                        style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, outline: "none" }}
                       />
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
@@ -4135,7 +4132,7 @@ export default function AdminDashboard() {
                             updateCalculatedDistance(e.target.value, projStartLng, projEndLat, projEndLng, trenchingLine);
                           }}
                           required
-                          style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                          style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
                         />
                       </div>
                       <div>
@@ -4148,7 +4145,7 @@ export default function AdminDashboard() {
                             updateCalculatedDistance(projStartLat, e.target.value, projEndLat, projEndLng, trenchingLine);
                           }}
                           required
-                          style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                          style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
                         />
                       </div>
                     </div>
@@ -4164,7 +4161,7 @@ export default function AdminDashboard() {
                         value={projEndLabel}
                         onChange={(e) => setProjEndLabel(e.target.value)}
                         required
-                        style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, outline: "none" }}
+                        style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, outline: "none" }}
                       />
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
@@ -4178,7 +4175,7 @@ export default function AdminDashboard() {
                             updateCalculatedDistance(projStartLat, projStartLng, e.target.value, projEndLng, trenchingLine);
                           }}
                           required
-                          style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                          style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
                         />
                       </div>
                       <div>
@@ -4191,7 +4188,7 @@ export default function AdminDashboard() {
                             updateCalculatedDistance(projStartLat, projStartLng, projEndLat, e.target.value, trenchingLine);
                           }}
                           required
-                          style={{ width: "100%", height: 36, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                          style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
                         />
                       </div>
                     </div>
@@ -4223,14 +4220,14 @@ export default function AdminDashboard() {
 
       {/* Credentials Modal */}
       {approvedCreds && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(255,255,255,0.9)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1000, animation: "fadeIn 0.2s ease" }}>
-          <div className="glass glow-cyan" style={{ width: "100%", maxWidth: 400, padding: 30, background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)", borderRadius: 24, textAlign: "center", border: "1px solid rgba(6,182,212,0.3)" }}>
-            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(6,182,212,0.15)", border: "1px solid rgba(6,182,212,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.35)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1000, animation: "fadeIn 0.2s ease" }}>
+          <div className="glass glow-cyan" style={{ width: "100%", maxWidth: 400, padding: 30, background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)", borderRadius: 24, textAlign: "center", border: "1px solid rgba(14, 165, 233, 0.3)" }}>
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(14, 165, 233, 0.08)", border: "1px solid rgba(14, 165, 233, 0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
             <h3 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", marginBottom: 8 }}>Credentials Active!</h3>
             <p style={{ fontSize: 13, color: "var(--dim)", marginBottom: 20, lineHeight: 1.5 }}>
-              Account is active. The credentials have been sent via email from <strong style={{ color: "#06b6d4" }}>ajipaul96@gmail.com</strong>! You can also copy them below:
+              Account is active. The credentials have been sent via email from <strong style={{ color: "var(--cyan)" }}>ajipaul96@gmail.com</strong>! You can also copy them below:
             </p>
             
             <div style={{ background: "#ffffff", border: "1px solid var(--border)", borderRadius: 16, padding: 18, marginBottom: 24, textAlign: "left", display: "flex", flexDirection: "column", gap: 12 }}>
@@ -4239,7 +4236,7 @@ export default function AdminDashboard() {
                   <span style={{ fontSize: 10, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Login Email</span>
                   <p style={{ fontSize: 14, fontFamily: "monospace", color: "var(--text)", margin: "2px 0 0" }}>{approvedCreds.email}</p>
                 </div>
-                <button onClick={() => { navigator.clipboard.writeText(approvedCreds.email); showToast("📋 Email copied!"); }} style={{ background: "rgba(6,182,212,0.1)", border: "1px solid rgba(6,182,212,0.2)", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 600, color: "#06b6d4", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}>Copy</button>
+                <button onClick={() => { navigator.clipboard.writeText(approvedCreds.email); showToast("📋 Email copied!"); }} style={{ background: "rgba(6,182,212,0.1)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 600, color: "var(--cyan)", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}>Copy</button>
               </div>
               <div style={{ height: 1, background: "var(--surface)" }} />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -4247,7 +4244,7 @@ export default function AdminDashboard() {
                   <span style={{ fontSize: 10, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Password</span>
                   <p style={{ fontSize: 16, fontFamily: "monospace", fontWeight: 800, color: "#a78bfa", margin: "2px 0 0", letterSpacing: "1px" }}>{approvedCreds.password}</p>
                 </div>
-                <button onClick={() => { navigator.clipboard.writeText(approvedCreds.password); showToast("📋 Password copied!"); }} style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 600, color: "#a78bfa", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}>Copy</button>
+                <button onClick={() => { navigator.clipboard.writeText(approvedCreds.password); showToast("📋 Password copied!"); }} style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(124, 58, 237, 0.2)", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 600, color: "#a78bfa", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}>Copy</button>
               </div>
             </div>
             
@@ -4268,13 +4265,13 @@ export default function AdminDashboard() {
 
       {/* ADMINISTRATIVE USER MANAGEMENT MODAL */}
       {selectedUser && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(255,255,255,0.9)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1100, animation: "fadeIn 0.2s ease" }}>
-          <div className="glass" style={{ width: "100%", maxWidth: 420, padding: "28px 24px", background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)", borderRadius: 24, border: "1px solid rgba(255, 255, 255, 0.08)", boxShadow: "0 24px 64px rgba(0, 0, 0, 0.7)", color: "var(--text)" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.35)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1100, animation: "fadeIn 0.2s ease" }}>
+          <div className="glass" style={{ width: "100%", maxWidth: 420, padding: "28px 24px", background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)", borderRadius: 24, border: "1px solid var(--border)", boxShadow: "0 24px 64px rgba(0, 0, 0, 0.7)", color: "var(--text)" }}>
             
             {/* Modal Header */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
               <h3 style={{ fontSize: 18, fontWeight: 900, letterSpacing: "-0.02em", margin: 0 }}>Manage Crew Profile</h3>
-              <button onClick={() => setSelectedUser(null)} style={{ background: "rgba(255, 255, 255, 0.04)", border: "1px solid rgba(255, 255, 255, 0.08)", width: 32, height: 32, borderRadius: "50%", color: "var(--dim)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button onClick={() => setSelectedUser(null)} style={{ background: "var(--border)", border: "1px solid var(--border)", width: 32, height: 32, borderRadius: "50%", color: "var(--dim)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
@@ -4310,7 +4307,7 @@ export default function AdminDashboard() {
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   required
-                  style={{ width: "100%", height: 44, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 14, fontFamily: "Outfit, sans-serif", outline: "none" }}
+                  style={{ width: "100%", height: 44, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 14, fontFamily: "Outfit, sans-serif", outline: "none" }}
                 />
               </div>
 
@@ -4322,7 +4319,7 @@ export default function AdminDashboard() {
                   value={editEmail}
                   onChange={(e) => setEditEmail(e.target.value)}
                   required
-                  style={{ width: "100%", height: 44, background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 14, fontFamily: "monospace", outline: "none" }}
+                  style={{ width: "100%", height: 44, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 14, fontFamily: "monospace", outline: "none" }}
                 />
               </div>
 
@@ -4332,7 +4329,7 @@ export default function AdminDashboard() {
                 <select
                   value={editRole}
                   onChange={(e) => setEditRole(e.target.value)}
-                  style={{ width: "100%", height: 44, background: "var(--bg)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 14, outline: "none", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                  style={{ width: "100%", height: 44, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 14, outline: "none", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
                 >
                   <option value="supervisor">Supervisor (Field Engineer)</option>
                   <option value="client">Client (KSEB / Board Member)</option>
@@ -4368,7 +4365,7 @@ export default function AdminDashboard() {
                   <button
                     type="button"
                     onClick={() => { resendCredentials(selectedUser.id); setSelectedUser(null); }}
-                    style={{ flex: 1, minHeight: 40, background: "rgba(6, 182, 212, 0.08)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 10, color: "#06b6d4", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                    style={{ flex: 1, minHeight: 40, background: "rgba(14, 165, 233, 0.08)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 10, color: "var(--cyan)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
                   >
                     🔑 Resend Mail
                   </button>
@@ -4377,7 +4374,7 @@ export default function AdminDashboard() {
                   <button
                     type="button"
                     onClick={handleTerminateUser}
-                    style={{ flex: 1, minHeight: 40, background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: 10, color: "#fca5a5", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                    style={{ flex: 1, minHeight: 40, background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: 10, color: "#fca5a5", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
                   >
                     🚫 Terminate
                   </button>
