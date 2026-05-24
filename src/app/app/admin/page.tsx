@@ -1641,7 +1641,7 @@ export default function AdminDashboard() {
                           </div>
                           
                           <div style={{ minWidth: 0 }}>
-                            <p style={{ fontSize: 13, fontWeight: 750, color: isSelected ? "#06b6d4" : "#f1f5f9", margin: 0 }}>{w.fullName}</p>
+                            <p style={{ fontSize: 13, fontWeight: 750, color: isSelected ? "#06b6d4" : "var(--text)", margin: 0 }}>{w.fullName}</p>
                             <span style={{ fontSize: 10, color: roleColor(w.role), fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em" }}>{w.role}</span>
                           </div>
                         </div>
@@ -2555,8 +2555,15 @@ export default function AdminDashboard() {
                         }}
                       >
                         <div style={{ textAlign: "left" }}>
-                          <h4 style={{ fontSize: 13, fontWeight: 800, color: isSelected ? "#10b981" : "#f1f5f9", margin: 0 }}>{r.supervisorName}</h4>
-                          <span style={{ fontSize: 9, color: "var(--dim)", fontFamily: "monospace" }}>Staged: {new Date(r.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+                          <h4 style={{ fontSize: 13, fontWeight: 800, color: isSelected ? "#10b981" : "var(--text)", margin: 0 }}>{r.supervisorName}</h4>
+                          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 2 }}>
+                            <span style={{ fontSize: 9, color: "var(--dim)", fontFamily: "monospace" }}>Staged: {new Date(r.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+                            {r.status === "approved" ? (
+                              <span style={{ fontSize: 9, background: "#dcfce7", color: "#15803d", border: "1px solid #bbf7d0", borderRadius: 4, padding: "1px 4px", fontWeight: 800 }}>✓ Approved & Locked</span>
+                            ) : (
+                              <span style={{ fontSize: 9, background: "#fef3c7", color: "#d97706", border: "1px solid #fde68a", borderRadius: 4, padding: "1px 4px", fontWeight: 800 }}>⏳ Pending</span>
+                            )}
+                          </div>
                         </div>
                         <div style={{ textAlign: "right" }}>
                           <span style={{ fontSize: 10, fontWeight: 750, color: "#10b981", display: "block" }}>₹{r.calculatedWages}</span>
@@ -2581,6 +2588,8 @@ export default function AdminDashboard() {
               const wip = rich.wipProgressList || {};
               const reqs = rich.requestsAndNotes || {};
               const clearances = selectedReport.clearances || {};
+              const workerRate = selectedReport.workerWageRate ?? rich.workerWageRate ?? 900;
+              const supervisorRate = selectedReport.supervisorWageRate ?? rich.supervisorWageRate ?? 1200;
 
               const handleExportJSON = () => {
                 const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(selectedReport, null, 2));
@@ -3116,28 +3125,46 @@ export default function AdminDashboard() {
                         🖨️ Print / PDF
                       </button>
 
-                      <button
-                        onClick={() => handleApproveDailyReport(selectedReport.id)}
-                        disabled={approvingReportId === selectedReport.id}
-                        style={{
-                          background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                          border: "none",
+                      {selectedReport.status === "approved" ? (
+                        <div style={{
+                          background: "rgba(22, 163, 74, 0.08)",
+                          border: "1px solid rgba(22, 163, 74, 0.25)",
                           borderRadius: 10,
-                          color: "var(--text)",
+                          color: "#16a34a",
                           fontSize: 12,
                           fontWeight: 800,
                           padding: "8px 18px",
-                          cursor: approvingReportId === selectedReport.id ? "not-allowed" : "pointer",
                           display: "flex",
                           alignItems: "center",
                           gap: 6,
-                          boxShadow: "0 4px 14px rgba(16, 185, 129, 0.25)",
-                          fontFamily: "Outfit, sans-serif",
-                          transition: "all 0.2s ease"
-                        }}
-                      >
-                        {approvingReportId === selectedReport.id ? "Locking..." : "Approve & Lock"}
-                      </button>
+                          fontFamily: "Outfit, sans-serif"
+                        }}>
+                          🔒 Approved & Locked in Ledger
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleApproveDailyReport(selectedReport.id)}
+                          disabled={approvingReportId === selectedReport.id}
+                          style={{
+                            background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                            border: "none",
+                            borderRadius: 10,
+                            color: "#ffffff",
+                            fontSize: 12,
+                            fontWeight: 800,
+                            padding: "8px 18px",
+                            cursor: approvingReportId === selectedReport.id ? "not-allowed" : "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            boxShadow: "0 4px 14px rgba(16, 185, 129, 0.25)",
+                            fontFamily: "Outfit, sans-serif",
+                            transition: "all 0.2s ease"
+                          }}
+                        >
+                          {approvingReportId === selectedReport.id ? "Locking..." : "Approve & Lock"}
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -3150,9 +3177,9 @@ export default function AdminDashboard() {
                         <div style={{ background: "var(--surface)", padding: 12, borderRadius: 12, border: "1px solid var(--border)" }}>
                           <span style={{ fontSize: 9, color: "var(--dim)", textTransform: "uppercase", fontWeight: 700 }}>Standard Crew Roster</span>
                           <p style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "2px 0 0" }}>
-                            {selectedReport.laborCount - (rich.includeSupervisor ? 1 : 0)} Labours
+                            {selectedReport.laborCount} Labours
                           </p>
-                          <span style={{ fontSize: 9, color: "var(--muted)" }}>₹900 base wage per worker</span>
+                          <span style={{ fontSize: 9, color: "var(--muted)" }}>₹{workerRate} base wage per worker</span>
                         </div>
 
                         <div style={{ background: "var(--surface)", padding: 12, borderRadius: 12, border: "1px solid var(--border)" }}>
@@ -3160,7 +3187,7 @@ export default function AdminDashboard() {
                           <p style={{ fontSize: 13, fontWeight: 800, color: rich.includeSupervisor ? "#10b981" : "#94a3b8", margin: "2px 0 0" }}>
                             {rich.includeSupervisor ? "Active Presence" : "Absent / Inactive"}
                           </p>
-                          <span style={{ fontSize: 9, color: "var(--muted)" }}>₹1200 supervisor rate</span>
+                          <span style={{ fontSize: 9, color: "var(--muted)" }}>₹{supervisorRate} daily allowance rate</span>
                         </div>
 
                         <div style={{ background: "var(--surface)", padding: 12, borderRadius: 12, border: "1px solid var(--border)" }}>

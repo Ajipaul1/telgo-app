@@ -57,10 +57,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate wages: Wages = (₹900 * Labors) + (₹1200 * Supervisor if included) + Sum(OT worker wages)
+    // Calculate wages dynamically based on reporter-supplied rates
+    const workerWageRate = Math.max(0, Number(body.workerWageRate ?? 900));
+    const supervisorWageRate = Math.max(0, Number(body.supervisorWageRate ?? 1200));
+
     const crewLabor = Math.max(0, parseInt(body.laborCount || 0));
     const supervisorCount = body.includeSupervisor ? 1 : 0;
-    const supervisorWage = supervisorCount * 1200;
-    const crewWages = (crewLabor * 900) + supervisorWage;
+    const supervisorWage = supervisorCount * supervisorWageRate;
+    const crewWages = (crewLabor * workerWageRate) + supervisorWage;
 
     // Overtime workers array calculation
     const otWorkers = body.otWorkers || [];
@@ -112,6 +116,8 @@ export async function POST(request: NextRequest) {
       ...body.stockAvailable,
       richDetails: {
         includeSupervisor: body.includeSupervisor,
+        supervisorWageRate,
+        workerWageRate,
         supervisorNarration: body.supervisorNarration || "",
         laborWagesNarration: body.laborWagesNarration || "",
         otWorkers,
