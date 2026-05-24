@@ -189,8 +189,6 @@ html, body {
    ========================================================================== */
 
 main, 
-div[style*="background: linear-gradient"],
-div[style*="background:linear-gradient"],
 main[style*="background: linear-gradient"],
 main[style*="background:linear-gradient"] {
   background: linear-gradient(165deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%) !important;
