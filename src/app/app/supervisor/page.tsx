@@ -78,7 +78,74 @@ export default function SupervisorDashboard() {
     }
   ];
 
-  // Sync projects list with localStorage to show Admin updates instantly in read-only format
+  const [isDailyReportOpen, setIsDailyReportOpen] = useState(false);
+  const [reportStep, setReportStep] = useState(1);
+  const [reportProjectId, setReportProjectId] = useState("");
+  const [reportDate, setReportDate] = useState("");
+  
+  const [laborCount, setLaborCount] = useState(0);
+  const [otHours, setOtHours] = useState(0);
+  const [fuelExpenses, setFuelExpenses] = useState("");
+  const [travelExpenses, setTravelExpenses] = useState("");
+  const [roomRent, setRoomRent] = useState("");
+  const [roomRentReceipt, setRoomRentReceipt] = useState("");
+  const [toolRent, setToolRent] = useState("");
+  const [toolRentReceipt, setToolRentReceipt] = useState("");
+
+  const [excavationLength, setExcavationLength] = useState("");
+  const [hddLength, setHddLength] = useState("");
+  const [cableLayingLength, setCableLayingLength] = useState("");
+  const [cableMoundingLength, setCableMoundingLength] = useState("");
+  const [joiningLinksCompleted, setJoiningLinksCompleted] = useState("");
+  const [rmuFoundationStatus, setRmuFoundationStatus] = useState("");
+  const [terminationEndpoints, setTerminationEndpoints] = useState("");
+  const [terminationGpsLat, setTerminationGpsLat] = useState("");
+  const [terminationGpsLng, setTerminationGpsLng] = useState("");
+
+  const [pwdClearance, setPwdClearance] = useState("None");
+  const [pwdReceipt, setPwdReceipt] = useState("");
+  const [ksebClearance, setKsebClearance] = useState("None");
+  const [ksebReceipt, setKsebReceipt] = useState("");
+  const [nhClearance, setNhClearance] = useState("None");
+  const [nhReceipt, setNhReceipt] = useState("");
+
+  const [submittingReport, setSubmittingReport] = useState(false);
+
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 1200;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL("image/jpeg", 0.7));
+          } else {
+            resolve(String(e.target?.result || ""));
+          }
+        };
+        img.src = String(e.target?.result || "");
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   useEffect(() => {
     const saved = localStorage.getItem("telgo_custom_projects");
     if (saved) {
@@ -95,6 +162,124 @@ export default function SupervisorDashboard() {
       setSelectedProjectItem(DEFAULT_PROJECTS[0]);
     }
   }, [isProjectsOpen]);
+
+  useEffect(() => {
+    if (!reportProjectId) return;
+    const saved = localStorage.getItem(`telgo_draft_report_${reportProjectId}`);
+    if (saved) {
+      try {
+        const d = JSON.parse(saved);
+        setReportDate(d.reportDate || "");
+        setLaborCount(Number(d.laborCount || 0));
+        setOtHours(Number(d.otHours || 0));
+        setFuelExpenses(d.fuelExpenses || "");
+        setTravelExpenses(d.travelExpenses || "");
+        setRoomRent(d.roomRent || "");
+        setRoomRentReceipt(d.roomRentReceipt || "");
+        setToolRent(d.toolRent || "");
+        setToolRentReceipt(d.toolRentReceipt || "");
+        setExcavationLength(d.excavationLength || "");
+        setHddLength(d.hddLength || "");
+        setCableLayingLength(d.cableLayingLength || "");
+        setCableMoundingLength(d.cableMoundingLength || "");
+        setJoiningLinksCompleted(d.joiningLinksCompleted || "");
+        setRmuFoundationStatus(d.rmuFoundationStatus || "");
+        setTerminationEndpoints(d.terminationEndpoints || "");
+        setTerminationGpsLat(d.terminationGpsLat || "");
+        setTerminationGpsLng(d.terminationGpsLng || "");
+        setPwdClearance(d.pwdClearance || "None");
+        setPwdReceipt(d.pwdReceipt || "");
+        setKsebClearance(d.ksebClearance || "None");
+        setKsebReceipt(d.ksebReceipt || "");
+        setNhClearance(d.nhClearance || "None");
+        setNhReceipt(d.nhReceipt || "");
+      } catch (e) {
+        console.error("Error parsing report draft:", e);
+      }
+    } else {
+      setReportDate("");
+      setLaborCount(0);
+      setOtHours(0);
+      setFuelExpenses("");
+      setTravelExpenses("");
+      setRoomRent("");
+      setRoomRentReceipt("");
+      setToolRent("");
+      setToolRentReceipt("");
+      setExcavationLength("");
+      setHddLength("");
+      setCableLayingLength("");
+      setCableMoundingLength("");
+      setJoiningLinksCompleted("");
+      setRmuFoundationStatus("");
+      setTerminationEndpoints("");
+      setTerminationGpsLat("");
+      setTerminationGpsLng("");
+      setPwdClearance("None");
+      setPwdReceipt("");
+      setKsebClearance("None");
+      setKsebReceipt("");
+      setNhClearance("None");
+      setNhReceipt("");
+    }
+  }, [reportProjectId]);
+
+  useEffect(() => {
+    if (!reportProjectId) return;
+    const draft = {
+      reportDate,
+      laborCount,
+      otHours,
+      fuelExpenses,
+      travelExpenses,
+      roomRent,
+      roomRentReceipt,
+      toolRent,
+      toolRentReceipt,
+      excavationLength,
+      hddLength,
+      cableLayingLength,
+      cableMoundingLength,
+      joiningLinksCompleted,
+      rmuFoundationStatus,
+      terminationEndpoints,
+      terminationGpsLat,
+      terminationGpsLng,
+      pwdClearance,
+      pwdReceipt,
+      ksebClearance,
+      ksebReceipt,
+      nhClearance,
+      nhReceipt
+    };
+    localStorage.setItem(`telgo_draft_report_${reportProjectId}`, JSON.stringify(draft));
+  }, [
+    reportProjectId,
+    reportDate,
+    laborCount,
+    otHours,
+    fuelExpenses,
+    travelExpenses,
+    roomRent,
+    roomRentReceipt,
+    toolRent,
+    toolRentReceipt,
+    excavationLength,
+    hddLength,
+    cableLayingLength,
+    cableMoundingLength,
+    joiningLinksCompleted,
+    rmuFoundationStatus,
+    terminationEndpoints,
+    terminationGpsLat,
+    terminationGpsLng,
+    pwdClearance,
+    pwdReceipt,
+    ksebClearance,
+    ksebReceipt,
+    nhClearance,
+    nhReceipt
+  ]);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -274,7 +459,7 @@ export default function SupervisorDashboard() {
       <style>{`
         .menu-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(2, 1fr);
           gap: 12px;
           margin-bottom: 24px;
         }
@@ -636,6 +821,54 @@ export default function SupervisorDashboard() {
                 </div>
               </div>
 
+              {/* MODULE 4: DAILY REPORT WIZARD (Interactive) */}
+              <div 
+                onClick={() => {
+                  if (projectsList.length > 0) {
+                    setReportProjectId(projectsList[0].id);
+                  }
+                  setIsDailyReportOpen(true);
+                  setReportStep(1);
+                }}
+                style={{
+                  background: "rgba(255,255,255,0.01)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: 18,
+                  padding: "18px 14px",
+                  cursor: "pointer",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: 8,
+                }}
+                className="glass module-card"
+              >
+                <div style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: "rgba(245, 158, 11, 0.08)",
+                  border: "1px solid rgba(245, 158, 11, 0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                  </svg>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "#f1f5f9", margin: "0 0 2px" }}>Daily Report</h4>
+                  <span style={{ fontSize: 9, color: "#fbbf24", fontWeight: 700 }}>Site Update</span>
+                </div>
+              </div>
+
             </div>
 
             {/* Quick Settings Action */}
@@ -860,6 +1093,701 @@ export default function SupervisorDashboard() {
             >
               Dismiss
             </button>
+          </div>
+        </div>
+      )}
+
+      {isDailyReportOpen && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(6, 9, 18, 0.9)",
+          backdropFilter: "blur(14px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "20px 10px",
+          zIndex: 1000,
+          fontFamily: "Outfit, sans-serif",
+          overflowY: "auto"
+        }}>
+          <div className="glass fade-in" style={{
+            width: "100%",
+            maxWidth: 440,
+            background: "linear-gradient(135deg, #0e0828 0%, #060912 100%)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 24,
+            padding: "24px 20px",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.8)",
+            maxHeight: "92dvh",
+            display: "flex",
+            flexDirection: "column",
+            gap: 16
+          }}>
+            {/* Modal Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 12 }}>
+              <div>
+                <span style={{ fontSize: 9, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.1em" }}>DAILY OPERATION HUB</span>
+                <h3 style={{ fontSize: 16, fontWeight: 900, color: "#f1f5f9", margin: "2px 0 0" }}>Daily Report Wizard</h3>
+              </div>
+              <button 
+                onClick={() => {
+                  if (confirm("Are you sure you want to dismiss the daily report wizard? Your inputs will remain saved as a local draft.")) {
+                    setIsDailyReportOpen(false);
+                  }
+                }}
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", width: 28, height: 28, borderRadius: "50%", color: "#94a3b8", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            {/* Step Progress Bar */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: "10px 14px", borderRadius: 14 }}>
+              {[1, 2, 3, 4].map((step) => (
+                <div key={step} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: "50%",
+                    background: reportStep === step ? "linear-gradient(135deg, #06b6d4, #7c3aed)" : reportStep > step ? "#10b981" : "rgba(255,255,255,0.05)",
+                    border: reportStep === step ? "none" : "1px solid rgba(255,255,255,0.1)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 10,
+                    fontWeight: 800,
+                    color: "white"
+                  }}>
+                    {reportStep > step ? "✓" : step}
+                  </div>
+                  {step < 4 && <div style={{ width: 14, height: 1, background: reportStep > step ? "#10b981" : "rgba(255,255,255,0.08)" }} />}
+                </div>
+              ))}
+              <span style={{ fontSize: 10, fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>
+                Step {reportStep} of 4
+              </span>
+            </div>
+
+            {/* Scrollable Wizard Body */}
+            <div style={{ flex: 1, overflowY: "auto", paddingRight: 4, display: "flex", flexDirection: "column", gap: 14, textAlign: "left" }}>
+              
+              {/* STEP 1: SELECT PROJECT, DATE & EXPENSES */}
+              {reportStep === 1 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: "0 0 4px" }}>Step A: Project & Wages/Expenses</h4>
+                  
+                  {/* Project Selector */}
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Project Corridor</label>
+                    <select
+                      value={reportProjectId}
+                      onChange={(e) => setReportProjectId(e.target.value)}
+                      style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none", cursor: "pointer" }}
+                    >
+                      {projectsList.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Date picker */}
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Report Date</label>
+                    <input
+                      type="date"
+                      value={reportDate}
+                      onChange={(e) => setReportDate(e.target.value)}
+                      max={new Date().toISOString().split("T")[0]}
+                      min={(() => {
+                        const d = new Date();
+                        d.setDate(d.getDate() - 7);
+                        return d.toISOString().split("T")[0];
+                      })()}
+                      style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
+                      required
+                    />
+                    <span style={{ fontSize: 9, color: "#64748b", display: "block", marginTop: 4 }}>Maximum submission range is today or up to 7 days in the past.</span>
+                  </div>
+
+                  {/* Wages Counter logic */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14 }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Workers Count</label>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <button type="button" onClick={() => setLaborCount(Math.max(0, laborCount - 1))} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "white", cursor: "pointer", fontWeight: 900 }}>-</button>
+                        <input
+                          type="number"
+                          value={laborCount}
+                          onChange={(e) => setLaborCount(Math.max(0, parseInt(e.target.value) || 0))}
+                          style={{ width: 40, height: 28, background: "transparent", border: "none", color: "white", fontSize: 14, fontWeight: 800, textAlign: "center", outline: "none" }}
+                        />
+                        <button type="button" onClick={() => setLaborCount(laborCount + 1)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "white", cursor: "pointer", fontWeight: 900 }}>+</button>
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Overtime Hours</label>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <button type="button" onClick={() => setOtHours(Math.max(0, otHours - 1))} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "white", cursor: "pointer", fontWeight: 900 }}>-</button>
+                        <input
+                          type="number"
+                          value={otHours}
+                          onChange={(e) => setOtHours(Math.max(0, parseInt(e.target.value) || 0))}
+                          style={{ width: 40, height: 28, background: "transparent", border: "none", color: "white", fontSize: 14, fontWeight: 800, textAlign: "center", outline: "none" }}
+                        />
+                        <button type="button" onClick={() => setOtHours(otHours + 1)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "white", cursor: "pointer", fontWeight: 900 }}>+</button>
+                      </div>
+                    </div>
+                    
+                    {/* Live wages display */}
+                    <div style={{ gridColumn: "span 2", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 10, marginTop: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div>
+                        <span style={{ fontSize: 10, color: "#64748b", fontWeight: 800, textTransform: "uppercase" }}>Calculated Wages</span>
+                        <p style={{ margin: 0, fontSize: 8, color: "#64748b" }}>(₹900/worker + ₹150/OT-hour)</p>
+                      </div>
+                      <span style={{ fontSize: 18, fontWeight: 900, color: "#10b981", letterSpacing: "-0.5px" }}>
+                        ₹{(laborCount * 900) + (otHours * 150)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Operational Expenses */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Fuel Expense (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="0.00"
+                        value={fuelExpenses}
+                        onChange={(e) => setFuelExpenses(e.target.value)}
+                        style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Travel Expense (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="0.00"
+                        value={travelExpenses}
+                        onChange={(e) => setTravelExpenses(e.target.value)}
+                        style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Room rent + Receipt */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.03)", padding: 10, borderRadius: 12 }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Room Rent (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="0.00"
+                        value={roomRent}
+                        onChange={(e) => setRoomRent(e.target.value)}
+                        style={{ width: "100%", height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Rent Receipt</label>
+                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, width: "100%", height: 34, background: roomRentReceipt ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: roomRentReceipt ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: roomRentReceipt ? "#10b981" : "#cbd5e1", fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                        {roomRentReceipt ? "Receipt ✓" : "Upload File"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const compressed = await compressImage(file);
+                              setRoomRentReceipt(compressed);
+                            }
+                          }}
+                          style={{ display: "none" }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Tool rent + Receipt */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.03)", padding: 10, borderRadius: 12 }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Tool Rent (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="0.00"
+                        value={toolRent}
+                        onChange={(e) => setToolRent(e.target.value)}
+                        style={{ width: "100%", height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Rent Receipt</label>
+                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, width: "100%", height: 34, background: toolRentReceipt ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: toolRentReceipt ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: toolRentReceipt ? "#10b981" : "#cbd5e1", fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                        {toolRentReceipt ? "Receipt ✓" : "Upload File"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const compressed = await compressImage(file);
+                              setToolRentReceipt(compressed);
+                            }
+                          }}
+                          style={{ display: "none" }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 2: WIP PROGRESS (TRENCHING & TERMINATIONS) */}
+              {reportStep === 2 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: "0 0 4px" }}>Step B: WIP operational progress</h4>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Trenching / Excavation (m)</label>
+                      <input
+                        type="number"
+                        placeholder="0.00"
+                        value={excavationLength}
+                        onChange={(e) => setExcavationLength(e.target.value)}
+                        style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>HDD Drilling (m)</label>
+                      <input
+                        type="number"
+                        placeholder="0.00"
+                        value={hddLength}
+                        onChange={(e) => setHddLength(e.target.value)}
+                        style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Cable Laying (m)</label>
+                      <input
+                        type="number"
+                        placeholder="0.00"
+                        value={cableLayingLength}
+                        onChange={(e) => setCableLayingLength(e.target.value)}
+                        style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Cable Mounding (m)</label>
+                      <input
+                        type="number"
+                        placeholder="0.00"
+                        value={cableMoundingLength}
+                        onChange={(e) => setCableMoundingLength(e.target.value)}
+                        style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>Joining Links Completed</label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={joiningLinksCompleted}
+                        onChange={(e) => setJoiningLinksCompleted(e.target.value)}
+                        style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 6, textTransform: "uppercase" }}>RMU Foundations</label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={rmuFoundationStatus}
+                        onChange={(e) => setRmuFoundationStatus(e.target.value)}
+                        style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* GPS Terminations and Snapped Coordinates */}
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", margin: 0 }}>Termination Endpoints</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (navigator.geolocation) {
+                            showToast("⏳ Fetching accurate coordinates...");
+                            navigator.geolocation.getCurrentPosition(
+                              (p) => {
+                                setTerminationGpsLat(p.coords.latitude.toFixed(6));
+                                setTerminationGpsLng(p.coords.longitude.toFixed(6));
+                                showToast("✓ GPS Coordinates fetched and synchronized!");
+                              },
+                              (err) => {
+                                showToast(`❌ GPS fetch failed: ${err.message}`);
+                              },
+                              { enableHighAccuracy: true, timeout: 8000 }
+                            );
+                          } else {
+                            showToast("❌ Geolocation not supported by device.");
+                          }
+                        }}
+                        style={{ fontSize: 10, fontWeight: 800, color: "#06b6d4", background: "rgba(6, 182, 212, 0.08)", border: "1px solid rgba(6, 182, 212, 0.2)", borderRadius: 6, padding: "3px 8px", cursor: "pointer" }}
+                      >
+                        ⚡ Fetch GPS Coords
+                      </button>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                      <div>
+                        <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700 }}>Endpoints (Qty)</span>
+                        <input
+                          type="number"
+                          placeholder="0"
+                          value={terminationEndpoints}
+                          onChange={(e) => setTerminationEndpoints(e.target.value)}
+                          style={{ width: "100%", height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "#cbd5e1", fontSize: 12, outline: "none", marginTop: 4 }}
+                        />
+                      </div>
+                      <div>
+                        <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700 }}>Latitude</span>
+                        <input
+                          type="number"
+                          step="0.000001"
+                          placeholder="9.9538"
+                          value={terminationGpsLat}
+                          onChange={(e) => setTerminationGpsLat(e.target.value)}
+                          style={{ width: "100%", height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none", marginTop: 4 }}
+                        />
+                      </div>
+                      <div>
+                        <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700 }}>Longitude</span>
+                        <input
+                          type="number"
+                          step="0.000001"
+                          placeholder="76.3428"
+                          value={terminationGpsLng}
+                          onChange={(e) => setTerminationGpsLng(e.target.value)}
+                          style={{ width: "100%", height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 8px", color: "#cbd5e1", fontSize: 11, outline: "none", marginTop: 4 }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 3: STATUTORY CLEARANCES */}
+              {reportStep === 3 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: "0 0 4px" }}>Step C: Clearance & Authority Approvals</h4>
+                  
+                  {/* PWD */}
+                  <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: "#cbd5e1" }}>PWD Authority</span>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: pwdClearance === "Permission Gathered" ? "#10b981" : pwdClearance === "Demand Issued" ? "#fbbf24" : "#64748b" }}>{pwdClearance}</span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                      <select
+                        value={pwdClearance}
+                        onChange={(e) => setPwdClearance(e.target.value)}
+                        style={{ height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "#cbd5e1", fontSize: 11, cursor: "pointer" }}
+                      >
+                        <option value="None">None / Initiated</option>
+                        <option value="Demand Issued">Demand Note Issued</option>
+                        <option value="Permission Gathered">Permission Gathered</option>
+                      </select>
+                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: pwdReceipt ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: pwdReceipt ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: pwdReceipt ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                        {pwdReceipt ? "Receipt ✓" : "Upload File"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const compressed = await compressImage(file);
+                              setPwdReceipt(compressed);
+                            }
+                          }}
+                          style={{ display: "none" }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* KSEB */}
+                  <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: "#cbd5e1" }}>KSEB Grid Access</span>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: ksebClearance === "Permission Gathered" ? "#10b981" : ksebClearance === "Demand Issued" ? "#fbbf24" : "#64748b" }}>{ksebClearance}</span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                      <select
+                        value={ksebClearance}
+                        onChange={(e) => setKsebClearance(e.target.value)}
+                        style={{ height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "#cbd5e1", fontSize: 11, cursor: "pointer" }}
+                      >
+                        <option value="None">None / Initiated</option>
+                        <option value="Demand Issued">Demand Note Issued</option>
+                        <option value="Permission Gathered">Permission Gathered</option>
+                      </select>
+                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: ksebReceipt ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: ksebReceipt ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: ksebReceipt ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                        {ksebReceipt ? "Receipt ✓" : "Upload File"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const compressed = await compressImage(file);
+                              setKsebReceipt(compressed);
+                            }
+                          }}
+                          style={{ display: "none" }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* NH Authority */}
+                  <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: "#cbd5e1" }}>National Highway</span>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: nhClearance === "Permission Gathered" ? "#10b981" : nhClearance === "Demand Issued" ? "#fbbf24" : "#64748b" }}>{nhClearance}</span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                      <select
+                        value={nhClearance}
+                        onChange={(e) => setNhClearance(e.target.value)}
+                        style={{ height: 34, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "0 6px", color: "#cbd5e1", fontSize: 11, cursor: "pointer" }}
+                      >
+                        <option value="None">None / Initiated</option>
+                        <option value="Demand Issued">Demand Note Issued</option>
+                        <option value="Permission Gathered">Permission Gathered</option>
+                      </select>
+                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: nhReceipt ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)", border: nhReceipt ? "1px dashed #10b981" : "1px dashed rgba(255,255,255,0.15)", borderRadius: 8, color: nhReceipt ? "#10b981" : "#cbd5e1", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                        {nhReceipt ? "Receipt ✓" : "Upload File"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const compressed = await compressImage(file);
+                              setNhReceipt(compressed);
+                            }
+                          }}
+                          style={{ display: "none" }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 4: VERIFY & SUBMIT */}
+              {reportStep === 4 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <h4 style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", margin: "0 0 4px" }}>Step D: Review operational draft</h4>
+                  
+                  {/* Category 1: Financials */}
+                  <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14 }}>
+                    <span style={{ fontSize: 9, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.08em" }}>Wages & Expenses</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+                        <span style={{ color: "#94a3b8" }}>Workers / Overtime</span>
+                        <span style={{ color: "white", fontWeight: 700 }}>{laborCount} crew | {otHours} OT hrs</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+                        <span style={{ color: "#94a3b8" }}>Calculated Wages</span>
+                        <span style={{ color: "#10b981", fontWeight: 800 }}>₹{(laborCount * 900) + (otHours * 150)}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+                        <span style={{ color: "#94a3b8" }}>Fuel / Travel Expenses</span>
+                        <span style={{ color: "white" }}>₹{fuelExpenses || "0"} / ₹{travelExpenses || "0"}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+                        <span style={{ color: "#94a3b8" }}>Room / Tool Rent</span>
+                        <span style={{ color: "white" }}>₹{roomRent || "0"} {roomRentReceipt ? "(📎)" : ""} / ₹{toolRent || "0"} {toolRentReceipt ? "(📎)" : ""}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Category 2: WIP lengths */}
+                  <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14 }}>
+                    <span style={{ fontSize: 9, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.08em" }}>Physical Infrastructure Work</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+                        <span style={{ color: "#94a3b8" }}>Trenching / Excavation</span>
+                        <span style={{ color: "white", fontWeight: 700 }}>{excavationLength || "0"} m</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+                        <span style={{ color: "#94a3b8" }}>HDD Boring / Drilling</span>
+                        <span style={{ color: "white", fontWeight: 700 }}>{hddLength || "0"} m</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+                        <span style={{ color: "#94a3b8" }}>Cable Laying / Mounding</span>
+                        <span style={{ color: "white" }}>{cableLayingLength || "0"}m / {cableMoundingLength || "0"}m</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+                        <span style={{ color: "#94a3b8" }}>Joints / Foundations / Terminations</span>
+                        <span style={{ color: "white" }}>{joiningLinksCompleted || "0"} / {rmuFoundationStatus || "0"} / {terminationEndpoints || "0"}</span>
+                      </div>
+                      {terminationGpsLat && (
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#a78bfa" }}>
+                          <span>Termination Coordinates</span>
+                          <span>[{Number(terminationGpsLat).toFixed(4)}, {Number(terminationGpsLng).toFixed(4)}]</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Category 3: Clearances */}
+                  <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", padding: 12, borderRadius: 14 }}>
+                    <span style={{ fontSize: 9, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.08em" }}>Clearances & Approvals</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+                        <span style={{ color: "#94a3b8" }}>PWD Authority</span>
+                        <span style={{ color: pwdClearance === "Permission Gathered" ? "#10b981" : pwdClearance === "Demand Issued" ? "#fbbf24" : "#64748b", fontWeight: 700 }}>{pwdClearance} {pwdReceipt ? "📎" : ""}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+                        <span style={{ color: "#94a3b8" }}>KSEB Grid Access</span>
+                        <span style={{ color: ksebClearance === "Permission Gathered" ? "#10b981" : ksebClearance === "Demand Issued" ? "#fbbf24" : "#64748b", fontWeight: 700 }}>{ksebClearance} {ksebReceipt ? "📎" : ""}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+                        <span style={{ color: "#94a3b8" }}>National Highway</span>
+                        <span style={{ color: nhClearance === "Permission Gathered" ? "#10b981" : nhClearance === "Demand Issued" ? "#fbbf24" : "#64748b", fontWeight: 700 }}>{nhClearance} {nhReceipt ? "📎" : ""}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p style={{ margin: "4px 0 0", fontSize: 10, color: "#fbbf24", textAlign: "center", lineHeight: 1.4 }}>
+                    ⚠️ Submitting will lock operations for {reportDate || new Date().toISOString().split("T")[0]} under project ID. Verify coordinates & receipts!
+                  </p>
+                </div>
+              )}
+
+            </div>
+
+            {/* Modal Footer (Controls) */}
+            <div style={{ display: "flex", gap: 10, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 14 }}>
+              {reportStep > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setReportStep(reportStep - 1)}
+                  style={{ flex: 0.8, height: 42, background: "transparent", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 12, color: "#cbd5e1", fontSize: 13, fontWeight: 750, cursor: "pointer" }}
+                >
+                  Back
+                </button>
+              )}
+              
+              {reportStep < 4 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (reportStep === 1) {
+                      if (!reportDate) {
+                        showToast("❌ Please select a report date.");
+                        return;
+                      }
+                      if (!reportProjectId) {
+                        showToast("❌ Please select a project corridor.");
+                        return;
+                      }
+                    }
+                    setReportStep(reportStep + 1);
+                  }}
+                  style={{ flex: 1.2, height: 42, background: "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)", border: "none", borderRadius: 12, color: "white", fontSize: 13, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px rgba(6, 182, 212, 0.25)" }}
+                >
+                  Continue ➔
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setSubmittingReport(true);
+                    
+                    const payload = {
+                      reportDate,
+                      projectId: reportProjectId,
+                      laborCount,
+                      otHours,
+                      fuelExpenses: Number(fuelExpenses || 0),
+                      travelExpenses: Number(travelExpenses || 0),
+                      roomRent: Number(roomRent || 0),
+                      roomRentReceipt,
+                      toolRent: Number(toolRent || 0),
+                      toolRentReceipt,
+                      excavationLength: Number(excavationLength || 0),
+                      hddLength: Number(hddLength || 0),
+                      cableLayingLength: Number(cableLayingLength || 0),
+                      cableMoundingLength: Number(cableMoundingLength || 0),
+                      joiningLinksCompleted: Number(joiningLinksCompleted || 0),
+                      rmuFoundationStatus: Number(rmuFoundationStatus || 0),
+                      terminationEndpoints: Number(terminationEndpoints || 0),
+                      terminationGpsLat: terminationGpsLat ? Number(terminationGpsLat) : undefined,
+                      terminationGpsLng: terminationGpsLng ? Number(terminationGpsLng) : undefined,
+                      stockAvailable: {},
+                      clearances: {
+                        PWD: { status: pwdClearance, receipt: pwdReceipt },
+                        KSEB: { status: ksebClearance, receipt: ksebReceipt },
+                        NH: { status: nhClearance, receipt: nhReceipt }
+                      }
+                    };
+
+                    try {
+                      const res = await fetch("/api/mobile/daily-reports", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                      });
+
+                      const data = await res.json();
+                      if (res.ok && data.ok) {
+                        showToast("🚀 Daily report submitted successfully! Approved status pending Admin Lock.");
+                        localStorage.removeItem(`telgo_draft_report_${reportProjectId}`);
+                        setIsDailyReportOpen(false);
+                      } else {
+                        showToast(`❌ Submission error: ${data.message || "Unknown error."}`);
+                      }
+                    } catch (err) {
+                      showToast("📡 Connection drop detected! Report cached locally in offline submissions queue.");
+                      const localQueue = localStorage.getItem("telgo_offline_submissions");
+                      const parsedQueue = localQueue ? JSON.parse(localQueue) : [];
+                      parsedQueue.push(payload);
+                      localStorage.setItem("telgo_offline_submissions", JSON.stringify(parsedQueue));
+                      localStorage.removeItem(`telgo_draft_report_${reportProjectId}`);
+                      setIsDailyReportOpen(false);
+                    } finally {
+                      setSubmittingReport(false);
+                    }
+                  }}
+                  disabled={submittingReport}
+                  style={{ flex: 1.2, height: 42, background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", border: "none", borderRadius: 12, color: "white", fontSize: 13, fontWeight: 800, cursor: submittingReport ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px rgba(16, 185, 129, 0.25)" }}
+                >
+                  {submittingReport ? (
+                    <>
+                      <div className="spinner" style={{ width: 14, height: 14 }} />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>🚀 Submit Daily Report</>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -27,7 +27,18 @@ export default function AdminDashboard() {
   const [mapAnimateProgress, setMapAnimateProgress] = useState(0);
   
   // Navigation & Multi-View State
-  const [activeView, setActiveView] = useState<"hub" | "approvals" | "map" | "settings" | "attendance" | "projects">("hub");
+  const [activeView, setActiveView] = useState<"hub" | "approvals" | "map" | "settings" | "attendance" | "projects" | "reports" | "ledger">("hub");
+
+  // Daily Reports & Master Ledger States
+  const [pendingReports, setPendingReports] = useState<any[]>([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<any | null>(null);
+  const [reportFilterDate, setReportFilterDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [reportFilterProjectId, setReportFilterProjectId] = useState("");
+  const [masterLedgerList, setMasterLedgerList] = useState<any[]>([]);
+  const [loadingLedger, setLoadingLedger] = useState(false);
+  const [selectedLedgerProject, setSelectedLedgerProject] = useState("");
+  const [approvingReportId, setApprovingReportId] = useState<string | null>(null);
 
   // Real Database Attendance History States
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
@@ -294,6 +305,78 @@ export default function AdminDashboard() {
       setSelectedProjectItem(DEFAULT_PROJECTS[0]);
     }
   }, []);
+
+  const fetchPendingReports = useCallback(async (projectId: string, date: string) => {
+    if (!projectId || !date) return;
+    setLoadingReports(true);
+    setSelectedReport(null);
+    try {
+      const res = await fetch(`/api/mobile/daily-reports?projectId=${projectId}&reportDate=${date}`);
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setPendingReports(data.reports ?? []);
+      } else {
+        setPendingReports([]);
+      }
+    } catch {
+      setPendingReports([]);
+    } finally {
+      setLoadingReports(false);
+    }
+  }, []);
+
+  const fetchMasterLedger = useCallback(async (projectId: string) => {
+    if (!projectId) return;
+    setLoadingLedger(true);
+    try {
+      const res = await fetch(`/api/mobile/admin/master-ledger?projectId=${projectId}`);
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setMasterLedgerList(data.ledger ?? []);
+      } else {
+        setMasterLedgerList([]);
+      }
+    } catch {
+      setMasterLedgerList([]);
+    } finally {
+      setLoadingLedger(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeView === "reports" && reportFilterProjectId && reportFilterDate) {
+      fetchPendingReports(reportFilterProjectId, reportFilterDate);
+    }
+  }, [activeView, reportFilterProjectId, reportFilterDate, fetchPendingReports]);
+
+  useEffect(() => {
+    if (activeView === "ledger" && selectedLedgerProject) {
+      fetchMasterLedger(selectedLedgerProject);
+    }
+  }, [activeView, selectedLedgerProject, fetchMasterLedger]);
+
+  async function handleApproveDailyReport(reportId: string) {
+    if (!reportId) return;
+    setApprovingReportId(reportId);
+    try {
+      const res = await fetch("/api/mobile/admin/approve-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reportId })
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        showToast("✓ Report approved & atomic ledger consolidated!");
+        fetchPendingReports(reportFilterProjectId, reportFilterDate);
+      } else {
+        showToast(`❌ Approval failed: ${data.message}`);
+      }
+    } catch {
+      showToast("❌ Network error. Approval failed.");
+    } finally {
+      setApprovingReportId(null);
+    }
+  }
 
   const resetToDefaults = () => {
     if (confirm("Are you sure you want to reset all projects and coordinates to their real default parameters?")) {
@@ -1178,7 +1261,65 @@ export default function AdminDashboard() {
                   <span style={{ fontSize: 10, color: "#a78bfa", fontWeight: 700, textTransform: "uppercase" }}>Corridor mapping</span>
                 </div>
               </div>
-              
+
+              {/* MODULE 6: DAILY REPORTS HUB */}
+              <div 
+                className="glass module-card"
+                onClick={() => { setActiveView("reports"); if (projectsList.length > 0) setReportFilterProjectId(projectsList[0].id); }}
+                style={{ 
+                  padding: "18px 14px", 
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.05)",
+                  background: "rgba(255,255,255,0.01)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: 10
+                }}
+              >
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(16, 185, 129, 0.1)", border: "1px solid rgba(16, 185, 129, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                  </svg>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>Daily Reports</h4>
+                  <span style={{ fontSize: 10, color: "#10b981", fontWeight: 700, textTransform: "uppercase" }}>Verification</span>
+                </div>
+              </div>
+
+              {/* MODULE 7: MASTER LEDGER HUB */}
+              <div 
+                className="glass module-card"
+                onClick={() => { setActiveView("ledger"); if (projectsList.length > 0) { setSelectedLedgerProject(projectsList[0].id); fetchMasterLedger(projectsList[0].id); } }}
+                style={{ 
+                  padding: "18px 14px", 
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.05)",
+                  background: "rgba(255,255,255,0.01)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: 10
+                }}
+              >
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(245, 158, 11, 0.1)", border: "1px solid rgba(245, 158, 11, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10"/>
+                    <line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="14"/>
+                  </svg>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>Master Ledger</h4>
+                  <span style={{ fontSize: 10, color: "#f59e0b", fontWeight: 700, textTransform: "uppercase" }}>Aggregates</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -2326,6 +2467,306 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* VIEW 6: DAILY REPORTS VERIFICATION FUNNEL */}
+      {activeView === "reports" && (
+        <div className="fade-in" style={{ paddingBottom: 60 }}>
+          {/* Header */}
+          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(6,9,18,0.6)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <button 
+                onClick={() => { setActiveView("hub"); setSelectedReport(null); }}
+                className="back-btn"
+                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f1f5f9", cursor: "pointer" }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              </button>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 800, color: "#10b981", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Daily Reports Hub</p>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Staging Verification</h1>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* STRICT FUNNEL NAVIGATION BAR */}
+            <div className="glass" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
+              <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8", margin: "0 0 14px", textAlign: "left" }}>1. Verification Funnel Filter</h2>
+              
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 6, fontWeight: 700, textTransform: "uppercase" }}>Select Date</label>
+                  <input
+                    type="date"
+                    value={reportFilterDate}
+                    onChange={(e) => setReportFilterDate(e.target.value)}
+                    style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 12, outline: "none", fontFamily: "monospace" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 10, color: "#64748b", marginBottom: 6, fontWeight: 700, textTransform: "uppercase" }}>Select Corridor</label>
+                  <select
+                    value={reportFilterProjectId}
+                    onChange={(e) => setReportFilterProjectId(e.target.value)}
+                    style={{ width: "100%", height: 38, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 8px", color: "#cbd5e1", fontSize: 12, outline: "none", cursor: "pointer" }}
+                  >
+                    <option value="">-- Choose Project --</option>
+                    {projectsList.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* ROSTER GRID SECTION */}
+            <div className="glass" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
+              <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8", margin: "0 0 14px", textAlign: "left" }}>2. Submitting Crew Roster</h2>
+
+              {loadingReports ? (
+                <div style={{ textAlign: "center", padding: "40px 0", color: "#64748b" }}>
+                  <div className="spinner" style={{ margin: "0 auto 12px", borderColor: "#10b981", borderTopColor: "transparent" }} />
+                  Retrieving Pending Crew Logs...
+                </div>
+              ) : pendingReports.length === 0 ? (
+                <div style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: "32px 20px", textAlign: "center" }}>
+                  <span style={{ fontSize: 24, display: "block", marginBottom: 8 }}>✨</span>
+                  <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>No pending reports submitted for this date and project corridor.</p>
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
+                  {pendingReports.map((r) => {
+                    const isSelected = selectedReport?.id === r.id;
+                    return (
+                      <div
+                        key={r.id}
+                        onClick={() => setSelectedReport(r)}
+                        style={{
+                          padding: "14px 16px",
+                          borderRadius: 16,
+                          background: isSelected ? "rgba(16, 185, 129, 0.08)" : "rgba(255,255,255,0.01)",
+                          border: isSelected ? "1px solid rgba(16, 185, 129, 0.3)" : "1px solid rgba(255,255,255,0.04)",
+                          cursor: "pointer",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        <div style={{ textAlign: "left" }}>
+                          <h4 style={{ fontSize: 13, fontWeight: 800, color: isSelected ? "#10b981" : "#f1f5f9", margin: 0 }}>{r.supervisorName}</h4>
+                          <span style={{ fontSize: 9, color: "#64748b", fontFamily: "monospace" }}>Staged: {new Date(r.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <span style={{ fontSize: 10, fontWeight: 750, color: "#10b981", display: "block" }}>₹{r.calculatedWages}</span>
+                          <span style={{ fontSize: 9, color: "#64748b" }}>{r.excavationLength}m trench | {r.hddLength}m HDD</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* REVIEW DRAWERS */}
+            {selectedReport && (
+              <div className="glass fade-in" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, textAlign: "left" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: 12, marginBottom: 16 }}>
+                  <div>
+                    <h3 style={{ fontSize: 15, fontWeight: 800, color: "#f1f5f9", margin: 0 }}>{selectedReport.supervisorName}</h3>
+                    <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0" }}>Daily Report Review & Audit</p>
+                  </div>
+                  
+                  <button
+                    onClick={() => handleApproveDailyReport(selectedReport.id)}
+                    disabled={approvingReportId === selectedReport.id}
+                    style={{
+                      background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                      border: "none",
+                      borderRadius: 8,
+                      color: "white",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      padding: "6px 14px",
+                      cursor: approvingReportId === selectedReport.id ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      boxShadow: "0 4px 12px rgba(16, 185, 129, 0.2)"
+                    }}
+                  >
+                    {approvingReportId === selectedReport.id ? "Locking..." : "Approve & Lock"}
+                  </button>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {/* Step A expenses detail */}
+                  <div>
+                    <span style={{ fontSize: 9, fontWeight: 800, color: "#10b981", textTransform: "uppercase", letterSpacing: "0.03em" }}>Step A: Wages & Logistics Expenses</span>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, background: "rgba(0,0,0,0.2)", padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,0.02)", marginTop: 6 }}>
+                      <div>
+                        <span style={{ fontSize: 9, color: "#64748b" }}>Crew size</span>
+                        <p style={{ fontSize: 12, fontWeight: 750, color: "#cbd5e1", margin: 0 }}>{selectedReport.laborCount} workers | {selectedReport.otHours} OT hrs</p>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: 9, color: "#64748b" }}>Calculated wages</span>
+                        <p style={{ fontSize: 12, fontWeight: 800, color: "#10b981", margin: 0 }}>₹{selectedReport.calculatedWages}</p>
+                      </div>
+                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.03)", paddingTop: 6, marginTop: 4 }}>
+                        <span style={{ fontSize: 9, color: "#64748b" }}>Fuel & Travel</span>
+                        <p style={{ fontSize: 12, fontWeight: 700, color: "#cbd5e1", margin: 0 }}>₹{selectedReport.fuelExpenses} | ₹{selectedReport.travelExpenses}</p>
+                      </div>
+                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.03)", paddingTop: 6, marginTop: 4 }}>
+                        <span style={{ fontSize: 9, color: "#64748b" }}>Rents (room/tool)</span>
+                        <p style={{ fontSize: 12, fontWeight: 700, color: "#cbd5e1", margin: 0 }}>₹{selectedReport.roomRent} | ₹{selectedReport.toolRent}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step B WIP progress */}
+                  <div>
+                    <span style={{ fontSize: 9, fontWeight: 800, color: "#06b6d4", textTransform: "uppercase", letterSpacing: "0.03em" }}>Step B: Work-in-Progress Lengths</span>
+                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 10, background: "rgba(0,0,0,0.2)", padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,0.02)", marginTop: 6 }}>
+                      <div>
+                        <span style={{ fontSize: 9, color: "#64748b" }}>Excavation & HDD Length</span>
+                        <p style={{ fontSize: 12, fontWeight: 750, color: "#cbd5e1", margin: 0 }}>Trench: <b>{selectedReport.excavationLength}m</b> | HDD: <b>{selectedReport.hddLength}m</b></p>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: 9, color: "#64748b" }}>Cable Installation</span>
+                        <p style={{ fontSize: 12, fontWeight: 750, color: "#cbd5e1", margin: 0 }}>Laying: <b>{selectedReport.cableLayingLength}m</b> | Mound: <b>{selectedReport.cableMoundingLength}m</b></p>
+                      </div>
+                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.03)", paddingTop: 6, marginTop: 4 }}>
+                        <span style={{ fontSize: 9, color: "#64748b" }}>Structure markers</span>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: "#cbd5e1", margin: 0 }}>Joining: <b>{selectedReport.joiningLinksCompleted}</b> | RMU: <b>{selectedReport.rmuFoundationStatus}</b></p>
+                      </div>
+                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.03)", paddingTop: 6, marginTop: 4 }}>
+                        <span style={{ fontSize: 9, color: "#64748b" }}>Termination GIS Location</span>
+                        <p style={{ fontSize: 11, fontWeight: 750, color: "#cbd5e1", margin: 0 }}>
+                          {selectedReport.terminationEndpoints} points {selectedReport.terminationGpsLat ? `🎯 [${selectedReport.terminationGpsLat.toFixed(4)}, ${selectedReport.terminationGpsLng.toFixed(4)}]` : "--"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step C statutory clearances */}
+                  <div>
+                    <span style={{ fontSize: 9, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.03em" }}>Step C: Clearance lifecycle stages</span>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 6, background: "rgba(0,0,0,0.2)", padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,0.02)", marginTop: 6, maxHeight: 150, overflowY: "auto" }}>
+                      {Object.keys(selectedReport.clearances || {}).map(agency => {
+                        const info = selectedReport.clearances[agency];
+                        return (
+                          <div key={agency} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, borderBottom: "1px solid rgba(255,255,255,0.02)", paddingBottom: 4 }}>
+                            <span style={{ fontWeight: 800, color: "#cbd5e1" }}>{agency} Authority</span>
+                            <span style={{ color: info.status === "Permission Gathered" ? "#10b981" : info.status === "Demand Issued" ? "#fbbf24" : "#94a3b8", fontWeight: 700 }}>
+                              {info.status} {info.receipt ? "📎" : ""}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* VIEW 7: MASTER LEDGER HUB */}
+      {activeView === "ledger" && (
+        <div className="fade-in" style={{ paddingBottom: 60 }}>
+          {/* Header */}
+          <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(6,9,18,0.6)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <button 
+                onClick={() => { setActiveView("hub"); }}
+                className="back-btn"
+                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f1f5f9", cursor: "pointer" }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              </button>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 800, color: "#f59e0b", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Consolidated Timeline</p>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Master Project Ledger</h1>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Select Corridor Dropdown */}
+            <div className="glass" style={{ padding: 18, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", textAlign: "left" }}>Select Project Corridor</label>
+              <select
+                value={selectedLedgerProject}
+                onChange={(e) => {
+                  setSelectedLedgerProject(e.target.value);
+                  fetchMasterLedger(e.target.value);
+                }}
+                style={{ width: "100%", height: 40, background: "#060912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "0 10px", color: "#cbd5e1", fontSize: 13, outline: "none", cursor: "pointer" }}
+              >
+                <option value="">-- Choose Project Corridor --</option>
+                {projectsList.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Ledger Table grid */}
+            <div className="glass" style={{ padding: 20, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20 }}>
+              <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8", margin: "0 0 16px", textAlign: "left" }}>Aggregated Ledger Sheet</h2>
+
+              {loadingLedger ? (
+                <div style={{ textAlign: "center", padding: "40px 0", color: "#64748b" }}>
+                  <div className="spinner" style={{ margin: "0 auto 12px", borderColor: "#f59e0b", borderTopColor: "transparent" }} />
+                  Loading Consolidated Ledger Timeline...
+                </div>
+              ) : !selectedLedgerProject ? (
+                <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>Please select a project corridor from the dropdown above to display the aggregated daily ledger list.</p>
+              ) : masterLedgerList.length === 0 ? (
+                <div style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 16, padding: "32px 20px", textAlign: "center" }}>
+                  <span style={{ fontSize: 24, display: "block", marginBottom: 8 }}>📊</span>
+                  <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>No consolidated daily ledger aggregates found for this project corridor corridor yet.</p>
+                </div>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 12, minWidth: 600 }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", color: "#64748b", textTransform: "uppercase", fontSize: 10, fontWeight: 800 }}>
+                        <th style={{ padding: "10px 8px" }}>Date</th>
+                        <th style={{ padding: "10px 8px" }}>Reports</th>
+                        <th style={{ padding: "10px 8px" }}>Total Wages</th>
+                        <th style={{ padding: "10px 8px" }}>Trenching (m)</th>
+                        <th style={{ padding: "10px 8px" }}>HDD (m)</th>
+                        <th style={{ padding: "10px 8px" }}>Laying/Mound (m)</th>
+                        <th style={{ padding: "10px 8px" }}>Terminations</th>
+                        <th style={{ padding: "10px 8px" }}>Last Update</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {masterLedgerList.map((row) => (
+                        <tr key={row.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", color: "#cbd5e1" }}>
+                          <td style={{ padding: "12px 8px", fontWeight: 700 }}>{row.ledgerDate}</td>
+                          <td style={{ padding: "12px 8px" }}>
+                            <span style={{ fontSize: 10, background: "rgba(245,158,11,0.1)", color: "#fbbf24", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 4, padding: "2px 6px", fontWeight: 800 }}>
+                              {row.approvedReportsCount} reports
+                            </span>
+                          </td>
+                          <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#10b981", fontWeight: 750 }}>₹{row.totalWages}</td>
+                          <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#cbd5e1" }}>{row.totalExcavation}m</td>
+                          <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#fbbf24", fontWeight: 750 }}>{row.totalHdd}m</td>
+                          <td style={{ padding: "12px 8px", fontFamily: "monospace" }}>{row.totalCableLaying}m / {row.totalCableMounding}m</td>
+                          <td style={{ padding: "12px 8px", fontFamily: "monospace", color: "#06b6d4" }}>{row.totalTerminations}</td>
+                          <td style={{ padding: "12px 8px", fontSize: 10, color: "#64748b" }}>{new Date(row.updatedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
