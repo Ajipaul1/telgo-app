@@ -3226,12 +3226,12 @@ export default function AdminDashboard() {
                           <p style={{ fontSize: 11, color: "#475569", fontStyle: "italic", margin: 0 }}>No rental or logistics receipt transactions submitted.</p>
                         ) : (
                           [
-                            ...fuelList.map((item, i) => ({ cat: "⛽ Fuel", name: `Fuel Log #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage })),
-                            ...travelList.map((item, i) => ({ cat: "🚗 Transit", name: `Travel Log #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage })),
-                            ...roomList.map((item, i) => ({ cat: "🏠 Accommodation", name: `Lodging Log #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage })),
-                            ...toolList.map((item, i) => ({ cat: "🔧 Tool Rental", name: item.toolName || `Tool #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage })),
-                            ...otherList.map((item, i) => ({ cat: "💡 Miscellaneous", name: item.expenseName || `Misc #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage }))
-                          ].map((item, idx) => (
+                            ...fuelList.map((item: any, i: number) => ({ cat: "⛽ Fuel", name: `Fuel Log #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage })),
+                            ...travelList.map((item: any, i: number) => ({ cat: "🚗 Transit", name: `Travel Log #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage })),
+                            ...roomList.map((item: any, i: number) => ({ cat: "🏠 Accommodation", name: `Lodging Log #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage })),
+                            ...toolList.map((item: any, i: number) => ({ cat: "🔧 Tool Rental", name: item.toolName || `Tool #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage })),
+                            ...otherList.map((item: any, i: number) => ({ cat: "💡 Miscellaneous", name: item.expenseName || `Misc #${i+1}`, amount: item.amount, narration: item.narration, img: item.billImage }))
+                          ].map((item: any, idx: number) => (
                             <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
                               <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
                                 {item.img ? (
@@ -3276,7 +3276,7 @@ export default function AdminDashboard() {
                           { key: "joining", name: "Joining Links", val: `${selectedReport.joiningLinksCompleted} links` },
                           { key: "rmu", name: "RMU Foundation Status", val: `${selectedReport.rmuFoundationStatus} bases` },
                           { key: "terminations", name: "Grid Terminations", val: `${selectedReport.terminationEndpoints} points` }
-                        ].map((m) => {
+                        ].map((m: any) => {
                           const log = wip[m.key] || {};
                           return (
                             <div key={m.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.15)", border: "1px solid rgba(255,255,255,0.03)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
