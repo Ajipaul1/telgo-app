@@ -202,6 +202,100 @@ export async function getMasterLedger(projectId: string): Promise<LedgerRow[]> {
   return (data || []).map(mapDbRowToLedgerRow);
 }
 
+export async function getDailyReportById(reportId: string): Promise<DailyReport | null> {
+  const supabase = getMobileAccessClient();
+  const { data, error } = await supabase
+    .from("pending_daily_reports")
+    .select("*")
+    .eq("id", reportId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Supabase fetch report failed in getDailyReportById:", error);
+    throw new Error(`Failed to retrieve daily report: ${error.message}`);
+  }
+
+  return data ? mapDbRowToReport(data) : null;
+}
+
+export async function getDailyReportsForProject(projectId: string): Promise<DailyReport[]> {
+  const supabase = getMobileAccessClient();
+  const { data, error } = await supabase
+    .from("pending_daily_reports")
+    .select("*")
+    .eq("project_id", projectId)
+    .order("report_date", { ascending: false });
+
+  if (error) {
+    console.error("Supabase fetch reports failed in getDailyReportsForProject:", error);
+    throw new Error(`Failed to retrieve daily reports: ${error.message}`);
+  }
+
+  return (data || []).map(mapDbRowToReport);
+}
+
+export async function getDailyReportsForSupervisor(supervisorId: string): Promise<DailyReport[]> {
+  const supabase = getMobileAccessClient();
+  const { data, error } = await supabase
+    .from("pending_daily_reports")
+    .select("*")
+    .eq("supervisor_id", supervisorId)
+    .order("report_date", { ascending: false });
+
+  if (error) {
+    console.error("Supabase fetch reports failed in getDailyReportsForSupervisor:", error);
+    throw new Error(`Failed to retrieve daily reports: ${error.message}`);
+  }
+
+  return (data || []).map(mapDbRowToReport);
+}
+
+export async function updateDailyReport(reportId: string, updates: Partial<DailyReport>): Promise<DailyReport> {
+  const supabase = getMobileAccessClient();
+  
+  // Map standard camelCase fields to DB snake_case columns
+  const mappedUpdates: Record<string, any> = {};
+  if (updates.reportDate !== undefined) mappedUpdates.report_date = updates.reportDate;
+  if (updates.projectId !== undefined) mappedUpdates.project_id = updates.projectId;
+  if (updates.supervisorId !== undefined) mappedUpdates.supervisor_id = updates.supervisorId;
+  if (updates.supervisorName !== undefined) mappedUpdates.supervisor_name = updates.supervisorName;
+  if (updates.laborCount !== undefined) mappedUpdates.labor_count = updates.laborCount;
+  if (updates.otHours !== undefined) mappedUpdates.ot_hours = updates.otHours;
+  if (updates.calculatedWages !== undefined) mappedUpdates.calculated_wages = updates.calculatedWages;
+  if (updates.fuelExpenses !== undefined) mappedUpdates.fuel_expenses = updates.fuelExpenses;
+  if (updates.travelExpenses !== undefined) mappedUpdates.travel_expenses = updates.travelExpenses;
+  if (updates.roomRent !== undefined) mappedUpdates.room_rent = updates.roomRent;
+  if (updates.roomRentReceipt !== undefined) mappedUpdates.room_rent_receipt = updates.roomRentReceipt;
+  if (updates.toolRent !== undefined) mappedUpdates.tool_rent = updates.toolRent;
+  if (updates.toolRentReceipt !== undefined) mappedUpdates.tool_rent_receipt = updates.toolRentReceipt;
+  if (updates.excavationLength !== undefined) mappedUpdates.excavation_length = updates.excavationLength;
+  if (updates.hddLength !== undefined) mappedUpdates.hdd_length = updates.hddLength;
+  if (updates.cableLayingLength !== undefined) mappedUpdates.cable_laying_length = updates.cableLayingLength;
+  if (updates.cableMoundingLength !== undefined) mappedUpdates.cable_mounding_length = updates.cableMoundingLength;
+  if (updates.joiningLinksCompleted !== undefined) mappedUpdates.joining_links_completed = updates.joiningLinksCompleted;
+  if (updates.rmuFoundationStatus !== undefined) mappedUpdates.rmu_foundation_status = updates.rmuFoundationStatus;
+  if (updates.terminationEndpoints !== undefined) mappedUpdates.termination_endpoints = updates.terminationEndpoints;
+  if (updates.terminationGpsLat !== undefined) mappedUpdates.termination_gps_lat = updates.terminationGpsLat;
+  if (updates.terminationGpsLng !== undefined) mappedUpdates.termination_gps_lng = updates.terminationGpsLng;
+  if (updates.stockAvailable !== undefined) mappedUpdates.stock_available = updates.stockAvailable;
+  if (updates.clearances !== undefined) mappedUpdates.clearances = updates.clearances;
+  if (updates.status !== undefined) mappedUpdates.status = updates.status;
+
+  const { data, error } = await supabase
+    .from("pending_daily_reports")
+    .update(mappedUpdates)
+    .eq("id", reportId)
+    .select("*")
+    .single();
+
+  if (error) {
+    console.error("Supabase update report failed in updateDailyReport:", error);
+    throw new Error(`Failed to update daily report: ${error.message}`);
+  }
+
+  return mapDbRowToReport(data);
+}
+
 
 // Helpers to map DB snake_case naming schema into standard frontend camelCase objects
 function mapDbRowToReport(row: any): DailyReport {

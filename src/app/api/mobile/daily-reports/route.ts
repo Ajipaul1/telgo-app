@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { readMobileSession } from "@/lib/server/mobile-session";
-import { createDailyReport, getDailyReports } from "@/lib/server/mobile-daily-reports";
+import { createDailyReport, getDailyReports, getDailyReportById, getDailyReportsForProject, getDailyReportsForSupervisor } from "@/lib/server/mobile-daily-reports";
 
 export async function GET(request: NextRequest) {
   const session = await readMobileSession(request);
@@ -9,16 +9,42 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
+  const reportId = searchParams.get("reportId") || "";
   const projectId = searchParams.get("projectId") || "";
   const reportDate = searchParams.get("reportDate") || "";
-
-  if (!projectId || !reportDate) {
-    return NextResponse.json({ ok: false, message: "Missing projectId or reportDate query parameters." }, { status: 400 });
-  }
+  const supervisorId = searchParams.get("supervisorId") || "";
 
   try {
-    const reports = await getDailyReports(projectId, reportDate);
-    return NextResponse.json({ ok: true, reports });
+    // 1. Fetch single report by ID if reportId is provided
+    if (reportId) {
+      const report = await getDailyReportById(reportId);
+      return NextResponse.json({ ok: true, report });
+    }
+
+    // 2. Fetch reports for supervisor if supervisorId is provided or if supervisor is querying their own reports
+    if (supervisorId) {
+      const reports = await getDailyReportsForSupervisor(supervisorId);
+      return NextResponse.json({ ok: true, reports });
+    }
+    
+    if (session.role === "supervisor" && !projectId) {
+      const reports = await getDailyReportsForSupervisor(session.userId);
+      return NextResponse.json({ ok: true, reports });
+    }
+
+    // 3. Fetch reports for a project (all dates) if projectId is provided and reportDate is omitted
+    if (projectId && !reportDate) {
+      const reports = await getDailyReportsForProject(projectId);
+      return NextResponse.json({ ok: true, reports });
+    }
+
+    // 4. Fetch reports for project & date if both provided (backward compatibility)
+    if (projectId && reportDate) {
+      const reports = await getDailyReports(projectId, reportDate);
+      return NextResponse.json({ ok: true, reports });
+    }
+
+    return NextResponse.json({ ok: false, message: "Missing query parameters." }, { status: 400 });
   } catch (error: any) {
     return NextResponse.json({ ok: false, message: error.message || "Failed to retrieve daily reports." }, { status: 500 });
   }

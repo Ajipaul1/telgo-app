@@ -27,7 +27,39 @@ export default function AdminDashboard() {
   const [mapAnimateProgress, setMapAnimateProgress] = useState(0);
   
   // Navigation & Multi-View State
-  const [activeView, setActiveView] = useState<"hub" | "approvals" | "map" | "settings" | "attendance" | "projects" | "reports" | "ledger" | "progress">("hub");
+  const [activeView, setActiveView] = useState<"hub" | "approvals" | "map" | "settings" | "attendance" | "projects" | "reports" | "ledger" | "progress" | "expense_fuel" | "expense_travel" | "expense_room" | "expense_tool" | "expense_other" | "progress_analytics">("hub");
+
+  // New States for Financials & Site Progress Modules
+  const [financialFilterProjectId, setFinancialFilterProjectId] = useState("");
+  const [financialFilterMonth, setFinancialFilterMonth] = useState(() => String(new Date().getMonth() + 1));
+  const [financialFilterYear, setFinancialFilterYear] = useState(() => String(new Date().getFullYear()));
+  const [allApprovedDailyReports, setAllApprovedDailyReports] = useState<any[]>([]);
+  const [loadingApprovedReports, setLoadingApprovedReports] = useState(false);
+  
+  // Clarification Chat States
+  const [clarificationMessages, setClarificationMessages] = useState<any[]>([]);
+  const [loadingClarificationMessages, setLoadingClarificationMessages] = useState(false);
+  const [newClarificationMessage, setNewClarificationMessage] = useState("");
+  const [flaggedItemType, setFlaggedItemType] = useState("general");
+  const [isFlagRequestOpen, setIsFlagRequestOpen] = useState(false);
+  
+  // Inline Admin Edit States
+  const [isAdminEditMode, setIsAdminEditMode] = useState(false);
+  const [editReportLaborCount, setEditReportLaborCount] = useState(0);
+  const [editReportOtHours, setEditReportOtHours] = useState(0);
+  const [editReportCalculatedWages, setEditReportCalculatedWages] = useState(0);
+  const [editReportFuelExpenses, setEditReportFuelExpenses] = useState(0);
+  const [editReportTravelExpenses, setEditReportTravelExpenses] = useState(0);
+  const [editReportRoomRent, setEditReportRoomRent] = useState(0);
+  const [editReportToolRent, setEditReportToolRent] = useState(0);
+  const [editReportExcavationLength, setEditReportExcavationLength] = useState(0);
+  const [editReportHddLength, setEditReportHddLength] = useState(0);
+  const [editReportCableLayingLength, setEditReportCableLayingLength] = useState(0);
+  const [editReportCableMoundingLength, setEditReportCableMoundingLength] = useState(0);
+  const [editReportJoiningLinksCompleted, setEditReportJoiningLinksCompleted] = useState(0);
+  const [editReportRmuFoundationStatus, setEditReportRmuFoundationStatus] = useState(0);
+  const [editReportTerminationEndpoints, setEditReportTerminationEndpoints] = useState(0);
+  const [savingReportEdits, setSavingReportEdits] = useState(false);
 
   // Daily Reports & Master Ledger States
   const [pendingReports, setPendingReports] = useState<any[]>([]);
@@ -321,6 +353,554 @@ export default function AdminDashboard() {
       setSelectedProjectItem(DEFAULT_PROJECTS[0]);
     }
   }, []);
+
+  // Set default financial project when list loads
+  useEffect(() => {
+    if (projectsList.length > 0 && !financialFilterProjectId) {
+      setFinancialFilterProjectId(projectsList[0].id);
+    }
+  }, [projectsList, financialFilterProjectId]);
+
+  const fetchAllProjectApprovedReports = useCallback(async (projectId: string) => {
+    if (!projectId) return;
+    setLoadingApprovedReports(true);
+    try {
+      const res = await fetch(`/api/mobile/daily-reports?projectId=${projectId}`);
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setAllApprovedDailyReports(data.reports ?? []);
+      } else {
+        setAllApprovedDailyReports([]);
+      }
+    } catch (err) {
+      console.error("Failed to load approved reports:", err);
+      setAllApprovedDailyReports([]);
+    } finally {
+      setLoadingApprovedReports(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (["expense_fuel", "expense_travel", "expense_room", "expense_tool", "expense_other", "progress_analytics"].includes(activeView) && financialFilterProjectId) {
+      fetchAllProjectApprovedReports(financialFilterProjectId);
+    }
+  }, [activeView, financialFilterProjectId, fetchAllProjectApprovedReports]);
+
+  const fetchClarificationMessages = useCallback(async (reportId: string) => {
+    if (!reportId) return;
+    setLoadingClarificationMessages(true);
+    try {
+      const res = await fetch(`/api/mobile/daily-reports/comments?reportId=${reportId}`);
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setClarificationMessages(data.comments ?? []);
+      }
+    } catch (err) {
+      console.error("Failed to load comments:", err);
+    } finally {
+      setLoadingClarificationMessages(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedReport && selectedReport.id) {
+      fetchClarificationMessages(selectedReport.id);
+      
+      // Load initial values for inline editing
+      setEditReportLaborCount(selectedReport.laborCount || 0);
+      setEditReportOtHours(selectedReport.otHours || 0);
+      setEditReportCalculatedWages(selectedReport.calculatedWages || 0);
+      setEditReportFuelExpenses(selectedReport.fuelExpenses || 0);
+      setEditReportTravelExpenses(selectedReport.travelExpenses || 0);
+      setEditReportRoomRent(selectedReport.roomRent || 0);
+      setEditReportToolRent(selectedReport.toolRent || 0);
+      setEditReportExcavationLength(selectedReport.excavationLength || 0);
+      setEditReportHddLength(selectedReport.hddLength || 0);
+      setEditReportCableLayingLength(selectedReport.cableLayingLength || 0);
+      setEditReportCableMoundingLength(selectedReport.cableMoundingLength || 0);
+      setEditReportJoiningLinksCompleted(selectedReport.joiningLinksCompleted || 0);
+      setEditReportRmuFoundationStatus(selectedReport.rmuFoundationStatus || 0);
+      setEditReportTerminationEndpoints(selectedReport.terminationEndpoints || 0);
+      setIsAdminEditMode(false);
+      setIsFlagRequestOpen(false);
+    }
+  }, [selectedReport, fetchClarificationMessages]);
+
+  const handleSendClarificationMessage = async () => {
+    if (!newClarificationMessage.trim() || !selectedReport) return;
+    try {
+      const res = await fetch("/api/mobile/daily-reports/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportId: selectedReport.id,
+          message: newClarificationMessage,
+          itemType: flaggedItemType
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setNewClarificationMessage("");
+        showToast("❓ Clarification requested from supervisor!");
+        fetchClarificationMessages(selectedReport.id);
+        setSelectedReport((prev: any) => prev ? { ...prev, status: "clarification" } : null);
+        fetchPendingReports(reportFilterProjectId, reportFilterDate);
+      } else {
+        showToast(`❌ Request failed: ${data.message}`);
+      }
+    } catch (err) {
+      showToast("❌ Connection error requesting clarification.");
+    }
+  };
+
+  const handleSaveReportEdits = async () => {
+    if (!selectedReport) return;
+    setSavingReportEdits(true);
+    try {
+      // Recalculate wages based on rate
+      const rich = selectedReport.stockAvailable?.richDetails || {};
+      const workerRate = selectedReport.workerWageRate ?? rich.workerWageRate ?? 900;
+      const supervisorRate = selectedReport.supervisorWageRate ?? rich.supervisorWageRate ?? 1200;
+      const crewLabor = editReportLaborCount - (rich.includeSupervisor ? 1 : 0);
+      const crewWages = (crewLabor * workerRate) + (rich.includeSupervisor ? supervisorRate : 0);
+      
+      // Overtime workers array calculation
+      const otList = rich.otWorkers || [];
+      let totalOtWages = 0;
+      if (otList.length > 0) {
+        const originalOtHours = selectedReport.otHours || 1;
+        const ratio = editReportOtHours / originalOtHours;
+        otList.forEach((w: any) => {
+          totalOtWages += Math.round(Number(w.hours || 0) * ratio * Number(w.rate || 0) * Number(w.workerCount || 1));
+        });
+      }
+      const calculatedWages = crewWages + totalOtWages;
+
+      const updates = {
+        laborCount: editReportLaborCount,
+        otHours: editReportOtHours,
+        calculatedWages: calculatedWages,
+        fuelExpenses: editReportFuelExpenses,
+        travelExpenses: editReportTravelExpenses,
+        roomRent: editReportRoomRent,
+        toolRent: editReportToolRent,
+        excavationLength: editReportExcavationLength,
+        hddLength: editReportHddLength,
+        cableLayingLength: editReportCableLayingLength,
+        cableMoundingLength: editReportCableMoundingLength,
+        joiningLinksCompleted: editReportJoiningLinksCompleted,
+        rmuFoundationStatus: editReportRmuFoundationStatus,
+        terminationEndpoints: editReportTerminationEndpoints
+      };
+
+      const res = await fetch("/api/mobile/admin/update-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportId: selectedReport.id,
+          updates
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        showToast("💾 Staging updates saved successfully!");
+        setIsAdminEditMode(false);
+        setSelectedReport((prev: any) => prev ? { ...prev, ...updates } : null);
+        fetchPendingReports(reportFilterProjectId, reportFilterDate);
+      } else {
+        showToast(`❌ Edit failed: ${data.message}`);
+      }
+    } catch (err) {
+      showToast("❌ Connection error. Failed to save edits.");
+    } finally {
+      setSavingReportEdits(false);
+    }
+  };
+
+  const renderFinancialExpenseView = (category: "fuel" | "travel" | "room" | "tool" | "other") => {
+    const config = {
+      fuel: { title: "Fuel Expenses Registry", icon: "⛽", color: "#f59e0b", bg: "rgba(245,158,11,0.08)" },
+      travel: { title: "Travel & Transit Logistics", icon: "🚗", color: "#0ea5e9", bg: "rgba(14,165,233,0.08)" },
+      room: { title: "Room Rent Accommodation", icon: "🏠", color: "#8b5cf6", bg: "rgba(139,92,246,0.08)" },
+      tool: { title: "Tool Rentals Registry", icon: "🔧", color: "#10b981", bg: "rgba(16,185,129,0.08)" },
+      other: { title: "Other Miscellaneous Expenses", icon: "💡", color: "#f43f5e", bg: "rgba(244,63,94,0.08)" }
+    }[category];
+
+    // Filter approved reports for selected month & year
+    const filteredReports = allApprovedDailyReports.filter(r => {
+      if (r.status !== "approved") return false;
+      const dateObj = new Date(r.reportDate);
+      const matchMonth = String(dateObj.getMonth() + 1) === financialFilterMonth;
+      const matchYear = String(dateObj.getFullYear()) === financialFilterYear;
+      return matchMonth && matchYear;
+    });
+
+    // Flatten detailed entries from richDetails lists or fall back to main record sums
+    const entries: any[] = [];
+    filteredReports.forEach(r => {
+      const rich = r.stockAvailable?.richDetails || {};
+      const list = {
+        fuel: rich.fuelExpensesList || [],
+        travel: rich.travelExpensesList || [],
+        room: rich.roomRentList || [],
+        tool: rich.toolRentList || [],
+        other: rich.otherExpensesList || []
+      }[category];
+
+      if (list && list.length > 0) {
+        list.forEach((item: any, i: number) => {
+          entries.push({
+            id: `${r.id}-${category}-${i}`,
+            date: r.reportDate,
+            supervisor: r.supervisorName,
+            amount: Number(item.amount || 0),
+            narration: item.narration || (category === "tool" ? `Tool: ${item.toolName}` : category === "other" ? `Misc: ${item.expenseName}` : "--"),
+            billImage: item.billImage || (category === "room" ? r.roomRentReceipt : category === "tool" ? r.toolRentReceipt : null)
+          });
+        });
+      } else {
+        const amount = {
+          fuel: r.fuelExpenses,
+          travel: r.travelExpenses,
+          room: r.roomRent,
+          tool: r.toolRent,
+          other: 0
+        }[category];
+
+        if (amount > 0) {
+          entries.push({
+            id: `${r.id}-${category}-fallback`,
+            date: r.reportDate,
+            supervisor: r.supervisorName,
+            amount: amount,
+            narration: `Legacy record sum`,
+            billImage: category === "room" ? r.roomRentReceipt : category === "tool" ? r.toolRentReceipt : null
+          });
+        }
+      }
+    });
+
+    const totalSpent = entries.reduce((sum, item) => sum + item.amount, 0);
+
+    return (
+      <div className="fade-in" style={{ paddingBottom: 60 }}>
+        {/* Header */}
+        <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid var(--border)", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <button 
+              onClick={() => { setActiveView("hub"); }}
+              className="back-btn"
+              style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)", cursor: "pointer" }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: config.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
+                {config.icon}
+              </div>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 800, color: config.color, letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Category Ledger</p>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>{config.title}</h1>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 16 }}>
+          
+          {/* Filtering Funnel */}
+          <div className="glass" style={{ padding: 18, border: "1px solid var(--border)", borderRadius: 20 }}>
+            <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--dim)", margin: "0 0 14px", textAlign: "left" }}>Filter Parameters</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: 10 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 9, color: "var(--dim)", marginBottom: 4, fontWeight: 700, textTransform: "uppercase" }}>Project Corridor</label>
+                <select
+                  value={financialFilterProjectId}
+                  onChange={(e) => setFinancialFilterProjectId(e.target.value)}
+                  style={{ width: "100%", height: 38, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 6px", color: "var(--muted)", fontSize: 11, outline: "none", cursor: "pointer" }}
+                >
+                  {projectsList.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 9, color: "var(--dim)", marginBottom: 4, fontWeight: 700, textTransform: "uppercase" }}>Select Month</label>
+                <select
+                  value={financialFilterMonth}
+                  onChange={(e) => setFinancialFilterMonth(e.target.value)}
+                  style={{ width: "100%", height: 38, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 6px", color: "var(--muted)", fontSize: 11, outline: "none", cursor: "pointer" }}
+                >
+                  {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((m, i) => (
+                    <option key={i} value={String(i + 1)}>{m}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 9, color: "var(--dim)", marginBottom: 4, fontWeight: 700, textTransform: "uppercase" }}>Select Year</label>
+                <select
+                  value={financialFilterYear}
+                  onChange={(e) => setFinancialFilterYear(e.target.value)}
+                  style={{ width: "100%", height: 38, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 6px", color: "var(--muted)", fontSize: 11, outline: "none", cursor: "pointer" }}
+                >
+                  {["2026", "2027", "2028"].map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Aggregation Summary Widget */}
+          <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 12 }}>
+            <div className="glass" style={{ padding: "16px 18px", border: "1px solid var(--border)", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Period Spent</span>
+              <p style={{ fontSize: 28, fontWeight: 900, color: config.color, margin: "4px 0 0", letterSpacing: "-1px" }}>₹{totalSpent.toLocaleString("en-IN")}</p>
+            </div>
+            <div className="glass" style={{ padding: "16px 18px", border: "1px solid var(--border)", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Transactions</span>
+              <p style={{ fontSize: 24, fontWeight: 900, color: "var(--text)", margin: "4px 0 0", letterSpacing: "-1px" }}>{entries.length} items</p>
+            </div>
+          </div>
+
+          {/* Detailed Receipts Table */}
+          <div className="glass" style={{ padding: 20, border: "1px solid var(--border)", borderRadius: 20 }}>
+            <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--dim)", margin: "0 0 16px", textAlign: "left" }}>Financial Transaction Audit Sheet</h2>
+
+            {loadingApprovedReports ? (
+              <div style={{ textAlign: "center", padding: "40px 0", color: "var(--dim)" }}>
+                <div className="spinner" style={{ margin: "0 auto 12px", borderColor: config.color, borderTopColor: "transparent" }} />
+                Retrieving Approved Financial Logs...
+              </div>
+            ) : entries.length === 0 ? (
+              <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "32px 20px", textAlign: "center" }}>
+                <span style={{ fontSize: 24, display: "block", marginBottom: 8 }}>💎</span>
+                <p style={{ fontSize: 13, color: "var(--dim)", margin: 0 }}>No approved {category} expenses consolidated for this month/year combination.</p>
+              </div>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 12, minWidth: 500 }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--border)", color: "var(--dim)", textTransform: "uppercase", fontSize: 10, fontWeight: 800 }}>
+                      <th style={{ padding: "10px 8px" }}>Date</th>
+                      <th style={{ padding: "10px 8px" }}>Supervisor</th>
+                      <th style={{ padding: "10px 8px" }}>Narration Notes</th>
+                      <th style={{ padding: "10px 8px" }}>Receipt</th>
+                      <th style={{ padding: "10px 8px", textAlign: "right" }}>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {entries.map((item) => (
+                      <tr key={item.id} style={{ borderBottom: "1px solid var(--border)", color: "var(--muted)" }}>
+                        <td style={{ padding: "12px 8px", fontWeight: 700, whiteSpace: "nowrap" }}>{item.date}</td>
+                        <td style={{ padding: "12px 8px", fontWeight: 600 }}>{item.supervisor}</td>
+                        <td style={{ padding: "12px 8px", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis" }}>{item.narration}</td>
+                        <td style={{ padding: "12px 8px" }}>
+                          {item.billImage ? (
+                            <button 
+                              onClick={() => setAdminActiveImagePreview(item.billImage)}
+                              style={{ border: "1px solid rgba(124, 58, 237, 0.25)", background: "rgba(124, 58, 237, 0.05)", borderRadius: 6, color: "#7c3aed", fontSize: 10, padding: "3px 8px", fontWeight: 800, cursor: "zoom-in", fontFamily: "Outfit, sans-serif" }}
+                            >
+                              📎 View File
+                            </button>
+                          ) : (
+                            <span style={{ fontSize: 10, color: "var(--dim)" }}>No upload</span>
+                          )}
+                        </td>
+                        <td style={{ padding: "12px 8px", fontFamily: "monospace", color: config.color, fontWeight: 800, textAlign: "right", fontSize: 13 }}>₹{item.amount.toLocaleString("en-IN")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderProgressAnalyticsView = () => {
+    const filteredReports = allApprovedDailyReports.filter(r => {
+      if (r.status !== "approved") return false;
+      const dateObj = new Date(r.reportDate);
+      const matchMonth = String(dateObj.getMonth() + 1) === financialFilterMonth;
+      const matchYear = String(dateObj.getFullYear()) === financialFilterYear;
+      return matchMonth && matchYear;
+    });
+
+    let totalTrench = 0;
+    let totalHdd = 0;
+    let totalLaying = 0;
+    let totalMounding = 0;
+    let totalJoining = 0;
+    let totalRmu = 0;
+    let totalTerminations = 0;
+
+    filteredReports.forEach(r => {
+      totalTrench += Number(r.excavationLength || 0);
+      totalHdd += Number(r.hddLength || 0);
+      totalLaying += Number(r.cableLayingLength || 0);
+      totalMounding += Number(r.cableMoundingLength || 0);
+      totalJoining += Number(r.joiningLinksCompleted || 0);
+      totalRmu += Number(r.rmuFoundationStatus || 0);
+      totalTerminations += Number(r.terminationEndpoints || 0);
+    });
+
+    return (
+      <div className="fade-in" style={{ paddingBottom: 60 }}>
+        {/* Header */}
+        <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid var(--border)", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <button 
+              onClick={() => { setActiveView("hub"); }}
+              className="back-btn"
+              style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)", cursor: "pointer" }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(217, 70, 239, 0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
+                🏗️
+              </div>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 800, color: "#d946ef", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Progress Analytics</p>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Site Progress Ledger</h1>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 16 }}>
+          
+          {/* Filtering Funnel */}
+          <div className="glass" style={{ padding: 18, border: "1px solid var(--border)", borderRadius: 20 }}>
+            <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--dim)", margin: "0 0 14px", textAlign: "left" }}>Filter Parameters</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: 10 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 9, color: "var(--dim)", marginBottom: 4, fontWeight: 700, textTransform: "uppercase" }}>Project Corridor</label>
+                <select
+                  value={financialFilterProjectId}
+                  onChange={(e) => setFinancialFilterProjectId(e.target.value)}
+                  style={{ width: "100%", height: 38, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 6px", color: "var(--muted)", fontSize: 11, outline: "none", cursor: "pointer" }}
+                >
+                  {projectsList.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 9, color: "var(--dim)", marginBottom: 4, fontWeight: 700, textTransform: "uppercase" }}>Select Month</label>
+                <select
+                  value={financialFilterMonth}
+                  onChange={(e) => setFinancialFilterMonth(e.target.value)}
+                  style={{ width: "100%", height: 38, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 6px", color: "var(--muted)", fontSize: 11, outline: "none", cursor: "pointer" }}
+                >
+                  {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((m, i) => (
+                    <option key={i} value={String(i + 1)}>{m}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 9, color: "var(--dim)", marginBottom: 4, fontWeight: 700, textTransform: "uppercase" }}>Select Year</label>
+                <select
+                  value={financialFilterYear}
+                  onChange={(e) => setFinancialFilterYear(e.target.value)}
+                  style={{ width: "100%", height: 38, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 6px", color: "var(--muted)", fontSize: 11, outline: "none", cursor: "pointer" }}
+                >
+                  {["2026", "2027", "2028"].map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Aggregate Metrics Grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10 }}>
+            <div className="glass" style={{ padding: 14, border: "1px solid var(--border)" }}>
+              <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Trenching</span>
+              <p style={{ fontSize: 20, fontWeight: 900, color: "#d946ef", margin: "2px 0 0" }}>{totalTrench}m</p>
+            </div>
+            <div className="glass" style={{ padding: 14, border: "1px solid var(--border)" }}>
+              <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>HDD Boring</span>
+              <p style={{ fontSize: 20, fontWeight: 900, color: "#f59e0b", margin: "2px 0 0" }}>{totalHdd}m</p>
+            </div>
+            <div className="glass" style={{ padding: 14, border: "1px solid var(--border)" }}>
+              <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Cable Laying</span>
+              <p style={{ fontSize: 20, fontWeight: 900, color: "#10b981", margin: "2px 0 0" }}>{totalLaying}m</p>
+            </div>
+            <div className="glass" style={{ padding: 14, border: "1px solid var(--border)" }}>
+              <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Mounding</span>
+              <p style={{ fontSize: 20, fontWeight: 900, color: "#0ea5e9", margin: "2px 0 0" }}>{totalMounding}m</p>
+            </div>
+            <div className="glass" style={{ padding: 14, border: "1px solid var(--border)" }}>
+              <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Straight-Joining</span>
+              <p style={{ fontSize: 20, fontWeight: 900, color: "#8b5cf6", margin: "2px 0 0" }}>{totalJoining} links</p>
+            </div>
+            <div className="glass" style={{ padding: 14, border: "1px solid var(--border)" }}>
+              <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>RMU Bases</span>
+              <p style={{ fontSize: 20, fontWeight: 900, color: "#ec4899", margin: "2px 0 0" }}>{totalRmu} bases</p>
+            </div>
+            <div className="glass" style={{ padding: 14, border: "1px solid var(--border)" }}>
+              <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Terminations</span>
+              <p style={{ fontSize: 20, fontWeight: 900, color: "#14b8a6", margin: "2px 0 0" }}>{totalTerminations} pts</p>
+            </div>
+          </div>
+
+          {/* Detailed Progress Table */}
+          <div className="glass" style={{ padding: 20, border: "1px solid var(--border)", borderRadius: 20 }}>
+            <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--dim)", margin: "0 0 16px", textAlign: "left" }}>Physical Progress History Sheet</h2>
+
+            {loadingApprovedReports ? (
+              <div style={{ textAlign: "center", padding: "40px 0", color: "var(--dim)" }}>
+                <div className="spinner" style={{ margin: "0 auto 12px", borderColor: "#d946ef", borderTopColor: "transparent" }} />
+                Retrieving Approved Progress Logs...
+              </div>
+            ) : filteredReports.length === 0 ? (
+              <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "32px 20px", textAlign: "center" }}>
+                <span style={{ fontSize: 24, display: "block", marginBottom: 8 }}>🏗️</span>
+                <p style={{ fontSize: 13, color: "var(--dim)", margin: 0 }}>No approved physical progress logs consolidated for this period.</p>
+              </div>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 11, minWidth: 700 }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--border)", color: "var(--dim)", textTransform: "uppercase", fontSize: 9, fontWeight: 800 }}>
+                      <th style={{ padding: "10px 6px" }}>Date</th>
+                      <th style={{ padding: "10px 6px" }}>Supervisor</th>
+                      <th style={{ padding: "10px 6px" }}>Trenching</th>
+                      <th style={{ padding: "10px 6px" }}>HDD</th>
+                      <th style={{ padding: "10px 6px" }}>Laying</th>
+                      <th style={{ padding: "10px 6px" }}>Mounding</th>
+                      <th style={{ padding: "10px 6px" }}>Joining</th>
+                      <th style={{ padding: "10px 6px" }}>RMU</th>
+                      <th style={{ padding: "10px 6px" }}>Terminations</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredReports.map((r) => (
+                      <tr key={r.id} style={{ borderBottom: "1px solid var(--border)", color: "var(--muted)" }}>
+                        <td style={{ padding: "12px 6px", fontWeight: 700, whiteSpace: "nowrap" }}>{r.reportDate}</td>
+                        <td style={{ padding: "12px 6px", fontWeight: 600 }}>{r.supervisorName}</td>
+                        <td style={{ padding: "12px 6px", fontFamily: "monospace", color: "#d946ef", fontWeight: 700 }}>{r.excavationLength}m</td>
+                        <td style={{ padding: "12px 6px", fontFamily: "monospace", color: "#f59e0b", fontWeight: 700 }}>{r.hddLength}m</td>
+                        <td style={{ padding: "12px 6px", fontFamily: "monospace" }}>{r.cableLayingLength}m</td>
+                        <td style={{ padding: "12px 6px", fontFamily: "monospace" }}>{r.cableMoundingLength}m</td>
+                        <td style={{ padding: "12px 6px", fontFamily: "monospace" }}>{r.joiningLinksCompleted} links</td>
+                        <td style={{ padding: "12px 6px", fontFamily: "monospace" }}>{r.rmuFoundationStatus} bases</td>
+                        <td style={{ padding: "12px 6px", fontFamily: "monospace", color: "#14b8a6", fontWeight: 700 }}>{r.terminationEndpoints} pts</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const fetchPendingReports = useCallback(async (projectId: string, date: string) => {
     if (!projectId || !date) return;
@@ -1429,6 +2009,161 @@ export default function AdminDashboard() {
                 <div>
                   <h4 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>Master Ledger</h4>
                   <span style={{ fontSize: 10, color: "#f59e0b", fontWeight: 700, textTransform: "uppercase" }}>Aggregates</span>
+                </div>
+              </div>
+            </div>
+
+            {/* NEW SECTION: OPERATIONAL FINANCIALS & PROGRESS SEPARATE REGISTRY */}
+            <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--dim)", marginTop: 24, marginBottom: 14 }}>Operational Financials & Site Progress</p>
+            <div className="admin-grid" style={{ marginBottom: 20 }}>
+              
+              {/* MODULE A.1: FUEL EXPENSE REGISTRY */}
+              <div 
+                className="glass module-card"
+                onClick={() => { setActiveView("expense_fuel"); if (projectsList.length > 0) setFinancialFilterProjectId(projectsList[0].id); }}
+                style={{ 
+                  padding: "18px 14px", 
+                  borderRadius: 16,
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: 10
+                }}
+              >
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(245, 158, 11, 0.08)", border: "1px solid rgba(245, 158, 11, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 20 }}>⛽</span>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: 0 }}>Fuel Expenses</h4>
+                  <span style={{ fontSize: 10, color: "#f59e0b", fontWeight: 700, textTransform: "uppercase" }}>Diesel aggregates</span>
+                </div>
+              </div>
+
+              {/* MODULE A.2: TRAVEL EXPENSE REGISTRY */}
+              <div 
+                className="glass module-card"
+                onClick={() => { setActiveView("expense_travel"); if (projectsList.length > 0) setFinancialFilterProjectId(projectsList[0].id); }}
+                style={{ 
+                  padding: "18px 14px", 
+                  borderRadius: 16,
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: 10
+                }}
+              >
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(14, 165, 233, 0.08)", border: "1px solid rgba(14, 165, 233, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 20 }}>🚗</span>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: 0 }}>Travel & Transit</h4>
+                  <span style={{ fontSize: 10, color: "#0ea5e9", fontWeight: 700, textTransform: "uppercase" }}>Logistics logs</span>
+                </div>
+              </div>
+
+              {/* MODULE A.3: ROOM RENT REGISTRY */}
+              <div 
+                className="glass module-card"
+                onClick={() => { setActiveView("expense_room"); if (projectsList.length > 0) setFinancialFilterProjectId(projectsList[0].id); }}
+                style={{ 
+                  padding: "18px 14px", 
+                  borderRadius: 16,
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: 10
+                }}
+              >
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(139, 92, 246, 0.08)", border: "1px solid rgba(139, 92, 246, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 20 }}>🏠</span>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: 0 }}>Room Rents</h4>
+                  <span style={{ fontSize: 10, color: "#8b5cf6", fontWeight: 700, textTransform: "uppercase" }}>Stay lodging</span>
+                </div>
+              </div>
+
+              {/* MODULE A.4: TOOL RENT REGISTRY */}
+              <div 
+                className="glass module-card"
+                onClick={() => { setActiveView("expense_tool"); if (projectsList.length > 0) setFinancialFilterProjectId(projectsList[0].id); }}
+                style={{ 
+                  padding: "18px 14px", 
+                  borderRadius: 16,
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: 10
+                }}
+              >
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 20 }}>🔧</span>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: 0 }}>Tool Rentals</h4>
+                  <span style={{ fontSize: 10, color: "#10b981", fontWeight: 700, textTransform: "uppercase" }}>Machinery rents</span>
+                </div>
+              </div>
+
+              {/* MODULE A.5: OTHER EXPENSE REGISTRY */}
+              <div 
+                className="glass module-card"
+                onClick={() => { setActiveView("expense_other"); if (projectsList.length > 0) setFinancialFilterProjectId(projectsList[0].id); }}
+                style={{ 
+                  padding: "18px 14px", 
+                  borderRadius: 16,
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: 10
+                }}
+              >
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(244, 63, 94, 0.08)", border: "1px solid rgba(244, 63, 94, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 20 }}>💡</span>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: 0 }}>Other Expenses</h4>
+                  <span style={{ fontSize: 10, color: "#f43f5e", fontWeight: 700, textTransform: "uppercase" }}>Miscellaneous logs</span>
+                </div>
+              </div>
+
+              {/* MODULE B.1: SITE PROGRESS TRACKER */}
+              <div 
+                className="glass module-card"
+                onClick={() => { setActiveView("progress_analytics"); if (projectsList.length > 0) setFinancialFilterProjectId(projectsList[0].id); }}
+                style={{ 
+                  padding: "18px 14px", 
+                  borderRadius: 16,
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: 10
+                }}
+              >
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(217, 70, 239, 0.08)", border: "1px solid rgba(217, 70, 239, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 20 }}>🏗️</span>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: 0 }}>Site Progress</h4>
+                  <span style={{ fontSize: 10, color: "#d946ef", fontWeight: 700, textTransform: "uppercase" }}>Work updates</span>
                 </div>
               </div>
             </div>
@@ -3296,7 +4031,7 @@ export default function AdminDashboard() {
               )}
             </div>
 
-            {/* REVIEW DRAWERS */}
+{/* REVIEW DRAWERS */}
             {selectedReport && (() => {
               const rich = selectedReport.stockAvailable?.richDetails || {};
               const otList = rich.otWorkers || [];
@@ -3310,6 +4045,29 @@ export default function AdminDashboard() {
               const clearances = selectedReport.clearances || {};
               const workerRate = selectedReport.workerWageRate ?? rich.workerWageRate ?? 900;
               const supervisorRate = selectedReport.supervisorWageRate ?? rich.supervisorWageRate ?? 1200;
+
+              const calculatedLiveWages = (() => {
+                const standardLaborCount = editReportLaborCount;
+                const isSupervisorIncluded = rich.includeSupervisor;
+                const standardRate = workerRate;
+                const standardSupervisorRate = supervisorRate;
+                
+                const activeWorkers = standardLaborCount - (isSupervisorIncluded ? 1 : 0);
+                const baseWages = Math.max(0, activeWorkers * standardRate) + (isSupervisorIncluded ? standardSupervisorRate : 0);
+                
+                let otWages = 0;
+                if (selectedReport.otHours) {
+                  const baseOtSum = (rich.otWorkers || []).reduce((sum: number, w: any) => {
+                    const wc = Number(w.workerCount || 0);
+                    const wr = Number(w.rate || 0);
+                    const wh = Number(w.hours || 0);
+                    return sum + (wc * wr * wh);
+                  }, 0);
+                  otWages = Math.round(baseOtSum * (editReportOtHours / (selectedReport.otHours || 1)));
+                }
+                
+                return baseWages + otWages;
+              })();
 
               const handleExportJSON = () => {
                 const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(selectedReport, null, 2));
@@ -3842,7 +4600,7 @@ export default function AdminDashboard() {
                           transition: "all 0.2s ease"
                         }}
                       >
-                        🖨️ Print / PDF
+                        🖨️ Print Report PDF
                       </button>
 
                       {selectedReport.status === "approved" ? (
@@ -3862,33 +4620,191 @@ export default function AdminDashboard() {
                           🔒 Approved & Locked in Ledger
                         </div>
                       ) : (
-                        <button
-                          onClick={() => handleApproveDailyReport(selectedReport.id)}
-                          disabled={approvingReportId === selectedReport.id}
-                          style={{
-                            background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                            border: "none",
-                            borderRadius: 10,
-                            color: "#ffffff",
-                            fontSize: 12,
-                            fontWeight: 800,
-                            padding: "8px 18px",
-                            cursor: approvingReportId === selectedReport.id ? "not-allowed" : "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 6,
-                            boxShadow: "0 4px 14px rgba(16, 185, 129, 0.25)",
-                            fontFamily: "Outfit, sans-serif",
-                            transition: "all 0.2s ease"
-                          }}
-                        >
-                          {approvingReportId === selectedReport.id ? "Locking..." : "Approve & Lock"}
-                        </button>
+                        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+                          {isAdminEditMode ? (
+                            <>
+                              <button
+                                onClick={handleSaveReportEdits}
+                                disabled={savingReportEdits}
+                                style={{
+                                  background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+                                  border: "none",
+                                  borderRadius: 10,
+                                  color: "#ffffff",
+                                  fontSize: 12,
+                                  fontWeight: 800,
+                                  padding: "8px 14px",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 6,
+                                  fontFamily: "Outfit, sans-serif"
+                                }}
+                              >
+                                {savingReportEdits ? "Saving..." : "💾 Save Changes"}
+                              </button>
+                              <button
+                                onClick={() => setIsAdminEditMode(false)}
+                                style={{
+                                  background: "var(--surface)",
+                                  border: "1px solid var(--border)",
+                                  borderRadius: 10,
+                                  color: "var(--muted)",
+                                  fontSize: 12,
+                                  fontWeight: 750,
+                                  padding: "8px 14px",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 6,
+                                  fontFamily: "Outfit, sans-serif"
+                                }}
+                              >
+                                ❌ Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => setIsAdminEditMode(true)}
+                                style={{
+                                  background: "rgba(6, 182, 212, 0.08)",
+                                  border: "1px solid rgba(6, 182, 212, 0.2)",
+                                  borderRadius: 10,
+                                  color: "#06b6d4",
+                                  fontSize: 12,
+                                  fontWeight: 750,
+                                  padding: "8px 14px",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 6,
+                                  fontFamily: "Outfit, sans-serif"
+                                }}
+                              >
+                                ✏️ Edit Parameters
+                              </button>
+                              <button
+                                onClick={() => setIsFlagRequestOpen(!isFlagRequestOpen)}
+                                style={{
+                                  background: selectedReport.status === "clarification" ? "rgba(220, 38, 38, 0.08)" : "rgba(245, 158, 11, 0.08)",
+                                  border: selectedReport.status === "clarification" ? "1px solid rgba(220, 38, 38, 0.2)" : "1px solid rgba(245, 158, 11, 0.2)",
+                                  borderRadius: 10,
+                                  color: selectedReport.status === "clarification" ? "#dc2626" : "#f59e0b",
+                                  fontSize: 12,
+                                  fontWeight: 750,
+                                  padding: "8px 14px",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 6,
+                                  fontFamily: "Outfit, sans-serif"
+                                }}
+                              >
+                                {selectedReport.status === "clarification" ? "💬 Flagged: Open Chat" : "❓ Ask Supervisor"}
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => handleApproveDailyReport(selectedReport.id)}
+                            disabled={approvingReportId === selectedReport.id || isAdminEditMode}
+                            style={{
+                              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                              border: "none",
+                              borderRadius: 10,
+                              color: "#ffffff",
+                              fontSize: 12,
+                              fontWeight: 800,
+                              padding: "8px 18px",
+                              cursor: (approvingReportId === selectedReport.id || isAdminEditMode) ? "not-allowed" : "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 6,
+                              boxShadow: "0 4px 14px rgba(16, 185, 129, 0.25)",
+                              fontFamily: "Outfit, sans-serif",
+                              transition: "all 0.2s ease",
+                              opacity: isAdminEditMode ? 0.5 : 1
+                            }}
+                          >
+                            {approvingReportId === selectedReport.id ? "Locking..." : "Approve & Lock"}
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20 }}>
+                    {/* Collapsible Clarification Hub Chat Box */}
+                    {isFlagRequestOpen && (
+                      <div className="glass" style={{ border: "1px solid rgba(245, 158, 11, 0.3)", background: "linear-gradient(135deg, rgba(254, 243, 199, 0.15) 0%, rgba(254, 243, 199, 0.05) 100%)", borderRadius: 20, padding: 18, marginBottom: 12, textAlign: "left" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                          <span style={{ fontSize: 10, fontWeight: 900, color: "#d97706", textTransform: "uppercase", letterSpacing: "0.15em", display: "flex", alignItems: "center", gap: 6 }}>
+                            <span className="dot-pulse" style={{ background: "#d97706", width: 6, height: 6 }} /> Clarification Chat Hub
+                          </span>
+                          <span style={{ fontSize: 9, background: "#fef3c7", color: "#d97706", border: "1px solid rgba(217,119,6,0.2)", borderRadius: 4, padding: "1px 4px", fontWeight: 800 }}>Staged Status: {selectedReport.status}</span>
+                        </div>
+
+                        {/* Thread messages list */}
+                        <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 12, padding: 12, minHeight: 120, maxHeight: 200, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, marginBottom: 12 }}>
+                          {loadingClarificationMessages ? (
+                            <div style={{ textAlign: "center", color: "var(--dim)", fontSize: 11, padding: "20px 0" }}>Loading discussion logs...</div>
+                          ) : clarificationMessages.length === 0 ? (
+                            <div style={{ textAlign: "center", color: "var(--muted)", fontSize: 11, padding: "30px 10px", fontStyle: "italic" }}>No questions or clarification requests logged yet. Ask the supervisor below to open a ticket.</div>
+                          ) : (
+                            clarificationMessages.map((msg) => {
+                              const isAdmin = msg.sender_role === "admin";
+                              return (
+                                <div key={msg.id} style={{ display: "flex", flexDirection: "column", alignSelf: isAdmin ? "flex-end" : "flex-start", maxWidth: "80%", textAlign: "left" }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 9, color: "var(--dim)", marginBottom: 2, padding: "0 4px" }}>
+                                    <strong>{msg.sender_name}</strong> ({msg.sender_role})
+                                    {msg.item_type && msg.item_type !== "general" && (
+                                      <span style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 3, padding: "0 3px", color: "var(--muted)" }}>🏷️ {msg.item_type}</span>
+                                    )}
+                                  </div>
+                                  <div style={{ background: isAdmin ? "rgba(6, 182, 212, 0.1)" : "var(--surface)", border: isAdmin ? "1px solid rgba(6, 182, 212, 0.2)" : "1px solid var(--border)", borderRadius: 10, padding: "8px 12px", fontSize: 11, color: "var(--text)" }}>
+                                    {msg.message}
+                                  </div>
+                                  <span style={{ fontSize: 8, color: "var(--muted)", display: "block", marginTop: 2, alignSelf: "flex-end", padding: "0 4px" }}>{new Date(msg.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+
+                        {/* Sending query form */}
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                          <div style={{ flex: 1, minWidth: 150 }}>
+                            <select
+                              value={flaggedItemType}
+                              onChange={(e) => setFlaggedItemType(e.target.value)}
+                              style={{ width: "100%", height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 6px", color: "var(--muted)", fontSize: 11, outline: "none", marginBottom: 6, cursor: "pointer" }}
+                            >
+                              <option value="general">💼 General Query</option>
+                              <option value="fuel_expenses">⛽ Fuel Expenses / Bills</option>
+                              <option value="travel_expenses">🚗 Travel / Logistics</option>
+                              <option value="room_rent">🏠 Room Rent / Receipt</option>
+                              <option value="tool_rent">🔧 Tool Rentals</option>
+                              <option value="other_expenses">💡 Miscellaneous Expenses</option>
+                              <option value="wip_progress">🏗️ Physical WIP Progress / Photos</option>
+                            </select>
+                            <input
+                              type="text"
+                              value={newClarificationMessage}
+                              onChange={(e) => setNewClarificationMessage(e.target.value)}
+                              placeholder="Type concern/question for supervisor..."
+                              style={{ width: "100%", height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 10px", color: "var(--text)", fontSize: 11, outline: "none" }}
+                            />
+                          </div>
+                          <button
+                            onClick={handleSendClarificationMessage}
+                            style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", color: "#ffffff", border: "none", borderRadius: 8, padding: "0 16px", height: 74, fontSize: 11, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                          >
+                            Send concern
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* SECTION 1: LABOUR & WAGES BREAKDOWN */}
                     <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 16 }}>
                       <span style={{ fontSize: 10, fontWeight: 900, color: "#10b981", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step A: Crew Labour & Wages</span>
@@ -3896,24 +4812,42 @@ export default function AdminDashboard() {
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 14 }}>
                         <div style={{ background: "var(--surface)", padding: 12, borderRadius: 12, border: "1px solid var(--border)" }}>
                           <span style={{ fontSize: 9, color: "var(--dim)", textTransform: "uppercase", fontWeight: 700 }}>Standard Crew Roster</span>
-                          <p style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "2px 0 0" }}>
-                            {selectedReport.laborCount} Labours
-                          </p>
+                          {isAdminEditMode ? (
+                            <input
+                              type="number"
+                              value={editReportLaborCount}
+                              onChange={(e) => setEditReportLaborCount(Math.max(0, parseInt(e.target.value) || 0))}
+                              style={{ width: "100%", height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 8px", color: "var(--text)", fontSize: 12, outline: "none", marginTop: 4 }}
+                            />
+                          ) : (
+                            <p style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "2px 0 0" }}>
+                              {selectedReport.laborCount} Labours
+                            </p>
+                          )}
                           <span style={{ fontSize: 9, color: "var(--muted)" }}>₹{workerRate} base wage per worker</span>
                         </div>
 
                         <div style={{ background: "var(--surface)", padding: 12, borderRadius: 12, border: "1px solid var(--border)" }}>
-                          <span style={{ fontSize: 9, color: "var(--dim)", textTransform: "uppercase", fontWeight: 700 }}>Supervisor Status</span>
-                          <p style={{ fontSize: 13, fontWeight: 800, color: rich.includeSupervisor ? "#10b981" : "#94a3b8", margin: "2px 0 0" }}>
-                            {rich.includeSupervisor ? "Active Presence" : "Absent / Inactive"}
-                          </p>
-                          <span style={{ fontSize: 9, color: "var(--muted)" }}>₹{supervisorRate} daily allowance rate</span>
+                          <span style={{ fontSize: 9, color: "var(--dim)", textTransform: "uppercase", fontWeight: 700 }}>Overtime Hours Log</span>
+                          {isAdminEditMode ? (
+                            <input
+                              type="number"
+                              value={editReportOtHours}
+                              onChange={(e) => setEditReportOtHours(Math.max(0, parseInt(e.target.value) || 0))}
+                              style={{ width: "100%", height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 8px", color: "var(--text)", fontSize: 12, outline: "none", marginTop: 4 }}
+                            />
+                          ) : (
+                            <p style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "2px 0 0" }}>
+                              {selectedReport.otHours} Hours OT
+                            </p>
+                          )}
+                          <span style={{ fontSize: 9, color: "var(--muted)" }}>Supervisor active: {rich.includeSupervisor ? "Yes" : "No"}</span>
                         </div>
 
                         <div style={{ background: "var(--surface)", padding: 12, borderRadius: 12, border: "1px solid var(--border)" }}>
                           <span style={{ fontSize: 9, color: "var(--dim)", textTransform: "uppercase", fontWeight: 700 }}>Calculated Wages Log</span>
                           <p style={{ fontSize: 15, fontWeight: 900, color: "#10b981", margin: "2px 0 0" }}>
-                            ₹{selectedReport.calculatedWages}
+                            ₹{isAdminEditMode ? calculatedLiveWages : selectedReport.calculatedWages}
                           </p>
                           <span style={{ fontSize: 9, color: "var(--muted)" }}>Standard wages + OT totals</span>
                         </div>
@@ -3958,7 +4892,47 @@ export default function AdminDashboard() {
                     <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 16 }}>
                       <span style={{ fontSize: 10, fontWeight: 900, color: "var(--cyan)", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step A.2: Logistics & Rental Receipts</span>
                       
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
+                      {isAdminEditMode ? (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                          <div>
+                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Fuel Expenses (₹)</label>
+                            <input
+                              type="number"
+                              value={editReportFuelExpenses}
+                              onChange={(e) => setEditReportFuelExpenses(Math.max(0, parseFloat(e.target.value) || 0))}
+                              style={{ width: "100%", height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 12, outline: "none", marginTop: 4 }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Travel Expenses (₹)</label>
+                            <input
+                              type="number"
+                              value={editReportTravelExpenses}
+                              onChange={(e) => setEditReportTravelExpenses(Math.max(0, parseFloat(e.target.value) || 0))}
+                              style={{ width: "100%", height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 12, outline: "none", marginTop: 4 }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Room Rent (₹)</label>
+                            <input
+                              type="number"
+                              value={editReportRoomRent}
+                              onChange={(e) => setEditReportRoomRent(Math.max(0, parseFloat(e.target.value) || 0))}
+                              style={{ width: "100%", height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 12, outline: "none", marginTop: 4 }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Tool Rent (₹)</label>
+                            <input
+                              type="number"
+                              value={editReportToolRent}
+                              onChange={(e) => setEditReportToolRent(Math.max(0, parseFloat(e.target.value) || 0))}
+                              style={{ width: "100%", height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 12, outline: "none", marginTop: 4 }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
                         {/* Render lists dynamically */}
                         {[
                           ...fuelList,
@@ -4005,13 +4979,81 @@ export default function AdminDashboard() {
                           ))
                         )}
                       </div>
-                    </div>
+                    )}
+                  </div>
 
                     {/* SECTION 3: PHYSICAL WORK-IN-PROGRESS (WIP) METRICS */}
                     <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 16 }}>
                       <span style={{ fontSize: 10, fontWeight: 900, color: "#d97706", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step B: Work-in-Progress Lengths & Progress Photos</span>
                       
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {isAdminEditMode ? (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                          <div>
+                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Trenching (m)</label>
+                            <input
+                              type="number"
+                              value={editReportExcavationLength}
+                              onChange={(e) => setEditReportExcavationLength(Math.max(0, parseFloat(e.target.value) || 0))}
+                              style={{ width: "100%", height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 12, outline: "none", marginTop: 4 }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>HDD Boring (m)</label>
+                            <input
+                              type="number"
+                              value={editReportHddLength}
+                              onChange={(e) => setEditReportHddLength(Math.max(0, parseFloat(e.target.value) || 0))}
+                              style={{ width: "100%", height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 12, outline: "none", marginTop: 4 }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Cable Laying (m)</label>
+                            <input
+                              type="number"
+                              value={editReportCableLayingLength}
+                              onChange={(e) => setEditReportCableLayingLength(Math.max(0, parseFloat(e.target.value) || 0))}
+                              style={{ width: "100%", height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 12, outline: "none", marginTop: 4 }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Cable Mounding (m)</label>
+                            <input
+                              type="number"
+                              value={editReportCableMoundingLength}
+                              onChange={(e) => setEditReportCableMoundingLength(Math.max(0, parseFloat(e.target.value) || 0))}
+                              style={{ width: "100%", height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 12, outline: "none", marginTop: 4 }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Joining Links (Qty)</label>
+                            <input
+                              type="number"
+                              value={editReportJoiningLinksCompleted}
+                              onChange={(e) => setEditReportJoiningLinksCompleted(Math.max(0, parseInt(e.target.value) || 0))}
+                              style={{ width: "100%", height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 12, outline: "none", marginTop: 4 }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>RMU Foundations (Qty)</label>
+                            <input
+                              type="number"
+                              value={editReportRmuFoundationStatus}
+                              onChange={(e) => setEditReportRmuFoundationStatus(Math.max(0, parseInt(e.target.value) || 0))}
+                              style={{ width: "100%", height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 12, outline: "none", marginTop: 4 }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Terminations (Qty)</label>
+                            <input
+                              type="number"
+                              value={editReportTerminationEndpoints}
+                              onChange={(e) => setEditReportTerminationEndpoints(Math.max(0, parseInt(e.target.value) || 0))}
+                              style={{ width: "100%", height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 8px", color: "var(--text)", fontSize: 12, outline: "none", marginTop: 4 }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {[
                           { key: "trenching", name: "Excavation Trenching", val: `${selectedReport.excavationLength} meters` },
                           { key: "hdd", name: "HDD Boring", val: `${selectedReport.hddLength} meters` },
@@ -4056,7 +5098,8 @@ export default function AdminDashboard() {
                           );
                         })}
                       </div>
-                    </div>
+                    )}
+                  </div>
 
                     {/* SECTION 4: CLEARANCE LIFECYCLES */}
                     <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: 16 }}>
@@ -4264,6 +5307,16 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* OPERATIONAL FINANCIAL CATEGORIES REGISTRIES */}
+      {activeView === "expense_fuel" && renderFinancialExpenseView("fuel")}
+      {activeView === "expense_travel" && renderFinancialExpenseView("travel")}
+      {activeView === "expense_room" && renderFinancialExpenseView("room")}
+      {activeView === "expense_tool" && renderFinancialExpenseView("tool")}
+      {activeView === "expense_other" && renderFinancialExpenseView("other")}
+
+      {/* SITE PROGRESS REGISTRY */}
+      {activeView === "progress_analytics" && renderProgressAnalyticsView()}
 
       {/* ADMINISTRATIVE PROJECT EDITING MODAL */}
       {editingProjectItem && (() => {

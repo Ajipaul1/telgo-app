@@ -15,6 +15,28 @@ export default function SupervisorDashboard() {
   const [projectsList, setProjectsList] = useState<any[]>([]);
   const [selectedProjectItem, setSelectedProjectItem] = useState<any | null>(null);
 
+  // Supervisor Clarification Inbox States
+  const [isClarificationInboxOpen, setIsClarificationInboxOpen] = useState(false);
+  const [mySubmittedReports, setMySubmittedReports] = useState<any[]>([]);
+  const [loadingMyReports, setLoadingMyReports] = useState(false);
+  const [selectedClarificationReport, setSelectedClarificationReport] = useState<any | null>(null);
+  
+  // Chatting States
+  const [supervisorChatMessages, setSupervisorChatMessages] = useState<any[]>([]);
+  const [loadingSupervisorChat, setLoadingSupervisorChat] = useState(false);
+  const [newSupervisorMessage, setNewSupervisorMessage] = useState("");
+
+  // Correction Draft States
+  const [correctiveWipTrenching, setCorrectiveWipTrenching] = useState("");
+  const [correctiveWipHdd, setCorrectiveWipHdd] = useState("");
+  const [correctiveFuelExpenses, setCorrectiveFuelExpenses] = useState("");
+  const [correctiveTravelExpenses, setCorrectiveTravelExpenses] = useState("");
+  const [correctiveRoomRent, setCorrectiveRoomRent] = useState("");
+  const [correctiveToolRent, setCorrectiveToolRent] = useState("");
+  const [correctiveRoomReceipt, setCorrectiveRoomReceipt] = useState("");
+  const [correctiveToolReceipt, setCorrectiveToolReceipt] = useState("");
+  const [resolvingClarification, setResolvingClarification] = useState(false);
+
   const DEFAULT_PROJECTS = [
     {
       id: "PRV-EDP-001",
@@ -794,6 +816,155 @@ export default function SupervisorDashboard() {
     setTimeout(() => setToast(""), 3500);
   }
 
+  const fetchMyReports = async () => {
+    if (!user) return;
+    setLoadingMyReports(true);
+    try {
+      const res = await fetch(`/api/mobile/daily-reports?supervisorId=${user.userId}`);
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setMySubmittedReports(data.reports ?? []);
+      }
+    } catch (err) {
+      console.error("Failed to load supervisor reports:", err);
+    } finally {
+      setLoadingMyReports(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchMyReports();
+      const interval = setInterval(fetchMyReports, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const fetchSupervisorChat = async (reportId: string) => {
+    if (!reportId) return;
+    setLoadingSupervisorChat(true);
+    try {
+      const res = await fetch(`/api/mobile/daily-reports/comments?reportId=${reportId}`);
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setSupervisorChatMessages(data.comments ?? []);
+      }
+    } catch (err) {
+      console.error("Failed to load chat:", err);
+    } finally {
+      setLoadingSupervisorChat(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedClarificationReport && selectedClarificationReport.id) {
+      fetchSupervisorChat(selectedClarificationReport.id);
+      
+      // Seed corrective input fields
+      setCorrectiveWipTrenching(selectedClarificationReport.excavationLength || 0);
+      setCorrectiveWipHdd(selectedClarificationReport.hddLength || 0);
+      setCorrectiveFuelExpenses(selectedClarificationReport.fuelExpenses || 0);
+      setCorrectiveTravelExpenses(selectedClarificationReport.travelExpenses || 0);
+      setCorrectiveRoomRent(selectedClarificationReport.roomRent || 0);
+      setCorrectiveToolRent(selectedClarificationReport.toolRent || 0);
+      setCorrectiveRoomReceipt(selectedClarificationReport.roomRentReceipt || "");
+      setCorrectiveToolReceipt(selectedClarificationReport.toolRentReceipt || "");
+    }
+  }, [selectedClarificationReport]);
+
+  const handleSendSupervisorChatMessage = async () => {
+    if (!newSupervisorMessage.trim() || !selectedClarificationReport) return;
+    try {
+      const res = await fetch("/api/mobile/daily-reports/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportId: selectedClarificationReport.id,
+          message: newSupervisorMessage
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setNewSupervisorMessage("");
+        showToast("💬 Message sent to admin!");
+        fetchSupervisorChat(selectedClarificationReport.id);
+        fetchMyReports();
+      } else {
+        showToast(`❌ Message failed: ${data.message}`);
+      }
+    } catch (err) {
+      showToast("❌ Network error. Message failed.");
+    }
+  };
+
+  const handleResolveClarification = async () => {
+    if (!selectedClarificationReport) return;
+    setResolvingClarification(true);
+    try {
+      const rich = selectedClarificationReport.stockAvailable?.richDetails || {};
+      const workerRate = selectedClarificationReport.workerWageRate ?? rich.workerWageRate ?? 900;
+      const supervisorRate = selectedClarificationReport.supervisorWageRate ?? rich.supervisorWageRate ?? 1200;
+      const crewLabor = selectedClarificationReport.laborCount - (rich.includeSupervisor ? 1 : 0);
+      const crewWages = (crewLabor * workerRate) + (rich.includeSupervisor ? supervisorRate : 0);
+      
+      const otList = rich.otWorkers || [];
+      let totalOtWages = 0;
+      if (otList.length > 0) {
+        otList.forEach((w: any) => {
+          totalOtWages += Math.round(Number(w.hours || 0) * Number(w.rate || 0) * Number(w.workerCount || 1));
+        });
+      }
+      const calculatedWages = crewWages + totalOtWages;
+
+      const updates = {
+        excavationLength: Number(correctiveWipTrenching),
+        hddLength: Number(correctiveWipHdd),
+        fuelExpenses: Number(correctiveFuelExpenses),
+        travelExpenses: Number(correctiveTravelExpenses),
+        roomRent: Number(correctiveRoomRent),
+        toolRent: Number(correctiveToolRent),
+        roomRentReceipt: correctiveRoomReceipt,
+        toolRentReceipt: correctiveToolReceipt,
+        calculatedWages: calculatedWages,
+        status: "pending"
+      };
+
+      const updateRes = await fetch("/api/mobile/admin/update-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportId: selectedClarificationReport.id,
+          updates
+        })
+      });
+      const updateData = await updateRes.json();
+
+      if (!updateRes.ok || !updateData.ok) {
+        showToast(`❌ Update failed: ${updateData.message}`);
+        setResolvingClarification(false);
+        return;
+      }
+
+      await fetch("/api/mobile/daily-reports/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportId: selectedClarificationReport.id,
+          message: "⚠️ Corrective details and missing files uploaded. Staging updated back for admin review."
+        })
+      });
+
+      showToast("🚀 Staged changes conformed & submitted back to admin!");
+      setSelectedClarificationReport(null);
+      setIsClarificationInboxOpen(false);
+      fetchMyReports();
+    } catch (err) {
+      showToast("❌ Connection error. Update failed.");
+    } finally {
+      setResolvingClarification(false);
+    }
+  };
+
   useEffect(() => {
     fetch("/api/mobile/me")
       .then((r) => r.json())
@@ -1374,6 +1545,69 @@ export default function SupervisorDashboard() {
                 <div>
                   <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "0 0 2px" }}>Daily Report</h4>
                   <span style={{ fontSize: 9, color: "#d97706", fontWeight: 700 }}>Site Update</span>
+                </div>
+              </div>
+
+              {/* MODULE 5: PENDING APPROVALS & CHATS */}
+              <div 
+                onClick={() => {
+                  setIsClarificationInboxOpen(true);
+                  fetchMyReports();
+                }}
+                style={{
+                  background: (mySubmittedReports.filter((r: any) => r.status === "clarification").length) > 0 ? "linear-gradient(135deg, #fff5f5 0%, #fee2e2 100%)" : "var(--surface)",
+                  border: (mySubmittedReports.filter((r: any) => r.status === "clarification").length) > 0 ? "1px solid rgba(220, 38, 38, 0.3)" : "1px solid var(--border)",
+                  borderRadius: 18,
+                  padding: "18px 14px",
+                  cursor: "pointer",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: 8,
+                  position: "relative"
+                }}
+                className={`glass module-card ${(mySubmittedReports.filter((r: any) => r.status === "clarification").length) > 0 ? "active-glow-pending" : ""}`}
+              >
+                <div style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: (mySubmittedReports.filter((r: any) => r.status === "clarification").length) > 0 ? "rgba(220, 38, 38, 0.1)" : "rgba(139, 92, 246, 0.08)",
+                  border: (mySubmittedReports.filter((r: any) => r.status === "clarification").length) > 0 ? "1px solid rgba(220, 38, 38, 0.25)" : "1px solid rgba(139, 92, 246, 0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0
+                }}>
+                  <span style={{ fontSize: 20 }}>📬</span>
+                </div>
+                {(mySubmittedReports.filter((r: any) => r.status === "clarification").length) > 0 && (
+                  <span style={{
+                    position: "absolute",
+                    top: 6,
+                    right: 6,
+                    background: "#ef4444",
+                    color: "white",
+                    fontSize: 8,
+                    fontWeight: 900,
+                    borderRadius: "50%",
+                    width: 16,
+                    height: 16,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "1px solid white",
+                    boxShadow: "0 2px 5px rgba(239, 68, 68, 0.3)"
+                  }}>
+                    {mySubmittedReports.filter((r: any) => r.status === "clarification").length}
+                  </span>
+                )}
+                <div>
+                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "0 0 2px" }}>Clarifications</h4>
+                  <span style={{ fontSize: 9, color: (mySubmittedReports.filter((r: any) => r.status === "clarification").length) > 0 ? "#ef4444" : "#8b5cf6", fontWeight: 700 }}>
+                    {(mySubmittedReports.filter((r: any) => r.status === "clarification").length) > 0 ? "Action Required" : "Staged Inbox"}
+                  </span>
                 </div>
               </div>
 
@@ -2957,6 +3191,248 @@ export default function SupervisorDashboard() {
           </div>
         </div>
       )}
+      {/* Supervisor Clarifications Inbox Modal */}
+      {isClarificationInboxOpen && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.75)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 16 }}>
+          <div className="glass fade-in" style={{ width: "100%", maxWidth: 540, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 24, padding: "20px", display: "flex", flexDirection: "column", maxHeight: "90vh", overflow: "hidden", textAlign: "left" }}>
+            
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: 14, marginBottom: 16 }}>
+              <div>
+                <span style={{ fontSize: 9, fontWeight: 900, color: "#8b5cf6", letterSpacing: "0.15em", textTransform: "uppercase" }}>Administrative Inbox</span>
+                <h3 style={{ fontSize: 18, fontWeight: 900, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Report Clarifications</h3>
+              </div>
+              <button 
+                onClick={() => { setIsClarificationInboxOpen(false); setSelectedClarificationReport(null); }}
+                style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", outline: "none" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content area */}
+            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 14, paddingRight: 4 }}>
+              
+              {!selectedClarificationReport ? (
+                // 1. Inbox Listing
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <p style={{ fontSize: 12, color: "var(--dim)", margin: "0 0 4px" }}>Click on any flagged daily report below to review Admin concerns and upload fixes.</p>
+                  {loadingMyReports ? (
+                    <div style={{ textAlign: "center", padding: "30px 0", color: "var(--dim)", fontSize: 12 }}>Syncing with server logs...</div>
+                  ) : mySubmittedReports.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "40px 10px", background: "var(--bg)", borderRadius: 16, border: "1px solid var(--border)" }}>
+                      <span style={{ fontSize: 24, display: "block", marginBottom: 6 }}>📬</span>
+                      <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>You haven't submitted any daily reports recently.</p>
+                    </div>
+                  ) : (
+                    mySubmittedReports.map((r: any) => {
+                      const isFlagged = r.status === "clarification";
+                      return (
+                        <div
+                          key={r.id}
+                          onClick={() => setSelectedClarificationReport(r)}
+                          style={{
+                            padding: 14,
+                            borderRadius: 16,
+                            background: isFlagged ? "rgba(239, 68, 68, 0.05)" : "var(--bg)",
+                            border: isFlagged ? "1px solid rgba(239, 68, 68, 0.25)" : "1px solid var(--border)",
+                            cursor: "pointer",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center"
+                          }}
+                        >
+                          <div>
+                            <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700 }}>Date: {r.reportDate}</span>
+                            <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "2px 0 0" }}>Project ID: {r.projectId}</h4>
+                            <div style={{ marginTop: 4 }}>
+                              {isFlagged ? (
+                                <span style={{ fontSize: 9, background: "#fecdd3", color: "#b91c1c", border: "1px solid #fda4af", borderRadius: 4, padding: "1px 5px", fontWeight: 800 }}>⚠️ Clarification Needed</span>
+                              ) : r.status === "approved" ? (
+                                <span style={{ fontSize: 9, background: "#dcfce7", color: "#15803d", border: "1px solid #bbf7d0", borderRadius: 4, padding: "1px 5px", fontWeight: 800 }}>✓ Approved & Locked</span>
+                              ) : (
+                                <span style={{ fontSize: 9, background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 4, padding: "1px 5px", fontWeight: 800 }}>⏳ Pending Admin</span>
+                              )}
+                            </div>
+                          </div>
+                          <span style={{ fontSize: 18, color: "var(--muted)" }}>→</span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              ) : (
+                // 2. Chat and Corrections Details view
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <button 
+                    onClick={() => setSelectedClarificationReport(null)}
+                    style={{ alignSelf: "flex-start", background: "none", border: "none", color: "#8b5cf6", fontSize: 11, fontWeight: 800, cursor: "pointer", padding: 0 }}
+                  >
+                    ← Back to inbox listing
+                  </button>
+
+                  <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 16, padding: 12 }}>
+                    <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: 0 }}>Report Date: {selectedClarificationReport.reportDate}</h4>
+                    <span style={{ fontSize: 10, color: "var(--dim)" }}>Corridor ID: {selectedClarificationReport.projectId}</span>
+                  </div>
+
+                  {/* Chat logs box */}
+                  <span style={{ fontSize: 10, fontWeight: 900, color: "#8b5cf6", textTransform: "uppercase", letterSpacing: "0.08em", display: "block" }}>Admin Clarification Thread</span>
+                  <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 16, padding: 12, minHeight: 120, maxHeight: 180, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
+                    {loadingSupervisorChat ? (
+                      <div style={{ textAlign: "center", color: "var(--dim)", fontSize: 11, padding: "20px 0" }}>Syncing chat thread...</div>
+                    ) : supervisorChatMessages.length === 0 ? (
+                      <div style={{ textAlign: "center", color: "var(--muted)", fontSize: 11, padding: "30px 10px", fontStyle: "italic" }}>No chat logs recorded. Write a message below to coordinate.</div>
+                    ) : (
+                      supervisorChatMessages.map((msg: any) => {
+                        const isSupervisor = msg.sender_role === "supervisor";
+                        return (
+                          <div key={msg.id} style={{ display: "flex", flexDirection: "column", alignSelf: isSupervisor ? "flex-end" : "flex-start", maxWidth: "80%" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 9, color: "var(--dim)", marginBottom: 2, padding: "0 4px" }}>
+                              <strong>{msg.sender_name}</strong> ({msg.sender_role})
+                              {msg.item_type && msg.item_type !== "general" && (
+                                <span style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 3, padding: "0 3px", color: "var(--muted)" }}>🏷️ {msg.item_type}</span>
+                              )}
+                            </div>
+                            <div style={{ background: isSupervisor ? "rgba(139, 92, 246, 0.1)" : "var(--surface)", border: isSupervisor ? "1px solid rgba(139, 92, 246, 0.2)" : "1px solid var(--border)", borderRadius: 10, padding: "8px 12px", fontSize: 11, color: "var(--text)" }}>
+                              {msg.message}
+                            </div>
+                            <span style={{ fontSize: 8, color: "var(--muted)", display: "block", marginTop: 2, alignSelf: "flex-end", padding: "0 4px" }}>{new Date(msg.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Chat messaging input */}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input
+                      type="text"
+                      value={newSupervisorMessage}
+                      onChange={(e) => setNewSupervisorMessage(e.target.value)}
+                      placeholder="Write message to admin..."
+                      style={{ flex: 1, height: 34, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 10px", color: "var(--text)", fontSize: 11, outline: "none" }}
+                    />
+                    <button
+                      onClick={handleSendSupervisorChatMessage}
+                      style={{ background: "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)", color: "#ffffff", border: "none", borderRadius: 8, padding: "0 14px", height: 34, fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                    >
+                      Send Message
+                    </button>
+                  </div>
+
+                  {/* Flagged corrections form */}
+                  {selectedClarificationReport.status === "clarification" && (
+                    <div style={{ background: "rgba(220, 38, 38, 0.03)", border: "1px solid rgba(220, 38, 38, 0.15)", borderRadius: 20, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                      <span style={{ fontSize: 10, fontWeight: 900, color: "#ef4444", textTransform: "uppercase", letterSpacing: "0.08em", display: "block" }}>⚙️ Upload Correction Patch</span>
+                      
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        <div>
+                          <label style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700 }}>Trenching WIP (m)</label>
+                          <input
+                            type="number"
+                            value={correctiveWipTrenching}
+                            onChange={(e) => setCorrectiveWipTrenching(e.target.value)}
+                            style={{ width: "100%", height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700 }}>HDD Boring WIP (m)</label>
+                          <input
+                            type="number"
+                            value={correctiveWipHdd}
+                            onChange={(e) => setCorrectiveWipHdd(e.target.value)}
+                            style={{ width: "100%", height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700 }}>Fuel Expenses (₹)</label>
+                          <input
+                            type="number"
+                            value={correctiveFuelExpenses}
+                            onChange={(e) => setCorrectiveFuelExpenses(e.target.value)}
+                            style={{ width: "100%", height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700 }}>Travel/Transit (₹)</label>
+                          <input
+                            type="number"
+                            value={correctiveTravelExpenses}
+                            onChange={(e) => setCorrectiveTravelExpenses(e.target.value)}
+                            style={{ width: "100%", height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700 }}>Room Rent Stay (₹)</label>
+                          <input
+                            type="number"
+                            value={correctiveRoomRent}
+                            onChange={(e) => setCorrectiveRoomRent(e.target.value)}
+                            style={{ width: "100%", height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700 }}>Tool Rents (₹)</label>
+                          <input
+                            type="number"
+                            value={correctiveToolRent}
+                            onChange={(e) => setCorrectiveToolRent(e.target.value)}
+                            style={{ width: "100%", height: 32, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 8px", color: "var(--text)", fontSize: 11, outline: "none" }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* File uploads for missing files */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 4 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 9, color: "var(--dim)", fontWeight: 700, marginBottom: 4 }}>Accommodation receipt</label>
+                          <input 
+                            type="file" 
+                            accept="image/*,application/pdf"
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) {
+                                processUploadedFile(e.target.files[0], setCorrectiveRoomReceipt);
+                              }
+                            }}
+                            style={{ fontSize: 10, width: "100%" }}
+                          />
+                          {correctiveRoomReceipt && <span style={{ fontSize: 8, color: "#10b981", fontWeight: 700 }}>✓ Attached</span>}
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 9, color: "var(--dim)", fontWeight: 700, marginBottom: 4 }}>Tool rental receipt</label>
+                          <input 
+                            type="file" 
+                            accept="image/*,application/pdf"
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) {
+                                processUploadedFile(e.target.files[0], setCorrectiveToolReceipt);
+                              }
+                            }}
+                            style={{ fontSize: 10, width: "100%" }}
+                          />
+                          {correctiveToolReceipt && <span style={{ fontSize: 8, color: "#10b981", fontWeight: 700 }}>✓ Attached</span>}
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={handleResolveClarification}
+                        disabled={resolvingClarification}
+                        style={{ width: "100%", height: 38, background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)", color: "#ffffff", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "Outfit, sans-serif", marginTop: 8 }}
+                      >
+                        {resolvingClarification ? "Uploading updates..." : "🚀 Submit Corrections to Admin"}
+                      </button>
+                    </div>
+                  )}
+
+                </div>
+              )}
+
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Account Settings Editor Modal */}
       <ProfileModal 
         isOpen={isSettingsOpen} 
