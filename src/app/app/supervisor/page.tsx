@@ -37,6 +37,9 @@ export default function SupervisorDashboard() {
   const [correctiveToolReceipt, setCorrectiveToolReceipt] = useState("");
   const [resolvingClarification, setResolvingClarification] = useState(false);
   const [activeExpenseCategory, setActiveExpenseCategory] = useState<string>("fuel");
+  const [activeWipMetric, setActiveWipMetric] = useState<string>("trenching");
+  const [activeClearanceCategory, setActiveClearanceCategory] = useState<string>("pwd");
+  const [activeRequestCategory, setActiveRequestCategory] = useState<string>("roadblocks");
 
   const DEFAULT_PROJECTS = [
     {
@@ -2602,16 +2605,36 @@ export default function SupervisorDashboard() {
                     </button>
                   </div>
 
+                  {/* Category Dropdown Selector for WIP Progress */}
+                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16 }}>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 800, color: "#0284c7", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Select WIP Metric to Input</label>
+                    <select
+                      value={activeWipMetric}
+                      onChange={(e) => setActiveWipMetric(e.target.value)}
+                      style={{ width: "100%", height: 40, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: "0 12px", color: "#0f172a", fontSize: 13, outline: "none", cursor: "pointer", fontWeight: 700 }}
+                    >
+                      <option value="trenching">🚜 Site Clearance Trenching (m)</option>
+                      <option value="hdd">🕳️ Horizontal Directional Boring (HDD) (m)</option>
+                      <option value="cable_laying">🔌 Underground Cable Laying (m)</option>
+                      <option value="cable_mounding">🪨 Underground Cable Mounding (m)</option>
+                      <option value="jointing">🪵 Cable Jointing Logs</option>
+                      <option value="rmu">🧱 RMU Transformer Foundations</option>
+                      <option value="terminations">⚡ Grid Terminations Completed</option>
+                    </select>
+                  </div>
+
                   {/* Dynamic Metrics List */}
                   {[
-                    { label: "Site Clearance Trenching (m)", val: wipTrenchingValue, setVal: setWipTrenchingValue, narr: wipTrenchingNarration, setNarr: setWipTrenchingNarration, pic: wipTrenchingPhoto, setPic: setWipTrenchingPhoto },
-                    { label: "Horizontal Directional Boring (m)", val: wipHddValue, setVal: setWipHddValue, narr: wipHddNarration, setNarr: setWipHddNarration, pic: wipHddPhoto, setPic: setWipHddPhoto },
-                    { label: "Underground Cable Laying (m)", val: wipCableLayingValue, setVal: setWipCableLayingValue, narr: wipCableLayingNarration, setNarr: setWipCableLayingNarration, pic: wipCableLayingPhoto, setPic: setWipCableLayingPhoto },
-                    { label: "Underground Cable Mounding (m)", val: wipCableMoundingValue, setVal: setWipCableMoundingValue, narr: wipCableMoundingNarration, setNarr: setWipCableMoundingNarration, pic: wipCableMoundingPhoto, setPic: setWipCableMoundingPhoto },
-                    { label: "Cable Jointing Logs completed", val: wipJoiningValue, setVal: setWipJoiningValue, narr: wipJoiningNarration, setNarr: setWipJoiningNarration, pic: wipJoiningPhoto, setPic: setWipJoiningPhoto },
-                    { label: "RMU Transformer Foundations built", val: wipRmuValue, setVal: setWipRmuValue, narr: wipRmuNarration, setNarr: setWipRmuNarration, pic: wipRmuPhoto, setPic: setWipRmuPhoto },
-                    { label: "Grid Terminations Completed (Qty)", val: wipTerminationsValue, setVal: setWipTerminationsValue, narr: wipTerminationsNarration, setNarr: setWipTerminationsNarration, pic: wipTerminationsPhoto, setPic: setWipTerminationsPhoto }
-                  ].map((m, idx) => (
+                    { key: "trenching", label: "Site Clearance Trenching (m)", val: wipTrenchingValue, setVal: setWipTrenchingValue, narr: wipTrenchingNarration, setNarr: setWipTrenchingNarration, pic: wipTrenchingPhoto, setPic: setWipTrenchingPhoto },
+                    { key: "hdd", label: "Horizontal Directional Boring (m)", val: wipHddValue, setVal: setWipHddValue, narr: wipHddNarration, setNarr: setWipHddNarration, pic: wipHddPhoto, setPic: setWipHddPhoto },
+                    { key: "cable_laying", label: "Underground Cable Laying (m)", val: wipCableLayingValue, setVal: setWipCableLayingValue, narr: wipCableLayingNarration, setNarr: setWipCableLayingNarration, pic: wipCableLayingPhoto, setPic: setWipCableLayingPhoto },
+                    { key: "cable_mounding", label: "Underground Cable Mounding (m)", val: wipCableMoundingValue, setVal: setWipCableMoundingValue, narr: wipCableMoundingNarration, setNarr: setWipCableMoundingNarration, pic: wipCableMoundingPhoto, setPic: setWipCableMoundingPhoto },
+                    { key: "jointing", label: "Cable Jointing Logs completed", val: wipJoiningValue, setVal: setWipJoiningValue, narr: wipJoiningNarration, setNarr: setWipJoiningNarration, pic: wipJoiningPhoto, setPic: setWipJoiningPhoto },
+                    { key: "rmu", label: "RMU Transformer Foundations built", val: wipRmuValue, setVal: setWipRmuValue, narr: wipRmuNarration, setNarr: setWipRmuNarration, pic: wipRmuPhoto, setPic: setWipRmuPhoto },
+                    { key: "terminations", label: "Grid Terminations Completed (Qty)", val: wipTerminationsValue, setVal: setWipTerminationsValue, narr: wipTerminationsNarration, setNarr: setWipTerminationsNarration, pic: wipTerminationsPhoto, setPic: setWipTerminationsPhoto }
+                  ]
+                  .filter((m) => m.key === activeWipMetric)
+                  .map((m, idx) => (
                     <div key={idx} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 8 }}>
                       <span style={{ fontSize: 12, fontWeight: 800, color: "#334155", textTransform: "uppercase" }}>{m.label}</span>
                       
@@ -2736,116 +2759,136 @@ export default function SupervisorDashboard() {
                     </button>
                   </div>
                   
-                  {/* PWD */}
-                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: "#334155" }}>PWD Statutory Permission Status</span>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: pwdClearance === "Permission Gathered" ? "#10b981" : pwdClearance === "Demand Issued" ? "#d97706" : "#64748b" }}>{pwdClearance}</span>
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
-                      <select
-                        value={pwdClearance}
-                        onChange={(e) => setPwdClearance(e.target.value)}
-                        style={{ height: 36, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, cursor: "pointer", outline: "none", fontWeight: 700 }}
-                      >
-                        <option value="None">None / Initiated</option>
-                        <option value="Demand Issued">Demand Note Issued</option>
-                        <option value="Permission Gathered">Permission Gathered</option>
-                      </select>
-                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 36, background: pwdReceipt ? "#e6f4ea" : "#ffffff", border: pwdReceipt ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: pwdReceipt ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                        {pwdReceipt ? (pwdReceipt.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
-                        <input
-                          type="file"
-                          accept="image/*,application/pdf"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              processUploadedFile(file, (base64) => {
-                                setPwdReceipt(base64);
-                              });
-                            }
-                          }}
-                          style={{ display: "none" }}
-                        />
-                      </label>
-                    </div>
-                    {pwdReceipt && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(pwdReceipt)}
+                  {/* Category Dropdown Selector for Clearance Registry */}
+                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16 }}>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 800, color: "#0284c7", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Select Clearance Agency</label>
+                    <select
+                      value={activeClearanceCategory}
+                      onChange={(e) => setActiveClearanceCategory(e.target.value)}
+                      style={{ width: "100%", height: 40, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: "0 12px", color: "#0f172a", fontSize: 13, outline: "none", cursor: "pointer", fontWeight: 700 }}
+                    >
+                      <option value="pwd">🛣️ PWD Statutory Permission</option>
+                      <option value="kseb">⚡ KSEB Power Grid Clearance</option>
+                      <option value="nh">🛣️ National Highway Corridor Permission</option>
+                    </select>
                   </div>
+
+                  {/* PWD */}
+                  {activeClearanceCategory === "pwd" && (
+                    <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: "#334155" }}>PWD Statutory Permission Status</span>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: pwdClearance === "Permission Gathered" ? "#10b981" : pwdClearance === "Demand Issued" ? "#d97706" : "#64748b" }}>{pwdClearance}</span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                        <select
+                          value={pwdClearance}
+                          onChange={(e) => setPwdClearance(e.target.value)}
+                          style={{ height: 36, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, cursor: "pointer", outline: "none", fontWeight: 700 }}
+                        >
+                          <option value="None">None / Initiated</option>
+                          <option value="Demand Issued">Demand Note Issued</option>
+                          <option value="Permission Gathered">Permission Gathered</option>
+                        </select>
+                        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 36, background: pwdReceipt ? "#e6f4ea" : "#ffffff", border: pwdReceipt ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: pwdReceipt ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                          {pwdReceipt ? (pwdReceipt.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                processUploadedFile(file, (base64) => {
+                                  setPwdReceipt(base64);
+                                });
+                              }
+                            }}
+                            style={{ display: "none" }}
+                          />
+                        </label>
+                      </div>
+                      {pwdReceipt && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(pwdReceipt)}
+                    </div>
+                  )}
 
                   {/* KSEB */}
-                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: "#334155" }}>KSEB Power Grid Clearance</span>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: ksebClearance === "Permission Gathered" ? "#10b981" : ksebClearance === "Demand Issued" ? "#d97706" : "#64748b" }}>{ksebClearance}</span>
+                  {activeClearanceCategory === "kseb" && (
+                    <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: "#334155" }}>KSEB Power Grid Clearance</span>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: ksebClearance === "Permission Gathered" ? "#10b981" : ksebClearance === "Demand Issued" ? "#d97706" : "#64748b" }}>{ksebClearance}</span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                        <select
+                          value={ksebClearance}
+                          onChange={(e) => setKsebClearance(e.target.value)}
+                          style={{ height: 36, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, cursor: "pointer", outline: "none", fontWeight: 700 }}
+                        >
+                          <option value="None">None / Initiated</option>
+                          <option value="Demand Issued">Demand Note Issued</option>
+                          <option value="Permission Gathered">Permission Gathered</option>
+                        </select>
+                        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 36, background: ksebReceipt ? "#e6f4ea" : "#ffffff", border: ksebReceipt ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: ksebReceipt ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                          {ksebReceipt ? (ksebReceipt.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                processUploadedFile(file, (base64) => {
+                                  setKsebReceipt(base64);
+                                });
+                              }
+                            }}
+                            style={{ display: "none" }}
+                          />
+                        </label>
+                      </div>
+                      {ksebReceipt && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(ksebReceipt)}
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
-                      <select
-                        value={ksebClearance}
-                        onChange={(e) => setKsebClearance(e.target.value)}
-                        style={{ height: 36, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, cursor: "pointer", outline: "none", fontWeight: 700 }}
-                      >
-                        <option value="None">None / Initiated</option>
-                        <option value="Demand Issued">Demand Note Issued</option>
-                        <option value="Permission Gathered">Permission Gathered</option>
-                      </select>
-                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 36, background: ksebReceipt ? "#e6f4ea" : "#ffffff", border: ksebReceipt ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: ksebReceipt ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                        {ksebReceipt ? (ksebReceipt.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
-                        <input
-                          type="file"
-                          accept="image/*,application/pdf"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              processUploadedFile(file, (base64) => {
-                                setKsebReceipt(base64);
-                              });
-                            }
-                          }}
-                          style={{ display: "none" }}
-                        />
-                      </label>
-                    </div>
-                    {ksebReceipt && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(ksebReceipt)}
-                  </div>
+                  )}
 
                   {/* NH */}
-                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: "#334155" }}>National Highway Corridor Permission</span>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: nhClearance === "Permission Gathered" ? "#10b981" : nhClearance === "Demand Issued" ? "#d97706" : "#64748b" }}>{nhClearance}</span>
+                  {activeClearanceCategory === "nh" && (
+                    <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: "#334155" }}>National Highway Corridor Permission</span>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: nhClearance === "Permission Gathered" ? "#10b981" : nhClearance === "Demand Issued" ? "#d97706" : "#64748b" }}>{nhClearance}</span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                        <select
+                          value={nhClearance}
+                          onChange={(e) => setNhClearance(e.target.value)}
+                          style={{ height: 36, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, cursor: "pointer", outline: "none", fontWeight: 700 }}
+                        >
+                          <option value="None">None / Initiated</option>
+                          <option value="Demand Issued">Demand Note Issued</option>
+                          <option value="Permission Gathered">Permission Gathered</option>
+                        </select>
+                        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 36, background: nhReceipt ? "#e6f4ea" : "#ffffff", border: nhReceipt ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: nhReceipt ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                          {nhReceipt ? (nhReceipt.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                processUploadedFile(file, (base64) => {
+                                  setNhReceipt(base64);
+                                });
+                              }
+                            }}
+                            style={{ display: "none" }}
+                          />
+                        </label>
+                      </div>
+                      {nhReceipt && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(nhReceipt)}
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
-                      <select
-                        value={nhClearance}
-                        onChange={(e) => setNhClearance(e.target.value)}
-                        style={{ height: 36, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, cursor: "pointer", outline: "none", fontWeight: 700 }}
-                      >
-                        <option value="None">None / Initiated</option>
-                        <option value="Demand Issued">Demand Note Issued</option>
-                        <option value="Permission Gathered">Permission Gathered</option>
-                      </select>
-                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 36, background: nhReceipt ? "#e6f4ea" : "#ffffff", border: nhReceipt ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: nhReceipt ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                        {nhReceipt ? (nhReceipt.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
-                        <input
-                          type="file"
-                          accept="image/*,application/pdf"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              processUploadedFile(file, (base64) => {
-                                setNhReceipt(base64);
-                              });
-                            }
-                          }}
-                          style={{ display: "none" }}
-                        />
-                      </label>
-                    </div>
-                    {nhReceipt && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(nhReceipt)}
-                  </div>
+                  )}
                 </div>
               )}
 
@@ -2863,80 +2906,103 @@ export default function SupervisorDashboard() {
                     </button>
                   </div>
                   
-                  {/* Problems encountered */}
-                  <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#475569", marginBottom: 6, textTransform: "uppercase" }}>Operational Roadblocks Encountered</label>
-                    <textarea
-                      placeholder="List any delays, utility clashing, traffic constraints, public disputes, or equipment breakdowns..."
-                      value={reqProblems}
-                      onChange={(e) => setReqProblems(e.target.value)}
-                      style={{ width: "100%", height: 80, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: 10, color: "#0f172a", fontSize: 12, outline: "none", resize: "none" }}
-                    />
+                  {/* Category Dropdown Selector for Operational Notes */}
+                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16 }}>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 800, color: "#0284c7", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Select Request / Note Type</label>
+                    <select
+                      value={activeRequestCategory}
+                      onChange={(e) => setActiveRequestCategory(e.target.value)}
+                      style={{ width: "100%", height: 40, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: "0 12px", color: "#0f172a", fontSize: 13, outline: "none", cursor: "pointer", fontWeight: 700 }}
+                    >
+                      <option value="roadblocks">🚧 Operational Roadblocks</option>
+                      <option value="targets">🎯 Engineering Target for Tomorrow</option>
+                      <option value="finance">💵 Urgent Imprest Refill Request</option>
+                      <option value="admin">💡 Administrative Support Concerns</option>
+                    </select>
                   </div>
+                  
+                  {/* Problems encountered */}
+                  {activeRequestCategory === "roadblocks" && (
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#475569", marginBottom: 6, textTransform: "uppercase" }}>Operational Roadblocks Encountered</label>
+                      <textarea
+                        placeholder="List any delays, utility clashing, traffic constraints, public disputes, or equipment breakdowns..."
+                        value={reqProblems}
+                        onChange={(e) => setReqProblems(e.target.value)}
+                        style={{ width: "100%", height: 80, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: 10, color: "#0f172a", fontSize: 12, outline: "none", resize: "none" }}
+                      />
+                    </div>
+                  )}
 
                   {/* Plans for tomorrow */}
-                  <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#475569", marginBottom: 6, textTransform: "uppercase" }}>Engineering Target for Tomorrow</label>
-                    <textarea
-                      placeholder="Detail expected trenching meters, planned HDD points, or corridor clearance stages for tomorrow..."
-                      value={reqPlans}
-                      onChange={(e) => setReqPlans(e.target.value)}
-                      style={{ width: "100%", height: 80, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: 10, color: "#0f172a", fontSize: 12, outline: "none", resize: "none" }}
-                    />
-                  </div>
+                  {activeRequestCategory === "targets" && (
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#475569", marginBottom: 6, textTransform: "uppercase" }}>Engineering Target for Tomorrow</label>
+                      <textarea
+                        placeholder="Detail expected trenching meters, planned HDD points, or corridor clearance stages for tomorrow..."
+                        value={reqPlans}
+                        onChange={(e) => setReqPlans(e.target.value)}
+                        style={{ width: "100%", height: 80, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: 10, color: "#0f172a", fontSize: 12, outline: "none", resize: "none" }}
+                      />
+                    </div>
+                  )}
 
                   {/* Urgent Finance request */}
-                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.05em" }}>💵 Urgent Imprest Refill request</span>
-                    
-                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
-                      <input
-                        type="number"
-                        placeholder="Request Amount (₹)"
-                        value={reqFinanceAmount}
-                        onChange={(e) => setReqFinanceAmount(e.target.value)}
-                        style={{ height: 36, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
-                      />
-                      <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 36, background: reqFinanceReceipt ? "#e6f4ea" : "#ffffff", border: reqFinanceReceipt ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: reqFinanceReceipt ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                        {reqFinanceReceipt ? (reqFinanceReceipt.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
+                  {activeRequestCategory === "finance" && (
+                    <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.05em" }}>💵 Urgent Imprest Refill request</span>
+                      
+                      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
                         <input
-                          type="file"
-                          accept="image/*,application/pdf"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              processUploadedFile(file, (base64) => {
-                                setReqFinanceReceipt(base64);
-                              });
-                            }
-                          }}
-                          style={{ display: "none" }}
+                          type="number"
+                          placeholder="Request Amount (₹)"
+                          value={reqFinanceAmount}
+                          onChange={(e) => setReqFinanceAmount(e.target.value)}
+                          style={{ height: 36, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
                         />
-                      </label>
+                        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 36, background: reqFinanceReceipt ? "#e6f4ea" : "#ffffff", border: reqFinanceReceipt ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: reqFinanceReceipt ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                          {reqFinanceReceipt ? (reqFinanceReceipt.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                processUploadedFile(file, (base64) => {
+                                  setReqFinanceReceipt(base64);
+                                });
+                              }
+                            }}
+                            style={{ display: "none" }}
+                          />
+                        </label>
+                      </div>
+
+                      {reqFinanceReceipt && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(reqFinanceReceipt)}
+
+                      <input
+                        type="text"
+                        placeholder="Imprest refill justification..."
+                        value={reqFinanceNarration}
+                        onChange={(e) => setReqFinanceNarration(e.target.value)}
+                        style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 10px", color: "#0f172a", fontSize: 11, outline: "none" }}
+                      />
                     </div>
-
-                    {reqFinanceReceipt && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(reqFinanceReceipt)}
-
-                    <input
-                      type="text"
-                      placeholder="Imprest refill justification..."
-                      value={reqFinanceNarration}
-                      onChange={(e) => setReqFinanceNarration(e.target.value)}
-                      style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 10px", color: "#0f172a", fontSize: 11, outline: "none" }}
-                    />
-                  </div>
+                  )}
 
                   {/* General concerns / Admin notes */}
-                  <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#475569", marginBottom: 6, textTransform: "uppercase" }}>Administrative Support & Coordination Concerns</label>
-                    <textarea
-                      placeholder="Enter safety alerts, structural needs, or specific administrative tasks required for corporate intervention..."
-                      value={reqAdminConcerns}
-                      onChange={(e) => setReqAdminConcerns(e.target.value)}
-                      style={{ width: "100%", height: 80, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: 10, color: "#0f172a", fontSize: 12, outline: "none", resize: "none" }}
-                    />
-                  </div>
+                  {activeRequestCategory === "admin" && (
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#475569", marginBottom: 6, textTransform: "uppercase" }}>Administrative Support & Coordination Concerns</label>
+                      <textarea
+                        placeholder="Enter safety alerts, structural needs, or specific administrative tasks required for corporate intervention..."
+                        value={reqAdminConcerns}
+                        onChange={(e) => setReqAdminConcerns(e.target.value)}
+                        style={{ width: "100%", height: 80, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: 10, color: "#0f172a", fontSize: 12, outline: "none", resize: "none" }}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
