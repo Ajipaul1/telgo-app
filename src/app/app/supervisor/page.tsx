@@ -36,6 +36,7 @@ export default function SupervisorDashboard() {
   const [correctiveRoomReceipt, setCorrectiveRoomReceipt] = useState("");
   const [correctiveToolReceipt, setCorrectiveToolReceipt] = useState("");
   const [resolvingClarification, setResolvingClarification] = useState(false);
+  const [activeExpenseCategory, setActiveExpenseCategory] = useState<string>("fuel");
 
   const DEFAULT_PROJECTS = [
     {
@@ -2180,373 +2181,399 @@ export default function SupervisorDashboard() {
                     </span>
                   </div>
 
-                  {/* Dynamic Expenses Builder - Fuel */}
-                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.05em" }}>Fuel Expenses</span>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button type="button" onClick={() => handleSaveAndBlur("Fuel Expenses")} style={{ fontSize: 10, fontWeight: 700, color: "#64748b", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}>💾 Save</button>
-                        <button
-                          type="button"
-                          onClick={() => setFuelExpensesList([...fuelExpensesList, { id: Math.random().toString(), amount: "", narration: "", billImage: "" }])}
-                          style={{ fontSize: 10, fontWeight: 800, color: "#ffffff", background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}
-                        >
-                          ➕ Add Fuel Entry
-                        </button>
-                      </div>
-                    </div>
+                  {/* Category Dropdown Selector for decluttering */}
+                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16 }}>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 800, color: "#0284c7", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Logistics & Rental Expenses Category</label>
+                    <select
+                      value={activeExpenseCategory}
+                      onChange={(e) => setActiveExpenseCategory(e.target.value)}
+                      style={{ width: "100%", height: 40, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: "0 12px", color: "#0f172a", fontSize: 13, outline: "none", cursor: "pointer", fontWeight: 700 }}
+                    >
+                      <option value="fuel">⛽ Fuel Expenses</option>
+                      <option value="travel">🚗 Transit Expenses</option>
+                      <option value="room">🏠 Accommodation / Room Rent</option>
+                      <option value="tool">🔧 Tool Rentals</option>
+                      <option value="other">💡 Miscellaneous Expenses</option>
+                    </select>
+                  </div>
 
-                    {fuelExpensesList.map((item, idx) => (
-                      <div key={item.id} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: 11, color: "#475569", fontWeight: 700 }}>Fuel #{idx + 1}</span>
+                  {/* Dynamic Expenses Builder - Fuel */}
+                  {activeExpenseCategory === "fuel" && (
+                    <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.05em" }}>Fuel Expenses</span>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button type="button" onClick={() => handleSaveAndBlur("Fuel Expenses")} style={{ fontSize: 10, fontWeight: 700, color: "#64748b", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}>💾 Save</button>
                           <button
                             type="button"
-                            onClick={() => setFuelExpensesList(fuelExpensesList.filter((x) => x.id !== item.id))}
-                            style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 11, fontWeight: 700 }}
+                            onClick={() => setFuelExpensesList([...fuelExpensesList, { id: Math.random().toString(), amount: "", narration: "", billImage: "" }])}
+                            style={{ fontSize: 10, fontWeight: 800, color: "#ffffff", background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}
                           >
-                            Remove
+                            ➕ Add Fuel Entry
                           </button>
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
-                          <input
-                            type="number"
-                            placeholder="Amount (₹)"
-                            value={item.amount}
-                            onChange={(e) => {
-                              setFuelExpensesList(fuelExpensesList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
-                            }}
-                            style={{ height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
-                          />
-                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: item.billImage ? "#e6f4ea" : "#ffffff", border: item.billImage ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: item.billImage ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                            {item.billImage ? (item.billImage.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
-                            <input
-                              type="file"
-                              accept="image/*,application/pdf"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  processUploadedFile(file, (base64) => {
-                                    setFuelExpensesList(fuelExpensesList.map((x) => x.id === item.id ? { ...x, billImage: base64 } : x));
-                                  });
-                                }
-                              }}
-                              style={{ display: "none" }}
-                            />
-                          </label>
-                        </div>
-                        {item.billImage && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(item.billImage)}
-                        <input
-                          type="text"
-                          placeholder="Fuel narration/reason..."
-                          value={item.narration}
-                          onChange={(e) => {
-                            setFuelExpensesList(fuelExpensesList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
-                          }}
-                          style={{ width: "100%", height: 30, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none" }}
-                        />
                       </div>
-                    ))}
-                  </div>
+
+                      {fuelExpensesList.map((item, idx) => (
+                        <div key={item.id} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: 11, color: "#475569", fontWeight: 700 }}>Fuel #{idx + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => setFuelExpensesList(fuelExpensesList.filter((x) => x.id !== item.id))}
+                              style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 11, fontWeight: 700 }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                            <input
+                              type="number"
+                              placeholder="Amount (₹)"
+                              value={item.amount}
+                              onChange={(e) => {
+                                setFuelExpensesList(fuelExpensesList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
+                              }}
+                              style={{ height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
+                            />
+                            <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: item.billImage ? "#e6f4ea" : "#ffffff", border: item.billImage ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: item.billImage ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                              {item.billImage ? (item.billImage.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    processUploadedFile(file, (base64) => {
+                                      setFuelExpensesList(fuelExpensesList.map((x) => x.id === item.id ? { ...x, billImage: base64 } : x));
+                                    });
+                                  }
+                                }}
+                                style={{ display: "none" }}
+                              />
+                            </label>
+                          </div>
+                          {item.billImage && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(item.billImage)}
+                          <input
+                            type="text"
+                            placeholder="Fuel narration/reason..."
+                            value={item.narration}
+                            onChange={(e) => {
+                              setFuelExpensesList(fuelExpensesList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
+                            }}
+                            style={{ width: "100%", height: 30, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none" }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Dynamic Expenses Builder - Travel */}
-                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.05em" }}>Transit Expenses</span>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button type="button" onClick={() => handleSaveAndBlur("Transit Expenses")} style={{ fontSize: 10, fontWeight: 700, color: "#64748b", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}>💾 Save</button>
-                        <button
-                          type="button"
-                          onClick={() => setTravelExpensesList([...travelExpensesList, { id: Math.random().toString(), amount: "", narration: "", billImage: "" }])}
-                          style={{ fontSize: 10, fontWeight: 800, color: "#ffffff", background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}
-                        >
-                          ➕ Add Transit Entry
-                        </button>
-                      </div>
-                    </div>
-
-                    {travelExpensesList.map((item, idx) => (
-                      <div key={item.id} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: 11, color: "#475569", fontWeight: 700 }}>Transit #{idx + 1}</span>
+                  {activeExpenseCategory === "travel" && (
+                    <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.05em" }}>Transit Expenses</span>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button type="button" onClick={() => handleSaveAndBlur("Transit Expenses")} style={{ fontSize: 10, fontWeight: 700, color: "#64748b", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}>💾 Save</button>
                           <button
                             type="button"
-                            onClick={() => setTravelExpensesList(travelExpensesList.filter((x) => x.id !== item.id))}
-                            style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 11, fontWeight: 700 }}
+                            onClick={() => setTravelExpensesList([...travelExpensesList, { id: Math.random().toString(), amount: "", narration: "", billImage: "" }])}
+                            style={{ fontSize: 10, fontWeight: 800, color: "#ffffff", background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}
                           >
-                            Remove
+                            ➕ Add Transit Entry
                           </button>
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
-                          <input
-                            type="number"
-                            placeholder="Amount (₹)"
-                            value={item.amount}
-                            onChange={(e) => {
-                              setTravelExpensesList(travelExpensesList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
-                            }}
-                            style={{ height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
-                          />
-                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: item.billImage ? "#e6f4ea" : "#ffffff", border: item.billImage ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: item.billImage ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                            {item.billImage ? (item.billImage.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
-                            <input
-                              type="file"
-                              accept="image/*,application/pdf"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  processUploadedFile(file, (base64) => {
-                                    setTravelExpensesList(travelExpensesList.map((x) => x.id === item.id ? { ...x, billImage: base64 } : x));
-                                  });
-                                }
-                              }}
-                              style={{ display: "none" }}
-                            />
-                          </label>
-                        </div>
-                        {item.billImage && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(item.billImage)}
-                        <input
-                          type="text"
-                          placeholder="Transit details..."
-                          value={item.narration}
-                          onChange={(e) => {
-                            setTravelExpensesList(travelExpensesList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
-                          }}
-                          style={{ width: "100%", height: 30, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none" }}
-                        />
                       </div>
-                    ))}
-                  </div>
+
+                      {travelExpensesList.map((item, idx) => (
+                        <div key={item.id} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: 11, color: "#475569", fontWeight: 700 }}>Transit #{idx + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => setTravelExpensesList(travelExpensesList.filter((x) => x.id !== item.id))}
+                              style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 11, fontWeight: 700 }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                            <input
+                              type="number"
+                              placeholder="Amount (₹)"
+                              value={item.amount}
+                              onChange={(e) => {
+                                setTravelExpensesList(travelExpensesList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
+                              }}
+                              style={{ height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
+                            />
+                            <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: item.billImage ? "#e6f4ea" : "#ffffff", border: item.billImage ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: item.billImage ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                              {item.billImage ? (item.billImage.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    processUploadedFile(file, (base64) => {
+                                      setTravelExpensesList(travelExpensesList.map((x) => x.id === item.id ? { ...x, billImage: base64 } : x));
+                                    });
+                                  }
+                                }}
+                                style={{ display: "none" }}
+                              />
+                            </label>
+                          </div>
+                          {item.billImage && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(item.billImage)}
+                          <input
+                            type="text"
+                            placeholder="Transit details..."
+                            value={item.narration}
+                            onChange={(e) => {
+                              setTravelExpensesList(travelExpensesList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
+                            }}
+                            style={{ width: "100%", height: 30, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none" }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Dynamic Expenses Builder - Room Rent */}
-                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.05em" }}>Accommodation / Rent</span>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button type="button" onClick={() => handleSaveAndBlur("Accommodation")} style={{ fontSize: 10, fontWeight: 700, color: "#64748b", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}>💾 Save</button>
-                        <button
-                          type="button"
-                          onClick={() => setRoomRentList([...roomRentList, { id: Math.random().toString(), amount: "", narration: "", billImage: "" }])}
-                          style={{ fontSize: 10, fontWeight: 800, color: "#ffffff", background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}
-                        >
-                          ➕ Add Lodging
-                        </button>
-                      </div>
-                    </div>
-
-                    {roomRentList.map((item, idx) => (
-                      <div key={item.id} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: 11, color: "#475569", fontWeight: 700 }}>Lodging #{idx + 1}</span>
+                  {activeExpenseCategory === "room" && (
+                    <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.05em" }}>Accommodation / Rent</span>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button type="button" onClick={() => handleSaveAndBlur("Accommodation")} style={{ fontSize: 10, fontWeight: 700, color: "#64748b", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}>💾 Save</button>
                           <button
                             type="button"
-                            onClick={() => setRoomRentList(roomRentList.filter((x) => x.id !== item.id))}
-                            style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 11, fontWeight: 700 }}
+                            onClick={() => setRoomRentList([...roomRentList, { id: Math.random().toString(), amount: "", narration: "", billImage: "" }])}
+                            style={{ fontSize: 10, fontWeight: 800, color: "#ffffff", background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}
                           >
-                            Remove
+                            ➕ Add Lodging
                           </button>
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
-                          <input
-                            type="number"
-                            placeholder="Amount (₹)"
-                            value={item.amount}
-                            onChange={(e) => {
-                              setRoomRentList(roomRentList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
-                            }}
-                            style={{ height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
-                          />
-                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: item.billImage ? "#e6f4ea" : "#ffffff", border: item.billImage ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: item.billImage ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                            {item.billImage ? (item.billImage.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
-                            <input
-                              type="file"
-                              accept="image/*,application/pdf"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  processUploadedFile(file, (base64) => {
-                                    setRoomRentList(roomRentList.map((x) => x.id === item.id ? { ...x, billImage: base64 } : x));
-                                  });
-                                }
-                              }}
-                              style={{ display: "none" }}
-                            />
-                          </label>
-                        </div>
-                        {item.billImage && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(item.billImage)}
-                        <input
-                          type="text"
-                          placeholder="Lodging details..."
-                          value={item.narration}
-                          onChange={(e) => {
-                            setRoomRentList(roomRentList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
-                          }}
-                          style={{ width: "100%", height: 30, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none" }}
-                        />
                       </div>
-                    ))}
-                  </div>
+
+                      {roomRentList.map((item, idx) => (
+                        <div key={item.id} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: 11, color: "#475569", fontWeight: 700 }}>Lodging #{idx + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => setRoomRentList(roomRentList.filter((x) => x.id !== item.id))}
+                              style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 11, fontWeight: 700 }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                            <input
+                              type="number"
+                              placeholder="Amount (₹)"
+                              value={item.amount}
+                              onChange={(e) => {
+                                setRoomRentList(roomRentList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
+                              }}
+                              style={{ height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
+                            />
+                            <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: item.billImage ? "#e6f4ea" : "#ffffff", border: item.billImage ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: item.billImage ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                              {item.billImage ? (item.billImage.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    processUploadedFile(file, (base64) => {
+                                      setRoomRentList(roomRentList.map((x) => x.id === item.id ? { ...x, billImage: base64 } : x));
+                                    });
+                                  }
+                                }}
+                                style={{ display: "none" }}
+                              />
+                            </label>
+                          </div>
+                          {item.billImage && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(item.billImage)}
+                          <input
+                            type="text"
+                            placeholder="Lodging details..."
+                            value={item.narration}
+                            onChange={(e) => {
+                              setRoomRentList(roomRentList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
+                            }}
+                            style={{ width: "100%", height: 30, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none" }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Dynamic Expenses Builder - Tool Rent */}
-                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tool Rentals</span>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button type="button" onClick={() => handleSaveAndBlur("Tool Rentals")} style={{ fontSize: 10, fontWeight: 700, color: "#64748b", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}>💾 Save</button>
-                        <button
-                          type="button"
-                          onClick={() => setToolRentList([...toolRentList, { id: Math.random().toString(), toolName: "", amount: "", narration: "", billImage: "" }])}
-                          style={{ fontSize: 10, fontWeight: 800, color: "#ffffff", background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}
-                        >
-                          ➕ Add Tool Rent
-                        </button>
-                      </div>
-                    </div>
-
-                    {toolRentList.map((item, idx) => (
-                      <div key={item.id} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: 11, color: "#475569", fontWeight: 700 }}>Tool Rent #{idx + 1}</span>
+                  {activeExpenseCategory === "tool" && (
+                    <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tool Rentals</span>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button type="button" onClick={() => handleSaveAndBlur("Tool Rentals")} style={{ fontSize: 10, fontWeight: 700, color: "#64748b", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}>💾 Save</button>
                           <button
                             type="button"
-                            onClick={() => setToolRentList(toolRentList.filter((x) => x.id !== item.id))}
-                            style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 11, fontWeight: 700 }}
+                            onClick={() => setToolRentList([...toolRentList, { id: Math.random().toString(), toolName: "", amount: "", narration: "", billImage: "" }])}
+                            style={{ fontSize: 10, fontWeight: 800, color: "#ffffff", background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}
                           >
-                            Remove
+                            ➕ Add Tool Rent
                           </button>
                         </div>
-                        <input
-                          type="text"
-                          placeholder="Tool Name (e.g. Jackhammer, Generator)"
-                          value={item.toolName}
-                          onChange={(e) => {
-                            setToolRentList(toolRentList.map((x) => x.id === item.id ? { ...x, toolName: e.target.value } : x));
-                          }}
-                          style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
-                        />
-                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
-                          <input
-                            type="number"
-                            placeholder="Price / Cost (₹)"
-                            value={item.amount}
-                            onChange={(e) => {
-                              setToolRentList(toolRentList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
-                            }}
-                            style={{ height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
-                          />
-                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: item.billImage ? "#e6f4ea" : "#ffffff", border: item.billImage ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: item.billImage ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                            {item.billImage ? (item.billImage.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
-                            <input
-                              type="file"
-                              accept="image/*,application/pdf"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  processUploadedFile(file, (base64) => {
-                                    setToolRentList(toolRentList.map((x) => x.id === item.id ? { ...x, billImage: base64 } : x));
-                                  });
-                                }
-                              }}
-                              style={{ display: "none" }}
-                            />
-                          </label>
-                        </div>
-                        {item.billImage && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(item.billImage)}
-                        <input
-                          type="text"
-                          placeholder="Tool rent narration..."
-                          value={item.narration}
-                          onChange={(e) => {
-                            setToolRentList(toolRentList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
-                          }}
-                          style={{ width: "100%", height: 30, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none" }}
-                        />
                       </div>
-                    ))}
-                  </div>
+
+                      {toolRentList.map((item, idx) => (
+                        <div key={item.id} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: 11, color: "#475569", fontWeight: 700 }}>Tool Rent #{idx + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => setToolRentList(toolRentList.filter((x) => x.id !== item.id))}
+                              style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 11, fontWeight: 700 }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Tool Name (e.g. Jackhammer, Generator)"
+                            value={item.toolName}
+                            onChange={(e) => {
+                              setToolRentList(toolRentList.map((x) => x.id === item.id ? { ...x, toolName: e.target.value } : x));
+                            }}
+                            style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
+                          />
+                          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                            <input
+                              type="number"
+                              placeholder="Price / Cost (₹)"
+                              value={item.amount}
+                              onChange={(e) => {
+                                setToolRentList(toolRentList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
+                              }}
+                              style={{ height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
+                            />
+                            <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: item.billImage ? "#e6f4ea" : "#ffffff", border: item.billImage ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: item.billImage ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                              {item.billImage ? (item.billImage.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    processUploadedFile(file, (base64) => {
+                                      setToolRentList(toolRentList.map((x) => x.id === item.id ? { ...x, billImage: base64 } : x));
+                                    });
+                                  }
+                                }}
+                                style={{ display: "none" }}
+                              />
+                            </label>
+                          </div>
+                          {item.billImage && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(item.billImage)}
+                          <input
+                            type="text"
+                            placeholder="Tool rent narration..."
+                            value={item.narration}
+                            onChange={(e) => {
+                              setToolRentList(toolRentList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
+                            }}
+                            style={{ width: "100%", height: 30, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none" }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Dynamic Expenses Builder - Other Uncategorized Expenses */}
-                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#d97706", textTransform: "uppercase", letterSpacing: "0.05em" }}>Miscellaneous Expenses</span>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button type="button" onClick={() => handleSaveAndBlur("Misc Expenses")} style={{ fontSize: 10, fontWeight: 700, color: "#64748b", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}>💾 Save</button>
-                        <button
-                          type="button"
-                          onClick={() => setOtherExpensesList([...otherExpensesList, { id: Math.random().toString(), name: "", amount: "", narration: "", billImage: "" }])}
-                          style={{ fontSize: 10, fontWeight: 800, color: "#ffffff", background: "linear-gradient(135deg, #d97706 0%, #b45309 100%)", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}
-                        >
-                          ➕ Add Misc
-                        </button>
-                      </div>
-                    </div>
-
-                    {otherExpensesList.map((item, idx) => (
-                      <div key={item.id} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: 11, color: "#d97706", fontWeight: 700 }}>Misc Entry #{idx + 1}</span>
+                  {activeExpenseCategory === "other" && (
+                    <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "#d97706", textTransform: "uppercase", letterSpacing: "0.05em" }}>Miscellaneous Expenses</span>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button type="button" onClick={() => handleSaveAndBlur("Misc Expenses")} style={{ fontSize: 10, fontWeight: 700, color: "#64748b", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}>💾 Save</button>
                           <button
                             type="button"
-                            onClick={() => setOtherExpensesList(otherExpensesList.filter((x) => x.id !== item.id))}
-                            style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 11, fontWeight: 700 }}
+                            onClick={() => setOtherExpensesList([...otherExpensesList, { id: Math.random().toString(), name: "", amount: "", narration: "", billImage: "" }])}
+                            style={{ fontSize: 10, fontWeight: 800, color: "#ffffff", background: "linear-gradient(135deg, #d97706 0%, #b45309 100%)", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}
                           >
-                            Remove
+                            ➕ Add Misc
                           </button>
                         </div>
-                        <input
-                          type="text"
-                          placeholder="Expense Name (e.g. Refreshments, Stationery)"
-                          value={item.name}
-                          onChange={(e) => {
-                            setOtherExpensesList(otherExpensesList.map((x) => x.id === item.id ? { ...x, name: e.target.value } : x));
-                          }}
-                          style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
-                        />
-                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
-                          <input
-                            type="number"
-                            placeholder="Price / Amount (₹)"
-                            value={item.amount}
-                            onChange={(e) => {
-                              setOtherExpensesList(otherExpensesList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
-                            }}
-                            style={{ height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
-                          />
-                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: item.billImage ? "#e6f4ea" : "#ffffff", border: item.billImage ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: item.billImage ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                            {item.billImage ? (item.billImage.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
-                            <input
-                              type="file"
-                              accept="image/*,application/pdf"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  processUploadedFile(file, (base64) => {
-                                    setOtherExpensesList(otherExpensesList.map((x) => x.id === item.id ? { ...x, billImage: base64 } : x));
-                                  });
-                                }
-                              }}
-                              style={{ display: "none" }}
-                            />
-                          </label>
-                        </div>
-                        {item.billImage && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(item.billImage)}
-                        <input
-                          type="text"
-                          placeholder="Miscellaneous notes..."
-                          value={item.narration}
-                          onChange={(e) => {
-                            setOtherExpensesList(otherExpensesList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
-                          }}
-                          style={{ width: "100%", height: 30, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none" }}
-                        />
                       </div>
-                    ))}
-                  </div>
+
+                      {otherExpensesList.map((item, idx) => (
+                        <div key={item.id} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: 11, color: "#d97706", fontWeight: 700 }}>Misc Entry #{idx + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => setOtherExpensesList(otherExpensesList.filter((x) => x.id !== item.id))}
+                              style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 11, fontWeight: 700 }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Expense Name (e.g. Refreshments, Stationery)"
+                            value={item.name}
+                            onChange={(e) => {
+                              setOtherExpensesList(otherExpensesList.map((x) => x.id === item.id ? { ...x, name: e.target.value } : x));
+                            }}
+                            style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
+                          />
+                          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                            <input
+                              type="number"
+                              placeholder="Price / Amount (₹)"
+                              value={item.amount}
+                              onChange={(e) => {
+                                setOtherExpensesList(otherExpensesList.map((x) => x.id === item.id ? { ...x, amount: e.target.value } : x));
+                              }}
+                              style={{ height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
+                            />
+                            <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 34, background: item.billImage ? "#e6f4ea" : "#ffffff", border: item.billImage ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: item.billImage ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                              {item.billImage ? (item.billImage.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    processUploadedFile(file, (base64) => {
+                                      setOtherExpensesList(otherExpensesList.map((x) => x.id === item.id ? { ...x, billImage: base64 } : x));
+                                    });
+                                  }
+                                }}
+                                style={{ display: "none" }}
+                              />
+                            </label>
+                          </div>
+                          {item.billImage && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(item.billImage)}
+                          <input
+                            type="text"
+                            placeholder="Miscellaneous notes..."
+                            value={item.narration}
+                            onChange={(e) => {
+                              setOtherExpensesList(otherExpensesList.map((x) => x.id === item.id ? { ...x, narration: e.target.value } : x));
+                            }}
+                            style={{ width: "100%", height: 30, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none" }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Expenses Live Total */}
                   <div style={{ background: "rgba(2, 132, 199, 0.06)", border: "1px solid rgba(2, 132, 199, 0.15)", padding: 14, borderRadius: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
