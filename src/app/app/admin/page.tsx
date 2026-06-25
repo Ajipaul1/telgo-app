@@ -95,6 +95,14 @@ export default function AdminDashboard() {
   const [editStatus, setEditStatus] = useState("");
   const [savingUser, setSavingUser] = useState(false);
 
+  // User Administration Create State
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createEmail, setCreateEmail] = useState("");
+  const [createRole, setCreateRole] = useState("supervisor");
+  const [createPassword, setCreatePassword] = useState("");
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+
   // Real Projects States
   const [projectsList, setProjectsList] = useState<any[]>([]);
   const [selectedProjectItem, setSelectedProjectItem] = useState<any | null>(null);
@@ -1568,6 +1576,40 @@ export default function AdminDashboard() {
     }
   }
 
+  async function handleCreateUser(e: React.FormEvent) {
+    e.preventDefault();
+    setIsCreatingUser(true);
+    try {
+      const r = await fetch("/api/mobile/admin/user/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: createName,
+          email: createEmail,
+          role: createRole,
+          password: createPassword
+        })
+      });
+      const d = await r.json();
+      if (r.ok && d.ok) {
+        showToast("✅ Member profile created successfully!");
+        setIsCreateModalOpen(false);
+        setApprovedCreds({
+          email: createEmail.trim().toLowerCase(),
+          password: createPassword.trim(),
+          loginId: d.user?.login_id || ""
+        });
+        fetchUsers();
+      } else {
+        showToast("❌ " + (d.message || "Failed to create user."));
+      }
+    } catch {
+      showToast("❌ Network connection error.");
+    } finally {
+      setIsCreatingUser(false);
+    }
+  }
+
   async function handleTerminateUser() {
     if (!selectedUser) return;
     if (!confirm(`Are you absolutely sure you want to terminate and revoke access for ${editName}?`)) return;
@@ -2199,18 +2241,48 @@ export default function AdminDashboard() {
           
           {/* Sub Header */}
           <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid var(--border)", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <button 
-                onClick={() => setActiveView("hub")}
-                className="back-btn"
-                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)", cursor: "pointer" }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-              </button>
-              <div>
-                <p style={{ fontSize: 10, fontWeight: 800, color: "var(--cyan)", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>System Management</p>
-                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Access Control</h1>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <button 
+                  onClick={() => setActiveView("hub")}
+                  className="back-btn"
+                  style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)", cursor: "pointer" }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                </button>
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 800, color: "var(--cyan)", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>System Management</p>
+                  <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Access Control</h1>
+                </div>
               </div>
+              <button 
+                onClick={() => {
+                  setCreateName("");
+                  setCreateEmail("");
+                  setCreateRole("supervisor");
+                  setCreatePassword("");
+                  setIsCreateModalOpen(true);
+                }}
+                style={{
+                  height: 38,
+                  padding: "0 14px",
+                  borderRadius: 10,
+                  border: "none",
+                  background: "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)",
+                  color: "#ffffff",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  cursor: "pointer",
+                  boxShadow: "0 4px 12px rgba(6, 182, 212, 0.15)",
+                  fontFamily: "Outfit, sans-serif"
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Member
+              </button>
             </div>
           </div>
 
@@ -6097,6 +6169,91 @@ export default function AdminDashboard() {
         user={adminSelf as any}
         onUpdate={(updated: any) => setAdminSelf(updated)}
       />
+
+      {/* ADMINISTRATIVE CREATE USER MODAL */}
+      {isCreateModalOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.35)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 1100, animation: "fadeIn 0.2s ease" }}>
+          <div className="glass" style={{ width: "100%", maxWidth: 420, padding: "28px 24px", background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)", borderRadius: 24, border: "1px solid var(--border)", boxShadow: "0 24px 64px rgba(0, 0, 0, 0.7)", color: "var(--text)" }}>
+            
+            {/* Modal Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 900, letterSpacing: "-0.02em", margin: 0 }}>Add New Member</h3>
+              <button onClick={() => setIsCreateModalOpen(false)} style={{ background: "var(--border)", border: "1px solid var(--border)", width: 32, height: 32, borderRadius: "50%", color: "var(--dim)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateUser} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {/* Name field */}
+              <div>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Display Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. John Doe"
+                  value={createName}
+                  onChange={(e) => setCreateName(e.target.value)}
+                  required
+                  style={{ width: "100%", height: 44, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 14, fontFamily: "Outfit, sans-serif", outline: "none" }}
+                />
+              </div>
+
+              {/* Email field */}
+              <div>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Email Address</label>
+                <input
+                  type="email"
+                  placeholder="e.g. john@telgo.com"
+                  value={createEmail}
+                  onChange={(e) => setCreateEmail(e.target.value)}
+                  required
+                  style={{ width: "100%", height: 44, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 14, fontFamily: "monospace", outline: "none" }}
+                />
+              </div>
+
+              {/* Password field */}
+              <div>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Password</label>
+                <input
+                  type="password"
+                  placeholder="Min 6 characters"
+                  value={createPassword}
+                  onChange={(e) => setCreatePassword(e.target.value)}
+                  required
+                  minLength={6}
+                  style={{ width: "100%", height: 44, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 14, outline: "none" }}
+                />
+              </div>
+
+              {/* Role selector field */}
+              <div>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Security & Operations Role</label>
+                <select
+                  value={createRole}
+                  onChange={(e) => setCreateRole(e.target.value)}
+                  style={{ width: "100%", height: 44, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 14, outline: "none", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                >
+                  <option value="supervisor">Supervisor (Field Engineer)</option>
+                  <option value="client">Client (KSEB / Board Member)</option>
+                  <option value="finance">Finance Team Member</option>
+                  <option value="admin">Administrator</option>
+                </select>
+              </div>
+
+              {/* Action Buttons Row */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
+                <button
+                  type="submit"
+                  disabled={isCreatingUser}
+                  style={{ width: "100%", minHeight: 44, background: "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)", border: "none", borderRadius: 12, color: "var(--text)", fontSize: 14, fontWeight: 750, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 15px rgba(6, 182, 212, 0.2)" }}
+                >
+                  {isCreatingUser ? <div className="spinner" style={{ width: 14, height: 14 }} /> : "✓ Create Member Profile"}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ADMINISTRATIVE USER MANAGEMENT MODAL */}
       {selectedUser && (
