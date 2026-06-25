@@ -164,103 +164,48 @@ export default function AdminDashboard() {
     sLat: string,
     sLng: string,
     eLat: string,
-    eLng: string,
-    tLine: [number, number][]
+    eLng: string
   ) => {
-    if (tLine && tLine.length >= 2) {
-      let total = 0;
-      for (let i = 0; i < tLine.length - 1; i++) {
-        total += calculateHaversineDistance(tLine[i][0], tLine[i][1], tLine[i + 1][0], tLine[i + 1][1]);
-      }
-      setProjDistance(`${total.toFixed(2)} km`);
-    } else {
-      const lat1 = parseFloat(sLat);
-      const lng1 = parseFloat(sLng);
-      const lat2 = parseFloat(eLat);
-      const lng2 = parseFloat(eLng);
-      if (!isNaN(lat1) && !isNaN(lng1) && !isNaN(lat2) && !isNaN(lng2)) {
-        // Fetch driving distance AND coordinates snapped to actual roads
-        fetch(`https://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=full&geometries=geojson`)
-          .then(r => r.json())
-          .then(data => {
-            if (data.code === "Ok" && data.routes && data.routes.length > 0) {
-              const routeDistanceKm = data.routes[0].distance / 1000;
-              setProjDistance(`${routeDistanceKm.toFixed(2)} km`);
-              
-              // Dynamically set utility path to follow the road network
-              const routeCoords = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
-              setUtilityPath(routeCoords);
-            } else {
-              const dist = calculateHaversineDistance(lat1, lng1, lat2, lng2);
-              setProjDistance(`${dist.toFixed(2)} km`);
-              setUtilityPath([[lat1, lng1], [lat2, lng2]]);
-            }
-          })
-          .catch(() => {
+    const lat1 = parseFloat(sLat);
+    const lng1 = parseFloat(sLng);
+    const lat2 = parseFloat(eLat);
+    const lng2 = parseFloat(eLng);
+    if (!isNaN(lat1) && !isNaN(lng1) && !isNaN(lat2) && !isNaN(lng2)) {
+      // Fetch driving distance AND coordinates snapped to actual roads
+      fetch(`https://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=full&geometries=geojson`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.code === "Ok" && data.routes && data.routes.length > 0) {
+            const routeDistanceKm = data.routes[0].distance / 1000;
+            setProjDistance(`${routeDistanceKm.toFixed(2)} km`);
+            
+            // Dynamically set utility path to follow the road network
+            const routeCoords = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
+            setUtilityPath(routeCoords);
+          } else {
             const dist = calculateHaversineDistance(lat1, lng1, lat2, lng2);
             setProjDistance(`${dist.toFixed(2)} km`);
             setUtilityPath([[lat1, lng1], [lat2, lng2]]);
-          });
-      } else {
-        setProjDistance("0.00 km");
-      }
+          }
+        })
+        .catch(() => {
+          const dist = calculateHaversineDistance(lat1, lng1, lat2, lng2);
+          setProjDistance(`${dist.toFixed(2)} km`);
+          setUtilityPath([[lat1, lng1], [lat2, lng2]]);
+        });
+    } else {
+      setProjDistance("0.00 km");
     }
   };
 
-  const appendSnappedTrenchPoint = async (lat: number, lng: number) => {
-    if (trenchingLine.length === 0) {
-      const next = [[lat, lng] as [number, number]];
-      setTrenchingLine(next);
-      updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
-      return;
-    }
-    
-    const lastPoint = trenchingLine[trenchingLine.length - 1];
-    try {
-      const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${lastPoint[1]},${lastPoint[0]};${lng},${lat}?overview=full&geometries=geojson`);
-      const data = await r.json();
-      if (data.code === "Ok" && data.routes && data.routes.length > 0) {
-        const routeCoords = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
-        const newSegment = routeCoords.slice(1);
-        const next = [...trenchingLine, ...newSegment];
-        setTrenchingLine(next);
-        updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
-        showToast("🛣️ Trench segment conformed perfectly along the road turns!");
-      } else {
-        const next = [...trenchingLine, [lat, lng] as [number, number]];
-        setTrenchingLine(next);
-        updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
-      }
-    } catch {
-      const next = [...trenchingLine, [lat, lng] as [number, number]];
-      setTrenchingLine(next);
-      updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
-    }
-  };
-
-  const appendSnappedUtilityPoint = async (lat: number, lng: number) => {
-    if (utilityPath.length === 0) {
-      setUtilityPath([[lat, lng] as [number, number]]);
-      return;
-    }
-    
-    const lastPoint = utilityPath[utilityPath.length - 1];
-    try {
-      const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${lastPoint[1]},${lastPoint[0]};${lng},${lat}?overview=full&geometries=geojson`);
-      const data = await r.json();
-      if (data.code === "Ok" && data.routes && data.routes.length > 0) {
-        const routeCoords = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
-        const newSegment = routeCoords.slice(1);
-        const next = [...utilityPath, ...newSegment];
-        setUtilityPath(next);
-        showToast("🟣 Utility link conformed perfectly along the road turns!");
-      } else {
-        setUtilityPath([...utilityPath, [lat, lng] as [number, number]]);
-      }
-    } catch {
-      setUtilityPath([...utilityPath, [lat, lng] as [number, number]]);
-    }
-  };
+  // Automatically recalculate road distance and path when start or end coordinates change
+  useEffect(() => {
+    if (!editingProjectItem) return;
+    const timer = setTimeout(() => {
+      updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng);
+    }, 400); // 400ms debounce
+    return () => clearTimeout(timer);
+  }, [projStartLat, projStartLng, projEndLat, projEndLng, editingProjectItem]);
 
   const DEFAULT_PROJECTS = [
     {
@@ -1010,50 +955,6 @@ export default function AdminDashboard() {
           setProjEndLat(latStr);
           setProjEndLng(lngStr);
           showToast(`🔴 Project End Position set: [${latStr}, ${lngStr}]`);
-        } else if (activePinMode === "road_segment") {
-          setTempRoadStart(prev => {
-            if (!prev) {
-              showToast("📍 Road change start marked. Now click end point!");
-              return [lat, lng];
-            } else {
-              const newSeg: [[number, number], [number, number]] = [prev, [lat, lng]];
-              setRoadChangeSegments(curr => [...curr, newSeg]);
-              showToast("🛣️ Road change segment conformed and added to project!");
-              return null;
-            }
-          });
-        } else if (activePinMode === "hdd" || activePinMode === "hdd_segment") {
-          setTempHddStart(prev => {
-            if (!prev) {
-              showToast("📍 HDD crossing start marked. Now click end point!");
-              return [lat, lng];
-            } else {
-              const newSeg: [[number, number], [number, number]] = [prev, [lat, lng]];
-              setHddSegments(curr => [...curr, newSeg]);
-              showToast("🟡 HDD crossing segment conformed!");
-              return null;
-            }
-          });
-        } else if (activePinMode === "trench" || activePinMode === "trench_segment") {
-          setTempTrenchStart(prev => {
-            if (!prev) {
-              showToast("📍 Trench planning start marked. Now click end point!");
-              return [lat, lng];
-            } else {
-              const newSeg: [[number, number], [number, number]] = [prev, [lat, lng]];
-              setTrenchingSegments(curr => [...curr, newSeg]);
-              showToast("🟠 Trenching planning segment conformed!");
-              return null;
-            }
-          });
-        } else if (activePinMode === "termination") {
-          setTerminationPoints(prev => {
-            const next = [...prev, [lat, lng] as [number, number]];
-            showToast(`🔵 Grid Termination location marked.`);
-            return next;
-          });
-        } else if (activePinMode === "utility") {
-          appendSnappedUtilityPoint(lat, lng);
         }
       } else if (e.data.type === "MARKER_DRAG") {
         const { target, lat, lng } = e.data;
@@ -1069,27 +970,12 @@ export default function AdminDashboard() {
           setProjEndLng(lngStr);
           showToast(`🔴 End Position dragged to: [${latStr}, ${lngStr}]`);
         }
-      } else if (e.data.type === "DELETE_SEGMENT") {
-        const { segmentType, index } = e.data;
-        if (segmentType === "road") {
-          setRoadChangeSegments(prev => prev.filter((_, idx) => idx !== index));
-          showToast("🗑️ Road segment deleted.");
-        } else if (segmentType === "hdd") {
-          setHddSegments(prev => prev.filter((_, idx) => idx !== index));
-          showToast("🗑️ HDD crossing segment deleted.");
-        } else if (segmentType === "trench") {
-          setTrenchingSegments(prev => prev.filter((_, idx) => idx !== index));
-          showToast("🗑️ Trench segment deleted.");
-        } else if (segmentType === "termination") {
-          setTerminationPoints(prev => prev.filter((_, idx) => idx !== index));
-          showToast("🗑️ Termination point deleted.");
-        }
       }
     };
 
     window.addEventListener("message", handleMapMessage);
     return () => window.removeEventListener("message", handleMapMessage);
-  }, [activePinMode, projStartLat, projStartLng, projEndLat, projEndLng, trenchingLine, utilityPath, tempRoadStart, tempHddStart, tempTrenchStart]);
+  }, [activePinMode, projStartLat, projStartLng, projEndLat, projEndLng]);
 
   // Bi-directional state transmitter to iframe map frame
   useEffect(() => {
@@ -1157,25 +1043,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // Undo Drawing segment utilities
-  const handleUndoTrenchPoint = () => {
-    setTrenchingLine(prev => {
-      if (prev.length === 0) return prev;
-      const next = prev.slice(0, -1);
-      updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, next);
-      showToast("⏪ Removed last trench coordinate point.");
-      return next;
-    });
-  };
 
-  const handleUndoUtilityPoint = () => {
-    setUtilityPath(prev => {
-      if (prev.length === 0) return prev;
-      const next = prev.slice(0, -1);
-      showToast("⏪ Removed last utility shift coordinate point.");
-      return next;
-    });
-  };
 
   useEffect(() => {
     if (editingProjectItem) {
@@ -3307,9 +3175,18 @@ export default function AdminDashboard() {
                             const end = [${selectedProjectItem.endCoords[0]}, ${selectedProjectItem.endCoords[1]}];
                             const map = L.map('map').setView([(start[0] + end[0]) / 2, (start[1] + end[1]) / 2], 14);
                             
-                            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                            const streetMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                               maxZoom: 20
-                            }).addTo(map);
+                            });
+                            const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                              maxZoom: 19
+                            });
+                            streetMap.addTo(map);
+                            const baseMaps = {
+                              "Street View": streetMap,
+                              "Satellite View": satelliteMap
+                            };
+                            L.control.layers(baseMaps, null, { position: 'bottomleft' }).addTo(map);
 
                             // Primary Route (Purple utilityPath if present, else straight line)
                             const customUtility = ${JSON.stringify(selectedProjectItem.utilityPath ?? [])};
@@ -3560,9 +3437,18 @@ export default function AdminDashboard() {
                               const end = [${p.endCoords[0]}, ${p.endCoords[1]}];
                               const map = L.map('map').setView([(start[0] + end[0]) / 2, (start[1] + end[1]) / 2], 14);
                               
-                              L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                              const streetMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                                 maxZoom: 20
-                              }).addTo(map);
+                              });
+                              const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                                maxZoom: 19
+                              });
+                              streetMap.addTo(map);
+                              const baseMaps = {
+                                "Street View": streetMap,
+                                "Satellite View": satelliteMap
+                              };
+                              L.control.layers(baseMaps, null, { position: 'bottomleft' }).addTo(map);
 
                               // Primary Route (Purple utilityPath if present, else straight line)
                               const customUtility = ${JSON.stringify(p.utilityPath ?? [])};
@@ -5487,7 +5373,7 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Grid of operational drawing tools */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
                     <button
                       type="button"
                       onClick={() => setActivePinMode("start")}
@@ -5511,67 +5397,6 @@ export default function AdminDashboard() {
                       }}
                     >
                       🔴 Pin End
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActivePinMode("road_segment")}
-                      className="tool-btn"
-                      style={{
-                        borderColor: activePinMode === "road_segment" ? "#8b5cf6" : "var(--border)",
-                        background: activePinMode === "road_segment" ? "rgba(139,92,246,0.12)" : "var(--surface)",
-                        color: activePinMode === "road_segment" ? "#a78bfa" : "#94a3b8"
-                      }}
-                    >
-                      🛣️ Road Changes
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActivePinMode("hdd_segment")}
-                      className="tool-btn"
-                      style={{
-                        borderColor: activePinMode === "hdd_segment" ? "#eab308" : "var(--border)",
-                        background: activePinMode === "hdd_segment" ? "rgba(234,179,8,0.12)" : "var(--surface)",
-                        color: activePinMode === "hdd_segment" ? "#fcd34d" : "#94a3b8"
-                      }}
-                    >
-                      🟡 HDD Crossing
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActivePinMode("trench_segment")}
-                      className="tool-btn"
-                      style={{
-                        borderColor: activePinMode === "trench_segment" ? "#f97316" : "var(--border)",
-                        background: activePinMode === "trench_segment" ? "rgba(249,115,22,0.12)" : "var(--surface)",
-                        color: activePinMode === "trench_segment" ? "#ff9d5c" : "#94a3b8"
-                      }}
-                    >
-                      🟠 Trench Plan
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActivePinMode("termination")}
-                      className="tool-btn"
-                      style={{
-                        borderColor: activePinMode === "termination" ? "#2563eb" : "var(--border)",
-                        background: activePinMode === "termination" ? "rgba(37,99,235,0.12)" : "var(--surface)",
-                        color: activePinMode === "termination" ? "#60a5fa" : "#94a3b8"
-                      }}
-                    >
-                      🔵 Grid Term
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActivePinMode("utility")}
-                      className="tool-btn"
-                      style={{
-                        borderColor: activePinMode === "utility" ? "#a855f7" : "var(--border)",
-                        background: activePinMode === "utility" ? "rgba(168,85,247,0.12)" : "var(--surface)",
-                        color: activePinMode === "utility" ? "#c084fc" : "#94a3b8",
-                        gridColumn: "span 3"
-                      }}
-                    >
-                      🟣 Utility Link
                     </button>
                   </div>
 
@@ -5607,12 +5432,6 @@ export default function AdminDashboard() {
                                 border-radius: 50%;
                                 box-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
                               }
-                              .term-marker {
-                                background: #2563eb;
-                                border: 2px solid #ffffff;
-                                border-radius: 4px;
-                                box-shadow: 0 0 10px rgba(37, 99, 235, 0.6);
-                              }
                             </style>
                           </head>
                           <body>
@@ -5632,9 +5451,18 @@ export default function AdminDashboard() {
 
                               const map = L.map('map').setView(center, 14);
                               
-                              L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                              const streetMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                                 maxZoom: 20
-                              }).addTo(map);
+                              });
+                              const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                                maxZoom: 19
+                              });
+                              streetMap.addTo(map);
+                              const baseMaps = {
+                                "Street View": streetMap,
+                                "Satellite View": satelliteMap
+                              };
+                              L.control.layers(baseMaps, null, { position: 'bottomleft' }).addTo(map);
 
                               // Send map clicks to parent React view
                               map.on('click', function(e) {
@@ -5647,19 +5475,10 @@ export default function AdminDashboard() {
 
                               const startIcon = L.divIcon({ className: 'start-marker', iconSize: [14, 14] });
                               const endIcon = L.divIcon({ className: 'end-marker', iconSize: [14, 14] });
-                              const termIcon = L.divIcon({ className: 'term-marker', iconSize: [12, 12] });
 
                               let startMarker = null;
                               let endMarker = null;
                               let utilityPolyline = null;
-                              let trenchPolyline = null;
-                              let trenchCircles = [];
-                              let termMarkers = [];
-
-                              let roadSegLayers = [];
-                              let hddSegLayers = [];
-                              let trenchSegLayers = [];
-                              let tempMarkerLayers = [];
 
                               // Plot Start Coordinates
                               if (hasStart) {
@@ -5687,84 +5506,15 @@ export default function AdminDashboard() {
                                 utilityPolyline = L.polyline([[startLat, startLng], [endLat, endLng]], { color: '#a855f7', weight: 4.5, opacity: 0.8, lineJoin: 'round' }).addTo(map);
                               }
 
-                              // Plot Grid Terminations
-                              const termPts = ${JSON.stringify(terminationPoints)};
-                              if (termPts && termPts.length > 0) {
-                                termPts.forEach((pt, idx) => {
-                                  const m = L.marker(pt, { icon: termIcon }).addTo(map).bindPopup("<b>Grid Termination " + (idx + 1) + "</b><br/><button onclick=\\"window.parent.postMessage({ type: 'DELETE_SEGMENT', segmentType: 'termination', index: " + idx + " }, '*');\\" style=\\"background:#ef4444;color:white;border:none;padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer;margin-top:6px;width:100%;\\">Delete</button>");
-                                  termMarkers.push(m);
-                                });
-                              }
-
-                              // Function to redraw segments
-                              function drawSegments(roadSegs, hddSegs, trenchSegs, tempRoad, tempHdd, tempTrench) {
-                                roadSegLayers.forEach(l => map.removeLayer(l));
-                                roadSegLayers = [];
-                                hddSegLayers.forEach(l => map.removeLayer(l));
-                                hddSegLayers = [];
-                                trenchSegLayers.forEach(l => map.removeLayer(l));
-                                trenchSegLayers = [];
-                                tempMarkerLayers.forEach(l => map.removeLayer(l));
-                                tempMarkerLayers = [];
-
-                                // Draw road changes
-                                if (roadSegs && roadSegs.length > 0) {
-                                  roadSegs.forEach((seg, idx) => {
-                                    const poly = L.polyline(seg, { color: '#8b5cf6', weight: 5, opacity: 0.9, lineJoin: 'round' }).addTo(map);
-                                    poly.bindPopup('<b>🛣️ Road Change Segment ' + (idx + 1) + '</b><br/><button onclick="window.parent.postMessage({ type: \\\'DELETE_SEGMENT\\\', segmentType: \\\'road\\\', index: ' + idx + ' }, \\\'*\\\');" style="background:#ef4444;color:white;border:none;padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer;margin-top:6px;width:100%;">Delete Segment</button>');
-                                    roadSegLayers.push(poly);
-                                  });
-                                }
-
-                                // Draw HDD crossings
-                                if (hddSegs && hddSegs.length > 0) {
-                                  hddSegs.forEach((seg, idx) => {
-                                    const poly = L.polyline(seg, { color: '#d97706', weight: 5, opacity: 0.9, dashArray: '6, 8', lineJoin: 'round' }).addTo(map);
-                                    poly.bindPopup('<b>🟡 HDD Crossing Segment ' + (idx + 1) + '</b><br/><button onclick="window.parent.postMessage({ type: \\\'DELETE_SEGMENT\\\', segmentType: \\\'hdd\\\', index: ' + idx + ' }, \\\'*\\\');" style="background:#ef4444;color:white;border:none;padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer;margin-top:6px;width:100%;">Delete Segment</button>');
-                                    hddSegLayers.push(poly);
-                                  });
-                                }
-
-                                // Draw trenching plans
-                                if (trenchSegs && trenchSegs.length > 0) {
-                                  trenchSegs.forEach((seg, idx) => {
-                                    const poly = L.polyline(seg, { color: '#f97316', weight: 5, opacity: 0.9, lineJoin: 'round' }).addTo(map);
-                                    poly.bindPopup('<b>🟠 Trench Planning Segment ' + (idx + 1) + '</b><br/><button onclick="window.parent.postMessage({ type: \\\'DELETE_SEGMENT\\\', segmentType: \\\'trench\\\', index: ' + idx + ' }, \\\'*\\\');" style="background:#ef4444;color:white;border:none;padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer;margin-top:6px;width:100%;">Delete Segment</button>');
-                                    trenchSegLayers.push(poly);
-                                  });
-                                }
-
-                                // Indicators for half-built segments
-                                if (tempRoad) {
-                                  const c = L.circleMarker(tempRoad, { radius: 8, color: '#8b5cf6', fillColor: '#c084fc', fillOpacity: 0.8 }).addTo(map).bindPopup('<b>Road Segment Start Marked</b><br/>Click the next point on map to draw the segment.');
-                                  tempMarkerLayers.push(c);
-                                }
-                                if (tempHdd) {
-                                  const c = L.circleMarker(tempHdd, { radius: 8, color: '#d97706', fillColor: '#fbbf24', fillOpacity: 0.8 }).addTo(map).bindPopup('<b>HDD Segment Start Marked</b><br/>Click the next point on map to draw the segment.');
-                                  tempMarkerLayers.push(c);
-                                }
-                                if (tempTrench) {
-                                  const c = L.circleMarker(tempTrench, { radius: 8, color: '#f97316', fillColor: '#ffedd5', fillOpacity: 0.8 }).addTo(map).bindPopup('<b>Trench Segment Start Marked</b><br/>Click the next point on map to draw the segment.');
-                                  tempMarkerLayers.push(c);
-                                }
-                              }
-
-                              // Initial Draw
-                              drawSegments(
-                                ${JSON.stringify(roadChangeSegments)},
-                                ${JSON.stringify(hddSegments)},
-                                ${JSON.stringify(trenchingSegments)},
-                                ${JSON.stringify(tempRoadStart)},
-                                ${JSON.stringify(tempHddStart)},
-                                ${JSON.stringify(tempTrenchStart)}
-                              );
+                              // Dummy function to prevent legacy crash
+                              function drawSegments() {}
 
                               // Message handler for updates and geocoding zooms
                               window.addEventListener('message', function(e) {
                                 if (!e.data) return;
                                 
                                 if (e.data.type === 'UPDATE_MARKERS') {
-                                  const { startLat, startLng, endLat, endLng, terminationPoints, utilityPath, roadChangeSegments, hddSegments, trenchingSegments, tempRoadStart, tempHddStart, tempTrenchStart } = e.data;
+                                  const { startLat, startLng, endLat, endLng, utilityPath } = e.data;
                                   
                                   // 1. Start marker
                                   if (startLat && startLng) {
@@ -5811,19 +5561,6 @@ export default function AdminDashboard() {
                                     utilityPolyline = L.polyline([[startLat, startLng], [endLat, endLng]], { color: '#a855f7', weight: 4.5, opacity: 0.8, lineJoin: 'round' }).addTo(map);
                                   }
 
-                                  // 4. Grid terminations
-                                  termMarkers.forEach(m => map.removeLayer(m));
-                                  termMarkers = [];
-                                  if (terminationPoints && terminationPoints.length > 0) {
-                                    terminationPoints.forEach((pt, idx) => {
-                                      const m = L.marker(pt, { icon: termIcon }).addTo(map).bindPopup("<b>Grid Termination " + (idx + 1) + "</b><br/><button onclick=\\"window.parent.postMessage({ type: 'DELETE_SEGMENT', segmentType: 'termination', index: " + idx + " }, '*');\\" style=\\"background:#ef4444;color:white;border:none;padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer;margin-top:6px;width:100%;\\">Delete</button>");
-                                      termMarkers.push(m);
-                                    });
-                                  }
-
-                                  // 5. Draw dynamically updated custom segments
-                                  drawSegments(roadChangeSegments, hddSegments, trenchingSegments, tempRoadStart, tempHddStart, tempTrenchStart);
-
                                 } else if (e.data.type === 'FLY_TO') {
                                   const { lat, lng } = e.data;
                                   map.setView([lat, lng], 15, { animate: true });
@@ -5842,6 +5579,15 @@ export default function AdminDashboard() {
                                 try {
                                   map.fitBounds(bounds, { padding: [30, 30] });
                                 } catch(e) {}
+                              }t bounds = [];
+                              if (hasStart) bounds.push([startLat, startLng]);
+                              if (hasEnd) bounds.push([endLat, endLng]);
+                              if (customUtilityPath && customUtilityPath.length > 0) customUtilityPath.forEach(pt => bounds.push(pt));
+                              
+                              if (bounds.length > 1) {
+                                try {
+                                  map.fitBounds(bounds, { padding: [30, 30] });
+                                } catch(e) {}
                               }
                             </script>
                           </body>
@@ -5852,7 +5598,7 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Drawing Actions & Clear/Undo buttons */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+                  <div style={{ display: "flex", gap: 10 }}>
                     <button
                       type="button"
                       onClick={() => {
@@ -5860,64 +5606,13 @@ export default function AdminDashboard() {
                         setProjStartLng("");
                         setProjEndLat("");
                         setProjEndLng("");
-                        showToast("🧹 Start/End Pins cleared!");
-                      }}
-                      style={{ background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
-                    >
-                      Clear Start/End Pins
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRoadChangeSegments([]);
-                        setTempRoadStart(null);
-                        showToast("🧹 Road Change segments cleared!");
-                      }}
-                      style={{ background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
-                    >
-                      Clear Road Changes
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setHddSegments([]);
-                        setTempHddStart(null);
-                        showToast("🧹 HDD crossing segments cleared!");
-                      }}
-                      style={{ background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
-                    >
-                      Clear HDD Segments
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTrenchingSegments([]);
-                        setTempTrenchStart(null);
-                        showToast("🧹 Trench planning segments cleared!");
-                      }}
-                      style={{ background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
-                    >
-                      Clear Trench planning
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTerminationPoints([]);
-                        showToast("🧹 Grid Terminations cleared!");
-                      }}
-                      style={{ background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
-                    >
-                      Clear Terminations
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
                         setUtilityPath([]);
-                        showToast("🧹 Utility Shift path cleared!");
+                        setProjDistance("0.00 km");
+                        showToast("🧹 Start/End Pins and Corridor path cleared!");
                       }}
-                      style={{ background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "6px 8px", fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+                      style={{ width: "100%", background: "rgba(220, 38, 38, 0.08)", border: "1px solid rgba(220, 38, 38, 0.2)", borderRadius: 10, padding: "8px 12px", fontSize: 12, fontWeight: 700, color: "#dc2626", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
                     >
-                      Clear Utility Link
+                      Clear Start/End Pins & Corridor Path
                     </button>
                   </div>
 
@@ -6034,10 +5729,7 @@ export default function AdminDashboard() {
                         <input
                           type="text"
                           value={projStartLat}
-                          onChange={(e) => {
-                            setProjStartLat(e.target.value);
-                            updateCalculatedDistance(e.target.value, projStartLng, projEndLat, projEndLng, trenchingLine);
-                          }}
+                          onChange={(e) => setProjStartLat(e.target.value)}
                           required
                           style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
                         />
@@ -6047,10 +5739,7 @@ export default function AdminDashboard() {
                         <input
                           type="text"
                           value={projStartLng}
-                          onChange={(e) => {
-                            setProjStartLng(e.target.value);
-                            updateCalculatedDistance(projStartLat, e.target.value, projEndLat, projEndLng, trenchingLine);
-                          }}
+                          onChange={(e) => setProjStartLng(e.target.value)}
                           required
                           style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
                         />
@@ -6077,10 +5766,7 @@ export default function AdminDashboard() {
                         <input
                           type="text"
                           value={projEndLat}
-                          onChange={(e) => {
-                            setProjEndLat(e.target.value);
-                            updateCalculatedDistance(projStartLat, projStartLng, e.target.value, projEndLng, trenchingLine);
-                          }}
+                          onChange={(e) => setProjEndLat(e.target.value)}
                           required
                           style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
                         />
@@ -6090,10 +5776,7 @@ export default function AdminDashboard() {
                         <input
                           type="text"
                           value={projEndLng}
-                          onChange={(e) => {
-                            setProjEndLng(e.target.value);
-                            updateCalculatedDistance(projStartLat, projStartLng, projEndLat, e.target.value, trenchingLine);
-                          }}
+                          onChange={(e) => setProjEndLng(e.target.value)}
                           required
                           style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
                         />
