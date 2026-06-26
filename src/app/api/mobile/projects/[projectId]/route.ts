@@ -11,7 +11,7 @@ export async function PATCH(
   const session = await readMobileSession(request);
   if (!canWriteProjects(request, session?.role)) {
     return NextResponse.json(
-      { ok: false, message: "Admin access is required to update projects." },
+      { ok: false, message: "Authorized access is required to update projects." },
       { status: 403 }
     );
   }
@@ -41,7 +41,7 @@ export async function PATCH(
 }
 
 function canWriteProjects(request: NextRequest, role?: string) {
-  return role === "admin" || isTrustedLocalRequest(request);
+  return role === "admin" || role === "supervisor" || isTrustedLocalRequest(request);
 }
 
 function isTrustedLocalRequest(request: NextRequest) {

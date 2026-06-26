@@ -15,6 +15,23 @@ export default function SupervisorDashboard() {
   const [projectsList, setProjectsList] = useState<any[]>([]);
   const [selectedProjectItem, setSelectedProjectItem] = useState<any | null>(null);
 
+  const [isSiteStorageOpen, setIsSiteStorageOpen] = useState(false);
+  const [selectedStorageProjectId, setSelectedStorageProjectId] = useState("");
+  const [storageDate, setStorageDate] = useState(new Date().toISOString().slice(0, 10));
+  const [storageMaterialName, setStorageMaterialName] = useState("Cable");
+  const [customMaterialName, setCustomMaterialName] = useState("");
+  const [storagePhoto, setStoragePhoto] = useState("");
+  const [storageQuantity, setStorageQuantity] = useState("");
+  const [storageLocation, setStorageLocation] = useState("");
+  const [storageNotes, setStorageNotes] = useState("");
+  const [savingMaterial, setSavingMaterial] = useState(false);
+
+  useEffect(() => {
+    if (projectsList.length > 0 && !selectedStorageProjectId) {
+      setSelectedStorageProjectId(projectsList[0].id);
+    }
+  }, [projectsList, selectedStorageProjectId]);
+
   // Supervisor Clarification Inbox States
   const [isClarificationInboxOpen, setIsClarificationInboxOpen] = useState(false);
   const [mySubmittedReports, setMySubmittedReports] = useState<any[]>([]);
@@ -629,7 +646,7 @@ export default function SupervisorDashboard() {
         }
       })
       .catch(err => console.error("Error loading projects on supervisor:", err));
-  }, [isProjectsOpen, isDailyReportOpen]);
+  }, [isProjectsOpen, isDailyReportOpen, isSiteStorageOpen]);
 
   // Load draft from localStorage when reportProjectId is selected
   useEffect(() => {
@@ -872,6 +889,79 @@ export default function SupervisorDashboard() {
     reqAdminConcerns
   ]);
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return "Good Morning";
+    if (hour >= 12 && hour < 17) return "Good Afternoon";
+    return "Good Evening";
+  };
+
+  const handleAddRawMaterial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStorageProjectId) {
+      showToast("Please select a project.");
+      return;
+    }
+    const finalMaterialName = storageMaterialName === "Other Items" ? customMaterialName : storageMaterialName;
+    if (!finalMaterialName.trim()) {
+      showToast("Please specify the material name.");
+      return;
+    }
+
+    setSavingMaterial(true);
+
+    const matchedProject = projectsList.find(p => p.id === selectedStorageProjectId);
+    const existingMaterials = matchedProject?.storageMaterials || [];
+
+    const newMaterialItem = {
+      id: `mat-${Date.now()}`,
+      date: storageDate,
+      materialName: finalMaterialName.trim(),
+      quantityMeters: storageQuantity.trim(),
+      location: storageLocation.trim(),
+      photoUrl: storagePhoto,
+      notes: storageNotes.trim(),
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedMaterials = [newMaterialItem, ...existingMaterials];
+
+    try {
+      const res = await fetch(`/api/mobile/projects/${selectedStorageProjectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storageMaterials: updatedMaterials
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        showToast("Material logged successfully");
+        setStorageQuantity("");
+        setStorageLocation("");
+        setStorageNotes("");
+        setStoragePhoto("");
+        setCustomMaterialName("");
+        
+        // Reload projects
+        fetch("/api/mobile/projects")
+          .then(r => r.json())
+          .then(d => {
+            if (d.ok && d.projects && d.projects.length > 0) {
+              setProjectsList(d.projects);
+              localStorage.setItem("telgo_custom_projects", JSON.stringify(d.projects));
+            }
+          });
+      } else {
+        showToast(`Error: ${data.message || "Failed to log material."}`);
+      }
+    } catch {
+      showToast("Connection error. Failed to log material.");
+    } finally {
+      setSavingMaterial(false);
+    }
+  };
+
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(""), 3500);
@@ -1110,7 +1200,7 @@ export default function SupervisorDashboard() {
           setIsShiftActive(true);
           setCheckInTime(now);
           setIsTrackingActiveThisSession(true);
-          showToast(isReRegister ? "🔄 Location coordinates updated & re-registered!" : "🚀 Shift Active! Daily attendance registered.");
+          showToast(isReRegister ? "Location coordinates updated & re-registered" : "Mark attendance completed");
           setIsAttendanceOpen(false);
         } else {
           showToast(`❌ ${data.message || "Attendance marking failed."}`);
@@ -1217,7 +1307,7 @@ export default function SupervisorDashboard() {
       <ProfileHeaderWidget 
         user={user} 
         onOpenSettings={() => setIsSettingsOpen(true)} 
-        dashboardTitle="Supervisor Console" 
+        dashboardTitle="Telgo Operations" 
       />
 
       <main style={{ flex: 1, padding: "24px 20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: isProjectsOpen ? "flex-start" : "center" }}>
@@ -1418,27 +1508,39 @@ export default function SupervisorDashboard() {
           <div style={{ width: "100%", maxWidth: 420, textAlign: "center" }}>
             
             {/* Circular Initials Avatar */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24 }}>
-              <div style={{
-                width: 64,
-                height: 64,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #0e7490, #06b6d4)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--text)",
-                fontSize: 26,
-                fontWeight: 800,
-                boxShadow: "0 10px 28px rgba(6,182,212,0.2)",
-                border: "2px solid var(--border)",
-                textTransform: "uppercase"
-              }}>
-                {(user?.fullName || "U").charAt(0)}
-              </div>
-              <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "12px 0 2px" }}>{user?.fullName}</h2>
-              <p style={{ fontSize: 12, color: "var(--dim)", margin: 0, fontFamily: "monospace" }}>{user?.loginId}</p>
-            </div>
+            {(() => {
+              const avatar = user?.avatarUrl || "";
+              const hasPhoto = avatar && avatar.startsWith("data:image/");
+              return (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24 }}>
+                  <div style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: "50%",
+                    background: hasPhoto ? "none" : "linear-gradient(135deg, #0e7490, #06b6d4)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontSize: 26,
+                    fontWeight: 800,
+                    boxShadow: "0 10px 28px rgba(6,182,212,0.2)",
+                    border: "2px solid var(--border)",
+                    textTransform: "uppercase",
+                    overflow: "hidden"
+                  }}>
+                    {hasPhoto ? (
+                      <img src={avatar} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      (user?.fullName || "U").charAt(0)
+                    )}
+                  </div>
+                  <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "12px 0 2px" }}>{getGreeting()}</h2>
+                  <p style={{ fontSize: 13, color: "var(--dim)", margin: 0 }}>Welcome {user?.fullName}</p>
+                  <p style={{ fontSize: 11, color: "var(--muted)", margin: "2px 0 0", fontFamily: "monospace" }}>{user?.loginId}</p>
+                </div>
+              );
+            })()}
 
             {/* GRID OF MODULES */}
             <div className="menu-grid">
@@ -1525,39 +1627,44 @@ export default function SupervisorDashboard() {
                 </div>
               </div>
 
-              {/* MODULE 3: PROJECT ASSIGNMENT DETAILS */}
+              {/* MODULE 3: SITE STORAGE / RAW MATERIALS (Interactive) */}
               <div 
+                onClick={() => setIsSiteStorageOpen(true)}
                 style={{
                   background: "var(--surface)",
                   border: "1px solid var(--border)",
                   borderRadius: 18,
                   padding: "18px 14px",
+                  cursor: "pointer",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   textAlign: "center",
                   gap: 8,
+                  boxShadow: "none"
                 }}
-                className="glass"
+                className="glass module-card"
               >
                 <div style={{
                   width: 44,
                   height: 44,
                   borderRadius: 12,
-                  background: "rgba(14, 165, 233, 0.08)",
-                  border: "1px solid rgba(14, 165, 233, 0.2)",
+                  background: "rgba(6, 182, 212, 0.08)",
+                  border: "1px solid rgba(6, 182, 212, 0.2)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   flexShrink: 0
                 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                    <line x1="12" y1="22.08" x2="12" y2="12"/>
                   </svg>
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "0 0 2px" }}>Corridor</h4>
-                  <span style={{ fontSize: 9, color: "var(--cyan)", fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100, display: "block" }}>Vadakkekotta</span>
+                  <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "0 0 2px" }}>Site Storage</h4>
+                  <span style={{ fontSize: 9, color: "var(--cyan)", fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100, display: "block" }}>Raw Materials</span>
                 </div>
               </div>
 
@@ -3458,6 +3565,407 @@ export default function SupervisorDashboard() {
         </div>
       )}
       {/* Supervisor Clarifications Inbox Modal */}
+      {/* Site Storage overlay Modal */}
+      {isSiteStorageOpen && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(15, 23, 42, 0.3)",
+          backdropFilter: "blur(12px)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "flex-start",
+          overflowY: "auto",
+          padding: "40px 20px",
+          zIndex: 9999,
+          fontFamily: "Outfit, sans-serif"
+        }}>
+          <div className="glass fade-in" style={{
+            width: "100%",
+            maxWidth: 480,
+            margin: "auto",
+            background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+            border: "1px solid var(--border)",
+            borderRadius: 24,
+            padding: "28px 24px",
+            boxShadow: "0 8px 32px rgba(15, 23, 42, 0.06)",
+            color: "var(--text)"
+          }}>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <div>
+                <p style={{ fontSize: 9, fontWeight: 800, color: "var(--cyan)", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Telgo Logistics</p>
+                <h3 style={{ fontSize: 18, fontWeight: 900, letterSpacing: "-0.02em", margin: "2px 0 0" }}>Site Storage & Materials</h3>
+              </div>
+              <button onClick={() => setIsSiteStorageOpen(false)} style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                color: "var(--muted)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            {/* Project Selector */}
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.03em" }}>Select Project Corridor</label>
+              <select
+                value={selectedStorageProjectId}
+                onChange={(e) => setSelectedStorageProjectId(e.target.value)}
+                style={{
+                  width: "100%",
+                  height: 46,
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 12,
+                  padding: "0 14px",
+                  color: "var(--text)",
+                  fontSize: 14,
+                  outline: "none",
+                  fontFamily: "Outfit, sans-serif",
+                  boxSizing: "border-box"
+                }}
+              >
+                {projectsList.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.location})</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Add Material Form */}
+            <form onSubmit={handleAddRawMaterial} style={{ display: "flex", flexDirection: "column", gap: 16, borderBottom: "1px solid var(--border)", paddingBottom: 24, marginBottom: 24 }}>
+              <h4 style={{ fontSize: 14, fontWeight: 800, margin: "4px 0 0", color: "var(--cyan)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Add Unloaded Material</h4>
+              
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {/* Date */}
+                <div>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--muted)", marginBottom: 6, textTransform: "uppercase" }}>Unload Date</label>
+                  <input
+                    type="date"
+                    value={storageDate}
+                    onChange={(e) => setStorageDate(e.target.value)}
+                    required
+                    style={{
+                      width: "100%",
+                      height: 42,
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 10,
+                      padding: "0 10px",
+                      color: "var(--text)",
+                      fontSize: 13,
+                      fontFamily: "Outfit, sans-serif",
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                {/* Material Dropdown */}
+                <div>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--muted)", marginBottom: 6, textTransform: "uppercase" }}>Material Type</label>
+                  <select
+                    value={storageMaterialName}
+                    onChange={(e) => setStorageMaterialName(e.target.value)}
+                    style={{
+                      width: "100%",
+                      height: 42,
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 10,
+                      padding: "0 10px",
+                      color: "var(--text)",
+                      fontSize: 13,
+                      fontFamily: "Outfit, sans-serif",
+                      boxSizing: "border-box"
+                    }}
+                  >
+                    <option value="Cable">Cable raw material</option>
+                    <option value="Conduit">Conduit raw material</option>
+                    <option value="Transformer/RMU">Transformer / RMU</option>
+                    <option value="Other Items">Add Other Items...</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Custom Material Input */}
+              {storageMaterialName === "Other Items" && (
+                <div>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--muted)", marginBottom: 6, textTransform: "uppercase" }}>Specify Material Name</label>
+                  <input
+                    type="text"
+                    value={customMaterialName}
+                    onChange={(e) => setCustomMaterialName(e.target.value)}
+                    placeholder="E.g., Steel ducting, Concrete slabs"
+                    required
+                    style={{
+                      width: "100%",
+                      height: 42,
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 10,
+                      padding: "0 12px",
+                      color: "var(--text)",
+                      fontSize: 13,
+                      outline: "none",
+                      fontFamily: "Outfit, sans-serif",
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Photo Upload */}
+              <div>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--muted)", marginBottom: 8, textTransform: "uppercase" }}>Upload Photo</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <label htmlFor="material-photo-file" style={{
+                    width: 46,
+                    height: 46,
+                    borderRadius: 12,
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    color: "var(--cyan)"
+                  }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                  </label>
+                  <input 
+                    type="file" 
+                    id="material-photo-file" 
+                    accept="image/*" 
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        const img = new Image();
+                        img.onload = () => {
+                          const canvas = document.createElement("canvas");
+                          const ctx = canvas.getContext("2d");
+                          if (!ctx) return;
+                          const maxDim = 512;
+                          let w = img.width;
+                          let h = img.height;
+                          if (w > maxDim || h > maxDim) {
+                            if (w > h) {
+                              h = Math.round((h * maxDim) / w);
+                              w = maxDim;
+                            } else {
+                              w = Math.round((w * maxDim) / h);
+                              h = maxDim;
+                            }
+                          }
+                          canvas.width = w;
+                          canvas.height = h;
+                          ctx.drawImage(img, 0, 0, w, h);
+                          setStoragePhoto(canvas.toDataURL("image/jpeg", 0.75));
+                        };
+                        img.src = event.target?.result as string;
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                  {storagePhoto ? (
+                    <div style={{ position: "relative" }}>
+                      <img 
+                        src={storagePhoto} 
+                        alt="Material Preview" 
+                        style={{ width: 46, height: 46, borderRadius: 12, objectFit: "cover", border: "1px solid var(--border)" }} 
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => setStoragePhoto("")}
+                        style={{
+                          position: "absolute",
+                          top: -6,
+                          right: -6,
+                          background: "#dc2626",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "50%",
+                          width: 16,
+                          height: 16,
+                          fontSize: 10,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center"
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: 12, color: "var(--dim)" }}>No photo uploaded</span>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {/* Quantity */}
+                <div>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--muted)", marginBottom: 6, textTransform: "uppercase" }}>Meters Unloaded</label>
+                  <input
+                    type="text"
+                    value={storageQuantity}
+                    onChange={(e) => setStorageQuantity(e.target.value)}
+                    placeholder="E.g. 150m, 2 reels"
+                    required
+                    style={{
+                      width: "100%",
+                      height: 42,
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 10,
+                      padding: "0 12px",
+                      color: "var(--text)",
+                      fontSize: 13,
+                      outline: "none",
+                      fontFamily: "Outfit, sans-serif",
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                {/* Location */}
+                <div>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--muted)", marginBottom: 6, textTransform: "uppercase" }}>Unload Location</label>
+                  <input
+                    type="text"
+                    value={storageLocation}
+                    onChange={(e) => setStorageLocation(e.target.value)}
+                    placeholder="E.g. Ch. 1+200, Palarivattom"
+                    required
+                    style={{
+                      width: "100%",
+                      height: 42,
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 10,
+                      padding: "0 12px",
+                      color: "var(--text)",
+                      fontSize: 13,
+                      outline: "none",
+                      fontFamily: "Outfit, sans-serif",
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--muted)", marginBottom: 6, textTransform: "uppercase" }}>Operational Notes</label>
+                <textarea
+                  value={storageNotes}
+                  onChange={(e) => setStorageNotes(e.target.value)}
+                  placeholder="Enter details on damage, drum numbers, or comments..."
+                  rows={2}
+                  style={{
+                    width: "100%",
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    color: "var(--text)",
+                    fontSize: 13,
+                    outline: "none",
+                    fontFamily: "Outfit, sans-serif",
+                    boxSizing: "border-box",
+                    resize: "none"
+                  }}
+                />
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={savingMaterial}
+                style={{
+                  minHeight: 44,
+                  background: "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)",
+                  border: "none",
+                  borderRadius: 10,
+                  color: "white",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: savingMaterial ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  boxShadow: "0 4px 12px rgba(6, 182, 212, 0.15)",
+                  marginTop: 4
+                }}
+              >
+                {savingMaterial ? <div className="spinner" style={{ width: 16, height: 16 }} /> : "Log Raw Material"}
+              </button>
+            </form>
+
+            {/* List - See all raw materials present in site */}
+            <div>
+              <h4 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>See all raw materials present in site</h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 250, overflowY: "auto", paddingRight: 4 }}>
+                {(() => {
+                  const matchedProject = projectsList.find(p => p.id === selectedStorageProjectId);
+                  const materials = matchedProject?.storageMaterials || [];
+                  if (materials.length === 0) {
+                    return (
+                      <div style={{ textAlign: "center", padding: "20px 0", color: "var(--dim)", fontSize: 12 }}>
+                        No raw materials logged for this project corridor yet.
+                      </div>
+                    );
+                  }
+                  return materials.map((m: any) => (
+                    <div key={m.id} className="glass" style={{ border: "1px solid var(--border)", borderRadius: 12, padding: 12, background: "rgba(255, 255, 255, 0.4)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text)" }}>{m.materialName}</span>
+                        <span style={{ fontSize: 10, color: "var(--dim)", fontFamily: "monospace" }}>{m.date}</span>
+                      </div>
+                      
+                      <div style={{ display: "grid", gridTemplateColumns: m.photoUrl ? "1fr 50px" : "1fr", gap: 10, alignItems: "center" }}>
+                        <div>
+                          <p style={{ margin: 0, fontSize: 11, color: "var(--muted)" }}>
+                            <strong>Qty:</strong> {m.quantityMeters} | <strong>Loc:</strong> {m.location}
+                          </p>
+                          {m.notes && (
+                            <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--dim)", fontStyle: "italic" }}>
+                              "{m.notes}"
+                            </p>
+                          )}
+                        </div>
+                        {m.photoUrl && (
+                          <img 
+                            src={m.photoUrl} 
+                            alt="Material Thumbnail" 
+                            style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", border: "1px solid var(--border)" }} 
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       {isClarificationInboxOpen && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.75)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 16 }}>
           <div className="glass fade-in" style={{ width: "100%", maxWidth: 540, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 24, padding: "20px", display: "flex", flexDirection: "column", maxHeight: "90vh", overflow: "hidden", textAlign: "left" }}>

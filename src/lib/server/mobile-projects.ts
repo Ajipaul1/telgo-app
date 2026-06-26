@@ -118,6 +118,17 @@ export function toMobileProject(row: ProjectRow): Project {
     }
   }
 
+  let storageMaterials: any[] = [];
+  if (row.storage_materials) {
+    try {
+      storageMaterials = typeof row.storage_materials === "string" ? JSON.parse(row.storage_materials) : (row.storage_materials as any);
+    } catch (e) {
+      console.error("Failed to parse storage_materials from database:", e);
+    }
+  } else if (demoProject && (demoProject as any).storageMaterials) {
+    storageMaterials = (demoProject as any).storageMaterials;
+  }
+
   // Resolve direct GIS fields (prioritize database corridor_data first)
   const startLabel = (corridorData as any)?.startLabel || demoProject?.startLabel || "Start Position";
   const startCoords = (corridorData as any)?.startCoords || (corridorData as any)?.startCoordinates || demoProject?.startCoords || [toNumber(row.latitude, 10.0055), toNumber(row.longitude, 76.3082)];
@@ -157,7 +168,7 @@ export function toMobileProject(row: ProjectRow): Project {
     accent: demoProject?.accent ?? accentFromStatus(status),
     corridor: corridorData,
 
-    // Direct GIS properties mapping for editor and synchronized map rendering
+    // Direct GIS properties mapping for editor and maps
     description,
     distance,
     startLabel,
@@ -170,7 +181,8 @@ export function toMobileProject(row: ProjectRow): Project {
     utilityPath,
     roadChangeSegments,
     hddSegments,
-    trenchingSegments
+    trenchingSegments,
+    storageMaterials
   };
 }
 
@@ -248,6 +260,7 @@ function toProjectTablePayload(
   setField("image_path", effective.image ?? baseProject.image);
   setField("description", effective.description);
   setField("corridor_data", corridorData);
+  setField("storage_materials", effective.storageMaterials || []);
 
   return payload;
 }

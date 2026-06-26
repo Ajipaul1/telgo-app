@@ -163,15 +163,17 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
       background: "rgba(15, 23, 42, 0.3)",
       backdropFilter: "blur(12px)",
       display: "flex",
-      alignItems: "center",
       justifyContent: "center",
-      padding: 20,
+      alignItems: "flex-start",
+      overflowY: "auto",
+      padding: "40px 20px",
       zIndex: 9999,
       fontFamily: "Outfit, sans-serif"
     }}>
       <div className="glass fade-in" style={{
         width: "100%",
         maxWidth: 420,
+        margin: "auto",
         background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
         border: "1px solid var(--border)",
         borderRadius: 24,

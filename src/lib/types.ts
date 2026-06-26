@@ -30,6 +30,17 @@ export type ProjectCorridor = {
   progressUpdates: ProjectProgressUpdate[];
 };
 
+export type StorageMaterial = {
+  id: string;
+  date: string;
+  materialName: string;
+  quantityMeters: string;
+  location: string;
+  photoUrl?: string;
+  notes?: string;
+  createdAt: string;
+};
+
 export type Project = {
   id: string;
   code: string;
@@ -66,6 +77,7 @@ export type Project = {
   roadChangeSegments?: any[];
   hddSegments?: any[];
   trenchingSegments?: any[];
+  storageMaterials?: StorageMaterial[];
 };
 
 export type Engineer = {

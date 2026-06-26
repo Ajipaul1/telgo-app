@@ -3416,6 +3416,47 @@ export default function AdminDashboard() {
                     <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--dim)" }}>{selectedProjectItem.endCoords[0]}° N, {selectedProjectItem.endCoords[1]}° E</span>
                   </div>
                 </div>
+
+                {/* Site Storage / Raw Materials present in site */}
+                <div style={{ marginTop: 20, border: "1px solid var(--border)", borderRadius: 16, padding: 16, background: "var(--surface)" }}>
+                  <h3 style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    📦 Site Storage & Raw Materials
+                  </h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 200, overflowY: "auto", paddingRight: 4 }}>
+                    {(!selectedProjectItem.storageMaterials || selectedProjectItem.storageMaterials.length === 0) ? (
+                      <span style={{ fontSize: 12, color: "var(--dim)", textAlign: "center", display: "block", padding: "10px 0" }}>
+                        No raw materials logged for this corridor yet.
+                      </span>
+                    ) : (
+                      selectedProjectItem.storageMaterials.map((m: any) => (
+                        <div key={m.id} className="glass" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 10, background: "rgba(255, 255, 255, 0.4)" }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <strong style={{ fontSize: 12, color: "var(--text)" }}>{m.materialName}</strong>
+                              <span style={{ fontSize: 10, color: "var(--dim)", fontFamily: "monospace" }}>({m.date})</span>
+                            </div>
+                            <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--muted)" }}>
+                              Qty: {m.quantityMeters} | Loc: {m.location}
+                            </p>
+                            {m.notes && (
+                              <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--dim)", fontStyle: "italic" }}>
+                                "{m.notes}"
+                              </p>
+                            )}
+                          </div>
+                          {m.photoUrl && (
+                            <img 
+                              src={m.photoUrl} 
+                              alt="Material Thumbnail" 
+                              style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover", border: "1px solid var(--border)", marginLeft: 8 }} 
+                            />
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
               </div>
             )}
           </div>
