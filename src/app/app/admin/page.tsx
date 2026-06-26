@@ -292,20 +292,49 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const saved = localStorage.getItem("telgo_custom_projects");
+    let initialList = DEFAULT_PROJECTS;
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setProjectsList(parsed);
-        if (parsed.length > 0) setSelectedProjectItem(parsed[0]);
-      } catch {
-        setProjectsList(DEFAULT_PROJECTS);
-        setSelectedProjectItem(DEFAULT_PROJECTS[0]);
-      }
-    } else {
-      setProjectsList(DEFAULT_PROJECTS);
-      setSelectedProjectItem(DEFAULT_PROJECTS[0]);
+        if (parsed && parsed.length > 0) {
+          initialList = parsed;
+        }
+      } catch {}
     }
+    setProjectsList(initialList);
+    setSelectedProjectItem(initialList[0]);
+
+    // Fetch projects from Supabase database
+    fetch("/api/mobile/projects")
+      .then(res => res.json())
+      .then(d => {
+        if (d.ok && d.projects && d.projects.length > 0) {
+          setProjectsList(d.projects);
+          setSelectedProjectItem(d.projects[0]);
+          localStorage.setItem("telgo_custom_projects", JSON.stringify(d.projects));
+        }
+      })
+      .catch(err => console.error("Error fetching projects from database:", err));
   }, []);
+
+  const syncProjectUpdate = (updated: any, nextList: any[]) => {
+    setProjectsList(nextList);
+    setSelectedProjectItem(updated);
+    localStorage.setItem("telgo_custom_projects", JSON.stringify(nextList));
+
+    fetch("/api/mobile/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updated)
+    })
+      .then(res => res.json())
+      .then(d => {
+        if (!d.ok) {
+          console.error("Database project sync failed:", d.message);
+        }
+      })
+      .catch(err => console.error("Error syncing project update:", err));
+  };
 
   // Set default financial project when list loads
   useEffect(() => {
@@ -970,12 +999,16 @@ export default function AdminDashboard() {
           setProjEndLng(lngStr);
           showToast(`🔴 End Position dragged to: [${latStr}, ${lngStr}]`);
         }
+      } else if (e.data.type === "ROUTE_CALCULATED") {
+        const { distance, utilityPath } = e.data;
+        setProjDistance(distance);
+        setUtilityPath(utilityPath);
       }
     };
 
     window.addEventListener("message", handleMapMessage);
     return () => window.removeEventListener("message", handleMapMessage);
-  }, [activePinMode, projStartLat, projStartLng, projEndLat, projEndLng]);
+  }, [activePinMode, projStartLat, projStartLng, projEndLat, projEndLng, utilityPath]);
 
   // Bi-directional state transmitter to iframe map frame
   useEffect(() => {
@@ -1120,10 +1153,8 @@ export default function AdminDashboard() {
       nextList = projectsList.map(p => p.id === editingProjectItem.id ? updated : p);
       showToast("✅ Corridor parameters updated successfully!");
     }
-    setProjectsList(nextList);
-    setSelectedProjectItem(updated);
+    syncProjectUpdate(updated, nextList);
     setEditingProjectItem(null);
-    localStorage.setItem("telgo_custom_projects", JSON.stringify(nextList));
   };
 
   // Automatic project distance calculation helper including intermediate road changes
@@ -1776,9 +1807,9 @@ export default function AdminDashboard() {
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="10" r="3"/></svg>
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>Live Radar Map</h4>
+                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>Live Location</h4>
                   <span style={{ fontSize: 10, color: "var(--cyan)", fontWeight: 800, textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                    <span className="dot-pulse" style={{ background: "#06b6d4", width: 5, height: 5 }} /> Radar Active
+                    <span className="dot-pulse" style={{ background: "#06b6d4", width: 5, height: 5 }} /> Location Live
                   </span>
                 </div>
               </div>
@@ -2359,7 +2390,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* VIEW 3: LIVE TELEMETRY RADAR MAP */}
+      {/* VIEW 3: LIVE TELEMETRY LOCATION MAP */}
       {activeView === "map" && (
         <div className="fade-in" style={{ paddingBottom: 60 }}>
           {/* Header */}
@@ -2374,288 +2405,275 @@ export default function AdminDashboard() {
               </button>
               <div>
                 <p style={{ fontSize: 10, fontWeight: 800, color: "var(--cyan)", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Operations tactical map</p>
-                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Field Crew Radar</h1>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Live Location</h1>
               </div>
             </div>
           </div>
 
-          <div style={{ padding: "16px", display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
-            {/* Split Grid for Large Screens, Stacked on Mobile */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Roster Section */}
+            <div className="glass" style={{ padding: 20, border: "1px solid var(--border)", borderRadius: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <h2 style={{ fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--dim)", margin: 0 }}>Total Worker Present</h2>
+              </div>
               
-              {/* Roster Section */}
-              <div className="glass" style={{ padding: 20, border: "1px solid var(--border)", borderRadius: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                  <h2 style={{ fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--dim)", margin: 0 }}>Operational Crew Roster</h2>
-                </div>
-                
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {radarWorkers.map(w => {
-                    const isSelected = radarSelectedWorker?.userId === w.userId;
-                    const isActive = w.status === "active";
-                    
-                    return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {radarWorkers.map(w => {
+                  const isSelected = radarSelectedWorker?.userId === w.userId;
+                  const isActive = w.status === "active";
+                  const avatarChar = w.fullName ? w.fullName.charAt(0) : "U";
+                  const photoUrl = w.avatarUrl || w.avatar_url || "";
+                  const hasPhoto = photoUrl && photoUrl.startsWith("data:image/");
+                  
+                  return (
+                    <div 
+                      key={w.userId}
+                      style={{
+                        background: "var(--surface)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 18,
+                        padding: 16,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 12,
+                        transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                        boxShadow: isSelected ? "0 8px 30px rgba(6, 182, 212, 0.08)" : "none",
+                        borderColor: isSelected ? "rgba(6, 182, 212, 0.4)" : "var(--border)"
+                      }}
+                    >
+                      {/* Header Row */}
                       <div 
-                        key={w.userId}
-                        onClick={() => setRadarSelectedWorker(w)}
+                        onClick={() => setRadarSelectedWorker(isSelected ? null : w)}
                         style={{
-                          padding: "12px 14px",
-                          borderRadius: 14,
-                          background: isSelected ? "rgba(14, 165, 233, 0.08)" : "var(--surface)",
-                          border: isSelected ? "1px solid rgba(14, 165, 233, 0.3)" : "1px solid var(--border)",
-                          cursor: "pointer",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "space-between",
-                          transition: "all 0.2s ease"
+                          cursor: "pointer"
                         }}
                       >
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                           <div style={{
-                            width: 32,
-                            height: 32,
+                            width: 36,
+                            height: 36,
                             borderRadius: "50%",
-                            background: "linear-gradient(135deg, #f8fafc, #e2e8f0)",
+                            background: hasPhoto ? "none" : "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            fontSize: 12,
+                            color: "white",
+                            fontSize: 14,
                             fontWeight: 800,
-                            color: roleColor(w.role),
-                            border: `1.5px solid ${roleColor(w.role)}30`,
-                            textTransform: "uppercase"
+                            border: "1px solid var(--border)",
+                            overflow: "hidden"
                           }}>
-                            {w.fullName.charAt(0)}
+                            {hasPhoto ? (
+                              <img src={photoUrl} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ) : (
+                              avatarChar
+                            )}
                           </div>
-                          
-                          <div style={{ minWidth: 0 }}>
-                            <p style={{ fontSize: 13, fontWeight: 750, color: isSelected ? "#06b6d4" : "var(--text)", margin: 0 }}>{w.fullName}</p>
+                          <div>
+                            <h3 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>{w.fullName}</h3>
                             <span style={{ fontSize: 10, color: roleColor(w.role), fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em" }}>{w.role}</span>
                           </div>
                         </div>
-
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                        
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           {isActive ? (
-                            <>
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(34,197,94,0.15)", color: "#15803d", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 6, padding: "2px 6px", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>
-                                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} /> Active
-                              </span>
-                              {w.recordedAt && (
-                                <span style={{ fontSize: 9, color: "#a78bfa", fontFamily: "monospace", fontWeight: 700 }}>
-                                  In: {new Date(w.recordedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-                                </span>
-                              )}
-                            </>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(34,197,94,0.12)", color: "#15803d", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 6, padding: "3px 8px", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>
+                              <span className="dot-pulse" style={{ background: "#22c55e", width: 5, height: 5 }} /> Active
+                            </span>
                           ) : (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--surface)", color: "var(--dim)", border: "1px solid var(--border)", borderRadius: 6, padding: "2px 6px", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--surface)", color: "var(--dim)", border: "1px solid var(--border)", borderRadius: 6, padding: "3px 8px", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>
                               Offline
                             </span>
                           )}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
 
-              {/* Map Tactical Module */}
-              <div className="glass glow-cyan" style={{ padding: 0, border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 24, overflow: "hidden", background: "var(--bg)" }}>
-                
-                {/* Visual Leaflet Map Container */}
-                <div style={{ position: "relative", height: 280, width: "100%", borderBottom: "1px solid var(--border)" }}>
-                  {radarSelectedWorker ? (
-                    <div style={{ width: "100%", height: "100%", position: "relative" }}>
-                      
-                      {/* Leaflet Iframe for Interactive Map */}
-                      <iframe
-                        title="Live Tracking Map"
-                        style={{ width: "100%", height: "100%", border: "none" }}
-                        srcDoc={`
-                          <!DOCTYPE html>
-                          <html>
-                          <head>
-                            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-                            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-                            <style>
-                              html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #f8fafc; }
-                              .leaflet-control-attribution { display: none !important; }
-                              .leaflet-container { background: #f8fafc !important; }
-                              .leaflet-bar a { background-color: #ffffff !important; color: #334155 !important; border-color: #e2e8f0 !important; }
-                              .leaflet-bar a:hover { background-color: #f1f5f9 !important; }
-                              
-                              /* Pulsing glow animation for active marker pin */
-                              .live-pulse {
-                                background: #06b6d4;
-                                border: 2px solid #ffffff;
-                                border-radius: 50%;
-                                box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7);
-                                animation: pulse-glow 1.5s infinite;
-                              }
-                              .live-pulse-offline {
-                                background: #64748b;
-                                border: 2px solid #ffffff;
-                                border-radius: 50%;
-                              }
-                              @keyframes pulse-glow {
-                                0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7); }
-                                70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(6, 182, 212, 0); }
-                                100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
-                              }
-                            </style>
-                          </head>
-                          <body>
-                            <div id="map"></div>
-                            <script>
-                              const map = L.map('map').setView([${radarSelectedWorker.latitude}, ${radarSelectedWorker.longitude}], 15);
-                              
-                              // Dark-themed premium street tiles (no API key required)
-                              L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                                maxZoom: 20
-                              }).addTo(map);
+                      {/* Collapsible Inline Map */}
+                      {isActive && (
+                        <div style={{
+                          height: isSelected ? 300 : 120,
+                          width: "100%",
+                          borderRadius: 12,
+                          overflow: "hidden",
+                          border: "1px solid var(--border)",
+                          transition: "height 0.3s ease",
+                          marginTop: 10
+                        }}>
+                          <iframe
+                            title={`map-${w.userId}`}
+                            style={{ width: "100%", height: "100%", border: "none" }}
+                            srcDoc={`
+                              <!DOCTYPE html>
+                              <html>
+                              <head>
+                                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                                <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                                <style>
+                                  html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #f8fafc; }
+                                  .leaflet-control-attribution { display: none !important; }
+                                  .leaflet-container { background: #f8fafc !important; }
+                                  .leaflet-bar a { background-color: #ffffff !important; color: #334155 !important; border-color: #e2e8f0 !important; }
+                                  
+                                  .live-pulse {
+                                    background: #06b6d4;
+                                    border: 2px solid #ffffff;
+                                    border-radius: 50%;
+                                    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7);
+                                    animation: pulse-glow 1.5s infinite;
+                                  }
+                                  @keyframes pulse-glow {
+                                    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7); }
+                                    70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(6, 182, 212, 0); }
+                                    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+                                  }
+                                </style>
+                              </head>
+                              <body>
+                                <div id="map"></div>
+                                <script>
+                                  const map = L.map('map', {
+                                    zoomControl: ${isSelected ? "true" : "false"},
+                                    dragging: ${isSelected ? "true" : "false"},
+                                    scrollWheelZoom: false,
+                                    doubleClickZoom: false
+                                  }).setView([${w.latitude}, ${w.longitude}], 15);
+                                  
+                                  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                                    maxZoom: 20
+                                  }).addTo(map);
 
-                              // Add circular geofence boundary (150 meters)
-                              L.circle([${radarSelectedWorker.latitude}, ${radarSelectedWorker.longitude}], {
-                                color: '${radarSelectedWorker.status === "active" ? "#06b6d4" : "#64748b"}',
-                                fillColor: '${radarSelectedWorker.status === "active" ? "#06b6d4" : "#64748b"}',
-                                fillOpacity: 0.1,
-                                weight: 1.5,
-                                radius: 150
-                              }).addTo(map);
+                                  L.circle([${w.latitude}, ${w.longitude}], {
+                                    color: '#06b6d4',
+                                    fillColor: '#06b6d4',
+                                    fillOpacity: 0.1,
+                                    weight: 1.5,
+                                    radius: 150
+                                  }).addTo(map);
 
-                              // Draw historical route polyline if coordinate history exists
-                              const historyCoords = ${JSON.stringify(radarWorkerHistory.map(pt => [pt.latitude, pt.longitude]))};
-                              if (historyCoords && historyCoords.length > 1) {
-                                // Glow path (thick semi-transparent back)
-                                const polylineGlow = L.polyline(historyCoords, {
-                                  color: "var(--cyan)",
-                                  weight: 8,
-                                  opacity: 0.3,
-                                  lineJoin: 'round'
-                                }).addTo(map);
+                                  const pulseIcon = L.divIcon({
+                                    className: 'live-pulse',
+                                    iconSize: [12, 12],
+                                    iconAnchor: [6, 6]
+                                  });
 
-                                // Forepath (sharp high-opacity front)
-                                const polylineMain = L.polyline(historyCoords, {
-                                  color: "var(--cyan)",
-                                  weight: 3.5,
-                                  opacity: 0.95,
-                                  lineJoin: 'round'
-                                }).addTo(map);
+                                  L.marker([${w.latitude}, ${w.longitude}], { icon: pulseIcon }).addTo(map);
 
-                                try {
-                                  map.fitBounds(polylineMain.getBounds(), { padding: [40, 40] });
-                                } catch(e) {}
-                              }
+                                  const historyCoords = ${isSelected ? JSON.stringify(radarWorkerHistory.map(pt => [pt.latitude, pt.longitude])) : "[]"};
+                                  if (historyCoords && historyCoords.length > 1) {
+                                    L.polyline(historyCoords, {
+                                      color: '#06b6d4',
+                                      weight: 6,
+                                      opacity: 0.4,
+                                      lineJoin: 'round'
+                                    }).addTo(map);
 
-                              // Custom pulsing HTML marker icon
-                              const pulseIcon = L.divIcon({
-                                className: '${radarSelectedWorker.status === "active" ? "live-pulse" : "live-pulse-offline"}',
-                                iconSize: [14, 14],
-                                iconAnchor: [7, 7]
-                              });
+                                    L.polyline(historyCoords, {
+                                      color: '#06b6d4',
+                                      weight: 2.5,
+                                      opacity: 0.95,
+                                      lineJoin: 'round'
+                                    }).addTo(map);
 
-                              const marker = L.marker([${radarSelectedWorker.latitude}, ${radarSelectedWorker.longitude}], { icon: pulseIcon }).addTo(map);
-                              marker.bindPopup("<b>${radarSelectedWorker.fullName}</b><br/>${radarSelectedWorker.role.toUpperCase()}<br/>${radarSelectedWorker.status === 'active' ? '🟢 Checked In' : '⚫ Offline'}").openPopup();
-                            </script>
-                          </body>
-                          </html>
-                        `}
-                      />
-
-                      {/* Map Hub Info Tag Overlay */}
-                      <div style={{ position: "absolute", top: 12, left: 12, padding: "6px 12px", background: "rgba(6,9,18,0.75)", border: "1px solid var(--border)", borderRadius: 10, display: "flex", alignItems: "center", gap: 6, zIndex: 1000 }}>
-                        <span className="dot-pulse" style={{ background: radarSelectedWorker.status === "active" ? "#06b6d4" : "#64748b" }} />
-                        <span style={{ fontSize: 10, fontWeight: 700, fontFamily: "monospace", color: "var(--dim)" }}>
-                          {radarSelectedWorker.status === "active" ? "RADAR LIVE: SCANNING" : "OFFLINE: HISTORICAL"}
-                        </span>
-                      </div>
-
-                      {/* Map Coordinate telemetry readouts Overlay */}
-                      <div style={{ position: "absolute", bottom: 12, right: 12, padding: "6px 10px", background: "rgba(6,9,18,0.75)", border: "1px solid var(--border)", borderRadius: 10, textAlign: "right", zIndex: 1000 }}>
-                        <p style={{ fontSize: 9, fontFamily: "monospace", color: "var(--dim)", margin: 0 }}>COORDINATES</p>
-                        <p style={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, color: "var(--muted)", margin: 0 }}>
-                          {`${radarSelectedWorker.latitude.toFixed(5)}° N, ${radarSelectedWorker.longitude.toFixed(5)}° E`}
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Circular Radar Sweep Placeholder */
-                    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, boxSizing: "border-box", background: "var(--bg)" }}>
-                      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(14, 165, 233, 0.08)", border: "1.5px dashed rgba(6, 182, 212, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16.2 7.8-2.9 2.9-2.9-2.9"/></svg>
-                      </div>
-                      <h4 style={{ fontSize: 13, fontWeight: 800, color: "var(--muted)", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Operational Radar Standby</h4>
-                      <p style={{ fontSize: 11, color: "var(--dim)", margin: 0, textAlign: "center", maxWidth: 280, lineHeight: 1.4 }}>Select an active worker from the roster above to trace real-time tactical operations telemetry.</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* HUD Telemetry Panel */}
-                <div style={{ padding: 20 }}>
-                  {radarSelectedWorker ? (
-                    <div>
-                      {/* Worker & Status Row */}
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                        <div>
-                          <h3 style={{ fontSize: 16, fontWeight: 900, color: "var(--text)", margin: 0 }}>{radarSelectedWorker.fullName}</h3>
-                          <p style={{ fontSize: 11, color: roleColor(radarSelectedWorker.role), fontWeight: 700, margin: "2px 0 0", textTransform: "uppercase" }}>{radarSelectedWorker.role}</p>
-                        </div>
-                        {radarSelectedWorker.status === "active" ? (
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(34,197,94,0.12)", color: "#15803d", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, padding: "4px 10px", fontSize: 11, fontWeight: 800, textTransform: "uppercase" }}>
-                            🟢 Connected
-                          </span>
-                        ) : (
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "var(--surface)", color: "var(--dim)", border: "1px solid var(--border)", borderRadius: 10, padding: "4px 10px", fontSize: 11, fontWeight: 800, textTransform: "uppercase" }}>
-                            Offline
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Monospace telemetry data block */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, background: "#ffffff", border: "1px solid var(--border)", borderRadius: 16, padding: 14 }}>
-                        <div>
-                          <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Associated Project</span>
-                          <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 750, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{radarSelectedWorker.projectName}</p>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Geofence Check</span>
-                          <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 800, color: radarSelectedWorker.withinGeofence ? "#4ade80" : "#fbbf24" }}>
-                            {radarSelectedWorker.withinGeofence ? "WITHIN RANGE" : "OUTSIDE RANGE"}
-                          </p>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Duty Status</span>
-                          <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 750, color: radarSelectedWorker.status === "active" ? "#06b6d4" : "#94a3b8" }}>
-                            {radarSelectedWorker.status === "active" ? "ACTIVE / WATCH" : "STANDBY"}
-                          </p>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Drift telemetry</span>
-                          <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 700, fontFamily: "monospace", color: "#a78bfa" }}>
-                            {radarSelectedWorker.status === "active" ? `${radarSelectedWorker.distanceFromSiteM} meters` : "0.00m"}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Zomato-style active tracking trace banner */}
-                      {radarSelectedWorker.status === "active" && (
-                        <div style={{ marginTop: 14, background: "rgba(6,182,212,0.04)", border: "1px solid rgba(6,182,212,0.12)", borderRadius: 12, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10 }}>
-                          <div className="dot-pulse" style={{ background: "#06b6d4", flexShrink: 0 }} />
-                          <span style={{ fontSize: 11, color: "var(--cyan)", fontWeight: 700, lineHeight: 1.4 }}>
-                            Trace active. Pulsing dot is moving smoothly along the sn-cable pipeline project site path in Kottayam.
-                          </span>
+                                    try {
+                                      map.fitBounds(historyCoords, { padding: [20, 20] });
+                                    } catch(e) {}
+                                  }
+                                </script>
+                              </body>
+                              </html>
+                            `}
+                          />
                         </div>
                       )}
                     </div>
-                  ) : (
-                    <div style={{ textAlign: "center", color: "var(--muted)", fontSize: 12, padding: "10px 0" }}>
-                      No active telemetry feed.
-                    </div>
-                  )}
-                </div>
-
+                  );
+                })}
               </div>
-
             </div>
+
+            {/* Consolidated Global Map */}
+            <div className="glass glow-cyan" style={{ padding: 20, border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--dim)", margin: 0 }}>Consolidated Field Map</h3>
+                <p style={{ fontSize: 11, color: "var(--dim)", margin: "2px 0 0" }}>Real-time location of all active crew members on duty.</p>
+              </div>
+              <div style={{ height: 350, width: "100%", borderRadius: 12, overflow: "hidden", border: "1px solid var(--border)", position: "relative" }}>
+                <iframe
+                  title="Consolidated Map"
+                  style={{ width: "100%", height: "100%", border: "none" }}
+                  srcDoc={`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                      <style>
+                        html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #f8fafc; }
+                        .leaflet-control-attribution { display: none !important; }
+                        .leaflet-container { background: #f8fafc !important; }
+                        
+                        .live-pulse {
+                          background: #06b6d4;
+                          border: 2px solid #ffffff;
+                          border-radius: 50%;
+                          box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7);
+                          animation: pulse-glow 1.5s infinite;
+                        }
+                        @keyframes pulse-glow {
+                          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7); }
+                          70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(6, 182, 212, 0); }
+                          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+                        }
+                      </style>
+                    </head>
+                    <body>
+                      <div id="map"></div>
+                      <script>
+                        const map = L.map('map').setView([9.9312, 76.2673], 10);
+                        
+                        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                          maxZoom: 20
+                        }).addTo(map);
+
+                        const activeWorkers = ${JSON.stringify(
+                          radarWorkers
+                            .filter(w => w.status === "active")
+                            .map(w => ({
+                              fullName: w.fullName,
+                              role: w.role,
+                              latitude: w.latitude,
+                              longitude: w.longitude
+                            }))
+                        )};
+
+                        const bounds = [];
+                        
+                        activeWorkers.forEach(w => {
+                          const pulseIcon = L.divIcon({
+                            className: 'live-pulse',
+                            iconSize: [12, 12],
+                            iconAnchor: [6, 6]
+                          });
+                          
+                          const marker = L.marker([w.latitude, w.longitude], { icon: pulseIcon }).addTo(map);
+                          marker.bindPopup("<b>" + w.fullName + "</b><br/>" + w.role.toUpperCase());
+                          bounds.push([w.latitude, w.longitude]);
+                        });
+
+                        if (bounds.length > 0) {
+                          map.fitBounds(bounds, { padding: [40, 40] });
+                        }
+                      </script>
+                    </body>
+                    </html>
+                  `}
+                />
+              </div>
+            </div>
+
           </div>
         </div>
       )}
@@ -2675,7 +2693,7 @@ export default function AdminDashboard() {
               </button>
               <div>
                 <p style={{ fontSize: 10, fontWeight: 800, color: "#a78bfa", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>On-Site Registry Ledger</p>
-                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Crew Attendance Logs</h1>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Team Attendance Logs</h1>
               </div>
             </div>
           </div>
@@ -2683,7 +2701,7 @@ export default function AdminDashboard() {
           <div style={{ padding: "16px", display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
             {/* Roster Selection Panel */}
             <div className="glass" style={{ padding: 20, border: "1px solid var(--border)", borderRadius: 20 }}>
-              <h2 style={{ fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--dim)", margin: "0 0 14px" }}>Operational Crew Members</h2>
+              <h2 style={{ fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--dim)", margin: "0 0 14px" }}>Team Members</h2>
               
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {active
@@ -2840,9 +2858,50 @@ export default function AdminDashboard() {
                         <h3 style={{ fontSize: 16, fontWeight: 900, color: "var(--text)", margin: 0 }}>{selectedAttendanceWorker.full_name}</h3>
                         <p style={{ fontSize: 11, color: "var(--dim)", margin: "2px 0 0" }}>Monthly Duty summary (100% Real Database logs)</p>
                       </div>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(124, 58, 237, 0.2)", borderRadius: 6, padding: "3px 8px" }}>
-                        {attendanceRecords.length} Raw Logs
-                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <button
+                          onClick={() => {
+                            if (!selectedAttendanceWorker || !attendanceRecords.length) return;
+                            const headers = ["Date", "Status", "Clock In Time"];
+                            const rows = [...attendanceRecords].sort((a,b) => new Date(a.checkInAt).getTime() - new Date(b.checkInAt).getTime()).map(rec => {
+                              const d = new Date(rec.checkInAt);
+                              const dateStr = d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+                              const statusStr = rec.status === "checked_out" ? "Checked Out" : "Checked In";
+                              const timeStr = d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+                              return [dateStr, statusStr, timeStr].map(val => `"${val.replace(/"/g, '""')}"`).join(",");
+                            });
+                            const csvContent = [headers.join(","), ...rows].join("\n");
+                            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement("a");
+                            link.setAttribute("href", url);
+                            link.setAttribute("download", `${selectedAttendanceWorker.full_name.replace(/\s+/g, "_")}_attendance.csv`);
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 800,
+                            color: "white",
+                            background: "linear-gradient(135deg, #7c3aed, #06b6d4)",
+                            border: "none",
+                            borderRadius: 6,
+                            padding: "4px 10px",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                            fontFamily: "Outfit, sans-serif"
+                          }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                          Download CSV
+                        </button>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(124, 58, 237, 0.2)", borderRadius: 6, padding: "3px 8px" }}>
+                          {attendanceRecords.length} Raw Logs
+                        </span>
+                      </div>
                     </div>
 
                     {loadingAttendance ? (
@@ -2941,6 +3000,78 @@ export default function AdminDashboard() {
               )}
             </div>
           </div>
+
+          <div style={{ padding: "0 16px 20px" }}>
+            <div className="glass" style={{ padding: 20, border: "1px solid var(--border)", borderRadius: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 12, textAlign: "center", background: "linear-gradient(135deg, rgba(124,58,237,0.02) 0%, rgba(6,182,212,0.02) 100%)" }}>
+              <h3 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>Total Work Crew Attendance Page</h3>
+              <p style={{ fontSize: 12, color: "var(--dim)", margin: 0, maxWidth: 400 }}>
+                Generate and export the consolidated attendance records for all active supervisors and finance crew members registered in the database.
+              </p>
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch("/api/mobile/attendance");
+                    const data = await res.json();
+                    if (!res.ok || !data.ok || !data.records) {
+                      alert("Failed to fetch crew attendance records.");
+                      return;
+                    }
+                    const records = data.records;
+                    const headers = ["User Name", "Login ID", "Role", "Date", "Status", "Clock In Time", "Project Name", "Geofence Status", "Drift (m)"];
+                    const rows = [...records].sort((a,b) => new Date(a.checkInAt).getTime() - new Date(b.checkInAt).getTime()).map(rec => {
+                      const d = new Date(rec.checkInAt);
+                      const dateStr = d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+                      const statusStr = rec.status === "checked_out" ? "Checked Out" : "Checked In";
+                      const timeStr = d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+                      const geofenceStr = rec.withinGeofence ? "On-Site" : "Off-Site";
+                      return [
+                        rec.userName || "",
+                        rec.userLoginId || "",
+                        rec.userRole || "",
+                        dateStr,
+                        statusStr,
+                        timeStr,
+                        rec.projectName || "",
+                        geofenceStr,
+                        `${rec.distanceFromSiteM}m`
+                      ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(",");
+                    });
+                    const csvContent = [headers.join(","), ...rows].join("\n");
+                    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", `telgo_master_crew_attendance.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  } catch (err) {
+                    alert("Error exporting consolidated attendance data.");
+                  }
+                }}
+                style={{
+                  minHeight: 40,
+                  padding: "0 24px",
+                  background: "linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)",
+                  border: "none",
+                  borderRadius: 10,
+                  color: "white",
+                  fontSize: 13,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  boxShadow: "0 4px 12px rgba(124, 58, 237, 0.15)",
+                  fontFamily: "Outfit, sans-serif"
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download Consolidated CSV
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -2959,7 +3090,7 @@ export default function AdminDashboard() {
               </button>
               <div style={{ flex: 1 }}>
                 <p style={{ fontSize: 10, fontWeight: 800, color: "#a78bfa", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Telgo Power Corridors</p>
-                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Projects Directory</h1>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Available Projects</h1>
               </div>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <button
@@ -3306,7 +3437,7 @@ export default function AdminDashboard() {
               </button>
               <div style={{ flex: 1 }}>
                 <p style={{ fontSize: 10, fontWeight: 800, color: "#10b981", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Telgo Operations</p>
-                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Projects Progress console</h1>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Projects Progress Report</h1>
               </div>
             </div>
           </div>
@@ -3575,9 +3706,7 @@ export default function AdminDashboard() {
                           progressLog: [newEntry, ...(p.progressLog || [])]
                         };
                         const nextList = projectsList.map(pr => pr.id === p.id ? updated : pr);
-                        setProjectsList(nextList);
-                        setSelectedProjectItem(updated);
-                        localStorage.setItem("telgo_custom_projects", JSON.stringify(nextList));
+                        syncProjectUpdate(updated, nextList);
                         
                         setProgressMeters("");
                         setProgressNote("");
@@ -3690,9 +3819,7 @@ export default function AdminDashboard() {
                                       const updatedLog = log.filter((e: any) => e.id !== entry.id);
                                       const updated = { ...p, progressLog: updatedLog };
                                       const nextList = projectsList.map(pr => pr.id === p.id ? updated : pr);
-                                      setProjectsList(nextList);
-                                      setSelectedProjectItem(updated);
-                                      localStorage.setItem("telgo_custom_projects", JSON.stringify(nextList));
+                                      syncProjectUpdate(updated, nextList);
                                       showToast("🗑️ Progress entry removed.");
                                     }
                                   }}
@@ -3780,9 +3907,7 @@ export default function AdminDashboard() {
                                       }
                                     };
                                     const nextList = projectsList.map(pr => pr.id === p.id ? updated : pr);
-                                    setProjectsList(nextList);
-                                    setSelectedProjectItem(updated);
-                                    localStorage.setItem("telgo_custom_projects", JSON.stringify(nextList));
+                                    syncProjectUpdate(updated, nextList);
                                     showToast(`📂 Uploaded ${file.name} successfully!`);
                                   };
                                   reader.readAsDataURL(file);
@@ -3841,9 +3966,7 @@ export default function AdminDashboard() {
                                         delete updatedDocs[doc.key];
                                         const updated = { ...p, permissions: updatedDocs };
                                         const nextList = projectsList.map(pr => pr.id === p.id ? updated : pr);
-                                        setProjectsList(nextList);
-                                        setSelectedProjectItem(updated);
-                                        localStorage.setItem("telgo_custom_projects", JSON.stringify(nextList));
+                                        syncProjectUpdate(updated, nextList);
                                         showToast(`🗑️ Removed ${doc.label} document.`);
                                       }
                                     }}
@@ -5530,16 +5653,80 @@ export default function AdminDashboard() {
                                 });
                               }
 
-                              // Plot Utility Path
-                              const customUtilityPath = ${JSON.stringify(utilityPath)};
-                              if (customUtilityPath && customUtilityPath.length >= 2) {
-                                utilityPolyline = L.polyline(customUtilityPath, { color: '#a855f7', weight: 4.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
-                              } else if (hasStart && hasEnd) {
-                                utilityPolyline = L.polyline([[startLat, startLng], [endLat, endLng]], { color: '#a855f7', weight: 4.5, opacity: 0.8, lineJoin: 'round' }).addTo(map);
+                              function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+                                const R = 6371; // Earth's radius in km
+                                const dLat = (lat2 - lat1) * Math.PI / 180;
+                                const dLon = (lon2 - lon1) * Math.PI / 180;
+                                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                                          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                                          Math.sin(dLon/2) * Math.sin(dLon/2);
+                                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                                return R * c;
                               }
 
-                              // Dummy function to prevent legacy crash
-                              function drawSegments() {}
+                              let lastRoutedStart = null;
+                              let lastRoutedEnd = null;
+
+                              function fetchOSRMRoute(sLat, sLng, eLat, eLng) {
+                                const startKey = sLat + "," + sLng;
+                                const endKey = eLat + "," + eLng;
+                                if (lastRoutedStart === startKey && lastRoutedEnd === endKey) {
+                                  return;
+                                }
+                                lastRoutedStart = startKey;
+                                lastRoutedEnd = endKey;
+
+                                const url = "https://router.project-osrm.org/route/v1/driving/" + sLng + "," + sLat + ";" + eLng + "," + eLat + "?overview=full&geometries=geojson";
+                                fetch(url)
+                                  .then(function(r) { return r.json(); })
+                                  .then(function(data) {
+                                    if (data.routes && data.routes.length > 0) {
+                                      const route = data.routes[0];
+                                      const distanceKm = (route.distance / 1000).toFixed(2) + " km";
+                                      const coords = route.geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
+                                      
+                                      if (utilityPolyline) {
+                                        map.removeLayer(utilityPolyline);
+                                      }
+                                      utilityPolyline = L.polyline(coords, { color: "#a855f7", weight: 4.5, opacity: 0.95, lineJoin: "round" }).addTo(map);
+
+                                      window.parent.postMessage({
+                                        type: "ROUTE_CALCULATED",
+                                        distance: distanceKm,
+                                        utilityPath: coords
+                                      }, "*");
+                                    } else {
+                                      throw new Error("No route found");
+                                    }
+                                  })
+                                  .catch(function(err) {
+                                    console.error("OSRM failed, using Haversine straight line:", err);
+                                    const distanceVal = calculateHaversineDistance(sLat, sLng, eLat, eLng);
+                                    const distanceKm = distanceVal.toFixed(2) + " km";
+                                    const coords = [[sLat, sLng], [eLat, eLng]];
+
+                                    if (utilityPolyline) {
+                                      map.removeLayer(utilityPolyline);
+                                    }
+                                    utilityPolyline = L.polyline(coords, { color: "#a855f7", weight: 4.5, opacity: 0.8, lineJoin: "round" }).addTo(map);
+
+                                    window.parent.postMessage({
+                                      type: "ROUTE_CALCULATED",
+                                      distance: distanceKm,
+                                      utilityPath: coords
+                                    }, "*");
+                                  });
+                              }
+
+                              // Plot initial path
+                              if (hasStart && hasEnd) {
+                                fetchOSRMRoute(startLat, startLng, endLat, endLng);
+                              } else {
+                                const customUtilityPath = ${JSON.stringify(utilityPath)};
+                                if (customUtilityPath && customUtilityPath.length >= 2) {
+                                  utilityPolyline = L.polyline(customUtilityPath, { color: '#a855f7', weight: 4.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                                }
+                              }
 
                               // Message handler for updates and geocoding zooms
                               window.addEventListener('message', function(e) {
@@ -5582,15 +5769,17 @@ export default function AdminDashboard() {
                                     endMarker = null;
                                   }
 
-                                  // 3. Utility path polyline
-                                  if (utilityPolyline) {
-                                    map.removeLayer(utilityPolyline);
-                                    utilityPolyline = null;
-                                  }
-                                  if (utilityPath && utilityPath.length >= 2) {
-                                    utilityPolyline = L.polyline(utilityPath, { color: '#a855f7', weight: 4.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
-                                  } else if (startLat && startLng && endLat && endLng) {
-                                    utilityPolyline = L.polyline([[startLat, startLng], [endLat, endLng]], { color: '#a855f7', weight: 4.5, opacity: 0.8, lineJoin: 'round' }).addTo(map);
+                                  // 3. Routing update
+                                  if (startLat && startLng && endLat && endLng) {
+                                    fetchOSRMRoute(startLat, startLng, endLat, endLng);
+                                  } else {
+                                    if (utilityPolyline) {
+                                      map.removeLayer(utilityPolyline);
+                                      utilityPolyline = null;
+                                    }
+                                    if (utilityPath && utilityPath.length >= 2) {
+                                      utilityPolyline = L.polyline(utilityPath, { color: '#a855f7', weight: 4.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                                    }
                                   }
 
                                 } else if (e.data.type === 'FLY_TO') {
@@ -5605,15 +5794,7 @@ export default function AdminDashboard() {
                               const bounds = [];
                               if (hasStart) bounds.push([startLat, startLng]);
                               if (hasEnd) bounds.push([endLat, endLng]);
-                              if (customUtilityPath && customUtilityPath.length > 0) customUtilityPath.forEach(pt => bounds.push(pt));
-                              
-                              if (bounds.length > 1) {
-                                try {
-                                  map.fitBounds(bounds, { padding: [30, 30] });
-                                } catch(e) {}
-                              }t bounds = [];
-                              if (hasStart) bounds.push([startLat, startLng]);
-                              if (hasEnd) bounds.push([endLat, endLng]);
+                              const customUtilityPath = ${JSON.stringify(utilityPath)};
                               if (customUtilityPath && customUtilityPath.length > 0) customUtilityPath.forEach(pt => bounds.push(pt));
                               
                               if (bounds.length > 1) {

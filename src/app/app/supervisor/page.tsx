@@ -604,22 +604,31 @@ export default function SupervisorDashboard() {
     setIsDailyReportOpen(false);
   };
 
-  // Sync projects list with localStorage to show Admin updates instantly in read-only format
+  // Sync projects list with localStorage & database server to show Admin updates instantly
   useEffect(() => {
     const saved = localStorage.getItem("telgo_custom_projects");
+    let initialList = DEFAULT_PROJECTS;
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setProjectsList(parsed);
-        if (parsed.length > 0) setSelectedProjectItem(parsed[0]);
-      } catch {
-        setProjectsList(DEFAULT_PROJECTS);
-        setSelectedProjectItem(DEFAULT_PROJECTS[0]);
-      }
-    } else {
-      setProjectsList(DEFAULT_PROJECTS);
-      setSelectedProjectItem(DEFAULT_PROJECTS[0]);
+        if (parsed && parsed.length > 0) {
+          initialList = parsed;
+        }
+      } catch {}
     }
+    setProjectsList(initialList);
+    if (initialList.length > 0) setSelectedProjectItem(initialList[0]);
+
+    fetch("/api/mobile/projects")
+      .then(res => res.json())
+      .then(d => {
+        if (d.ok && d.projects && d.projects.length > 0) {
+          setProjectsList(d.projects);
+          setSelectedProjectItem(d.projects[0]);
+          localStorage.setItem("telgo_custom_projects", JSON.stringify(d.projects));
+        }
+      })
+      .catch(err => console.error("Error loading projects on supervisor:", err));
   }, [isProjectsOpen, isDailyReportOpen]);
 
   // Load draft from localStorage when reportProjectId is selected

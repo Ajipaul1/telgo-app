@@ -8,9 +8,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
   }
 
-  const { fullName, avatarUrl } = (await request.json().catch(() => ({}))) as {
+  const { fullName, avatarUrl, phone } = (await request.json().catch(() => ({}))) as {
     fullName?: string;
     avatarUrl?: string;
+    phone?: string;
   };
 
   if (!fullName || !fullName.trim()) {
@@ -19,11 +20,13 @@ export async function POST(request: NextRequest) {
 
   const supabase = getMobileAccessClient();
 
-  // 1. Update full_name in the database
+  // 1. Update full_name, avatar_url, and phone in the database
   const { data: user, error: updateError } = await supabase
     .from("mobile_app_users")
     .update({
       full_name: fullName.trim(),
+      avatar_url: avatarUrl || null,
+      phone: phone || null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", session.userId)
@@ -50,6 +53,7 @@ export async function POST(request: NextRequest) {
         ...(fileRow.profile as Record<string, unknown> || {}),
         fullName: fullName.trim(),
         avatarUrl: avatarUrl || "",
+        phone: phone || "",
       };
       await supabase
         .from("mobile_user_files")

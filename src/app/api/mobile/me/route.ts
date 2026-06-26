@@ -14,6 +14,8 @@ export async function GET(request: NextRequest) {
       fullName: session.fullName,
       role: session.role,
       loginId: session.loginId,
+      avatarUrl: session.avatarUrl || "",
+      phone: session.phone || ""
     }
   });
 }

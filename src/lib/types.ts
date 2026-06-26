@@ -51,6 +51,21 @@ export type Project = {
   coordinates: [number, number];
   accent: StatusTone;
   corridor?: ProjectCorridor;
+
+  // GIS properties mapping for editor and maps
+  description?: string;
+  distance?: string;
+  startLabel?: string;
+  startCoords?: [number, number];
+  endLabel?: string;
+  endCoords?: [number, number];
+  hddPoints?: [number, number][];
+  terminationPoints?: [number, number][];
+  trenchingLine?: [number, number][];
+  utilityPath?: [number, number][];
+  roadChangeSegments?: any[];
+  hddSegments?: any[];
+  trenchingSegments?: any[];
 };
 
 export type Engineer = {

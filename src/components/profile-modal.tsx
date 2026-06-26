@@ -7,20 +7,9 @@ export type ProfileUser = {
   fullName: string;
   role: string;
   loginId: string;
+  avatarUrl?: string | null;
+  phone?: string | null;
 };
-
-export const AVATAR_PRESETS = [
-  { id: "teal", label: "Teal Glow", grad: "linear-gradient(135deg, #06b6d4, #0891b2)", bg: "#06b6d4", text: "#ffffff" },
-  { id: "purple", label: "Amethyst Glow", grad: "linear-gradient(135deg, #7c3aed, #6d28d9)", bg: "#7c3aed", text: "#ffffff" },
-  { id: "rose", label: "Sunset Rose", grad: "linear-gradient(135deg, #f43f5e, #be123c)", bg: "#f43f5e", text: "#ffffff" },
-  { id: "emerald", label: "Jungle Green", grad: "linear-gradient(135deg, #10b981, #047857)", bg: "#10b981", text: "#ffffff" },
-  { id: "amber", label: "Warm Amber", grad: "linear-gradient(135deg, #f59e0b, #b45309)", bg: "#f59e0b", text: "#060912" },
-  { id: "slate", label: "Electric Slate", grad: "linear-gradient(135deg, #475569, #1e293b)", bg: "#475569", text: "#ffffff" },
-];
-
-export function getAvatarTheme(presetId: string) {
-  return AVATAR_PRESETS.find(p => p.id === presetId) ?? AVATAR_PRESETS[0];
-}
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -31,23 +20,50 @@ interface ProfileModalProps {
 
 export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalProps) {
   const [fullName, setFullName] = useState("");
-  const [selectedAvatar, setSelectedAvatar] = useState("teal");
+  const [phone, setPhone] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
     if (user) {
-      setFullName(user.fullName);
-      // Load saved avatar preset from local storage
-      const savedPreset = localStorage.getItem(`telgo_avatar_${user.userId}`);
-      if (savedPreset) {
-        setSelectedAvatar(savedPreset);
-      }
+      setFullName(user.fullName || user.full_name || "");
+      setPhone(user.phone || "");
+      setAvatarUrl(user.avatarUrl || user.avatar_url || "");
     }
   }, [user, isOpen]);
 
   if (!isOpen || !user) return null;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          // Circular framing and center cropping
+          const size = Math.min(img.width, img.height);
+          const sx = (img.width - size) / 2;
+          const sy = (img.height - size) / 2;
+
+          // Draw image cropped
+          ctx.drawImage(img, sx, sy, size, size, 0, 0, 128, 128);
+          const base64 = canvas.toDataURL("image/jpeg", 0.85);
+          setAvatarUrl(base64);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -67,18 +83,24 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
       const response = await fetch("/api/mobile/profile/update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName: fullName.trim(), avatarUrl: selectedAvatar }),
+        body: JSON.stringify({ 
+          fullName: fullName.trim(), 
+          avatarUrl: avatarUrl,
+          phone: phone.trim()
+        }),
       });
 
       const data = await response.json();
 
       if (response.ok && data.ok) {
-        // Save avatar locally
-        localStorage.setItem(`telgo_avatar_${currentUser.userId}`, selectedAvatar);
-        
         onUpdate({
           ...currentUser,
           fullName: fullName.trim(),
+          fullNameRaw: fullName.trim(),
+          full_name: fullName.trim(),
+          avatarUrl: avatarUrl,
+          avatar_url: avatarUrl,
+          phone: phone.trim()
         });
 
         setIsSuccess(true);
@@ -99,7 +121,7 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
     }
   }
 
-  const currentTheme = getAvatarTheme(selectedAvatar);
+  const hasPhoto = avatarUrl && avatarUrl.startsWith("data:image/");
 
   return (
     <div style={{
@@ -143,57 +165,62 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
           </button>
         </div>
 
-        {/* Live Avatar Preview */}
+        {/* Live Photo Upload Section */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24 }}>
-          <div style={{
-            width: 80,
-            height: 80,
-            borderRadius: "50%",
-            background: currentTheme.grad,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: currentTheme.text,
-            fontSize: 32,
-            fontWeight: 800,
-            boxShadow: `0 8px 24px ${currentTheme.bg}40`,
-            border: "2px solid var(--border)",
-            textTransform: "uppercase",
-            marginBottom: 12
-          }}>
-            {fullName ? fullName.charAt(0) : (user?.fullName || "U").charAt(0)}
+          <div style={{ position: "relative" }}>
+            <div style={{
+              width: 84,
+              height: 84,
+              borderRadius: "50%",
+              background: hasPhoto ? "none" : "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "white",
+              fontSize: 32,
+              fontWeight: 800,
+              boxShadow: `0 8px 24px rgba(6, 182, 212, 0.2)`,
+              border: "2px solid var(--border)",
+              textTransform: "uppercase",
+              overflow: "hidden"
+            }}>
+              {hasPhoto ? (
+                <img src={avatarUrl} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                fullName ? fullName.charAt(0) : "U"
+              )}
+            </div>
+            
+            <label htmlFor="profile-upload-file" style={{
+              position: "absolute",
+              bottom: 0,
+              right: 0,
+              background: "var(--violet)",
+              border: "2px solid white",
+              width: 28,
+              height: 28,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
+            }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </label>
+            <input 
+              type="file" 
+              id="profile-upload-file" 
+              accept="image/*" 
+              onChange={handleFileChange} 
+              style={{ display: "none" }} 
+            />
           </div>
-          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Profile Preview</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.05em", marginTop: 10 }}>Tap camera to upload</span>
         </div>
 
         <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {/* Avatar Theme Selection */}
-          <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.03em" }}>Profile Color Theme</label>
-            <div style={{ display: "flex", gap: 8, justifyContent: "space-between" }}>
-              {AVATAR_PRESETS.map((preset) => (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => setSelectedAvatar(preset.id)}
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: "50%",
-                    background: preset.grad,
-                    border: selectedAvatar === preset.id ? "3px solid var(--violet)" : "2px solid var(--border)",
-                    cursor: "pointer",
-                    boxShadow: selectedAvatar === preset.id ? `0 0 14px ${preset.bg}80` : "none",
-                    transform: selectedAvatar === preset.id ? "scale(1.1)" : "scale(1)",
-                    transition: "all 0.2s ease"
-                  }}
-                  title={preset.label}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Full Name */}
+          {/* Display Name */}
           <div>
             <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.03em" }}>Display Name</label>
             <input
@@ -201,7 +228,6 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Enter your name"
-              className="input-base"
               required
               style={{
                 width: "100%",
@@ -213,7 +239,8 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
                 color: "var(--text)",
                 fontSize: 14,
                 outline: "none",
-                fontFamily: "Outfit, sans-serif"
+                fontFamily: "Outfit, sans-serif",
+                boxSizing: "border-box"
               }}
             />
           </div>
@@ -235,7 +262,32 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
                 color: "var(--dim)",
                 fontSize: 14,
                 fontFamily: "monospace",
-                cursor: "not-allowed"
+                cursor: "not-allowed",
+                boxSizing: "border-box"
+              }}
+            />
+          </div>
+
+          {/* Phone Number */}
+          <div>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.03em" }}>Phone Number</label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Enter phone number"
+              style={{
+                width: "100%",
+                height: 46,
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                borderRadius: 12,
+                padding: "0 14px",
+                color: "var(--text)",
+                fontSize: 14,
+                outline: "none",
+                fontFamily: "Outfit, sans-serif",
+                boxSizing: "border-box"
               }}
             />
           </div>
@@ -248,7 +300,7 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
             </div>
             <div>
               <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Unique Login ID</span>
-              <p style={{ margin: "4px 0 0", fontSize: 13, fontWeight: 700, fontFamily: "monospace", color: "var(--muted)" }}>{user.loginId}</p>
+              <p style={{ margin: "4px 0 0", fontSize: 13, fontWeight: 700, fontFamily: "monospace", color: "var(--muted)" }}>{user.loginId || user.login_id}</p>
             </div>
           </div>
 
@@ -304,20 +356,10 @@ interface ProfileHeaderWidgetProps {
 }
 
 export function ProfileHeaderWidget({ user, onOpenSettings, dashboardTitle }: ProfileHeaderWidgetProps) {
-  const [avatar, setAvatar] = useState("teal");
-
-  useEffect(() => {
-    if (user) {
-      const savedPreset = localStorage.getItem(`telgo_avatar_${user.userId}`);
-      if (savedPreset) {
-        setAvatar(savedPreset);
-      }
-    }
-  }, [user]);
-
   if (!user) return null;
 
-  const currentTheme = getAvatarTheme(avatar);
+  const avatar = user.avatarUrl || user.avatar_url || "";
+  const hasPhoto = avatar && avatar.startsWith("data:image/");
 
   return (
     <div style={{
@@ -353,7 +395,7 @@ export function ProfileHeaderWidget({ user, onOpenSettings, dashboardTitle }: Pr
           outline: "none"
         }}
       >
-        <div style={{ textAlign: "right", display: "none" /* can show on desktop if needed */ }}>
+        <div style={{ textAlign: "right", display: "none" }}>
           <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", margin: 0 }}>{user.fullName}</p>
           <p style={{ fontSize: 10, fontWeight: 600, color: "var(--dim)", margin: 0, textTransform: "capitalize" }}>{user.role}</p>
         </div>
@@ -361,18 +403,23 @@ export function ProfileHeaderWidget({ user, onOpenSettings, dashboardTitle }: Pr
           width: 38,
           height: 38,
           borderRadius: "50%",
-          background: currentTheme.grad,
+          background: hasPhoto ? "none" : "linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: currentTheme.text,
+          color: "white",
           fontSize: 15,
           fontWeight: 800,
           border: "1px solid var(--border)",
-          boxShadow: `0 4px 10px ${currentTheme.bg}25`,
-          textTransform: "uppercase"
+          boxShadow: `0 4px 10px rgba(6, 182, 212, 0.25)`,
+          textTransform: "uppercase",
+          overflow: "hidden"
         }}>
-          {(user?.fullName || "U").charAt(0)}
+          {hasPhoto ? (
+            <img src={avatar} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            (user.fullName || user.full_name || "U").charAt(0)
+          )}
         </div>
       </button>
     </div>

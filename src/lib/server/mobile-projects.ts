@@ -107,6 +107,31 @@ export function toMobileProject(row: ProjectRow): Project {
   const derivedProgress =
     totalLengthKm > 0 ? Math.round((completedKm / totalLengthKm) * 100) : demoProject?.progress ?? 0;
 
+  // Read description and corridor_data from database if available
+  const description = row.description != null ? String(row.description) : (demoProject?.description ?? "");
+  let corridorData = demoProject?.corridor;
+  if (row.corridor_data) {
+    try {
+      corridorData = typeof row.corridor_data === "string" ? JSON.parse(row.corridor_data) : (row.corridor_data as any);
+    } catch (e) {
+      console.error("Failed to parse corridor_data from database:", e);
+    }
+  }
+
+  // Resolve direct GIS fields (prioritize database corridor_data first)
+  const startLabel = (corridorData as any)?.startLabel || demoProject?.startLabel || "Start Position";
+  const startCoords = (corridorData as any)?.startCoords || (corridorData as any)?.startCoordinates || demoProject?.startCoords || [toNumber(row.latitude, 10.0055), toNumber(row.longitude, 76.3082)];
+  const endLabel = (corridorData as any)?.endLabel || demoProject?.endLabel || "End Position";
+  const endCoords = (corridorData as any)?.endCoords || (corridorData as any)?.endCoordinates || demoProject?.endCoords || [toNumber(row.latitude, 10.0261), toNumber(row.longitude, 76.3084)];
+  const hddPoints = (corridorData as any)?.hddPoints || demoProject?.hddPoints || [];
+  const terminationPoints = (corridorData as any)?.terminationPoints || demoProject?.terminationPoints || [];
+  const trenchingLine = (corridorData as any)?.trenchingLine || demoProject?.trenchingLine || [];
+  const utilityPath = (corridorData as any)?.utilityPath || demoProject?.utilityPath || [];
+  const roadChangeSegments = (corridorData as any)?.roadChangeSegments || demoProject?.roadChangeSegments || [];
+  const hddSegments = (corridorData as any)?.hddSegments || demoProject?.hddSegments || [];
+  const trenchingSegments = (corridorData as any)?.trenchingSegments || demoProject?.trenchingSegments || [];
+  const distance = (corridorData as any)?.distance || demoProject?.distance || `${totalLengthKm} km`;
+
   return {
     id: id || demoProject?.id || `project-${Date.now()}`,
     code: code || demoProject?.code || buildProjectCode(name),
@@ -130,7 +155,22 @@ export function toMobileProject(row: ProjectRow): Project {
       toNumber(row.latitude, demoProject?.coordinates[1] ?? FALLBACK_PROJECT.coordinates[1])
     ],
     accent: demoProject?.accent ?? accentFromStatus(status),
-    corridor: demoProject?.corridor
+    corridor: corridorData,
+
+    // Direct GIS properties mapping for editor and synchronized map rendering
+    description,
+    distance,
+    startLabel,
+    startCoords,
+    endLabel,
+    endCoords,
+    hddPoints,
+    terminationPoints,
+    trenchingLine,
+    utilityPath,
+    roadChangeSegments,
+    hddSegments,
+    trenchingSegments
   };
 }
 
@@ -154,6 +194,31 @@ function toProjectTablePayload(
     }
     payload[key] = value ?? null;
   };
+
+  // Compile detailed GIS properties directly into corridor_data JSONB if present
+  let corridorData = effective.corridor;
+  if (!corridorData || Object.keys(corridorData).length === 0) {
+    corridorData = {
+      startLabel: effective.startLabel ?? baseProject.startLabel ?? "Start Position",
+      endLabel: effective.endLabel ?? baseProject.endLabel ?? "End Position",
+      startCoordinates: effective.startCoords || baseProject.startCoords || [effective.coordinates?.[1] || 10.0, effective.coordinates?.[0] || 76.3],
+      endCoordinates: effective.endCoords || baseProject.endCoords || [effective.coordinates?.[1] || 10.0, effective.coordinates?.[0] || 76.3],
+      startCoords: effective.startCoords || baseProject.startCoords || [effective.coordinates?.[1] || 10.0, effective.coordinates?.[0] || 76.3],
+      endCoords: effective.endCoords || baseProject.endCoords || [effective.coordinates?.[1] || 10.0, effective.coordinates?.[0] || 76.3],
+      totalMeters: Math.round(parseFloat(effective.distance || "0") * 1000) || 1000,
+      completedMeters: Math.round((effective.completedKm ?? 0) * 1000),
+      geofenceMeters: 150,
+      progressUpdates: [],
+      distance: effective.distance,
+      hddPoints: effective.hddPoints || [],
+      terminationPoints: effective.terminationPoints || [],
+      trenchingLine: effective.trenchingLine || [],
+      utilityPath: effective.utilityPath || [],
+      roadChangeSegments: effective.roadChangeSegments || [],
+      hddSegments: effective.hddSegments || [],
+      trenchingSegments: effective.trenchingSegments || []
+    } as any;
+  }
 
   setField("id", effective.id ?? buildProjectSlug(effective.name ?? baseProject.name));
   setField("code", effective.code ?? buildProjectCode(effective.name ?? baseProject.name));
@@ -181,6 +246,8 @@ function toProjectTablePayload(
   setField("total_length_km", effective.totalLengthKm ?? baseProject.totalLengthKm ?? 0);
   setField("completed_length_km", effective.completedKm ?? baseProject.completedKm ?? 0);
   setField("image_path", effective.image ?? baseProject.image);
+  setField("description", effective.description);
+  setField("corridor_data", corridorData);
 
   return payload;
 }

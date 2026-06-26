@@ -8,6 +8,8 @@ export type MobileAccessUser = {
   role: string;
   login_id: string;
   user_folder_path: string | null;
+  avatar_url?: string | null;
+  phone?: string | null;
   created_at: string;
 };
 
@@ -41,6 +43,8 @@ export function toMobileAccessUser(row: Record<string, unknown>): MobileAccessUs
     role: String(row.role ?? "engineer"),
     login_id: normalizeLoginId(row.login_id),
     user_folder_path: row.user_folder_path == null ? null : String(row.user_folder_path),
+    avatar_url: row.avatar_url == null ? null : String(row.avatar_url),
+    phone: row.phone == null ? null : String(row.phone),
     created_at: String(row.created_at ?? new Date().toISOString())
   };
 }
