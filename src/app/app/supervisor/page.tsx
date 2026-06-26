@@ -39,7 +39,7 @@ export default function SupervisorDashboard() {
   const [activeExpenseCategory, setActiveExpenseCategory] = useState<string>("fuel");
   const [activeWipMetric, setActiveWipMetric] = useState<string>("trenching");
   const [activeClearanceCategory, setActiveClearanceCategory] = useState<string>("pwd");
-  const [activeRequestCategory, setActiveRequestCategory] = useState<string>("roadblocks");
+  const [activeRequestCategory, setActiveRequestCategory] = useState<string>("daily_work");
 
   const DEFAULT_PROJECTS = [
     {
@@ -110,10 +110,10 @@ export default function SupervisorDashboard() {
   const [reportDate, setReportDate] = useState("");
   
   // Step A: Labor & Expenses
-  const [laborCount, setLaborCount] = useState(0);
-  const [workerWageRate, setWorkerWageRate] = useState(900);
+  const [laborCount, setLaborCount] = useState<number | "">(0);
+  const [workerWageRate, setWorkerWageRate] = useState<number | "">(900);
   const [includeSupervisor, setIncludeSupervisor] = useState(false);
-  const [supervisorWageRate, setSupervisorWageRate] = useState(1200);
+  const [supervisorWageRate, setSupervisorWageRate] = useState<number | "">(1200);
   const [supervisorNarration, setSupervisorNarration] = useState("");
   const [laborWagesNarration, setLaborWagesNarration] = useState("");
 
@@ -158,6 +158,8 @@ export default function SupervisorDashboard() {
 
   const [terminationGpsLat, setTerminationGpsLat] = useState("");
   const [terminationGpsLng, setTerminationGpsLng] = useState("");
+  const [startGpsLat, setStartGpsLat] = useState("");
+  const [startGpsLng, setStartGpsLng] = useState("");
 
   // Step C: Clearances
   const [pwdClearance, setPwdClearance] = useState("None");
@@ -166,8 +168,11 @@ export default function SupervisorDashboard() {
   const [ksebReceipt, setKsebReceipt] = useState("");
   const [nhClearance, setNhClearance] = useState("None");
   const [nhReceipt, setNhReceipt] = useState("");
+  const [panchayatClearance, setPanchayatClearance] = useState("None");
+  const [panchayatReceipt, setPanchayatReceipt] = useState("");
 
   // Step D: Operational Requests & Notes (Problems, plans, finance, etc.)
+  const [reqDailyWorkReport, setReqDailyWorkReport] = useState("");
   const [reqProblems, setReqProblems] = useState("");
   const [reqPlans, setReqPlans] = useState("");
   const [reqFinanceAmount, setReqFinanceAmount] = useState("");
@@ -390,8 +395,8 @@ export default function SupervisorDashboard() {
   // Calculated Wages & OT totals
   const totalOtHours = otWorkers.reduce((sum: number, w: any) => sum + Number(w.hours || 0), 0);
   const totalOtWages = otWorkers.reduce((sum: number, w: any) => sum + (Number(w.workerCount || 0) * Number(w.rate || 0) * Number(w.hours || 0)), 0);
-  const crewWages = laborCount * workerWageRate;
-  const supervisorWages = includeSupervisor ? supervisorWageRate : 0;
+  const crewWages = Number(laborCount || 0) * Number(workerWageRate || 0);
+  const supervisorWages = includeSupervisor ? Number(supervisorWageRate || 0) : 0;
   const calculatedWages = crewWages + supervisorWages + totalOtWages;
 
   const totalFuel = fuelExpensesList.reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
@@ -436,6 +441,21 @@ export default function SupervisorDashboard() {
 
   const submitReportForProject = async (projId: string, d: any) => {
     setSubmittingReport(true);
+
+    const rDate = d.reportDate || new Date().toISOString().split("T")[0];
+    const reportTime = new Date(rDate).getTime();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const minDate = new Date(today);
+    minDate.setDate(minDate.getDate() - 3);
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + 1);
+    if (reportTime < minDate.getTime() || reportTime >= maxDate.getTime()) {
+      showToast(`❌ Submission blocked: Operation date must be within the last 3 days.`);
+      setSubmittingReport(false);
+      return false;
+    }
+
     const wipProgressList = {
       trenching: { value: Number(d.wipTrenchingValue || 0), narration: d.wipTrenchingNarration || "", photo: d.wipTrenchingPhoto || "" },
       hdd: { value: Number(d.wipHddValue || 0), narration: d.wipHddNarration || "", photo: d.wipHddPhoto || "" },
@@ -447,6 +467,7 @@ export default function SupervisorDashboard() {
     };
 
     const requestsAndNotes = {
+      dailyWorkReport: d.reqDailyWorkReport || "",
       problems: d.reqProblems || "",
       plans: d.reqPlans || "",
       financeAmount: d.reqFinanceAmount || "",
@@ -456,7 +477,7 @@ export default function SupervisorDashboard() {
     };
 
     const payload = {
-      reportDate: d.reportDate || new Date().toISOString().split("T")[0],
+      reportDate: rDate,
       projectId: projId,
       laborCount: Number(d.laborCount || 0),
       workerWageRate: Number(d.workerWageRate ?? 900),
@@ -475,10 +496,13 @@ export default function SupervisorDashboard() {
       terminationEndpoints: Number(d.wipTerminationsValue || 0),
       terminationGpsLat: d.terminationGpsLat ? Number(d.terminationGpsLat) : undefined,
       terminationGpsLng: d.terminationGpsLng ? Number(d.terminationGpsLng) : undefined,
+      startGpsLat: d.startGpsLat ? Number(d.startGpsLat) : undefined,
+      startGpsLng: d.startGpsLng ? Number(d.startGpsLng) : undefined,
       clearances: {
         PWD: { status: d.pwdClearance || "None", receipt: d.pwdReceipt || "" },
         KSEB: { status: d.ksebClearance || "None", receipt: d.ksebReceipt || "" },
-        NH: { status: d.nhClearance || "None", receipt: d.nhReceipt || "" }
+        NH: { status: d.nhClearance || "None", receipt: d.nhReceipt || "" },
+        Panchayat: { status: d.panchayatClearance || "None", receipt: d.panchayatReceipt || "" }
       }
     };
 
@@ -529,12 +553,17 @@ export default function SupervisorDashboard() {
           setWipTerminationsPhoto("");
           setTerminationGpsLat("");
           setTerminationGpsLng("");
+          setStartGpsLat("");
+          setStartGpsLng("");
           setPwdClearance("None");
           setPwdReceipt("");
           setKsebClearance("None");
           setKsebReceipt("");
           setNhClearance("None");
           setNhReceipt("");
+          setPanchayatClearance("None");
+          setPanchayatReceipt("");
+          setReqDailyWorkReport("");
           setReqProblems("");
           setReqPlans("");
           setReqFinanceAmount("");
@@ -644,6 +673,8 @@ export default function SupervisorDashboard() {
         
         setTerminationGpsLat(d.terminationGpsLat || "");
         setTerminationGpsLng(d.terminationGpsLng || "");
+        setStartGpsLat(d.startGpsLat || "");
+        setStartGpsLng(d.startGpsLng || "");
         
         setPwdClearance(d.pwdClearance || "None");
         setPwdReceipt(d.pwdReceipt || "");
@@ -651,7 +682,10 @@ export default function SupervisorDashboard() {
         setKsebReceipt(d.ksebReceipt || "");
         setNhClearance(d.nhClearance || "None");
         setNhReceipt(d.nhReceipt || "");
+        setPanchayatClearance(d.panchayatClearance || "None");
+        setPanchayatReceipt(d.panchayatReceipt || "");
 
+        setReqDailyWorkReport(d.reqDailyWorkReport || "");
         setReqProblems(d.reqProblems || "");
         setReqPlans(d.reqPlans || "");
         setReqFinanceAmount(d.reqFinanceAmount || "");
@@ -706,6 +740,8 @@ export default function SupervisorDashboard() {
       
       setTerminationGpsLat("");
       setTerminationGpsLng("");
+      setStartGpsLat("");
+      setStartGpsLng("");
       
       setPwdClearance("None");
       setPwdReceipt("");
@@ -713,7 +749,10 @@ export default function SupervisorDashboard() {
       setKsebReceipt("");
       setNhClearance("None");
       setNhReceipt("");
+      setPanchayatClearance("None");
+      setPanchayatReceipt("");
 
+      setReqDailyWorkReport("");
       setReqProblems("");
       setReqPlans("");
       setReqFinanceAmount("");
@@ -723,7 +762,6 @@ export default function SupervisorDashboard() {
     }
   }, [reportProjectId]);
 
-  // Save report states to localStorage draft on any changes
   useEffect(() => {
     if (!reportProjectId) return;
     const draft = {
@@ -763,12 +801,17 @@ export default function SupervisorDashboard() {
       wipTerminationsPhoto,
       terminationGpsLat,
       terminationGpsLng,
+      startGpsLat,
+      startGpsLng,
       pwdClearance,
       pwdReceipt,
       ksebClearance,
       ksebReceipt,
       nhClearance,
       nhReceipt,
+      panchayatClearance,
+      panchayatReceipt,
+      reqDailyWorkReport,
       reqProblems,
       reqPlans,
       reqFinanceAmount,
@@ -801,12 +844,17 @@ export default function SupervisorDashboard() {
     wipTerminationsValue, wipTerminationsNarration, wipTerminationsPhoto,
     terminationGpsLat,
     terminationGpsLng,
+    startGpsLat,
+    startGpsLng,
     pwdClearance,
     pwdReceipt,
     ksebClearance,
     ksebReceipt,
     nhClearance,
     nhReceipt,
+    panchayatClearance,
+    panchayatReceipt,
+    reqDailyWorkReport,
     reqProblems,
     reqPlans,
     reqFinanceAmount,
@@ -1972,7 +2020,7 @@ export default function SupervisorDashboard() {
                       max={new Date().toISOString().split("T")[0]}
                       min={(() => {
                         const d = new Date();
-                        d.setDate(d.getDate() - 7);
+                        d.setDate(d.getDate() - 3);
                         return d.toISOString().split("T")[0];
                       })()}
                       style={{ width: "100%", height: 38, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: "0 12px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
@@ -2000,14 +2048,17 @@ export default function SupervisorDashboard() {
                         <p style={{ margin: 0, fontSize: 10, color: "#64748b" }}>Number of field force personnel on-duty</p>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <button type="button" onClick={() => setLaborCount(Math.max(0, laborCount - 1))} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #cbd5e1", background: "#ffffff", color: "#0f172a", cursor: "pointer", fontWeight: 900 }}>-</button>
+                        <button type="button" onClick={() => setLaborCount(Math.max(0, Number(laborCount || 0) - 1))} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #cbd5e1", background: "#ffffff", color: "#0f172a", cursor: "pointer", fontWeight: 900 }}>-</button>
                         <input
                           type="number"
                           value={laborCount}
-                          onChange={(e) => setLaborCount(Math.max(0, parseInt(e.target.value) || 0))}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setLaborCount(val === "" ? "" : Math.max(0, parseInt(val) || 0));
+                          }}
                           style={{ width: 44, height: 32, background: "transparent", border: "none", color: "#0f172a", fontSize: 15, fontWeight: 800, textAlign: "center", outline: "none" }}
                         />
-                        <button type="button" onClick={() => setLaborCount(laborCount + 1)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #cbd5e1", background: "#ffffff", color: "#0f172a", cursor: "pointer", fontWeight: 900 }}>+</button>
+                        <button type="button" onClick={() => setLaborCount(Number(laborCount || 0) + 1)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #cbd5e1", background: "#ffffff", color: "#0f172a", cursor: "pointer", fontWeight: 900 }}>+</button>
                       </div>
                     </div>
 
@@ -2020,7 +2071,10 @@ export default function SupervisorDashboard() {
                       <input
                         type="number"
                         value={workerWageRate}
-                        onChange={(e) => setWorkerWageRate(Math.max(0, parseInt(e.target.value) || 0))}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setWorkerWageRate(val === "" ? "" : Math.max(0, parseInt(val) || 0));
+                        }}
                         style={{ width: "100%", height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 10px", color: "#0f172a", fontSize: 12, fontWeight: 700, outline: "none" }}
                       />
                     </div>
@@ -2050,7 +2104,10 @@ export default function SupervisorDashboard() {
                             <input
                               type="number"
                               value={supervisorWageRate}
-                              onChange={(e) => setSupervisorWageRate(Math.max(0, parseInt(e.target.value) || 0))}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setSupervisorWageRate(val === "" ? "" : Math.max(0, parseInt(val) || 0));
+                              }}
                               style={{ width: "100%", height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 10px", color: "#0f172a", fontSize: 12, fontWeight: 700, outline: "none" }}
                             />
                           </div>
@@ -2124,8 +2181,9 @@ export default function SupervisorDashboard() {
                                   min="1"
                                   value={item.workerCount}
                                   onChange={(e) => {
-                                    const val = Math.max(1, parseInt(e.target.value) || 1);
-                                    setOtWorkers(otWorkers.map((x) => x.id === item.id ? { ...x, workerCount: val } : x));
+                                    const val = e.target.value;
+                                    const resolvedVal = val === "" ? "" : Math.max(1, parseInt(val) || 1);
+                                    setOtWorkers(otWorkers.map((x) => x.id === item.id ? { ...x, workerCount: resolvedVal } : x));
                                   }}
                                   style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
                                 />
@@ -2136,8 +2194,9 @@ export default function SupervisorDashboard() {
                                   type="number"
                                   value={item.rate}
                                   onChange={(e) => {
-                                    const val = Math.max(0, parseInt(e.target.value) || 0);
-                                    setOtWorkers(otWorkers.map((x) => x.id === item.id ? { ...x, rate: val } : x));
+                                    const val = e.target.value;
+                                    const resolvedVal = val === "" ? "" : Math.max(0, parseInt(val) || 0);
+                                    setOtWorkers(otWorkers.map((x) => x.id === item.id ? { ...x, rate: resolvedVal } : x));
                                   }}
                                   style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
                                 />
@@ -2148,8 +2207,9 @@ export default function SupervisorDashboard() {
                                   type="number"
                                   value={item.hours}
                                   onChange={(e) => {
-                                    const val = Math.max(0, parseFloat(e.target.value) || 0);
-                                    setOtWorkers(otWorkers.map((x) => x.id === item.id ? { ...x, hours: val } : x));
+                                    const val = e.target.value;
+                                    const resolvedVal = val === "" ? "" : Math.max(0, parseFloat(val) || 0);
+                                    setOtWorkers(otWorkers.map((x) => x.id === item.id ? { ...x, hours: resolvedVal } : x));
                                   }}
                                   style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
                                 />
@@ -2165,7 +2225,7 @@ export default function SupervisorDashboard() {
                               style={{ width: "100%", height: 30, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none" }}
                             />
                             <div style={{ fontSize: 11, color: "#10b981", textAlign: "right", fontWeight: 800 }}>
-                              Subtotal: ₹{item.workerCount * item.rate * item.hours}
+                              Subtotal: ₹{Number(item.workerCount || 0) * Number(item.rate || 0) * Number(item.hours || 0)}
                             </div>
                           </div>
                         ))}
@@ -2614,24 +2674,24 @@ export default function SupervisorDashboard() {
                       style={{ width: "100%", height: 40, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: "0 12px", color: "#0f172a", fontSize: 13, outline: "none", cursor: "pointer", fontWeight: 700 }}
                     >
                       <option value="trenching">🚜 Site Clearance Trenching (m)</option>
-                      <option value="hdd">🕳️ Horizontal Directional Boring (HDD) (m)</option>
-                      <option value="cable_laying">🔌 Underground Cable Laying (m)</option>
-                      <option value="cable_mounding">🪨 Underground Cable Mounding (m)</option>
-                      <option value="jointing">🪵 Cable Jointing Logs</option>
+                      <option value="hdd">🕳️ Horizontal Direction Drilling (HDD) (m)</option>
+                      <option value="cable_laying">🔌 Cable Laying (m)</option>
+                      <option value="cable_mounding">🪨 Cable Mounting (m)</option>
+                      <option value="jointing">🪵 Cable Joining</option>
                       <option value="rmu">🧱 RMU Transformer Foundations</option>
-                      <option value="terminations">⚡ Grid Terminations Completed</option>
+                      <option value="terminations">⚡ Outdoor / Indoor Terminations</option>
                     </select>
                   </div>
 
                   {/* Dynamic Metrics List */}
                   {[
                     { key: "trenching", label: "Site Clearance Trenching (m)", val: wipTrenchingValue, setVal: setWipTrenchingValue, narr: wipTrenchingNarration, setNarr: setWipTrenchingNarration, pic: wipTrenchingPhoto, setPic: setWipTrenchingPhoto },
-                    { key: "hdd", label: "Horizontal Directional Boring (m)", val: wipHddValue, setVal: setWipHddValue, narr: wipHddNarration, setNarr: setWipHddNarration, pic: wipHddPhoto, setPic: setWipHddPhoto },
-                    { key: "cable_laying", label: "Underground Cable Laying (m)", val: wipCableLayingValue, setVal: setWipCableLayingValue, narr: wipCableLayingNarration, setNarr: setWipCableLayingNarration, pic: wipCableLayingPhoto, setPic: setWipCableLayingPhoto },
-                    { key: "cable_mounding", label: "Underground Cable Mounding (m)", val: wipCableMoundingValue, setVal: setWipCableMoundingValue, narr: wipCableMoundingNarration, setNarr: setWipCableMoundingNarration, pic: wipCableMoundingPhoto, setPic: setWipCableMoundingPhoto },
-                    { key: "jointing", label: "Cable Jointing Logs completed", val: wipJoiningValue, setVal: setWipJoiningValue, narr: wipJoiningNarration, setNarr: setWipJoiningNarration, pic: wipJoiningPhoto, setPic: setWipJoiningPhoto },
-                    { key: "rmu", label: "RMU Transformer Foundations built", val: wipRmuValue, setVal: setWipRmuValue, narr: wipRmuNarration, setNarr: setWipRmuNarration, pic: wipRmuPhoto, setPic: setWipRmuPhoto },
-                    { key: "terminations", label: "Grid Terminations Completed (Qty)", val: wipTerminationsValue, setVal: setWipTerminationsValue, narr: wipTerminationsNarration, setNarr: setWipTerminationsNarration, pic: wipTerminationsPhoto, setPic: setWipTerminationsPhoto }
+                    { key: "hdd", label: "Horizontal Direction Drilling (m)", val: wipHddValue, setVal: setWipHddValue, narr: wipHddNarration, setNarr: setWipHddNarration, pic: wipHddPhoto, setPic: setWipHddPhoto },
+                    { key: "cable_laying", label: "Cable Laying (m)", val: wipCableLayingValue, setVal: setWipCableLayingValue, narr: wipCableLayingNarration, setNarr: setWipCableLayingNarration, pic: wipCableLayingPhoto, setPic: setWipCableLayingPhoto },
+                    { key: "cable_mounding", label: "Cable Mounting (m)", val: wipCableMoundingValue, setVal: setWipCableMoundingValue, narr: wipCableMoundingNarration, setNarr: setWipCableMoundingNarration, pic: wipCableMoundingPhoto, setPic: setWipCableMoundingPhoto },
+                    { key: "jointing", label: "Cable Joining", val: wipJoiningValue, setVal: setWipJoiningValue, narr: wipJoiningNarration, setNarr: setWipJoiningNarration, pic: wipJoiningPhoto, setPic: setWipJoiningPhoto },
+                    { key: "rmu", label: "RMU Transformer Foundations", val: wipRmuValue, setVal: setWipRmuValue, narr: wipRmuNarration, setNarr: setWipRmuNarration, pic: wipRmuPhoto, setPic: setWipRmuPhoto },
+                    { key: "terminations", label: "Outdoor / Indoor Terminations", val: wipTerminationsValue, setVal: setWipTerminationsValue, narr: wipTerminationsNarration, setNarr: setWipTerminationsNarration, pic: wipTerminationsPhoto, setPic: setWipTerminationsPhoto }
                   ]
                   .filter((m) => m.key === activeWipMetric)
                   .map((m, idx) => (
@@ -2678,67 +2738,117 @@ export default function SupervisorDashboard() {
                   ))}
 
                   {/* GPS snaps coordinates */}
-                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 11, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.05em" }}>Accurate Terminal Geolocation Coordinates</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (navigator.geolocation) {
-                            showToast("⏳ Fetching operational site coordinates...");
-                            navigator.geolocation.getCurrentPosition(
-                              (p) => {
-                                setTerminationGpsLat(p.coords.latitude.toFixed(6));
-                                setTerminationGpsLng(p.coords.longitude.toFixed(6));
-                                showToast("✓ GPS Coordinates fetched successfully!");
-                              },
-                              (err) => {
-                                showToast(`❌ GPS coordinate acquisition failure: ${err.message}`);
-                              },
-                              { enableHighAccuracy: true, timeout: 8000 }
-                            );
-                          } else {
-                            showToast("❌ Geolocation services unavailable.");
-                          }
-                        }}
-                        style={{ fontSize: 10, fontWeight: 800, color: "#0284c7", background: "rgba(2, 132, 199, 0.06)", border: "1px solid rgba(2, 132, 199, 0.2)", borderRadius: 6, padding: "3px 8px", cursor: "pointer" }}
-                      >
-                        ⚡ Snag GPS
-                      </button>
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr 1.2fr", gap: 8 }}>
-                      <div>
-                        <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700 }}>Endpoints</span>
+                    <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", padding: 12, borderRadius: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 8, alignItems: "center" }}>
+                        <span style={{ fontSize: 10, color: "#64748b", fontWeight: 800 }}>Outdoor/Indoor Terminations</span>
                         <input
                           type="number"
-                          placeholder="0"
+                          placeholder="Endpoints count"
                           value={wipTerminationsValue}
                           onChange={(e) => setWipTerminationsValue(e.target.value)}
                           style={{ width: "100%", height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
                         />
                       </div>
-                      <div>
-                        <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700 }}>Site Latitude</span>
-                        <input
-                          type="number"
-                          step="0.000001"
-                          placeholder="9.9538"
-                          value={terminationGpsLat}
-                          onChange={(e) => setTerminationGpsLat(e.target.value)}
-                          style={{ width: "100%", height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
-                        />
-                      </div>
-                      <div>
-                        <span style={{ fontSize: 9, color: "#64748b", fontWeight: 700 }}>Site Longitude</span>
-                        <input
-                          type="number"
-                          step="0.000001"
-                          placeholder="76.3428"
-                          value={terminationGpsLng}
-                          onChange={(e) => setTerminationGpsLng(e.target.value)}
-                          style={{ width: "100%", height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
-                        />
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, borderTop: "1px solid #e2e8f0", paddingTop: 10 }}>
+                        {/* Start GPS */}
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                            <span style={{ fontSize: 9, color: "#475569", fontWeight: 800 }}>START GPS</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (navigator.geolocation) {
+                                  showToast("⏳ Fetching start coordinates...");
+                                  navigator.geolocation.getCurrentPosition(
+                                    (p) => {
+                                      setStartGpsLat(p.coords.latitude.toFixed(6));
+                                      setStartGpsLng(p.coords.longitude.toFixed(6));
+                                      showToast("✓ Start GPS fetched!");
+                                    },
+                                    (err) => showToast(`❌ GPS error: ${err.message}`),
+                                    { enableHighAccuracy: true, timeout: 8000 }
+                                  );
+                                } else {
+                                  showToast("❌ Geolocation unavailable.");
+                                }
+                              }}
+                              style={{ fontSize: 8, fontWeight: 800, color: "#0284c7", background: "rgba(2, 132, 199, 0.06)", border: "1px solid rgba(2, 132, 199, 0.2)", borderRadius: 4, padding: "2px 6px", cursor: "pointer" }}
+                            >
+                              ⚡ Snag
+                            </button>
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            <input
+                              type="number"
+                              step="0.000001"
+                              placeholder="Start Lat"
+                              value={startGpsLat}
+                              onChange={(e) => setStartGpsLat(e.target.value)}
+                              style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none", fontWeight: 700 }}
+                            />
+                            <input
+                              type="number"
+                              step="0.000001"
+                              placeholder="Start Lng"
+                              value={startGpsLng}
+                              onChange={(e) => setStartGpsLng(e.target.value)}
+                              style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none", fontWeight: 700 }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* End GPS */}
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                            <span style={{ fontSize: 9, color: "#475569", fontWeight: 800 }}>END GPS</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (navigator.geolocation) {
+                                  showToast("⏳ Fetching end coordinates...");
+                                  navigator.geolocation.getCurrentPosition(
+                                    (p) => {
+                                      setTerminationGpsLat(p.coords.latitude.toFixed(6));
+                                      setTerminationGpsLng(p.coords.longitude.toFixed(6));
+                                      showToast("✓ End GPS fetched!");
+                                    },
+                                    (err) => showToast(`❌ GPS error: ${err.message}`),
+                                    { enableHighAccuracy: true, timeout: 8000 }
+                                  );
+                                } else {
+                                  showToast("❌ Geolocation unavailable.");
+                                }
+                              }}
+                              style={{ fontSize: 8, fontWeight: 800, color: "#0284c7", background: "rgba(2, 132, 199, 0.06)", border: "1px solid rgba(2, 132, 199, 0.2)", borderRadius: 4, padding: "2px 6px", cursor: "pointer" }}
+                            >
+                              ⚡ Snag
+                            </button>
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            <input
+                              type="number"
+                              step="0.000001"
+                              placeholder="End Lat"
+                              value={terminationGpsLat}
+                              onChange={(e) => setTerminationGpsLat(e.target.value)}
+                              style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none", fontWeight: 700 }}
+                            />
+                            <input
+                              type="number"
+                              step="0.000001"
+                              placeholder="End Lng"
+                              value={terminationGpsLng}
+                              onChange={(e) => setTerminationGpsLng(e.target.value)}
+                              style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none", fontWeight: 700 }}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2768,8 +2878,9 @@ export default function SupervisorDashboard() {
                       style={{ width: "100%", height: 40, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: "0 12px", color: "#0f172a", fontSize: 13, outline: "none", cursor: "pointer", fontWeight: 700 }}
                     >
                       <option value="pwd">🛣️ PWD Statutory Permission</option>
-                      <option value="kseb">⚡ KSEB Power Grid Clearance</option>
-                      <option value="nh">🛣️ National Highway Corridor Permission</option>
+                      <option value="kseb">⚡ KSEB Statutory Permissions</option>
+                      <option value="nh">🛣️ National Highway Statutory Permission</option>
+                      <option value="panchayat">🏡 Panchayat / Municipality Permission</option>
                     </select>
                   </div>
 
@@ -2778,7 +2889,7 @@ export default function SupervisorDashboard() {
                     <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 8 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: 13, fontWeight: 800, color: "#334155" }}>PWD Statutory Permission Status</span>
-                        <span style={{ fontSize: 10, fontWeight: 800, color: pwdClearance === "Permission Gathered" ? "#10b981" : pwdClearance === "Demand Issued" ? "#d97706" : "#64748b" }}>{pwdClearance}</span>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: (pwdClearance === "Permission Granted" || pwdClearance === "Permission Gathered") ? "#10b981" : (pwdClearance === "Demand Note Issued" || pwdClearance === "Demand Issued") ? "#d97706" : "#64748b" }}>{pwdClearance}</span>
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
                         <select
@@ -2787,8 +2898,8 @@ export default function SupervisorDashboard() {
                           style={{ height: 36, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, cursor: "pointer", outline: "none", fontWeight: 700 }}
                         >
                           <option value="None">None / Initiated</option>
-                          <option value="Demand Issued">Demand Note Issued</option>
-                          <option value="Permission Gathered">Permission Gathered</option>
+                          <option value="Demand Note Issued">Demand Note Issued</option>
+                          <option value="Permission Granted">Permission Granted</option>
                         </select>
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 36, background: pwdReceipt ? "#e6f4ea" : "#ffffff", border: pwdReceipt ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: pwdReceipt ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -2816,8 +2927,8 @@ export default function SupervisorDashboard() {
                   {activeClearanceCategory === "kseb" && (
                     <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 8 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: "#334155" }}>KSEB Power Grid Clearance</span>
-                        <span style={{ fontSize: 10, fontWeight: 800, color: ksebClearance === "Permission Gathered" ? "#10b981" : ksebClearance === "Demand Issued" ? "#d97706" : "#64748b" }}>{ksebClearance}</span>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: "#334155" }}>KSEB Statutory Permissions Status</span>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: (ksebClearance === "Permission Granted" || ksebClearance === "Permission Gathered") ? "#10b981" : (ksebClearance === "Demand Note Issued" || ksebClearance === "Demand Issued") ? "#d97706" : "#64748b" }}>{ksebClearance}</span>
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
                         <select
@@ -2826,8 +2937,8 @@ export default function SupervisorDashboard() {
                           style={{ height: 36, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, cursor: "pointer", outline: "none", fontWeight: 700 }}
                         >
                           <option value="None">None / Initiated</option>
-                          <option value="Demand Issued">Demand Note Issued</option>
-                          <option value="Permission Gathered">Permission Gathered</option>
+                          <option value="Demand Note Issued">Demand Note Issued</option>
+                          <option value="Permission Granted">Permission Granted</option>
                         </select>
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 36, background: ksebReceipt ? "#e6f4ea" : "#ffffff", border: ksebReceipt ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: ksebReceipt ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -2855,8 +2966,8 @@ export default function SupervisorDashboard() {
                   {activeClearanceCategory === "nh" && (
                     <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 8 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: "#334155" }}>National Highway Corridor Permission</span>
-                        <span style={{ fontSize: 10, fontWeight: 800, color: nhClearance === "Permission Gathered" ? "#10b981" : nhClearance === "Demand Issued" ? "#d97706" : "#64748b" }}>{nhClearance}</span>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: "#334155" }}>National Highway Statutory Permission Status</span>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: (nhClearance === "Permission Granted" || nhClearance === "Permission Gathered") ? "#10b981" : (nhClearance === "Demand Note Issued" || nhClearance === "Demand Issued") ? "#d97706" : "#64748b" }}>{nhClearance}</span>
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
                         <select
@@ -2865,8 +2976,8 @@ export default function SupervisorDashboard() {
                           style={{ height: 36, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, cursor: "pointer", outline: "none", fontWeight: 700 }}
                         >
                           <option value="None">None / Initiated</option>
-                          <option value="Demand Issued">Demand Note Issued</option>
-                          <option value="Permission Gathered">Permission Gathered</option>
+                          <option value="Demand Note Issued">Demand Note Issued</option>
+                          <option value="Permission Granted">Permission Granted</option>
                         </select>
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 36, background: nhReceipt ? "#e6f4ea" : "#ffffff", border: nhReceipt ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: nhReceipt ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -2887,6 +2998,45 @@ export default function SupervisorDashboard() {
                         </label>
                       </div>
                       {nhReceipt && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(nhReceipt)}
+                    </div>
+                  )}
+
+                  {/* Panchayat */}
+                  {activeClearanceCategory === "panchayat" && (
+                    <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: "#334155" }}>Panchayat / Municipality Permission Status</span>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: (panchayatClearance === "Permission Granted" || panchayatClearance === "Permission Gathered") ? "#10b981" : (panchayatClearance === "Demand Note Issued" || panchayatClearance === "Demand Issued") ? "#d97706" : "#64748b" }}>{panchayatClearance}</span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 8 }}>
+                        <select
+                          value={panchayatClearance}
+                          onChange={(e) => setPanchayatClearance(e.target.value)}
+                          style={{ height: 36, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, cursor: "pointer", outline: "none", fontWeight: 700 }}
+                        >
+                          <option value="None">None / Initiated</option>
+                          <option value="Demand Note Issued">Demand Note Issued</option>
+                          <option value="Permission Granted">Permission Granted</option>
+                        </select>
+                        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 36, background: panchayatReceipt ? "#e6f4ea" : "#ffffff", border: panchayatReceipt ? "1px solid #10b981" : "1px dashed #cbd5e1", borderRadius: 8, color: panchayatReceipt ? "#10b981" : "#475569", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                          {panchayatReceipt ? (panchayatReceipt.startsWith("data:application/pdf") ? "📄 PDF ✓" : "📸 Photo ✓") : "Doc / Camera"}
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                processUploadedFile(file, (base64) => {
+                                  setPanchayatReceipt(base64);
+                                });
+                              }
+                            }}
+                            style={{ display: "none" }}
+                          />
+                        </label>
+                      </div>
+                      {panchayatReceipt && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(panchayatReceipt)}
                     </div>
                   )}
                 </div>
@@ -2914,12 +3064,26 @@ export default function SupervisorDashboard() {
                       onChange={(e) => setActiveRequestCategory(e.target.value)}
                       style={{ width: "100%", height: 40, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: "0 12px", color: "#0f172a", fontSize: 13, outline: "none", cursor: "pointer", fontWeight: 700 }}
                     >
+                      <option value="daily_work">📝 Daily Work Report</option>
                       <option value="roadblocks">🚧 Operational Roadblocks</option>
                       <option value="targets">🎯 Engineering Target for Tomorrow</option>
                       <option value="finance">💵 Urgent Imprest Refill Request</option>
                       <option value="admin">💡 Administrative Support Concerns</option>
                     </select>
                   </div>
+                  
+                  {/* Daily Work Report */}
+                  {activeRequestCategory === "daily_work" && (
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#475569", marginBottom: 6, textTransform: "uppercase" }}>Daily Work Report</label>
+                      <textarea
+                        placeholder="Provide details on today's progress, tasks completed, work done, or reasons if work did not happen..."
+                        value={reqDailyWorkReport}
+                        onChange={(e) => setReqDailyWorkReport(e.target.value)}
+                        style={{ width: "100%", height: 80, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: 10, color: "#0f172a", fontSize: 12, outline: "none", resize: "none" }}
+                      />
+                    </div>
+                  )}
                   
                   {/* Problems encountered */}
                   {activeRequestCategory === "roadblocks" && (

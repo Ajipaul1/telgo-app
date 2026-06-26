@@ -823,7 +823,7 @@ export default function AdminDashboard() {
               <p style={{ fontSize: 20, fontWeight: 900, color: "#d946ef", margin: "2px 0 0" }}>{totalTrench}m</p>
             </div>
             <div className="glass" style={{ padding: 14, border: "1px solid var(--border)" }}>
-              <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>HDD Boring</span>
+              <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>HDD Drilling</span>
               <p style={{ fontSize: 20, fontWeight: 900, color: "#f59e0b", margin: "2px 0 0" }}>{totalHdd}m</p>
             </div>
             <div className="glass" style={{ padding: 14, border: "1px solid var(--border)" }}>
@@ -831,15 +831,15 @@ export default function AdminDashboard() {
               <p style={{ fontSize: 20, fontWeight: 900, color: "#10b981", margin: "2px 0 0" }}>{totalLaying}m</p>
             </div>
             <div className="glass" style={{ padding: 14, border: "1px solid var(--border)" }}>
-              <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Mounding</span>
+              <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Cable Mounting</span>
               <p style={{ fontSize: 20, fontWeight: 900, color: "#0ea5e9", margin: "2px 0 0" }}>{totalMounding}m</p>
             </div>
             <div className="glass" style={{ padding: 14, border: "1px solid var(--border)" }}>
-              <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Straight-Joining</span>
+              <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Cable Joining</span>
               <p style={{ fontSize: 20, fontWeight: 900, color: "#8b5cf6", margin: "2px 0 0" }}>{totalJoining} links</p>
             </div>
             <div className="glass" style={{ padding: 14, border: "1px solid var(--border)" }}>
-              <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>RMU Bases</span>
+              <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>RMU Foundations</span>
               <p style={{ fontSize: 20, fontWeight: 900, color: "#ec4899", margin: "2px 0 0" }}>{totalRmu} bases</p>
             </div>
             <div className="glass" style={{ padding: 14, border: "1px solid var(--border)" }}>
@@ -4370,13 +4370,17 @@ export default function AdminDashboard() {
                       </thead>
                       <tbody>
                         <tr>
-                          <td><strong>Excavation Trenching</strong></td>
-                          <td><strong>${selectedReport.excavationLength} meters</strong></td>
+                          <td><strong>Site Clearance Trenching</strong></td>
+                          <td>
+                            <strong>${selectedReport.excavationLength} meters</strong>
+                            ${rich.startGpsLat ? `<br><span style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #64748b;">🏁 Start: [${Number(rich.startGpsLat).toFixed(5)}, ${Number(rich.startGpsLng).toFixed(5)}]</span>` : ""}
+                            ${selectedReport.terminationGpsLat ? `<br><span style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #64748b;">🎯 End: [${selectedReport.terminationGpsLat.toFixed(5)}, ${selectedReport.terminationGpsLng.toFixed(5)}]</span>` : ""}
+                          </td>
                           <td>${wip.trenching?.photo ? "📎 Photo Logged" : "No Photo"}</td>
                           <td>${wip.trenching?.narration || "--"}</td>
                         </tr>
                         <tr>
-                          <td><strong>HDD Boring</strong></td>
+                          <td><strong>Horizontal Direction Drilling</strong></td>
                           <td><strong>${selectedReport.hddLength} meters</strong></td>
                           <td>${wip.hdd?.photo ? "📎 Photo Logged" : "No Photo"}</td>
                           <td>${wip.hdd?.narration || "--"}</td>
@@ -4388,25 +4392,25 @@ export default function AdminDashboard() {
                           <td>${wip.cableLaying?.narration || "--"}</td>
                         </tr>
                         <tr>
-                          <td><strong>Cable Mounding</strong></td>
+                          <td><strong>Cable Mounting</strong></td>
                           <td><strong>${selectedReport.cableMoundingLength} meters</strong></td>
                           <td>${wip.cableMounding?.photo ? "📎 Photo Logged" : "No Photo"}</td>
                           <td>${wip.cableMounding?.narration || "--"}</td>
                         </tr>
                         <tr>
-                          <td><strong>Joining Links</strong></td>
+                          <td><strong>Cable Joining</strong></td>
                           <td><strong>${selectedReport.joiningLinksCompleted} links</strong></td>
                           <td>${wip.joining?.photo ? "📎 Photo Logged" : "No Photo"}</td>
                           <td>${wip.joining?.narration || "--"}</td>
                         </tr>
                         <tr>
-                          <td><strong>RMU Foundation</strong></td>
+                          <td><strong>RMU Transformer Foundations</strong></td>
                           <td><strong>${selectedReport.rmuFoundationStatus} bases</strong></td>
                           <td>${wip.rmu?.photo ? "📎 Photo Logged" : "No Photo"}</td>
                           <td>${wip.rmu?.narration || "--"}</td>
                         </tr>
                         <tr>
-                          <td><strong>Grid Termination Endpoints</strong></td>
+                          <td><strong>Outdoor / Indoor Terminations</strong></td>
                           <td>
                             <strong>${selectedReport.terminationEndpoints} points</strong>
                             ${selectedReport.terminationGpsLat ? `<br><span style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #64748b;">🎯 [${selectedReport.terminationGpsLat.toFixed(5)}, ${selectedReport.terminationGpsLng.toFixed(5)}]</span>` : ""}
@@ -4429,11 +4433,13 @@ export default function AdminDashboard() {
                       <tbody>
                         ${Object.keys(clearances).map(agency => {
                           const info = clearances[agency];
+                          const isSuccess = info.status === "Permission Granted" || info.status === "Permission Gathered";
+                          const isWarning = info.status === "Demand Note Issued" || info.status === "Demand Issued";
                           return `
                             <tr>
                               <td><strong>${agency} Authority</strong></td>
                               <td>
-                                <span class="badge ${info.status === "Permission Gathered" ? "badge-success" : info.status === "Demand Issued" ? "badge-warning" : "badge-danger"}">
+                                <span class="badge ${isSuccess ? "badge-success" : isWarning ? "badge-warning" : "badge-danger"}">
                                   ${info.status}
                                 </span>
                               </td>
@@ -4452,6 +4458,10 @@ export default function AdminDashboard() {
                     <h2>5. Site Concerns, Planning Requests & Directives</h2>
                     <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; font-size: 13px;">
                       <div style="margin-bottom: 12px;">
+                        <strong style="color: #475569; display: block; font-size: 11px; text-transform: uppercase;">Daily Work Report:</strong>
+                        <div style="margin-top: 4px; color: #0f172a; white-space: pre-wrap;">${reqs.dailyWorkReport || "--"}</div>
+                      </div>
+                      <div style="margin-bottom: 12px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
                         <strong style="color: #475569; display: block; font-size: 11px; text-transform: uppercase;">Upcoming Next-Day Objectives:</strong>
                         <div style="margin-top: 4px; color: #0f172a;">${reqs.plans || "--"}</div>
                       </div>
@@ -4989,7 +4999,7 @@ export default function AdminDashboard() {
                       {isAdminEditMode ? (
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                           <div>
-                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Trenching (m)</label>
+                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Site Clearance Trenching (m)</label>
                             <input
                               type="number"
                               value={editReportExcavationLength}
@@ -4998,7 +5008,7 @@ export default function AdminDashboard() {
                             />
                           </div>
                           <div>
-                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>HDD Boring (m)</label>
+                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Horizontal Direction Drilling (m)</label>
                             <input
                               type="number"
                               value={editReportHddLength}
@@ -5016,7 +5026,7 @@ export default function AdminDashboard() {
                             />
                           </div>
                           <div>
-                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Cable Mounding (m)</label>
+                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Cable Mounting (m)</label>
                             <input
                               type="number"
                               value={editReportCableMoundingLength}
@@ -5025,7 +5035,7 @@ export default function AdminDashboard() {
                             />
                           </div>
                           <div>
-                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Joining Links (Qty)</label>
+                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Cable Joining (Qty)</label>
                             <input
                               type="number"
                               value={editReportJoiningLinksCompleted}
@@ -5034,7 +5044,7 @@ export default function AdminDashboard() {
                             />
                           </div>
                           <div>
-                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>RMU Foundations (Qty)</label>
+                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>RMU Transformer Foundations (Qty)</label>
                             <input
                               type="number"
                               value={editReportRmuFoundationStatus}
@@ -5043,7 +5053,7 @@ export default function AdminDashboard() {
                             />
                           </div>
                           <div>
-                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Terminations (Qty)</label>
+                            <label style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase" }}>Outdoor / Indoor Terminations (Qty)</label>
                             <input
                               type="number"
                               value={editReportTerminationEndpoints}
@@ -5055,13 +5065,13 @@ export default function AdminDashboard() {
                       ) : (
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {[
-                          { key: "trenching", name: "Excavation Trenching", val: `${selectedReport.excavationLength} meters` },
-                          { key: "hdd", name: "HDD Boring", val: `${selectedReport.hddLength} meters` },
+                          { key: "trenching", name: "Site Clearance Trenching", val: `${selectedReport.excavationLength} meters` },
+                          { key: "hdd", name: "Horizontal Direction Drilling", val: `${selectedReport.hddLength} meters` },
                           { key: "cableLaying", name: "Cable Laying", val: `${selectedReport.cableLayingLength} meters` },
-                          { key: "cableMounding", name: "Cable Mounding", val: `${selectedReport.cableMoundingLength} meters` },
-                          { key: "joining", name: "Joining Links", val: `${selectedReport.joiningLinksCompleted} links` },
-                          { key: "rmu", name: "RMU Foundation Status", val: `${selectedReport.rmuFoundationStatus} bases` },
-                          { key: "terminations", name: "Grid Terminations", val: `${selectedReport.terminationEndpoints} points` }
+                          { key: "cableMounding", name: "Cable Mounting", val: `${selectedReport.cableMoundingLength} meters` },
+                          { key: "joining", name: "Cable Joining", val: `${selectedReport.joiningLinksCompleted} links` },
+                          { key: "rmu", name: "RMU Transformer Foundations", val: `${selectedReport.rmuFoundationStatus} bases` },
+                          { key: "terminations", name: "Outdoor / Indoor Terminations", val: `${selectedReport.terminationEndpoints} points` }
                         ].map((m: any) => {
                           const log = wip[m.key] || {};
                           return (
@@ -5092,6 +5102,20 @@ export default function AdminDashboard() {
                                   <span style={{ fontSize: 8, color: "var(--dim)", fontFamily: "monospace" }}>
                                     🎯 [{selectedReport.terminationGpsLat.toFixed(4)}, {selectedReport.terminationGpsLng.toFixed(4)}]
                                   </span>
+                                )}
+                                {m.key === "trenching" && (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "flex-end", marginTop: 2 }}>
+                                    {rich.startGpsLat && (
+                                      <span style={{ fontSize: 8, color: "var(--dim)", fontFamily: "monospace" }}>
+                                        🏁 Start: [{Number(rich.startGpsLat).toFixed(4)}, {Number(rich.startGpsLng).toFixed(4)}]
+                                      </span>
+                                    )}
+                                    {selectedReport.terminationGpsLat && (
+                                      <span style={{ fontSize: 8, color: "var(--dim)", fontFamily: "monospace" }}>
+                                        🎯 End: [{selectedReport.terminationGpsLat.toFixed(4)}, {selectedReport.terminationGpsLng.toFixed(4)}]
+                                      </span>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -5129,7 +5153,7 @@ export default function AdminDashboard() {
                                   <div style={{ minWidth: 0 }}>
                                     <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 800 }}>{agency} Authority Permission</span>
                                     <p style={{ margin: "2px 0 0", fontSize: 10, color: "var(--dim)" }}>
-                                      Status: <strong style={{ color: info.status === "Permission Gathered" ? "#10b981" : info.status === "Demand Issued" ? "#fbbf24" : "#f87171" }}>{info.status}</strong>
+                                      Status: <strong style={{ color: (info.status === "Permission Granted" || info.status === "Permission Gathered") ? "#10b981" : (info.status === "Demand Note Issued" || info.status === "Demand Issued") ? "#fbbf24" : "#f87171" }}>{info.status}</strong>
                                     </p>
                                   </div>
                                 </div>
@@ -5146,6 +5170,14 @@ export default function AdminDashboard() {
                       <span style={{ fontSize: 10, fontWeight: 900, color: "#dc2626", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 12 }}>Step D: Planning, Hurdles & Cash Requests</span>
                       
                       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        {/* Daily Work Report */}
+                        <div style={{ background: "rgba(2, 132, 199, 0.05)", border: "1px solid rgba(2, 132, 199, 0.15)", borderRadius: 12, padding: 12 }}>
+                          <span style={{ fontSize: 9, color: "#0284c7", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>📝 Daily Work Report</span>
+                          <p style={{ margin: 0, fontSize: 11, color: "var(--muted)", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+                            {reqs.dailyWorkReport || "No daily work report logged."}
+                          </p>
+                        </div>
+
                         {/* Next day plans */}
                         <div style={{ background: "var(--surface)", border: "1px solid var(--surface)", borderRadius: 12, padding: 12 }}>
                           <span style={{ fontSize: 9, color: "#10b981", fontWeight: 800, textTransform: "uppercase", display: "block", marginBottom: 4 }}>📝 Next-Day Operational Plans</span>

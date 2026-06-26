@@ -67,18 +67,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, message: "Date and Project ID are required." }, { status: 400 });
     }
 
-    // Force strict chronological boundaries: [Today - 7 days] to [Today]
+    // Force strict chronological boundaries: [Today - 3 days] to [Today]
     const selectedDate = new Date(reportDate);
     const today = new Date();
     today.setHours(23, 59, 59, 999); // Allow full today
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(today.getDate() - 7);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(today.getDate() - 3);
+    threeDaysAgo.setHours(0, 0, 0, 0);
 
-    if (selectedDate > today || selectedDate < sevenDaysAgo) {
+    if (selectedDate > today || selectedDate < threeDaysAgo) {
       return NextResponse.json({
         ok: false,
-        message: "Submission blocked: Daily reports can only be submitted for dates between today and 7 days ago."
+        message: "Submission blocked: Daily reports can only be submitted for dates between today and 3 days ago."
       }, { status: 400 });
     }
 
@@ -153,7 +153,9 @@ export async function POST(request: NextRequest) {
         toolRentList: toolList,
         otherExpensesList: otherList,
         wipProgressList: wip,
-        requestsAndNotes: body.requestsAndNotes || {}
+        requestsAndNotes: body.requestsAndNotes || {},
+        startGpsLat: body.startGpsLat ? Number(body.startGpsLat) : undefined,
+        startGpsLng: body.startGpsLng ? Number(body.startGpsLng) : undefined
       }
     };
 
