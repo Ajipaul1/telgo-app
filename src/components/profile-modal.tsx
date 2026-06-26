@@ -25,16 +25,58 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
+  const [rawImgSrc, setRawImgSrc] = useState("");
+  const [cropMode, setCropMode] = useState<"center" | "none">("center");
 
   useEffect(() => {
     if (user) {
       setFullName(user.fullName || user.full_name || "");
       setPhone(user.phone || "");
       setAvatarUrl(user.avatarUrl || user.avatar_url || "");
+      setRawImgSrc("");
+      setCropMode("center");
     }
   }, [user, isOpen]);
 
   if (!isOpen || !user) return null;
+
+  const processImage = (imgSrc: string, mode: "center" | "none") => {
+    if (!imgSrc) return;
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      if (mode === "center") {
+        canvas.width = 128;
+        canvas.height = 128;
+        const size = Math.min(img.width, img.height);
+        const sx = (img.width - size) / 2;
+        const sy = (img.height - size) / 2;
+        ctx.drawImage(img, sx, sy, size, size, 0, 0, 128, 128);
+      } else {
+        const maxDim = 512;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+      }
+      const base64 = canvas.toDataURL("image/jpeg", 0.85);
+      setAvatarUrl(base64);
+    };
+    img.src = imgSrc;
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -42,27 +84,18 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = 128;
-        canvas.height = 128;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          // Circular framing and center cropping
-          const size = Math.min(img.width, img.height);
-          const sx = (img.width - size) / 2;
-          const sy = (img.height - size) / 2;
-
-          // Draw image cropped
-          ctx.drawImage(img, sx, sy, size, size, 0, 0, 128, 128);
-          const base64 = canvas.toDataURL("image/jpeg", 0.85);
-          setAvatarUrl(base64);
-        }
-      };
-      img.src = event.target?.result as string;
+      const src = event.target?.result as string;
+      setRawImgSrc(src);
+      processImage(src, cropMode);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleCropModeChange = (mode: "center" | "none") => {
+    setCropMode(mode);
+    if (rawImgSrc) {
+      processImage(rawImgSrc, mode);
+    }
   };
 
   async function handleSave(e: React.FormEvent) {
@@ -217,6 +250,46 @@ export function ProfileModal({ isOpen, onClose, user, onUpdate }: ProfileModalPr
             />
           </div>
           <span style={{ fontSize: 11, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.05em", marginTop: 10 }}>Tap camera to upload</span>
+          {rawImgSrc && (
+            <div style={{ display: "flex", gap: 8, marginTop: 12, width: "100%", maxWidth: 240 }}>
+              <button
+                type="button"
+                onClick={() => handleCropModeChange("center")}
+                style={{
+                  flex: 1,
+                  padding: "6px 10px",
+                  borderRadius: 8,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  background: cropMode === "center" ? "var(--violet, #7c3aed)" : "var(--surface, #f1f5f9)",
+                  border: "1px solid var(--border, #e2e8f0)",
+                  color: cropMode === "center" ? "white" : "var(--text, #0f172a)",
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+              >
+                Center Crop (1:1)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCropModeChange("none")}
+                style={{
+                  flex: 1,
+                  padding: "6px 10px",
+                  borderRadius: 8,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  background: cropMode === "none" ? "var(--violet, #7c3aed)" : "var(--surface, #f1f5f9)",
+                  border: "1px solid var(--border, #e2e8f0)",
+                  color: cropMode === "none" ? "white" : "var(--text, #0f172a)",
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+              >
+                Original (No Crop)
+              </button>
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
