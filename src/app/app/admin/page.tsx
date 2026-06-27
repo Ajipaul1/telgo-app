@@ -87,6 +87,62 @@ export default function AdminDashboard() {
   const [isAdminSettingsOpen, setIsAdminSettingsOpen] = useState(false);
   const [approvalsTab, setApprovalsTab] = useState<"pending" | "active">("pending");
 
+  // Notifications Operations Feed State
+  const [adminNotifications, setAdminNotifications] = useState<any[]>([]);
+
+  const fetchNotifications = () => {
+    fetch("/api/mobile/notifications")
+      .then(res => res.json())
+      .then(d => {
+        if (d.ok && d.notifications) {
+          setAdminNotifications(d.notifications);
+        }
+      })
+      .catch(err => console.error("Error fetching notifications:", err));
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const dismissNotification = (id: string) => {
+    setAdminNotifications(prev => prev.filter(n => n.id !== id));
+    fetch(`/api/mobile/notifications?id=${id}`, {
+      method: "DELETE"
+    })
+      .then(res => res.json())
+      .then(d => {
+        if (!d.ok) {
+          console.error("Failed to dismiss notification on backend:", d.message);
+          fetchNotifications();
+        }
+      })
+      .catch(err => {
+        console.error("Error dismissing notification:", err);
+        fetchNotifications();
+      });
+  };
+
+  const clearAllNotifications = () => {
+    setAdminNotifications([]);
+    fetch("/api/mobile/notifications", {
+      method: "DELETE"
+    })
+      .then(res => res.json())
+      .then(d => {
+        if (!d.ok) {
+          console.error("Failed to clear notifications on backend:", d.message);
+          fetchNotifications();
+        }
+      })
+      .catch(err => {
+        console.error("Error clearing notifications:", err);
+        fetchNotifications();
+      });
+  };
+
   // User Administration Edit State
   const [selectedUser, setSelectedUser] = useState<AccessUser | null>(null);
   const [editName, setEditName] = useState("");
@@ -1746,12 +1802,88 @@ export default function AdminDashboard() {
                 <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Crews</span>
                 <p style={{ fontSize: 32, fontWeight: 900, color: "var(--text)", margin: "4px 0 0", letterSpacing: "-1px" }}>{users.length}</p>
               </div>
-              <div className="glass" style={{ padding: "16px 18px", border: "1px solid var(--border)" }}>
-                <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Active Mailers</span>
-                <p style={{ fontSize: 15, fontWeight: 700, color: "#15803d", margin: "16px 0 0", display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e" }} />
-                  SMTP Ready
-                </p>
+              <div className="glass" style={{ padding: "12px 14px", border: "1px solid var(--border)", display: "flex", flexDirection: "column", minHeight: 90 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    🔔 Operations Feed ({adminNotifications.length})
+                  </span>
+                  {adminNotifications.length > 0 && (
+                    <button 
+                      onClick={clearAllNotifications}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        fontSize: 9,
+                        color: "#ef4444",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        padding: 0
+                      }}
+                    >
+                      Clear All
+                    </button>
+                  )}
+                </div>
+                
+                <div style={{ 
+                  flex: 1, 
+                  overflowY: "auto", 
+                  maxHeight: 180, 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  gap: 8,
+                  paddingRight: 4
+                }}>
+                  {adminNotifications.length === 0 ? (
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", fontSize: 11, fontStyle: "italic", minHeight: 40 }}>
+                      All clear! No new logs. ✨
+                    </div>
+                  ) : (
+                    adminNotifications.map(n => {
+                      const timeStr = new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                      return (
+                        <div 
+                          key={n.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            justifyContent: "space-between",
+                            background: "rgba(255, 255, 255, 0.4)",
+                            border: "1px solid var(--border)",
+                            borderRadius: 10,
+                            padding: "6px 8px",
+                            gap: 6
+                          }}
+                        >
+                          <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <span style={{ fontSize: 12, fontWeight: 800, color: "var(--text)" }}>{n.title}</span>
+                              <span style={{ fontSize: 8, color: "var(--muted)", fontFamily: "monospace" }}>{timeStr}</span>
+                            </div>
+                            {n.body && <p style={{ margin: 0, fontSize: 10.5, color: "var(--dim)", lineHeight: 1.3 }}>{n.body}</p>}
+                          </div>
+                          
+                          <button 
+                            onClick={() => dismissNotification(n.id)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "var(--muted)",
+                              cursor: "pointer",
+                              fontSize: 14,
+                              fontWeight: 700,
+                              lineHeight: 1,
+                              padding: "0 2px"
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
             </div>
           </div>

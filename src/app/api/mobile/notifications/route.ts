@@ -52,6 +52,43 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  const session = await readMobileSession(request);
+  if (!session) {
+    return NextResponse.json({ ok: false, message: "Sign in again to update notifications." }, { status: 401 });
+  }
+
+  let supabase: ReturnType<typeof getMobileAccessClient>;
+  try {
+    supabase = getMobileAccessClient();
+  } catch (error) {
+    return NextResponse.json({ ok: false, message: getErrorMessage(error) }, { status: 500 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+
+  try {
+    if (id) {
+      const { error } = await supabase
+        .from("mobile_notifications")
+        .delete()
+        .eq("id", id)
+        .eq("recipient_user_id", session.userId);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from("mobile_notifications")
+        .delete()
+        .eq("recipient_user_id", session.userId);
+      if (error) throw error;
+    }
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json({ ok: false, message: getErrorMessage(error) }, { status: 500 });
+  }
+}
+
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
   if (typeof error === "object" && error && "message" in error) {

@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { readMobileSession } from "@/lib/server/mobile-session";
+import { getMobileAccessClient } from "@/lib/server/mobile-access";
+import { notifyAdmins } from "@/lib/server/mobile-notifications";
 import { createDailyReport, getDailyReports, getDailyReportById, getDailyReportsForProject, getDailyReportsForSupervisor } from "@/lib/server/mobile-daily-reports";
 
 export async function GET(request: NextRequest) {
@@ -187,6 +189,26 @@ export async function POST(request: NextRequest) {
     };
 
     const savedReport = await createDailyReport(reportData);
+
+    try {
+      const supabase = getMobileAccessClient();
+      const { data: project } = await supabase
+        .from("projects")
+        .select("name")
+        .eq("id", projectId)
+        .maybeSingle();
+
+      const projName = project?.name || "Project";
+      await notifyAdmins(
+        supabase,
+        "📝 Daily Report Submitted",
+        `New report submitted for "${projName}" on ${reportDate} by ${session.fullName}.`,
+        { reportId: savedReport.id, projectId }
+      );
+    } catch (err) {
+      console.error("Failed to trigger daily report notification:", err);
+    }
+
     return NextResponse.json({ ok: true, report: savedReport });
   } catch (error: any) {
     return NextResponse.json({ ok: false, message: error.message || "Failed to submit daily report." }, { status: 500 });

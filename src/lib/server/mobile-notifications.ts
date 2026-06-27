@@ -80,6 +80,42 @@ export async function markAllMobileNotificationsRead(
   if (error) throw error;
 }
 
+export async function notifyAdmins(
+  supabase: SupabaseClient,
+  title: string,
+  body: string | null,
+  metadata?: Record<string, unknown>
+) {
+  const { data: admins, error } = await supabase
+    .from("mobile_app_users")
+    .select("id")
+    .eq("role", "admin")
+    .eq("access_status", "active");
+
+  if (error) {
+    console.error("Failed to query admin users for notification dispatch:", error);
+    return;
+  }
+
+  if (admins && admins.length > 0) {
+    const notifications = admins.map((admin) => ({
+      recipient_user_id: admin.id,
+      title,
+      body: body ?? null,
+      notification_type: "system",
+      metadata: metadata ?? {}
+    }));
+
+    const { error: insertError } = await supabase
+      .from("mobile_notifications")
+      .insert(notifications);
+
+    if (insertError) {
+      console.error("Failed to insert notifications for admins:", insertError);
+    }
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }

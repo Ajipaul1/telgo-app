@@ -5,6 +5,7 @@ import {
   toMobileAccessUser
 } from "@/lib/server/mobile-access";
 import { setMobileSession } from "@/lib/server/mobile-session";
+import { notifyAdmins } from "@/lib/server/mobile-notifications";
 
 export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => null)) as
@@ -137,6 +138,18 @@ export async function POST(request: NextRequest) {
     .from("mobile_app_users")
     .update({ last_login_at: new Date().toISOString() })
     .eq("id", data.id);
+
+  try {
+    const userRole = String(data.role ?? "user").toUpperCase();
+    await notifyAdmins(
+      supabase,
+      "🔑 User Signed In",
+      `${data.full_name} (${userRole}) signed in securely.`,
+      { userId: data.id, role: data.role }
+    );
+  } catch (err) {
+    console.error("Failed to trigger sign-in notification:", err);
+  }
 
   const response = NextResponse.json({ ok: true, user: toMobileAccessUser(data) });
   await setMobileSession(response, toMobileAccessUser(data));

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getMobileAccessClient } from "@/lib/server/mobile-access";
 import { readMobileSession } from "@/lib/server/mobile-session";
 import { createRealProject, listRealProjects } from "@/lib/server/mobile-projects";
+import { notifyAdmins } from "@/lib/server/mobile-notifications";
 import type { Project } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
@@ -58,6 +59,19 @@ export async function POST(request: NextRequest) {
 
   try {
     const project = await createRealProject(supabase, body as Omit<Project, "id"> & { id?: string });
+
+    try {
+      const actorName = session?.fullName || "System Admin";
+      await notifyAdmins(
+        supabase,
+        "➕ Project Created",
+        `New project "${project.name}" (Code: ${project.code}) created by ${actorName}.`,
+        { projectId: project.id, actorUserId: session?.userId || null }
+      );
+    } catch (err) {
+      console.error("Failed to trigger project creation notification:", err);
+    }
+
     return NextResponse.json({ ok: true, project });
   } catch (error) {
     return NextResponse.json({ ok: false, message: getErrorMessage(error) }, { status: 500 });

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getMobileAccessClient } from "@/lib/server/mobile-access";
 import { readMobileSession } from "@/lib/server/mobile-session";
 import { updateRealProject } from "@/lib/server/mobile-projects";
+import { notifyAdmins } from "@/lib/server/mobile-notifications";
 import type { Project } from "@/lib/types";
 
 export async function PATCH(
@@ -34,6 +35,19 @@ export async function PATCH(
 
   try {
     const project = await updateRealProject(supabase, projectId, body);
+
+    try {
+      const actorName = session?.fullName || "System Admin";
+      await notifyAdmins(
+        supabase,
+        "📍 Project Updated",
+        `Project "${project.name}" map/details updated by ${actorName}.`,
+        { projectId: project.id, actorUserId: session?.userId || null }
+      );
+    } catch (err) {
+      console.error("Failed to trigger project update notification:", err);
+    }
+
     return NextResponse.json({ ok: true, project });
   } catch (error) {
     return NextResponse.json({ ok: false, message: getErrorMessage(error) }, { status: 500 });
