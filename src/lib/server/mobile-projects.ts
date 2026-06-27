@@ -82,12 +82,26 @@ export async function updateRealProject(
 }
 
 export async function syncDemoProjectsToSupabase(supabase: SupabaseClient) {
-  const { error } = await supabase
+  // Only seed demo projects if the table is completely empty (count is 0)
+  const { count, error: countError } = await supabase
     .from("projects")
-    .upsert(demoProjects.map((project) => toProjectTablePayload(project)), { onConflict: "id" });
+    .select("*", { count: "exact", head: true });
 
-  if (error && !isMissingProjectsTableError(error)) {
-    throw error;
+  if (countError) {
+    if (isMissingProjectsTableError(countError)) {
+      return;
+    }
+    throw countError;
+  }
+
+  if (count === 0) {
+    const { error } = await supabase
+      .from("projects")
+      .upsert(demoProjects.map((project) => toProjectTablePayload(project)), { onConflict: "id" });
+
+    if (error && !isMissingProjectsTableError(error)) {
+      throw error;
+    }
   }
 }
 
