@@ -89,6 +89,7 @@ export default function AdminDashboard() {
 
   // Notifications Operations Feed State
   const [adminNotifications, setAdminNotifications] = useState<any[]>([]);
+  const [lastNotificationId, setLastNotificationId] = useState<string | null>(null);
 
   const fetchNotifications = () => {
     fetch("/api/mobile/notifications")
@@ -96,6 +97,14 @@ export default function AdminDashboard() {
       .then(d => {
         if (d.ok && d.notifications) {
           setAdminNotifications(d.notifications);
+
+          const newest = d.notifications[0];
+          if (newest && newest.id !== lastNotificationId) {
+            setLastNotificationId(newest.id);
+            if (newest.title?.includes("Project Updated") || newest.title?.includes("Project Created")) {
+              fetchProjectsFromServer();
+            }
+          }
         }
       })
       .catch(err => console.error("Error fetching notifications:", err));
@@ -105,7 +114,7 @@ export default function AdminDashboard() {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [lastNotificationId]);
 
   const dismissNotification = (id: string) => {
     setAdminNotifications(prev => prev.filter(n => n.id !== id));
@@ -346,6 +355,23 @@ export default function AdminDashboard() {
     }
   ];
 
+  function fetchProjectsFromServer() {
+    fetch("/api/mobile/projects")
+      .then(res => res.json())
+      .then(d => {
+        if (d.ok && d.projects && d.projects.length > 0) {
+          setProjectsList(d.projects);
+          setSelectedProjectItem((prev: any) => {
+            if (!prev) return d.projects[0];
+            const updated = d.projects.find((p: any) => p.id === prev.id);
+            return updated || d.projects[0];
+          });
+          localStorage.setItem("telgo_custom_projects", JSON.stringify(d.projects));
+        }
+      })
+      .catch(err => console.error("Error fetching projects from database:", err));
+  };
+
   useEffect(() => {
     const saved = localStorage.getItem("telgo_custom_projects");
     let initialList = DEFAULT_PROJECTS;
@@ -361,16 +387,7 @@ export default function AdminDashboard() {
     setSelectedProjectItem(initialList[0]);
 
     // Fetch projects from Supabase database
-    fetch("/api/mobile/projects")
-      .then(res => res.json())
-      .then(d => {
-        if (d.ok && d.projects && d.projects.length > 0) {
-          setProjectsList(d.projects);
-          setSelectedProjectItem(d.projects[0]);
-          localStorage.setItem("telgo_custom_projects", JSON.stringify(d.projects));
-        }
-      })
-      .catch(err => console.error("Error fetching projects from database:", err));
+    fetchProjectsFromServer();
   }, []);
 
   const syncProjectUpdate = (updated: any, nextList: any[]) => {
@@ -389,7 +406,9 @@ export default function AdminDashboard() {
     })
       .then(res => res.json())
       .then(d => {
-        if (!d.ok) {
+        if (d.ok) {
+          fetchProjectsFromServer();
+        } else {
           console.error("Database project sync failed:", d.message);
         }
       })
