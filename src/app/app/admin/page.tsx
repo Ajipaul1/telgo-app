@@ -322,8 +322,12 @@ export default function AdminDashboard() {
     setSelectedProjectItem(updated);
     localStorage.setItem("telgo_custom_projects", JSON.stringify(nextList));
 
-    fetch("/api/mobile/projects", {
-      method: "POST",
+    const isNew = !projectsList.some(p => p.id === updated.id);
+    const url = isNew ? "/api/mobile/projects" : `/api/mobile/projects/${updated.id}`;
+    const method = isNew ? "POST" : "PATCH";
+
+    fetch(url, {
+      method: method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updated)
     })
