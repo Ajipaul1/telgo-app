@@ -22,7 +22,6 @@ export function createMobileSession(user: MobileAccessUser): MobileSession {
     fullName: user.full_name,
     role: user.role,
     loginId: user.login_id,
-    avatarUrl: user.avatar_url,
     phone: user.phone,
     exp: Math.floor(Date.now() / 1000) + MOBILE_SESSION_TTL_SECONDS
   };
