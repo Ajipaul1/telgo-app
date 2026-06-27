@@ -1703,7 +1703,7 @@ export default function AdminDashboard() {
                   width: 42,
                   height: 42,
                   borderRadius: "50%",
-                  background: "linear-gradient(135deg, #7c3aed, #06b6d4)",
+                  background: adminSelf?.avatarUrl && adminSelf.avatarUrl.startsWith("data:image/") ? "none" : "linear-gradient(135deg, #7c3aed, #06b6d4)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1712,9 +1712,14 @@ export default function AdminDashboard() {
                   fontWeight: 800,
                   border: "1.5px solid var(--border)",
                   boxShadow: "0 4px 15px rgba(124, 58, 237, 0.3)",
-                  textTransform: "uppercase"
+                  textTransform: "uppercase",
+                  overflow: "hidden"
                 }}>
-                  {adminSelf ? adminSelf.fullName.charAt(0) : "A"}
+                  {adminSelf?.avatarUrl && adminSelf.avatarUrl.startsWith("data:image/") ? (
+                    <img src={adminSelf.avatarUrl} alt="Admin Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    adminSelf ? adminSelf.fullName.charAt(0) : "A"
+                  )}
                 </div>
               </button>
             </div>

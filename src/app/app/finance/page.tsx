@@ -502,27 +502,38 @@ export default function FinanceDashboard() {
           <div style={{ width: "100%", maxWidth: 420, textAlign: "center" }}>
             
             {/* Circular Initials Avatar */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24 }}>
-              <div style={{
-                width: 64,
-                height: 64,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #d97706, #fbbf24)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "black",
-                fontSize: 26,
-                fontWeight: 800,
-                boxShadow: "0 10px 28px rgba(250,204,21,0.2)",
-                border: "2px solid var(--border)",
-                textTransform: "uppercase"
-              }}>
-                {(user?.fullName || "U").charAt(0)}
-              </div>
-              <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "12px 0 2px" }}>{user?.fullName}</h2>
-              <p style={{ fontSize: 12, color: "var(--dim)", margin: 0, fontFamily: "monospace" }}>{user?.loginId}</p>
-            </div>
+            {(() => {
+              const avatar = user?.avatarUrl || "";
+              const hasPhoto = avatar && avatar.startsWith("data:image/");
+              return (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24 }}>
+                  <div style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: "50%",
+                    background: hasPhoto ? "none" : "linear-gradient(135deg, #d97706, #fbbf24)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontSize: 26,
+                    fontWeight: 800,
+                    boxShadow: "0 10px 28px rgba(250,204,21,0.2)",
+                    border: "2px solid var(--border)",
+                    textTransform: "uppercase",
+                    overflow: "hidden"
+                  }}>
+                    {hasPhoto ? (
+                      <img src={avatar} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      (user?.fullName || "U").charAt(0)
+                    )}
+                  </div>
+                  <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "12px 0 2px" }}>{user?.fullName}</h2>
+                  <p style={{ fontSize: 12, color: "var(--dim)", margin: 0, fontFamily: "monospace" }}>{user?.loginId}</p>
+                </div>
+              );
+            })()}
 
             {/* GRID OF MODULES */}
             <div className="menu-grid">
