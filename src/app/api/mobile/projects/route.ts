@@ -50,11 +50,16 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json().catch(() => null)) as (Partial<Project> & { id?: string }) | null;
-  if (!body?.name || !body?.location) {
+  const location = body?.location || ((body as any)?.district ? `${(body as any).district}, Kerala` : undefined);
+  if (!body?.name || !location) {
     return NextResponse.json(
       { ok: false, message: "Project name and location are required." },
       { status: 400 }
     );
+  }
+
+  if (body) {
+    body.location = location;
   }
 
   try {
