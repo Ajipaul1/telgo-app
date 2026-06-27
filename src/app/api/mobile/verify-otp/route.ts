@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
   const { data, error } = await supabase
     .from("mobile_app_users")
-    .select("id,email,full_name,role,login_id,user_folder_path,created_at,auth_user_id")
+    .select("id,email,full_name,role,login_id,user_folder_path,created_at,auth_user_id,avatar_url,phone")
     .eq("email", email)
     .eq("access_status", "active")
     .is("blocked_at", null)

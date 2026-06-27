@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
   const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
   const { data: fetchedUser, error } = await supabase
     .from("mobile_app_users")
-    .select("id,email,full_name,role,login_id,user_folder_path,created_at,password_hash,access_status,blocked_at")
+    .select("id,email,full_name,role,login_id,user_folder_path,created_at,password_hash,access_status,blocked_at,avatar_url,phone")
     .eq(isEmail ? "email" : "login_id", isEmail ? identifier : identifier.toUpperCase())
     .maybeSingle();
 
