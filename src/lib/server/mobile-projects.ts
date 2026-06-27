@@ -164,6 +164,11 @@ export function toMobileProject(row: ProjectRow): Project {
   const hddSegments = (corridorData as any)?.hddSegments || demoProject?.hddSegments || [];
   const trenchingSegments = (corridorData as any)?.trenchingSegments || demoProject?.trenchingSegments || [];
   const distance = (corridorData as any)?.distance || demoProject?.distance || `${totalLengthKm} km`;
+  const manualDistance = (corridorData as any)?.manualDistance || null;
+  const middlePoints = (corridorData as any)?.middlePoints || [];
+  const cableLayingCoords = (corridorData as any)?.cableLayingCoords || null;
+  const hddDrillingCoords = (corridorData as any)?.hddDrillingCoords || null;
+  const openTrenchCoords = (corridorData as any)?.openTrenchCoords || null;
 
   return {
     id: id || demoProject?.id || `project-${Date.now()}`,
@@ -193,6 +198,11 @@ export function toMobileProject(row: ProjectRow): Project {
     // Direct GIS properties mapping for editor and maps
     description,
     distance,
+    manualDistance,
+    middlePoints,
+    cableLayingCoords,
+    hddDrillingCoords,
+    openTrenchCoords,
     startLabel,
     startCoords,
     endLabel,
@@ -243,6 +253,11 @@ function toProjectTablePayload(
     geofenceMeters: 150,
     progressUpdates: (effective.corridor as any)?.progressUpdates || [],
     distance: effective.distance,
+    manualDistance: effective.manualDistance || null,
+    middlePoints: effective.middlePoints || [],
+    cableLayingCoords: effective.cableLayingCoords || null,
+    hddDrillingCoords: effective.hddDrillingCoords || null,
+    openTrenchCoords: effective.openTrenchCoords || null,
     hddPoints: effective.hddPoints || [],
     terminationPoints: effective.terminationPoints || [],
     trenchingLine: effective.trenchingLine || [],

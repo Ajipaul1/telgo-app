@@ -24,12 +24,14 @@ export async function GET(request: NextRequest) {
 
   if (userId) {
     try {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data: historyData, error: historyError } = await supabase
         .from("mobile_live_locations")
         .select("latitude,longitude,recorded_at")
         .eq("mobile_user_id", userId)
+        .gte("recorded_at", twentyFourHoursAgo)
         .order("recorded_at", { ascending: true })
-        .limit(150);
+        .limit(250);
 
       if (historyError) {
         return NextResponse.json({ ok: false, message: historyError.message }, { status: 500 });

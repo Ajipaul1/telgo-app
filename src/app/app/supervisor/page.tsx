@@ -148,6 +148,10 @@ export default function SupervisorDashboard() {
   const [wipTrenchingValue, setWipTrenchingValue] = useState("");
   const [wipTrenchingNarration, setWipTrenchingNarration] = useState("");
   const [wipTrenchingPhoto, setWipTrenchingPhoto] = useState("");
+  const [trenchingStartLat, setTrenchingStartLat] = useState("");
+  const [trenchingStartLng, setTrenchingStartLng] = useState("");
+  const [trenchingEndLat, setTrenchingEndLat] = useState("");
+  const [trenchingEndLng, setTrenchingEndLng] = useState("");
 
   const [wipHddValue, setWipHddValue] = useState("");
   const [wipHddNarration, setWipHddNarration] = useState("");
@@ -156,6 +160,10 @@ export default function SupervisorDashboard() {
   const [wipCableLayingValue, setWipCableLayingValue] = useState("");
   const [wipCableLayingNarration, setWipCableLayingNarration] = useState("");
   const [wipCableLayingPhoto, setWipCableLayingPhoto] = useState("");
+  const [cableLayingStartLat, setCableLayingStartLat] = useState("");
+  const [cableLayingStartLng, setCableLayingStartLng] = useState("");
+  const [cableLayingEndLat, setCableLayingEndLat] = useState("");
+  const [cableLayingEndLng, setCableLayingEndLng] = useState("");
 
   const [wipCableMoundingValue, setWipCableMoundingValue] = useState("");
   const [wipCableMoundingNarration, setWipCableMoundingNarration] = useState("");
@@ -198,6 +206,35 @@ export default function SupervisorDashboard() {
   const [reqAdminConcerns, setReqAdminConcerns] = useState("");
 
   const [submittingReport, setSubmittingReport] = useState(false);
+
+  // Listen for pin drops from Trenching & Cable Laying pinpoint maps
+  useEffect(() => {
+    const handleMapMessage = (event: MessageEvent) => {
+      const data = event.data;
+      if (!data || typeof data !== "object") return;
+
+      if (data.source === "trenching-pinpoint") {
+        if (data.type === "start") {
+          setTrenchingStartLat(String(data.lat));
+          setTrenchingStartLng(String(data.lng));
+        } else if (data.type === "end") {
+          setTrenchingEndLat(String(data.lat));
+          setTrenchingEndLng(String(data.lng));
+        }
+      } else if (data.source === "cable-laying-pinpoint") {
+        if (data.type === "start") {
+          setCableLayingStartLat(String(data.lat));
+          setCableLayingStartLng(String(data.lng));
+        } else if (data.type === "end") {
+          setCableLayingEndLat(String(data.lat));
+          setCableLayingEndLng(String(data.lng));
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMapMessage);
+    return () => window.removeEventListener("message", handleMapMessage);
+  }, []);
 
   // Dynamic cropper states
   const [cropperImage, setCropperImage] = useState<string | null>(null);
@@ -474,9 +511,25 @@ export default function SupervisorDashboard() {
     }
 
     const wipProgressList = {
-      trenching: { value: Number(d.wipTrenchingValue || 0), narration: d.wipTrenchingNarration || "", photo: d.wipTrenchingPhoto || "" },
+      trenching: { 
+        value: Number(d.wipTrenchingValue || 0), 
+        narration: d.wipTrenchingNarration || "", 
+        photo: d.wipTrenchingPhoto || "",
+        startLat: d.trenchingStartLat || null,
+        startLng: d.trenchingStartLng || null,
+        endLat: d.trenchingEndLat || null,
+        endLng: d.trenchingEndLng || null
+      },
       hdd: { value: Number(d.wipHddValue || 0), narration: d.wipHddNarration || "", photo: d.wipHddPhoto || "" },
-      cableLaying: { value: Number(d.wipCableLayingValue || 0), narration: d.wipCableLayingNarration || "", photo: d.wipCableLayingPhoto || "" },
+      cableLaying: { 
+        value: Number(d.wipCableLayingValue || 0), 
+        narration: d.wipCableLayingNarration || "", 
+        photo: d.wipCableLayingPhoto || "",
+        startLat: d.cableLayingStartLat || null,
+        startLng: d.cableLayingStartLng || null,
+        endLat: d.cableLayingEndLat || null,
+        endLng: d.cableLayingEndLng || null
+      },
       cableMounding: { value: Number(d.wipCableMoundingValue || 0), narration: d.wipCableMoundingNarration || "", photo: d.wipCableMoundingPhoto || "" },
       joining: { value: Number(d.wipJoiningValue || 0), narration: d.wipJoiningNarration || "", photo: d.wipJoiningPhoto || "" },
       rmu: { value: Number(d.wipRmuValue || 0), narration: d.wipRmuNarration || "", photo: d.wipRmuPhoto || "" },
@@ -672,6 +725,10 @@ export default function SupervisorDashboard() {
         setWipTrenchingValue(d.wipTrenchingValue || "");
         setWipTrenchingNarration(d.wipTrenchingNarration || "");
         setWipTrenchingPhoto(d.wipTrenchingPhoto || "");
+        setTrenchingStartLat(d.trenchingStartLat || "");
+        setTrenchingStartLng(d.trenchingStartLng || "");
+        setTrenchingEndLat(d.trenchingEndLat || "");
+        setTrenchingEndLng(d.trenchingEndLng || "");
         
         setWipHddValue(d.wipHddValue || "");
         setWipHddNarration(d.wipHddNarration || "");
@@ -680,6 +737,10 @@ export default function SupervisorDashboard() {
         setWipCableLayingValue(d.wipCableLayingValue || "");
         setWipCableLayingNarration(d.wipCableLayingNarration || "");
         setWipCableLayingPhoto(d.wipCableLayingPhoto || "");
+        setCableLayingStartLat(d.cableLayingStartLat || "");
+        setCableLayingStartLng(d.cableLayingStartLng || "");
+        setCableLayingEndLat(d.cableLayingEndLat || "");
+        setCableLayingEndLng(d.cableLayingEndLng || "");
         
         setWipCableMoundingValue(d.wipCableMoundingValue || "");
         setWipCableMoundingNarration(d.wipCableMoundingNarration || "");
@@ -739,6 +800,10 @@ export default function SupervisorDashboard() {
       setWipTrenchingValue("");
       setWipTrenchingNarration("");
       setWipTrenchingPhoto("");
+      setTrenchingStartLat("");
+      setTrenchingStartLng("");
+      setTrenchingEndLat("");
+      setTrenchingEndLng("");
       
       setWipHddValue("");
       setWipHddNarration("");
@@ -747,6 +812,10 @@ export default function SupervisorDashboard() {
       setWipCableLayingValue("");
       setWipCableLayingNarration("");
       setWipCableLayingPhoto("");
+      setCableLayingStartLat("");
+      setCableLayingStartLng("");
+      setCableLayingEndLat("");
+      setCableLayingEndLng("");
       
       setWipCableMoundingValue("");
       setWipCableMoundingNarration("");
@@ -807,12 +876,20 @@ export default function SupervisorDashboard() {
       wipTrenchingValue,
       wipTrenchingNarration,
       wipTrenchingPhoto,
+      trenchingStartLat,
+      trenchingStartLng,
+      trenchingEndLat,
+      trenchingEndLng,
       wipHddValue,
       wipHddNarration,
       wipHddPhoto,
       wipCableLayingValue,
       wipCableLayingNarration,
       wipCableLayingPhoto,
+      cableLayingStartLat,
+      cableLayingStartLng,
+      cableLayingEndLat,
+      cableLayingEndLng,
       wipCableMoundingValue,
       wipCableMoundingNarration,
       wipCableMoundingPhoto,
@@ -862,8 +939,10 @@ export default function SupervisorDashboard() {
     toolRentList,
     otherExpensesList,
     wipTrenchingValue, wipTrenchingNarration, wipTrenchingPhoto,
+    trenchingStartLat, trenchingStartLng, trenchingEndLat, trenchingEndLng,
     wipHddValue, wipHddNarration, wipHddPhoto,
     wipCableLayingValue, wipCableLayingNarration, wipCableLayingPhoto,
+    cableLayingStartLat, cableLayingStartLng, cableLayingEndLat, cableLayingEndLng,
     wipCableMoundingValue, wipCableMoundingNarration, wipCableMoundingPhoto,
     wipJoiningValue, wipJoiningNarration, wipJoiningPhoto,
     wipRmuValue, wipRmuNarration, wipRmuPhoto,
@@ -1140,6 +1219,7 @@ export default function SupervisorDashboard() {
     if (!isShiftActive || !user || !isTrackingActiveThisSession) return;
 
     let watchId: number;
+    let intervalId: any;
 
     const updateBackgroundLocation = (pos: GeolocationPosition) => {
       fetch("/api/mobile/live-map", {
@@ -1161,11 +1241,24 @@ export default function SupervisorDashboard() {
         () => {},
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       );
+
+      // Fail-safe: force update telemetry every 20 minutes
+      const forceUpdateTelemetry = () => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => updateBackgroundLocation(pos),
+          () => {},
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+      };
+      intervalId = setInterval(forceUpdateTelemetry, 1200000);
     }
 
     return () => {
       if (watchId && navigator.geolocation) {
         navigator.geolocation.clearWatch(watchId);
+      }
+      if (intervalId) {
+        clearInterval(intervalId);
       }
     };
   }, [isShiftActive, user, isTrackingActiveThisSession]);
@@ -1301,6 +1394,19 @@ export default function SupervisorDashboard() {
           transform: translateY(-4px) scale(1.02);
           border-color: rgba(6, 182, 212, 0.3) !important;
           background: var(--surface) !important;
+        }
+        @media (min-width: 768px) {
+          .daily-report-modal {
+            max-width: 840px !important;
+            height: 90dvh !important;
+            max-height: 850px !important;
+          }
+          .wizard-two-column {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 20px;
+            align-items: start;
+          }
         }
       `}</style>
       {/* Immersive Header */}
@@ -1498,6 +1604,46 @@ export default function SupervisorDashboard() {
                     <span style={{ fontSize: 8, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase" }}>End Position</span>
                     <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 750, color: "#dc2626" }}>{selectedProjectItem.endLabel}</p>
                     <span style={{ fontSize: 9, fontFamily: "monospace", color: "var(--dim)" }}>{selectedProjectItem.endCoords[0]}° N, {selectedProjectItem.endCoords[1]}° E</span>
+                  </div>
+                </div>
+
+                {/* Site Storage / Raw Materials present in site */}
+                <div style={{ marginTop: 14, border: "1px solid var(--border)", borderRadius: 14, padding: 12, background: "var(--surface)" }}>
+                  <h3 style={{ fontSize: 11, fontWeight: 800, color: "var(--text)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 4 }}>
+                    📦 Site Storage & Raw Materials
+                  </h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 150, overflowY: "auto", paddingRight: 4 }}>
+                    {(!selectedProjectItem.storageMaterials || selectedProjectItem.storageMaterials.length === 0) ? (
+                      <span style={{ fontSize: 11, color: "var(--dim)", textAlign: "center", display: "block", padding: "10px 0" }}>
+                        No raw materials logged for this corridor yet.
+                      </span>
+                    ) : (
+                      selectedProjectItem.storageMaterials.map((m: any) => (
+                        <div key={m.id} className="glass" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 10, background: "rgba(255, 255, 255, 0.4)" }}>
+                          <div style={{ flex: 1, textAlign: "left" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <strong style={{ fontSize: 11, color: "var(--text)" }}>{m.materialName || m.name}</strong>
+                              <span style={{ fontSize: 9, color: "var(--dim)", fontFamily: "monospace" }}>({m.date})</span>
+                            </div>
+                            <p style={{ margin: "2px 0 0", fontSize: 10, color: "var(--muted)" }}>
+                              Qty: {m.quantityMeters || m.quantity} | Loc: {m.location}
+                            </p>
+                            {m.notes && (
+                              <p style={{ margin: "2px 0 0", fontSize: 10, color: "var(--dim)", fontStyle: "italic" }}>
+                                "{m.notes}"
+                              </p>
+                            )}
+                          </div>
+                          {m.photoUrl && (
+                            <img 
+                              src={m.photoUrl} 
+                              alt="Material Thumbnail" 
+                              style={{ width: 34, height: 34, borderRadius: 6, objectFit: "cover", border: "1px solid var(--border)", marginLeft: 6 }} 
+                            />
+                          )}
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -2044,26 +2190,26 @@ export default function SupervisorDashboard() {
           fontFamily: "Outfit, sans-serif",
           overflowY: "auto"
         }}>
-          <div className="glass fade-in" style={{
+          <div className="glass fade-in daily-report-modal" style={{
             width: "100%",
             maxWidth: 640,
             background: "#ffffff",
             border: "1px solid #e2e8f0",
             borderRadius: 24,
-            padding: "26px 24px",
+            padding: "20px 24px",
             boxShadow: "0 20px 50px rgba(15, 23, 42, 0.08)",
             height: "85dvh",
             maxHeight: "780px",
             display: "flex",
             flexDirection: "column",
-            gap: 16,
+            gap: 12,
             color: "#0f172a"
           }}>
             {/* Modal Header */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #e2e8f0", paddingBottom: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #e2e8f0", paddingBottom: 10 }}>
               <div>
-                <span style={{ fontSize: 10, fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.12em" }}>Daily Operation Hub</span>
-                <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Daily Report Registry</h3>
+                <span style={{ fontSize: 9, fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.12em" }}>Daily Operation Hub</span>
+                <h3 style={{ fontSize: 16, fontWeight: 900, color: "#0f172a", margin: "1px 0 0", letterSpacing: "-0.5px" }}>Report</h3>
               </div>
               <button 
                 onClick={() => {
@@ -2071,9 +2217,9 @@ export default function SupervisorDashboard() {
                     setIsDailyReportOpen(false);
                   }
                 }}
-                style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", width: 30, height: 30, borderRadius: "50%", color: "#475569", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", width: 28, height: 28, borderRadius: "50%", color: "#475569", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
 
@@ -2112,144 +2258,108 @@ export default function SupervisorDashboard() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <h4 style={{ fontSize: 13, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", margin: 0 }}>Step 1: Crew Roster & Logistics Expenses</h4>
                   
-                  {/* Project Selection Dropdown */}
-                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16 }}>
-                    <label style={{ display: "block", fontSize: 10, fontWeight: 800, color: "#0284c7", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Active Engineering Corridor</label>
-                    <select
-                      value={reportProjectId}
-                      onChange={(e) => setReportProjectId(e.target.value)}
-                      style={{ width: "100%", height: 40, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: "0 12px", color: "#0f172a", fontSize: 13, outline: "none", cursor: "pointer", fontWeight: 700 }}
-                    >
-                      {projectsList.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  {/* Date picker */}
-                  <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#475569", marginBottom: 6, textTransform: "uppercase" }}>Operation Date</label>
-                    <input
-                      type="date"
-                      value={reportDate}
-                      onChange={(e) => setReportDate(e.target.value)}
-                      max={new Date().toISOString().split("T")[0]}
-                      min={(() => {
-                        const d = new Date();
-                        d.setDate(d.getDate() - 3);
-                        return d.toISOString().split("T")[0];
-                      })()}
-                      style={{ width: "100%", height: 38, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: "0 12px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
-                      required
-                    />
-                  </div>
-
-                  {/* Labor Wages Section */}
-                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 18, borderRadius: 16, display: "flex", flexDirection: "column", gap: 14 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.05em" }}>Field Force Crew Strength</span>
-                      <button
-                        type="button"
-                        onClick={() => handleSaveAndBlur("Wages & Roster")}
-                        style={{ fontSize: 10, fontWeight: 700, color: "#0284c7", background: "rgba(2, 132, 199, 0.06)", border: "1px solid rgba(2, 132, 199, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
-                      >
-                        💾 Save Section
-                      </button>
-                    </div>
-                    
-                    {/* Crew count */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>Technicians Count</span>
-                        <p style={{ margin: 0, fontSize: 10, color: "#64748b" }}>Number of field force personnel on-duty</p>
+                  <div className="wizard-two-column">
+                    {/* LEFT COLUMN: CORE ROSTER & WAGES */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                      {/* Project Selection Dropdown */}
+                      <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 14, borderRadius: 16 }}>
+                        <label style={{ display: "block", fontSize: 10, fontWeight: 800, color: "#0284c7", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Active Engineering Corridor</label>
+                        <select
+                          value={reportProjectId}
+                          onChange={(e) => setReportProjectId(e.target.value)}
+                          style={{ width: "100%", height: 40, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: "0 12px", color: "#0f172a", fontSize: 13, outline: "none", cursor: "pointer", fontWeight: 700 }}
+                        >
+                          {projectsList.map((p) => (
+                            <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
+                          ))}
+                        </select>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <button type="button" onClick={() => setLaborCount(Math.max(0, Number(laborCount || 0) - 1))} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #cbd5e1", background: "#ffffff", color: "#0f172a", cursor: "pointer", fontWeight: 900 }}>-</button>
-                        <input
-                          type="number"
-                          value={laborCount}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setLaborCount(val === "" ? "" : Math.max(0, parseInt(val) || 0));
-                          }}
-                          style={{ width: 44, height: 32, background: "transparent", border: "none", color: "#0f172a", fontSize: 15, fontWeight: 800, textAlign: "center", outline: "none" }}
-                        />
-                        <button type="button" onClick={() => setLaborCount(Number(laborCount || 0) + 1)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #cbd5e1", background: "#ffffff", color: "#0f172a", cursor: "pointer", fontWeight: 900 }}>+</button>
-                      </div>
-                    </div>
-
-                    {/* Daily wage rate input */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 12, alignItems: "center", borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
-                      <div>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: "#1e293b" }}>Daily Wages per Crew Member</span>
-                        <p style={{ margin: 0, fontSize: 10, color: "#64748b" }}>Rate per technician shift (₹)</p>
-                      </div>
-                      <input
-                        type="number"
-                        value={workerWageRate}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setWorkerWageRate(val === "" ? "" : Math.max(0, parseInt(val) || 0));
-                        }}
-                        style={{ width: "100%", height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 10px", color: "#0f172a", fontSize: 12, fontWeight: 700, outline: "none" }}
-                      />
-                    </div>
-
-                    {/* Supervisor Option */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
-                      <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-                        <input
-                          type="checkbox"
-                          checked={includeSupervisor}
-                          onChange={(e) => setIncludeSupervisor(e.target.checked)}
-                          style={{ accentColor: "#0284c7", width: 18, height: 18 }}
-                        />
-                        <div>
-                          <span style={{ fontSize: 13, color: "#1e293b", fontWeight: 700 }}>Site Operations Engineer Presence</span>
-                          <p style={{ margin: 0, fontSize: 10, color: "#64748b" }}>Mark active presence of operations engineer on-site</p>
-                        </div>
-                      </label>
                       
-                      {includeSupervisor && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8, background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, marginTop: 4 }} className="fade-in">
-                          <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 12, alignItems: "center" }}>
-                            <div>
-                              <span style={{ fontSize: 12, fontWeight: 700, color: "#1e293b" }}>Daily Operations Allowance</span>
-                              <p style={{ margin: 0, fontSize: 10, color: "#64748b" }}>Rate per engineer shift (₹)</p>
-                            </div>
+                      {/* Date picker */}
+                      <div>
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#475569", marginBottom: 6, textTransform: "uppercase" }}>Operation Date</label>
+                        <input
+                          type="date"
+                          value={reportDate}
+                          onChange={(e) => setReportDate(e.target.value)}
+                          max={new Date().toISOString().split("T")[0]}
+                          min={(() => {
+                            const d = new Date();
+                            d.setDate(d.getDate() - 3);
+                            return d.toISOString().split("T")[0];
+                          })()}
+                          style={{ width: "100%", height: 38, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: "0 12px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
+                          required
+                        />
+                      </div>
+
+                      {/* Labor Wages Section */}
+                      <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 18, borderRadius: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 11, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.05em" }}>Field Force Crew Strength</span>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveAndBlur("Wages & Roster")}
+                            style={{ fontSize: 10, fontWeight: 700, color: "#0284c7", background: "rgba(2, 132, 199, 0.06)", border: "1px solid rgba(2, 132, 199, 0.2)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}
+                          >
+                            💾 Save Section
+                          </button>
+                        </div>
+                        
+                        {/* Crew count */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>Workers Count</span>
+                            <p style={{ margin: 0, fontSize: 10, color: "#64748b" }}>Number of field force personnel on-duty</p>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <button type="button" onClick={() => setLaborCount(Math.max(0, Number(laborCount || 0) - 1))} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #cbd5e1", background: "#ffffff", color: "#0f172a", cursor: "pointer", fontWeight: 900 }}>-</button>
                             <input
                               type="number"
-                              value={supervisorWageRate}
+                              value={laborCount}
                               onChange={(e) => {
                                 const val = e.target.value;
-                                setSupervisorWageRate(val === "" ? "" : Math.max(0, parseInt(val) || 0));
+                                setLaborCount(val === "" ? "" : Math.max(0, parseInt(val) || 0));
                               }}
-                              style={{ width: "100%", height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 10px", color: "#0f172a", fontSize: 12, fontWeight: 700, outline: "none" }}
+                              style={{ width: 44, height: 32, background: "transparent", border: "none", color: "#0f172a", fontSize: 15, fontWeight: 800, textAlign: "center", outline: "none" }}
                             />
+                            <button type="button" onClick={() => setLaborCount(Number(laborCount || 0) + 1)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #cbd5e1", background: "#ffffff", color: "#0f172a", cursor: "pointer", fontWeight: 900 }}>+</button>
+                          </div>
+                        </div>
+
+                        {/* Daily wage rate input */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 12, alignItems: "center", borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
+                          <div>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#1e293b" }}>Daily Wages per Crew Member</span>
+                            <p style={{ margin: 0, fontSize: 10, color: "#64748b" }}>Rate per worker shift (₹)</p>
                           </div>
                           <input
+                            type="number"
+                            value={workerWageRate}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setWorkerWageRate(val === "" ? "" : Math.max(0, parseInt(val) || 0));
+                            }}
+                            style={{ width: "100%", height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 10px", color: "#0f172a", fontSize: 12, fontWeight: 700, outline: "none" }}
+                          />
+                        </div>
+
+                        {/* Wages Narration */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
+                          <span style={{ fontSize: 10, color: "#64748b", fontWeight: 800, textTransform: "uppercase" }}>General Roster/Wages Notes</span>
+                          <input
                             type="text"
-                            placeholder="Engineer task focus note..."
-                            value={supervisorNarration}
-                            onChange={(e) => setSupervisorNarration(e.target.value)}
+                            placeholder="Enter crew/shift notes here..."
+                            value={laborWagesNarration}
+                            onChange={(e) => setLaborWagesNarration(e.target.value)}
                             style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 10px", color: "#0f172a", fontSize: 11, outline: "none" }}
                           />
                         </div>
-                      )}
+                      </div>
                     </div>
 
-                    {/* Wages Narration */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
-                      <span style={{ fontSize: 10, color: "#64748b", fontWeight: 800, textTransform: "uppercase" }}>General Roster/Wages Notes</span>
-                      <input
-                        type="text"
-                        placeholder="Enter crew/shift notes here..."
-                        value={laborWagesNarration}
-                        onChange={(e) => setLaborWagesNarration(e.target.value)}
-                        style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 10px", color: "#0f172a", fontSize: 11, outline: "none" }}
-                      />
-                    </div>
-                  </div>
+                    {/* RIGHT COLUMN: OVERTIME ROSTER & LOGISTICS EXPENSES */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
                   {/* Overtime Workers Section */}
                   <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -2764,6 +2874,8 @@ export default function SupervisorDashboard() {
                       ₹{totalFuel + totalTravel + totalRoomRent + totalToolRent + totalOtherRent}
                     </span>
                   </div>
+                    </div> {/* End of RIGHT COLUMN */}
+                  </div> {/* End of wizard-two-column */}
                 </div>
               )}
 
@@ -2771,7 +2883,7 @@ export default function SupervisorDashboard() {
               {reportStep === 2 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <h4 style={{ fontSize: 13, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", margin: 0 }}>Step 2: WIP Operational Progress</h4>
+                    <h4 style={{ fontSize: 13, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", margin: 0 }}>Step 2: SDD & WIP Progress Metrics</h4>
                     <button
                       type="button"
                       onClick={() => handleSaveAndBlur("WIP Progress Metrics")}
@@ -2789,8 +2901,8 @@ export default function SupervisorDashboard() {
                       onChange={(e) => setActiveWipMetric(e.target.value)}
                       style={{ width: "100%", height: 40, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 10, padding: "0 12px", color: "#0f172a", fontSize: 13, outline: "none", cursor: "pointer", fontWeight: 700 }}
                     >
-                      <option value="trenching">🚜 Site Clearance Trenching (m)</option>
-                      <option value="hdd">🕳️ Horizontal Direction Drilling (HDD) (m)</option>
+                      <option value="trenching">🚜 SDD (Trenching) (m)</option>
+                      <option value="hdd">🕳️ SDD (HDD) (m)</option>
                       <option value="cable_laying">🔌 Cable Laying (m)</option>
                       <option value="cable_mounding">🪨 Cable Mounting (m)</option>
                       <option value="jointing">🪵 Cable Joining</option>
@@ -2801,8 +2913,8 @@ export default function SupervisorDashboard() {
 
                   {/* Dynamic Metrics List */}
                   {[
-                    { key: "trenching", label: "Site Clearance Trenching (m)", val: wipTrenchingValue, setVal: setWipTrenchingValue, narr: wipTrenchingNarration, setNarr: setWipTrenchingNarration, pic: wipTrenchingPhoto, setPic: setWipTrenchingPhoto },
-                    { key: "hdd", label: "Horizontal Direction Drilling (m)", val: wipHddValue, setVal: setWipHddValue, narr: wipHddNarration, setNarr: setWipHddNarration, pic: wipHddPhoto, setPic: setWipHddPhoto },
+                    { key: "trenching", label: "SDD (Trenching) (m)", val: wipTrenchingValue, setVal: setWipTrenchingValue, narr: wipTrenchingNarration, setNarr: setWipTrenchingNarration, pic: wipTrenchingPhoto, setPic: setWipTrenchingPhoto },
+                    { key: "hdd", label: "SDD (HDD) (m)", val: wipHddValue, setVal: setWipHddValue, narr: wipHddNarration, setNarr: setWipHddNarration, pic: wipHddPhoto, setPic: setWipHddPhoto },
                     { key: "cable_laying", label: "Cable Laying (m)", val: wipCableLayingValue, setVal: setWipCableLayingValue, narr: wipCableLayingNarration, setNarr: setWipCableLayingNarration, pic: wipCableLayingPhoto, setPic: setWipCableLayingPhoto },
                     { key: "cable_mounding", label: "Cable Mounting (m)", val: wipCableMoundingValue, setVal: setWipCableMoundingValue, narr: wipCableMoundingNarration, setNarr: setWipCableMoundingNarration, pic: wipCableMoundingPhoto, setPic: setWipCableMoundingPhoto },
                     { key: "jointing", label: "Cable Joining", val: wipJoiningValue, setVal: setWipJoiningValue, narr: wipJoiningNarration, setNarr: setWipJoiningNarration, pic: wipJoiningPhoto, setPic: setWipJoiningPhoto },
@@ -2850,6 +2962,177 @@ export default function SupervisorDashboard() {
                         onChange={(e) => m.setNarr(e.target.value)}
                         style={{ width: "100%", height: 30, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none" }}
                       />
+
+                      {/* Dual Map Pinpointing */}
+                      {(m.key === "trenching" || m.key === "cable_laying") && selectedProjectItem && (
+                        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "#0284c7", textTransform: "uppercase" }}>
+                            🗺️ Progress Mapping (Drag pins to set today's start/end locations)
+                          </span>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                            
+                            {/* Left Map: Reference Corridor */}
+                            <div style={{ border: "1px solid #cbd5e1", borderRadius: 12, overflow: "hidden", height: 200, background: "#f1f5f9" }}>
+                              <div style={{ padding: 4, background: "#f8fafc", borderBottom: "1px solid #cbd5e1", fontSize: 9, fontWeight: 700, color: "#475569" }}>
+                                📋 Project Corridor Reference
+                              </div>
+                              <iframe
+                                title="Reference Corridor Map"
+                                style={{ width: "100%", height: 176, border: "none" }}
+                                srcDoc={`
+                                  <!DOCTYPE html>
+                                  <html>
+                                  <head>
+                                    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                                    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                                    <style>
+                                      body, html, #map { margin: 0; padding: 0; width: 100%; height: 100%; }
+                                    </style>
+                                  </head>
+                                  <body>
+                                    <div id="map"></div>
+                                    <script>
+                                      const map = L.map('map', { zoomControl: false, dragging: true }).setView([${selectedProjectItem.startCoords[0]}, ${selectedProjectItem.startCoords[1]}], 14);
+                                      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+                                      
+                                      // Plot planned path
+                                      const start = [${selectedProjectItem.startCoords[0]}, ${selectedProjectItem.startCoords[1]}];
+                                      const end = [${selectedProjectItem.endCoords[0]}, ${selectedProjectItem.endCoords[1]}];
+                                      const middlePoints = ${JSON.stringify(selectedProjectItem.middlePoints || [])};
+                                      const path = [start, ...middlePoints, end];
+                                      
+                                      L.polyline(path, { color: '#7c3aed', weight: 4, opacity: 0.8 }).addTo(map);
+                                      L.circleMarker(start, { color: '#16a34a', radius: 6, fillOpacity: 0.9 }).addTo(map);
+                                      L.circleMarker(end, { color: '#dc2626', radius: 6, fillOpacity: 0.9 }).addTo(map);
+                                      
+                                      map.fitBounds(path);
+                                    </script>
+                                  </body>
+                                  </html>
+                                `}
+                              />
+                            </div>
+
+                            {/* Right Map: Interactive Pinpoint */}
+                            <div style={{ border: "1px solid #cbd5e1", borderRadius: 12, overflow: "hidden", height: 200, background: "#f1f5f9" }}>
+                              <div style={{ padding: 4, background: "#f8fafc", borderBottom: "1px solid #cbd5e1", fontSize: 9, fontWeight: 700, color: "#475569" }}>
+                                📍 Today's Work Segment
+                              </div>
+                              <iframe
+                                title="Interactive Progress Map"
+                                style={{ width: "100%", height: 176, border: "none" }}
+                                srcDoc={`
+                                  <!DOCTYPE html>
+                                  <html>
+                                  <head>
+                                    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                                    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                                    <style>
+                                      body, html, #map { margin: 0; padding: 0; width: 100%; height: 100%; }
+                                    </style>
+                                  </head>
+                                  <body>
+                                    <div id="map"></div>
+                                    <script>
+                                      const projStart = [${selectedProjectItem.startCoords[0]}, ${selectedProjectItem.startCoords[1]}];
+                                      
+                                      // Get active coords or fallback to project start
+                                      let startLat = ${m.key === "trenching" ? (trenchingStartLat || null) : (cableLayingStartLat || null)};
+                                      let startLng = ${m.key === "trenching" ? (trenchingStartLng || null) : (cableLayingStartLng || null)};
+                                      let endLat = ${m.key === "trenching" ? (trenchingEndLat || null) : (cableLayingEndLat || null)};
+                                      let endLng = ${m.key === "trenching" ? (trenchingEndLng || null) : (cableLayingEndLng || null)};
+                                      
+                                      if (!startLat) { startLat = projStart[0]; startLng = projStart[1]; }
+                                      if (!endLat) { endLat = projStart[0] + 0.0005; endLng = projStart[1] + 0.0005; }
+
+                                      const map = L.map('map', { zoomControl: false }).setView([startLat, startLng], 15);
+                                      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+
+                                      // Green marker for Start
+                                      const startIcon = L.divIcon({
+                                        className: 'custom-div-icon',
+                                        html: "<div style='background-color:#16a34a;width:12px;height:12px;border:2px solid white;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.3)'></div>",
+                                        iconSize: [12, 12],
+                                        iconAnchor: [6, 6]
+                                      });
+
+                                      // Red marker for End
+                                      const endIcon = L.divIcon({
+                                        className: 'custom-div-icon',
+                                        html: "<div style='background-color:#dc2626;width:12px;height:12px;border:2px solid white;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.3)'></div>",
+                                        iconSize: [12, 12],
+                                        iconAnchor: [6, 6]
+                                      });
+
+                                      const startMarker = L.marker([startLat, startLng], { icon: startIcon, draggable: true }).addTo(map);
+                                      const endMarker = L.marker([endLat, endLng], { icon: endIcon, draggable: true }).addTo(map);
+
+                                      const line = L.polyline([[startLat, startLng], [endLat, endLng]], { color: '#0284c7', weight: 4, dashArray: '5, 5' }).addTo(map);
+
+                                      function updatePath() {
+                                        const s = startMarker.getLatLng();
+                                        const e = endMarker.getLatLng();
+                                        line.setLatLngs([s, e]);
+                                        
+                                        // Send message back
+                                        window.parent.postMessage({
+                                          source: '${m.key === "trenching" ? "trenching-pinpoint" : "cable-laying-pinpoint"}',
+                                          type: 'start',
+                                          lat: s.lat,
+                                          lng: s.lng
+                                        }, '*');
+
+                                        window.parent.postMessage({
+                                          source: '${m.key === "trenching" ? "trenching-pinpoint" : "cable-laying-pinpoint"}',
+                                          type: 'end',
+                                          lat: e.lat,
+                                          lng: e.lng
+                                        }, '*');
+                                      }
+
+                                      startMarker.on('dragend', updatePath);
+                                      endMarker.on('dragend', updatePath);
+                                      
+                                      map.on('click', function(e) {
+                                        // Click updates end marker position
+                                        endMarker.setLatLng(e.latlng);
+                                        updatePath();
+                                      });
+
+                                      try {
+                                        map.fitBounds([startMarker.getLatLng(), endMarker.getLatLng()], { padding: [20, 20] });
+                                      } catch(err) {}
+                                    </script>
+                                  </body>
+                                  </html>
+                                `}
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* Coordinates Text Inputs */}
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 10, background: "#ffffff", padding: 8, border: "1px solid #cbd5e1", borderRadius: 10 }}>
+                            <div>
+                              <strong style={{ color: "#16a34a" }}>Start Position</strong>
+                              <p style={{ margin: "2px 0 0", fontFamily: "monospace" }}>
+                                {m.key === "trenching" 
+                                  ? `${Number(trenchingStartLat || selectedProjectItem.startCoords[0]).toFixed(6)}, ${Number(trenchingStartLng || selectedProjectItem.startCoords[1]).toFixed(6)}` 
+                                  : `${Number(cableLayingStartLat || selectedProjectItem.startCoords[0]).toFixed(6)}, ${Number(cableLayingStartLng || selectedProjectItem.startCoords[1]).toFixed(6)}`
+                                }
+                              </p>
+                            </div>
+                            <div>
+                              <strong style={{ color: "#dc2626" }}>End Position</strong>
+                              <p style={{ margin: "2px 0 0", fontFamily: "monospace" }}>
+                                {m.key === "trenching"
+                                  ? `${Number(trenchingEndLat || selectedProjectItem.startCoords[0]).toFixed(6)}, ${Number(trenchingEndLng || selectedProjectItem.startCoords[1]).toFixed(6)}`
+                                  : `${Number(cableLayingEndLat || selectedProjectItem.startCoords[0]).toFixed(6)}, ${Number(cableLayingEndLng || selectedProjectItem.startCoords[1]).toFixed(6)}`
+                                }
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
 

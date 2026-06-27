@@ -172,6 +172,7 @@ export default function AdminDashboard() {
   const [projectsList, setProjectsList] = useState<any[]>([]);
   const [selectedProjectItem, setSelectedProjectItem] = useState<any | null>(null);
   const [editingProjectItem, setEditingProjectItem] = useState<any | null>(null);
+  const [gisEditLayer, setGisEditLayer] = useState<"corridor" | "cable" | "hdd" | "trench">("corridor");
   
   // Advanced Segment-based GIS planning states
   const [roadChangeSegments, setRoadChangeSegments] = useState<[[number, number], [number, number]][]>([]);
@@ -193,6 +194,8 @@ export default function AdminDashboard() {
   const [projCode, setProjCode] = useState("");
   const [projDistrict, setProjDistrict] = useState("");
   const [projDistance, setProjDistance] = useState("");
+  const [projManualDistance, setProjManualDistance] = useState("");
+  const [projMiddlePoints, setProjMiddlePoints] = useState<[number, number][]>([]);
   const [projDesc, setProjDesc] = useState("");
   const [projStartLabel, setProjStartLabel] = useState("");
   const [projStartLat, setProjStartLat] = useState("");
@@ -200,6 +203,28 @@ export default function AdminDashboard() {
   const [projEndLabel, setProjEndLabel] = useState("");
   const [projEndLat, setProjEndLat] = useState("");
   const [projEndLng, setProjEndLng] = useState("");
+
+  // Sub-maps editing parameters
+  const [cableStartLat, setCableStartLat] = useState("");
+  const [cableStartLng, setCableStartLng] = useState("");
+  const [cableEndLat, setCableEndLat] = useState("");
+  const [cableEndLng, setCableEndLng] = useState("");
+  const [cableMiddlePoints, setCableMiddlePoints] = useState<[number, number][]>([]);
+  const [cableDesc, setCableDesc] = useState("");
+
+  const [hddStartLat, setHddStartLat] = useState("");
+  const [hddStartLng, setHddStartLng] = useState("");
+  const [hddEndLat, setHddEndLat] = useState("");
+  const [hddEndLng, setHddEndLng] = useState("");
+  const [hddMiddlePoints, setHddMiddlePoints] = useState<[number, number][]>([]);
+  const [hddDesc, setHddDesc] = useState("");
+
+  const [trenchStartLat, setTrenchStartLat] = useState("");
+  const [trenchStartLng, setTrenchStartLng] = useState("");
+  const [trenchEndLat, setTrenchEndLat] = useState("");
+  const [trenchEndLng, setTrenchEndLng] = useState("");
+  const [trenchMiddlePoints, setTrenchMiddlePoints] = useState<[number, number][]>([]);
+  const [trenchDesc, setTrenchDesc] = useState("");
 
   // Upgraded GIS Marks & Drawing State parameters
   const [activePinMode, setActivePinMode] = useState<"start" | "end" | "project_start" | "project_end" | "road_segment" | "hdd" | "hdd_segment" | "trench" | "trench_segment" | "termination" | "utility">("start");
@@ -229,15 +254,23 @@ export default function AdminDashboard() {
     sLat: string,
     sLng: string,
     eLat: string,
-    eLng: string
+    eLng: string,
+    middlePts: [number, number][] = []
   ) => {
     const lat1 = parseFloat(sLat);
     const lng1 = parseFloat(sLng);
     const lat2 = parseFloat(eLat);
     const lng2 = parseFloat(eLng);
     if (!isNaN(lat1) && !isNaN(lng1) && !isNaN(lat2) && !isNaN(lng2)) {
+      // Build OSRM query route string including middle connection points
+      let queryPoints = `${lng1},${lat1}`;
+      if (middlePts && middlePts.length > 0) {
+        queryPoints += ";" + middlePts.map(pt => `${pt[1]},${pt[0]}`).join(";");
+      }
+      queryPoints += `;${lng2},${lat2}`;
+
       // Fetch driving distance AND coordinates snapped to actual roads
-      fetch(`https://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=full&geometries=geojson`)
+      fetch(`https://router.project-osrm.org/route/v1/driving/${queryPoints}?overview=full&geometries=geojson`)
         .then(r => r.json())
         .then(data => {
           if (data.code === "Ok" && data.routes && data.routes.length > 0) {
@@ -263,14 +296,14 @@ export default function AdminDashboard() {
     }
   };
 
-  // Automatically recalculate road distance and path when start or end coordinates change
+  // Automatically recalculate road distance and path when start, end, or middle coordinates change
   useEffect(() => {
     if (!editingProjectItem) return;
     const timer = setTimeout(() => {
-      updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng);
+      updateCalculatedDistance(projStartLat, projStartLng, projEndLat, projEndLng, projMiddlePoints);
     }, 400); // 400ms debounce
     return () => clearTimeout(timer);
-  }, [projStartLat, projStartLng, projEndLat, projEndLng, editingProjectItem]);
+  }, [projStartLat, projStartLng, projEndLat, projEndLng, projMiddlePoints, editingProjectItem]);
 
   const DEFAULT_PROJECTS = [
     {
@@ -1055,28 +1088,92 @@ export default function AdminDashboard() {
         const latStr = lat.toFixed(6);
         const lngStr = lng.toFixed(6);
 
-        if (activePinMode === "start" || activePinMode === "project_start") {
-          setProjStartLat(latStr);
-          setProjStartLng(lngStr);
-          showToast(`🟢 Project Start Position set: [${latStr}, ${lngStr}]`);
-        } else if (activePinMode === "end" || activePinMode === "project_end") {
-          setProjEndLat(latStr);
-          setProjEndLng(lngStr);
-          showToast(`🔴 Project End Position set: [${latStr}, ${lngStr}]`);
+        if (gisEditLayer === "corridor") {
+          if (activePinMode === "start" || activePinMode === "project_start") {
+            setProjStartLat(latStr);
+            setProjStartLng(lngStr);
+            showToast(`🟢 Project Start Position set: [${latStr}, ${lngStr}]`);
+          } else if (activePinMode === "end" || activePinMode === "project_end") {
+            setProjEndLat(latStr);
+            setProjEndLng(lngStr);
+            showToast(`🔴 Project End Position set: [${latStr}, ${lngStr}]`);
+          }
+        } else if (gisEditLayer === "cable") {
+          if (activePinMode === "start" || activePinMode === "project_start") {
+            setCableStartLat(latStr);
+            setCableStartLng(lngStr);
+            showToast(`🟢 Cable Start Position set: [${latStr}, ${lngStr}]`);
+          } else if (activePinMode === "end" || activePinMode === "project_end") {
+            setCableEndLat(latStr);
+            setCableEndLng(lngStr);
+            showToast(`🔴 Cable End Position set: [${latStr}, ${lngStr}]`);
+          }
+        } else if (gisEditLayer === "hdd") {
+          if (activePinMode === "start" || activePinMode === "project_start") {
+            setHddStartLat(latStr);
+            setHddStartLng(lngStr);
+            showToast(`🟢 HDD Start Position set: [${latStr}, ${lngStr}]`);
+          } else if (activePinMode === "end" || activePinMode === "project_end") {
+            setHddEndLat(latStr);
+            setHddEndLng(lngStr);
+            showToast(`🔴 HDD End Position set: [${latStr}, ${lngStr}]`);
+          }
+        } else if (gisEditLayer === "trench") {
+          if (activePinMode === "start" || activePinMode === "project_start") {
+            setTrenchStartLat(latStr);
+            setTrenchStartLng(lngStr);
+            showToast(`🟢 Trench Start Position set: [${latStr}, ${lngStr}]`);
+          } else if (activePinMode === "end" || activePinMode === "project_end") {
+            setTrenchEndLat(latStr);
+            setTrenchEndLng(lngStr);
+            showToast(`🔴 Trench End Position set: [${latStr}, ${lngStr}]`);
+          }
         }
       } else if (e.data.type === "MARKER_DRAG") {
         const { target, lat, lng } = e.data;
         const latStr = lat.toFixed(6);
         const lngStr = lng.toFixed(6);
         
-        if (target === "start") {
-          setProjStartLat(latStr);
-          setProjStartLng(lngStr);
-          showToast(`🟢 Start Position dragged to: [${latStr}, ${lngStr}]`);
-        } else if (target === "end") {
-          setProjEndLat(latStr);
-          setProjEndLng(lngStr);
-          showToast(`🔴 End Position dragged to: [${latStr}, ${lngStr}]`);
+        if (gisEditLayer === "corridor") {
+          if (target === "start") {
+            setProjStartLat(latStr);
+            setProjStartLng(lngStr);
+            showToast(`🟢 Start Position dragged to: [${latStr}, ${lngStr}]`);
+          } else if (target === "end") {
+            setProjEndLat(latStr);
+            setProjEndLng(lngStr);
+            showToast(`🔴 End Position dragged to: [${latStr}, ${lngStr}]`);
+          }
+        } else if (gisEditLayer === "cable") {
+          if (target === "start") {
+            setCableStartLat(latStr);
+            setCableStartLng(lngStr);
+            showToast(`🟢 Cable Start dragged to: [${latStr}, ${lngStr}]`);
+          } else if (target === "end") {
+            setCableEndLat(latStr);
+            setCableEndLng(lngStr);
+            showToast(`🔴 Cable End dragged to: [${latStr}, ${lngStr}]`);
+          }
+        } else if (gisEditLayer === "hdd") {
+          if (target === "start") {
+            setHddStartLat(latStr);
+            setHddStartLng(lngStr);
+            showToast(`🟢 HDD Start dragged to: [${latStr}, ${lngStr}]`);
+          } else if (target === "end") {
+            setHddEndLat(latStr);
+            setHddEndLng(lngStr);
+            showToast(`🔴 HDD End dragged to: [${latStr}, ${lngStr}]`);
+          }
+        } else if (gisEditLayer === "trench") {
+          if (target === "start") {
+            setTrenchStartLat(latStr);
+            setTrenchStartLng(lngStr);
+            showToast(`🟢 Trench Start dragged to: [${latStr}, ${lngStr}]`);
+          } else if (target === "end") {
+            setTrenchEndLat(latStr);
+            setTrenchEndLng(lngStr);
+            showToast(`🔴 Trench End dragged to: [${latStr}, ${lngStr}]`);
+          }
         }
       } else if (e.data.type === "ROUTE_CALCULATED") {
         const { distance, utilityPath } = e.data;
@@ -1163,6 +1260,8 @@ export default function AdminDashboard() {
       setProjCode(editingProjectItem.code);
       setProjDistrict(editingProjectItem.district);
       setProjDistance(editingProjectItem.distance);
+      setProjManualDistance(editingProjectItem.manualDistance || "");
+      setProjMiddlePoints(editingProjectItem.middlePoints || []);
       setProjDesc(editingProjectItem.description);
       setProjStartLabel(editingProjectItem.startLabel);
       setProjStartLat(String(editingProjectItem.startCoords[0]));
@@ -1184,6 +1283,32 @@ export default function AdminDashboard() {
       setTempRoadStart(null);
       setTempHddStart(null);
       setTempTrenchStart(null);
+
+      setGisEditLayer("corridor");
+      
+      const cable = editingProjectItem.cableLayingCoords || {};
+      setCableStartLat(cable.startCoords ? String(cable.startCoords[0]) : "");
+      setCableStartLng(cable.startCoords ? String(cable.startCoords[1]) : "");
+      setCableEndLat(cable.endCoords ? String(cable.endCoords[0]) : "");
+      setCableEndLng(cable.endCoords ? String(cable.endCoords[1]) : "");
+      setCableMiddlePoints(cable.middlePoints || []);
+      setCableDesc(cable.description || "");
+
+      const hddDrill = editingProjectItem.hddDrillingCoords || {};
+      setHddStartLat(hddDrill.startCoords ? String(hddDrill.startCoords[0]) : "");
+      setHddStartLng(hddDrill.startCoords ? String(hddDrill.startCoords[1]) : "");
+      setHddEndLat(hddDrill.endCoords ? String(hddDrill.endCoords[0]) : "");
+      setHddEndLng(hddDrill.endCoords ? String(hddDrill.endCoords[1]) : "");
+      setHddMiddlePoints(hddDrill.middlePoints || []);
+      setHddDesc(hddDrill.description || "");
+
+      const trench = editingProjectItem.openTrenchCoords || {};
+      setTrenchStartLat(trench.startCoords ? String(trench.startCoords[0]) : "");
+      setTrenchStartLng(trench.startCoords ? String(trench.startCoords[1]) : "");
+      setTrenchEndLat(trench.endCoords ? String(trench.endCoords[0]) : "");
+      setTrenchEndLng(trench.endCoords ? String(trench.endCoords[1]) : "");
+      setTrenchMiddlePoints(trench.middlePoints || []);
+      setTrenchDesc(trench.description || "");
 
       setActivePinMode("project_start"); // default active mode
     }
@@ -1210,6 +1335,8 @@ export default function AdminDashboard() {
       location: editingProjectItem.location || projDistrict + ", Kerala",
       district: projDistrict,
       distance: projDistance,
+      manualDistance: projManualDistance,
+      middlePoints: projMiddlePoints,
       description: projDesc,
       startLabel: projStartLabel,
       startCoords: [lat1, lng1] as [number, number],
@@ -1221,7 +1348,25 @@ export default function AdminDashboard() {
       utilityPath,
       roadChangeSegments,
       hddSegments,
-      trenchingSegments
+      trenchingSegments,
+      cableLayingCoords: {
+        startCoords: cableStartLat && cableStartLng ? [parseFloat(cableStartLat), parseFloat(cableStartLng)] : null,
+        endCoords: cableEndLat && cableEndLng ? [parseFloat(cableEndLat), parseFloat(cableEndLng)] : null,
+        middlePoints: cableMiddlePoints,
+        description: cableDesc
+      },
+      hddDrillingCoords: {
+        startCoords: hddStartLat && hddStartLng ? [parseFloat(hddStartLat), parseFloat(hddStartLng)] : null,
+        endCoords: hddEndLat && hddEndLng ? [parseFloat(hddEndLat), parseFloat(hddEndLng)] : null,
+        middlePoints: hddMiddlePoints,
+        description: hddDesc
+      },
+      openTrenchCoords: {
+        startCoords: trenchStartLat && trenchStartLng ? [parseFloat(trenchStartLat), parseFloat(trenchStartLng)] : null,
+        endCoords: trenchEndLat && trenchEndLng ? [parseFloat(trenchEndLat), parseFloat(trenchEndLng)] : null,
+        middlePoints: trenchMiddlePoints,
+        description: trenchDesc
+      }
     };
 
     const isNew = !projectsList.some(p => p.id === editingProjectItem.id);
@@ -1317,6 +1462,22 @@ export default function AdminDashboard() {
                 recordedAt: liveLoc.recordedAt,
               };
             }
+            
+            // Check attendance fallback
+            const activeAtt = data.attendance?.find((att: any) => att.mobileUserId === item.userId);
+            if (activeAtt) {
+              return {
+                ...item,
+                status: "active" as const,
+                latitude: activeAtt.latitude || 9.9538,
+                longitude: activeAtt.longitude || 76.3428,
+                projectName: activeAtt.projectName || "Vadakkekotta Sn-Cable Corridor",
+                distanceFromSiteM: activeAtt.distanceFromSiteM ?? 0,
+                withinGeofence: activeAtt.withinGeofence ?? true,
+                recordedAt: activeAtt.checkInAt,
+              };
+            }
+
             return {
               ...item,
               status: "offline" as const,
@@ -2821,6 +2982,7 @@ export default function AdminDashboard() {
                           
                           const marker = L.marker([w.latitude, w.longitude], { icon: pulseIcon }).addTo(map);
                           marker.bindPopup("<b>" + w.fullName + "</b><br/>" + w.role.toUpperCase());
+                          marker.bindTooltip("<b>" + w.fullName + "</b>", { permanent: true, direction: "top", className: "worker-tooltip" });
                           bounds.push([w.latitude, w.longitude]);
                         });
 
@@ -3617,6 +3779,169 @@ export default function AdminDashboard() {
                           )}
                         </div>
                       ))
+                    )}
+                  </div>
+                </div>
+
+                {/* PROJECT SUB-MAPS: CABLE LAYING, HDD DRILLING, OPEN TRENCH */}
+                <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16, borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+                  <h3 style={{ fontSize: 13, fontWeight: 900, color: "var(--text)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 4px" }}>
+                    Project Progress Maps
+                  </h3>
+                  
+                  {/* 1. Cable Laying Map */}
+                  <div className="glass glow-cyan" style={{ border: "1px solid var(--border)", borderRadius: 16, padding: 16, background: "var(--surface)", display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase" }}>🔌 Cable Laying Map</span>
+                    </div>
+                    {selectedProjectItem.cableLayingCoords?.startCoords ? (
+                      <>
+                        <div style={{ height: 200, width: "100%", borderRadius: 12, overflow: "hidden", border: "1px solid var(--border)" }}>
+                          <iframe
+                            title="Cable Laying Progress Map"
+                            style={{ width: "100%", height: "100%", border: "none" }}
+                            srcDoc={`
+                              <!DOCTYPE html>
+                              <html>
+                              <head>
+                                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                                <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                                <style>
+                                  html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; }
+                                </style>
+                              </head>
+                              <body>
+                                <div id="map"></div>
+                                <script>
+                                  const start = [${selectedProjectItem.cableLayingCoords.startCoords[0]}, ${selectedProjectItem.cableLayingCoords.startCoords[1]}];
+                                  const end = [${selectedProjectItem.cableLayingCoords.endCoords[0]}, ${selectedProjectItem.cableLayingCoords.endCoords[1]}];
+                                  const middles = ${JSON.stringify(selectedProjectItem.cableLayingCoords.middlePoints || [])};
+                                  const path = [start, ...middles, end];
+
+                                  const map = L.map('map', { zoomControl: false }).setView(start, 15);
+                                  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+
+                                  L.polyline(path, { color: '#06b6d4', weight: 5, opacity: 0.95 }).addTo(map);
+                                  L.circleMarker(start, { color: '#16a34a', radius: 6, fillOpacity: 1 }).addTo(map);
+                                  L.circleMarker(end, { color: '#dc2626', radius: 6, fillOpacity: 1 }).addTo(map);
+                                  
+                                  middles.forEach(pt => L.circleMarker(pt, { color: '#a855f7', radius: 5 }).addTo(map));
+
+                                  map.fitBounds(path, { padding: [20, 20] });
+                                </script>
+                              </body>
+                              </html>
+                            `}
+                          />
+                        </div>
+                        <p style={{ margin: 0, fontSize: 11, color: "var(--muted)" }}><b>Progress Logged:</b> {selectedProjectItem.cableLayingCoords.description || "No description logged."}</p>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: 11, color: "var(--dim)", fontStyle: "italic" }}>No progress coordinates marked for Cable Laying Map.</span>
+                    )}
+                  </div>
+
+                  {/* 2. HDD Drilling Map */}
+                  <div className="glass glow-cyan" style={{ border: "1px solid var(--border)", borderRadius: 16, padding: 16, background: "var(--surface)", display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase" }}>🕳️ HDD Drilling Map</span>
+                    </div>
+                    {selectedProjectItem.hddDrillingCoords?.startCoords ? (
+                      <>
+                        <div style={{ height: 200, width: "100%", borderRadius: 12, overflow: "hidden", border: "1px solid var(--border)" }}>
+                          <iframe
+                            title="HDD Drilling Progress Map"
+                            style={{ width: "100%", height: "100%", border: "none" }}
+                            srcDoc={`
+                              <!DOCTYPE html>
+                              <html>
+                              <head>
+                                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                                <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                                <style>
+                                  html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; }
+                                </style>
+                              </head>
+                              <body>
+                                <div id="map"></div>
+                                <script>
+                                  const start = [${selectedProjectItem.hddDrillingCoords.startCoords[0]}, ${selectedProjectItem.hddDrillingCoords.startCoords[1]}];
+                                  const end = [${selectedProjectItem.hddDrillingCoords.endCoords[0]}, ${selectedProjectItem.hddDrillingCoords.endCoords[1]}];
+                                  const middles = ${JSON.stringify(selectedProjectItem.hddDrillingCoords.middlePoints || [])};
+                                  const path = [start, ...middles, end];
+
+                                  const map = L.map('map', { zoomControl: false }).setView(start, 15);
+                                  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+
+                                  L.polyline(path, { color: '#eab308', weight: 5, opacity: 0.95, dashArray: '5, 5' }).addTo(map);
+                                  L.circleMarker(start, { color: '#16a34a', radius: 6, fillOpacity: 1 }).addTo(map);
+                                  L.circleMarker(end, { color: '#dc2626', radius: 6, fillOpacity: 1 }).addTo(map);
+                                  
+                                  middles.forEach(pt => L.circleMarker(pt, { color: '#a855f7', radius: 5 }).addTo(map));
+
+                                  map.fitBounds(path, { padding: [20, 20] });
+                                </script>
+                              </body>
+                              </html>
+                            `}
+                          />
+                        </div>
+                        <p style={{ margin: 0, fontSize: 11, color: "var(--muted)" }}><b>Progress Logged:</b> {selectedProjectItem.hddDrillingCoords.description || "No description logged."}</p>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: 11, color: "var(--dim)", fontStyle: "italic" }}>No progress coordinates marked for HDD Drilling Map.</span>
+                    )}
+                  </div>
+
+                  {/* 3. Open Trench Map */}
+                  <div className="glass glow-cyan" style={{ border: "1px solid var(--border)", borderRadius: 16, padding: 16, background: "var(--surface)", display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase" }}>🚜 Open Trench Map</span>
+                    </div>
+                    {selectedProjectItem.openTrenchCoords?.startCoords ? (
+                      <>
+                        <div style={{ height: 200, width: "100%", borderRadius: 12, overflow: "hidden", border: "1px solid var(--border)" }}>
+                          <iframe
+                            title="Open Trench Progress Map"
+                            style={{ width: "100%", height: "100%", border: "none" }}
+                            srcDoc={`
+                              <!DOCTYPE html>
+                              <html>
+                              <head>
+                                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                                <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                                <style>
+                                  html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; }
+                                </style>
+                              </head>
+                              <body>
+                                <div id="map"></div>
+                                <script>
+                                  const start = [${selectedProjectItem.openTrenchCoords.startCoords[0]}, ${selectedProjectItem.openTrenchCoords.startCoords[1]}];
+                                  const end = [${selectedProjectItem.openTrenchCoords.endCoords[0]}, ${selectedProjectItem.openTrenchCoords.endCoords[1]}];
+                                  const middles = ${JSON.stringify(selectedProjectItem.openTrenchCoords.middlePoints || [])};
+                                  const path = [start, ...middles, end];
+
+                                  const map = L.map('map', { zoomControl: false }).setView(start, 15);
+                                  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+
+                                  L.polyline(path, { color: '#f97316', weight: 5, opacity: 0.95 }).addTo(map);
+                                  L.circleMarker(start, { color: '#16a34a', radius: 6, fillOpacity: 1 }).addTo(map);
+                                  L.circleMarker(end, { color: '#dc2626', radius: 6, fillOpacity: 1 }).addTo(map);
+                                  
+                                  middles.forEach(pt => L.circleMarker(pt, { color: '#a855f7', radius: 5 }).addTo(map));
+
+                                  map.fitBounds(path, { padding: [20, 20] });
+                                </script>
+                              </body>
+                              </html>
+                            `}
+                          />
+                        </div>
+                        <p style={{ margin: 0, fontSize: 11, color: "var(--muted)" }}><b>Progress Logged:</b> {selectedProjectItem.openTrenchCoords.description || "No description logged."}</p>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: 11, color: "var(--dim)", fontStyle: "italic" }}>No progress coordinates marked for Open Trench Map.</span>
                     )}
                   </div>
                 </div>
@@ -5802,6 +6127,7 @@ export default function AdminDashboard() {
                               const startLng = parseFloat("${editingProjectItem.startCoords[1]}");
                               const endLat = parseFloat("${editingProjectItem.endCoords[0]}");
                               const endLng = parseFloat("${editingProjectItem.endCoords[1]}");
+                              const middlePoints = ${JSON.stringify(projMiddlePoints)};
 
                               const hasStart = !isNaN(startLat) && !isNaN(startLng);
                               const hasEnd = !isNaN(endLat) && !isNaN(endLng);
@@ -5836,6 +6162,20 @@ export default function AdminDashboard() {
 
                               const startIcon = L.divIcon({ className: 'start-marker', iconSize: [14, 14] });
                               const endIcon = L.divIcon({ className: 'end-marker', iconSize: [14, 14] });
+
+                              // Render intermediate connection points
+                              const middleIcon = L.divIcon({
+                                className: 'middle-marker',
+                                html: "<div style='background-color:#c084fc;width:10px;height:10px;border:1.5px solid white;border-radius:50%;box-shadow:0 0 8px rgba(192,132,252,0.8)'></div>",
+                                iconSize: [10, 10],
+                                iconAnchor: [5, 5]
+                              });
+                              
+                              middlePoints.forEach(function(pt, idx) {
+                                L.marker([pt[0], pt[1]], { icon: middleIcon })
+                                 .addTo(map)
+                                 .bindTooltip("<b>Junction " + (idx + 1) + "</b>", { permanent: true, direction: "top", className: "junction-tooltip" });
+                              });
 
                               let startMarker = null;
                               let endMarker = null;
@@ -5876,13 +6216,20 @@ export default function AdminDashboard() {
                               function fetchOSRMRoute(sLat, sLng, eLat, eLng) {
                                 const startKey = sLat + "," + sLng;
                                 const endKey = eLat + "," + eLng;
-                                if (lastRoutedStart === startKey && lastRoutedEnd === endKey) {
+                                const middleKey = JSON.stringify(middlePoints);
+                                const routeKey = startKey + ";" + middleKey + ";" + endKey;
+                                if (window.lastRouteKey === routeKey) {
                                   return;
                                 }
-                                lastRoutedStart = startKey;
-                                lastRoutedEnd = endKey;
+                                window.lastRouteKey = routeKey;
 
-                                const url = "https://router.project-osrm.org/route/v1/driving/" + sLng + "," + sLat + ";" + eLng + "," + eLat + "?overview=full&geometries=geojson";
+                                let queryPoints = sLng + "," + sLat;
+                                if (middlePoints && middlePoints.length > 0) {
+                                  queryPoints += ";" + middlePoints.map(function(pt) { return pt[1] + "," + pt[0]; }).join(";");
+                                }
+                                queryPoints += ";" + eLng + "," + eLat;
+
+                                const url = "https://router.project-osrm.org/route/v1/driving/" + queryPoints + "?overview=full&geometries=geojson";
                                 fetch(url)
                                   .then(function(r) { return r.json(); })
                                   .then(function(data) {
@@ -6063,145 +6410,616 @@ export default function AdminDashboard() {
 
                 {/* RIGHT COLUMN: PARAMETERS EDITOR FORM */}
                 <form onSubmit={handleUpdateProject} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.03em" }}>Project parameters</span>
-
-                  {/* Project Name */}
-                  <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Project Name</label>
-                    <input
-                      type="text"
-                      value={projName}
-                      onChange={(e) => setProjName(e.target.value)}
-                      required
-                      style={{ width: "100%", height: 40, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
-                    />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "0.03em" }}>Project parameters</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "var(--cyan)", textTransform: "uppercase" }}>Edit Layer: {gisEditLayer}</span>
                   </div>
 
-                  {/* Code & District */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Corridor ID</label>
-                      <input
-                        type="text"
-                        value={projCode}
-                        onChange={(e) => setProjCode(e.target.value)}
-                        required
-                        style={{ width: "100%", height: 40, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 13, fontFamily: "monospace", outline: "none" }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>District</label>
-                      <input
-                        type="text"
-                        value={projDistrict}
-                        onChange={(e) => setProjDistrict(e.target.value)}
-                        required
-                        style={{ width: "100%", height: 40, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
-                      />
-                    </div>
+                  {/* Layer switching tabs */}
+                  <div style={{ display: "flex", gap: 6, borderBottom: "1px solid var(--border)", paddingBottom: 8, overflowX: "auto" }}>
+                    {[
+                      { id: "corridor", label: "Corridor Route" },
+                      { id: "cable", label: "Cable Progress" },
+                      { id: "hdd", label: "HDD Progress" },
+                      { id: "trench", label: "Trench Progress" }
+                    ].map(tab => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setGisEditLayer(tab.id as any)}
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 750,
+                          padding: "6px 10px",
+                          borderRadius: 8,
+                          border: "1px solid",
+                          borderColor: gisEditLayer === tab.id ? "var(--cyan)" : "var(--border)",
+                          background: gisEditLayer === tab.id ? "rgba(14, 165, 233, 0.08)" : "transparent",
+                          color: gisEditLayer === tab.id ? "var(--cyan)" : "var(--dim)",
+                          cursor: "pointer",
+                          whiteSpace: "nowrap"
+                        }}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
                   </div>
 
-                  {/* Distance calculation display */}
-                  <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Calculated Corridor Distance</label>
-                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                      <input
-                        type="text"
-                        value={projDistance}
-                        readOnly
-                        style={{ flex: 1, height: 40, background: "#ffffff", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 12, padding: "0 14px", color: "var(--cyan)", fontSize: 14, fontWeight: 800, fontFamily: "monospace", outline: "none" }}
-                      />
-                      <span style={{ fontSize: 10, color: "var(--dim)", fontWeight: 700, textTransform: "uppercase", width: 110, lineHeight: 1.2 }}>
-                        📏 Great-Circle spherical calc
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Description</label>
-                    <textarea
-                      value={projDesc}
-                      onChange={(e) => setProjDesc(e.target.value)}
-                      required
-                      rows={2}
-                      style={{ width: "100%", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "10px 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none", resize: "none" }}
-                    />
-                  </div>
-
-                  {/* Start Location Parameters */}
-                  <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: "#15803d", textTransform: "uppercase" }}>Start Position Parameters</span>
-                    <div style={{ marginTop: 6 }}>
-                      <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Junction/Station Label</label>
-                      <input
-                        type="text"
-                        value={projStartLabel}
-                        onChange={(e) => setProjStartLabel(e.target.value)}
-                        required
-                        style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, outline: "none" }}
-                      />
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
+                  {gisEditLayer === "corridor" && (
+                    <>
+                      {/* Project Name */}
                       <div>
-                        <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Latitude</label>
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Project Name</label>
                         <input
                           type="text"
-                          value={projStartLat}
-                          onChange={(e) => setProjStartLat(e.target.value)}
+                          value={projName}
+                          onChange={(e) => setProjName(e.target.value)}
                           required
-                          style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                          style={{ width: "100%", height: 40, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
                         />
                       </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Longitude</label>
-                        <input
-                          type="text"
-                          value={projStartLng}
-                          onChange={(e) => setProjStartLng(e.target.value)}
-                          required
-                          style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
-                        />
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* End Location Parameters */}
-                  <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: "#dc2626", textTransform: "uppercase" }}>End Position Parameters</span>
-                    <div style={{ marginTop: 6 }}>
-                      <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Junction/Station Label</label>
-                      <input
-                        type="text"
-                        value={projEndLabel}
-                        onChange={(e) => setProjEndLabel(e.target.value)}
-                        required
-                        style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, outline: "none" }}
-                      />
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
+                      {/* Code & District */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Corridor ID</label>
+                          <input
+                            type="text"
+                            value={projCode}
+                            onChange={(e) => setProjCode(e.target.value)}
+                            required
+                            style={{ width: "100%", height: 40, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 13, fontFamily: "monospace", outline: "none" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>District</label>
+                          <input
+                            type="text"
+                            value={projDistrict}
+                            onChange={(e) => setProjDistrict(e.target.value)}
+                            required
+                            style={{ width: "100%", height: 40, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Distance calculation display */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Calculated Corridor Distance</label>
+                          <input
+                            type="text"
+                            value={projDistance}
+                            readOnly
+                            style={{ width: "100%", height: 40, background: "#f8fafc", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 12, padding: "0 14px", color: "var(--cyan)", fontSize: 14, fontWeight: 800, fontFamily: "monospace", outline: "none" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Manually Enter Corridor Distance</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 5.40 km"
+                            value={projManualDistance}
+                            onChange={(e) => setProjManualDistance(e.target.value)}
+                            style={{ width: "100%", height: 40, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "0 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none" }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Connection Points List */}
+                      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 11, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase" }}>Connection Points</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const lastPt = projMiddlePoints[projMiddlePoints.length - 1] || [parseFloat(projStartLat) || 9.95, parseFloat(projStartLng) || 76.35];
+                              setProjMiddlePoints([...projMiddlePoints, [lastPt[0] + 0.001, lastPt[1] + 0.001]]);
+                            }}
+                            style={{ fontSize: 9, fontWeight: 750, color: "#0ea5e9", background: "rgba(14, 165, 233, 0.08)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "2px 6px", cursor: "pointer" }}
+                          >
+                            ➕ Add Connection Point
+                          </button>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6, maxHeight: 110, overflowY: "auto" }}>
+                          {projMiddlePoints.length === 0 ? (
+                            <span style={{ fontSize: 10, color: "var(--dim)", fontStyle: "italic" }}>No intermediate connection points added.</span>
+                          ) : (
+                            projMiddlePoints.map((pt, idx) => (
+                              <div key={idx} style={{ display: "grid", gridTemplateColumns: "1.1fr 1.1fr 0.4fr", gap: 6, alignItems: "center" }}>
+                                <input
+                                  type="number"
+                                  step="any"
+                                  placeholder="Latitude"
+                                  value={pt[0]}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    setProjMiddlePoints(projMiddlePoints.map((x, i) => i === idx ? [val, pt[1]] : x));
+                                  }}
+                                  style={{ height: 28, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 6px", color: "var(--text)", fontSize: 11, fontFamily: "monospace" }}
+                                />
+                                <input
+                                  type="number"
+                                  step="any"
+                                  placeholder="Longitude"
+                                  value={pt[1]}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    setProjMiddlePoints(projMiddlePoints.map((x, i) => i === idx ? [pt[0], val] : x));
+                                  }}
+                                  style={{ height: 28, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 6px", color: "var(--text)", fontSize: 11, fontFamily: "monospace" }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setProjMiddlePoints(projMiddlePoints.filter((_, i) => i !== idx));
+                                  }}
+                                  style={{ height: 28, background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: 6, color: "#dc2626", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
+                                >
+                                  Del
+                                </button>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Description */}
                       <div>
-                        <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Latitude</label>
-                        <input
-                          type="text"
-                          value={projEndLat}
-                          onChange={(e) => setProjEndLat(e.target.value)}
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Description</label>
+                        <textarea
+                          value={projDesc}
+                          onChange={(e) => setProjDesc(e.target.value)}
                           required
-                          style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                          rows={2}
+                          style={{ width: "100%", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "10px 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none", resize: "none" }}
                         />
                       </div>
+
+                      {/* Start Location Parameters */}
+                      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "#15803d", textTransform: "uppercase" }}>Start Position Parameters</span>
+                        <div style={{ marginTop: 6 }}>
+                          <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Junction/Station Label</label>
+                          <input
+                            type="text"
+                            value={projStartLabel}
+                            onChange={(e) => setProjStartLabel(e.target.value)}
+                            required
+                            style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, outline: "none" }}
+                          />
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Latitude</label>
+                            <input
+                              type="text"
+                              value={projStartLat}
+                              onChange={(e) => setProjStartLat(e.target.value)}
+                              required
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Longitude</label>
+                            <input
+                              type="text"
+                              value={projStartLng}
+                              onChange={(e) => setProjStartLng(e.target.value)}
+                              required
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* End Location Parameters */}
+                      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "#dc2626", textTransform: "uppercase" }}>End Position Parameters</span>
+                        <div style={{ marginTop: 6 }}>
+                          <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Junction/Station Label</label>
+                          <input
+                            type="text"
+                            value={projEndLabel}
+                            onChange={(e) => setProjEndLabel(e.target.value)}
+                            required
+                            style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, outline: "none" }}
+                          />
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Latitude</label>
+                            <input
+                              type="text"
+                              value={projEndLat}
+                              onChange={(e) => setProjEndLat(e.target.value)}
+                              required
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Longitude</label>
+                            <input
+                              type="text"
+                              value={projEndLng}
+                              onChange={(e) => setProjEndLng(e.target.value)}
+                              required
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {gisEditLayer === "cable" && (
+                    <>
+                      {/* Description */}
                       <div>
-                        <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Longitude</label>
-                        <input
-                          type="text"
-                          value={projEndLng}
-                          onChange={(e) => setProjEndLng(e.target.value)}
-                          required
-                          style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Cable Laying Description</label>
+                        <textarea
+                          placeholder="Log notes about cable laying progress along this corridor..."
+                          value={cableDesc}
+                          onChange={(e) => setCableDesc(e.target.value)}
+                          rows={2}
+                          style={{ width: "100%", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "10px 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none", resize: "none" }}
                         />
                       </div>
-                    </div>
-                  </div>
+
+                      {/* Coordinates */}
+                      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase" }}>Cable Laying Coordinates</span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8 }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Start Latitude</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 9.9538"
+                              value={cableStartLat}
+                              onChange={(e) => setCableStartLat(e.target.value)}
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Start Longitude</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 76.3428"
+                              value={cableStartLng}
+                              onChange={(e) => setCableStartLng(e.target.value)}
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                            />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8 }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>End Latitude</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 9.9588"
+                              value={cableEndLat}
+                              onChange={(e) => setCableEndLat(e.target.value)}
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>End Longitude</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 76.3458"
+                              value={cableEndLng}
+                              onChange={(e) => setCableEndLng(e.target.value)}
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Cable Connection Points */}
+                      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 11, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase" }}>Cable Connection Points</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const lastPt = cableMiddlePoints[cableMiddlePoints.length - 1] || [parseFloat(cableStartLat) || 9.95, parseFloat(cableStartLng) || 76.35];
+                              setCableMiddlePoints([...cableMiddlePoints, [lastPt[0] + 0.001, lastPt[1] + 0.001]]);
+                            }}
+                            style={{ fontSize: 9, fontWeight: 750, color: "#0ea5e9", background: "rgba(14, 165, 233, 0.08)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "2px 6px", cursor: "pointer" }}
+                          >
+                            ➕ Add Connection Point
+                          </button>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6, maxHeight: 110, overflowY: "auto" }}>
+                          {cableMiddlePoints.length === 0 ? (
+                            <span style={{ fontSize: 10, color: "var(--dim)", fontStyle: "italic" }}>No intermediate connection points added.</span>
+                          ) : (
+                            cableMiddlePoints.map((pt, idx) => (
+                              <div key={idx} style={{ display: "grid", gridTemplateColumns: "1.1fr 1.1fr 0.4fr", gap: 6, alignItems: "center" }}>
+                                <input
+                                  type="number"
+                                  step="any"
+                                  placeholder="Latitude"
+                                  value={pt[0]}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    setCableMiddlePoints(cableMiddlePoints.map((x, i) => i === idx ? [val, pt[1]] : x));
+                                  }}
+                                  style={{ height: 28, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 6px", color: "var(--text)", fontSize: 11, fontFamily: "monospace" }}
+                                />
+                                <input
+                                  type="number"
+                                  step="any"
+                                  placeholder="Longitude"
+                                  value={pt[1]}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    setCableMiddlePoints(cableMiddlePoints.map((x, i) => i === idx ? [pt[0], val] : x));
+                                  }}
+                                  style={{ height: 28, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 6px", color: "var(--text)", fontSize: 11, fontFamily: "monospace" }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCableMiddlePoints(cableMiddlePoints.filter((_, i) => i !== idx));
+                                  }}
+                                  style={{ height: 28, background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: 6, color: "#dc2626", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
+                                >
+                                  Del
+                                </button>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {gisEditLayer === "hdd" && (
+                    <>
+                      {/* Description */}
+                      <div>
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>HDD Drilling Description</label>
+                        <textarea
+                          placeholder="Log notes about HDD crossing progress along this corridor..."
+                          value={hddDesc}
+                          onChange={(e) => setHddDesc(e.target.value)}
+                          rows={2}
+                          style={{ width: "100%", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "10px 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none", resize: "none" }}
+                        />
+                      </div>
+
+                      {/* Coordinates */}
+                      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase" }}>HDD Drilling Coordinates</span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8 }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Start Latitude</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 9.9538"
+                              value={hddStartLat}
+                              onChange={(e) => setHddStartLat(e.target.value)}
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Start Longitude</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 76.3428"
+                              value={hddStartLng}
+                              onChange={(e) => setHddStartLng(e.target.value)}
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                            />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8 }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>End Latitude</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 9.9588"
+                              value={hddEndLat}
+                              onChange={(e) => setHddEndLat(e.target.value)}
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>End Longitude</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 76.3458"
+                              value={hddEndLng}
+                              onChange={(e) => setHddEndLng(e.target.value)}
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* HDD Connection Points */}
+                      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 11, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase" }}>HDD Connection Points</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const lastPt = hddMiddlePoints[hddMiddlePoints.length - 1] || [parseFloat(hddStartLat) || 9.95, parseFloat(hddStartLng) || 76.35];
+                              setHddMiddlePoints([...hddMiddlePoints, [lastPt[0] + 0.001, lastPt[1] + 0.001]]);
+                            }}
+                            style={{ fontSize: 9, fontWeight: 750, color: "#0ea5e9", background: "rgba(14, 165, 233, 0.08)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "2px 6px", cursor: "pointer" }}
+                          >
+                            ➕ Add Connection Point
+                          </button>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6, maxHeight: 110, overflowY: "auto" }}>
+                          {hddMiddlePoints.length === 0 ? (
+                            <span style={{ fontSize: 10, color: "var(--dim)", fontStyle: "italic" }}>No intermediate connection points added.</span>
+                          ) : (
+                            hddMiddlePoints.map((pt, idx) => (
+                              <div key={idx} style={{ display: "grid", gridTemplateColumns: "1.1fr 1.1fr 0.4fr", gap: 6, alignItems: "center" }}>
+                                <input
+                                  type="number"
+                                  step="any"
+                                  placeholder="Latitude"
+                                  value={pt[0]}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    setHddMiddlePoints(hddMiddlePoints.map((x, i) => i === idx ? [val, pt[1]] : x));
+                                  }}
+                                  style={{ height: 28, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 6px", color: "var(--text)", fontSize: 11, fontFamily: "monospace" }}
+                                />
+                                <input
+                                  type="number"
+                                  step="any"
+                                  placeholder="Longitude"
+                                  value={pt[1]}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    setHddMiddlePoints(hddMiddlePoints.map((x, i) => i === idx ? [pt[0], val] : x));
+                                  }}
+                                  style={{ height: 28, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 6px", color: "var(--text)", fontSize: 11, fontFamily: "monospace" }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setHddMiddlePoints(hddMiddlePoints.filter((_, i) => i !== idx));
+                                  }}
+                                  style={{ height: 28, background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: 6, color: "#dc2626", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
+                                >
+                                  Del
+                                </button>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {gisEditLayer === "trench" && (
+                    <>
+                      {/* Description */}
+                      <div>
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Open Trench Description</label>
+                        <textarea
+                          placeholder="Log notes about open trenching progress along this corridor..."
+                          value={trenchDesc}
+                          onChange={(e) => setTrenchDesc(e.target.value)}
+                          rows={2}
+                          style={{ width: "100%", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "10px 14px", color: "var(--text)", fontSize: 13, fontFamily: "Outfit, sans-serif", outline: "none", resize: "none" }}
+                        />
+                      </div>
+
+                      {/* Coordinates */}
+                      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase" }}>Open Trench Coordinates</span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8 }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Start Latitude</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 9.9538"
+                              value={trenchStartLat}
+                              onChange={(e) => setTrenchStartLat(e.target.value)}
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Start Longitude</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 76.3428"
+                              value={trenchStartLng}
+                              onChange={(e) => setTrenchStartLng(e.target.value)}
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                            />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8 }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>End Latitude</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 9.9588"
+                              value={trenchEndLat}
+                              onChange={(e) => setTrenchEndLat(e.target.value)}
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>End Longitude</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 76.3458"
+                              value={trenchEndLng}
+                              onChange={(e) => setTrenchEndLng(e.target.value)}
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Trench Connection Points */}
+                      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 11, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase" }}>Trench Connection Points</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const lastPt = trenchMiddlePoints[trenchMiddlePoints.length - 1] || [parseFloat(trenchStartLat) || 9.95, parseFloat(trenchStartLng) || 76.35];
+                              setTrenchMiddlePoints([...trenchMiddlePoints, [lastPt[0] + 0.001, lastPt[1] + 0.001]]);
+                            }}
+                            style={{ fontSize: 9, fontWeight: 750, color: "#0ea5e9", background: "rgba(14, 165, 233, 0.08)", border: "1px solid rgba(14, 165, 233, 0.2)", borderRadius: 6, padding: "2px 6px", cursor: "pointer" }}
+                          >
+                            ➕ Add Connection Point
+                          </button>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6, maxHeight: 110, overflowY: "auto" }}>
+                          {trenchMiddlePoints.length === 0 ? (
+                            <span style={{ fontSize: 10, color: "var(--dim)", fontStyle: "italic" }}>No intermediate connection points added.</span>
+                          ) : (
+                            trenchMiddlePoints.map((pt, idx) => (
+                              <div key={idx} style={{ display: "grid", gridTemplateColumns: "1.1fr 1.1fr 0.4fr", gap: 6, alignItems: "center" }}>
+                                <input
+                                  type="number"
+                                  step="any"
+                                  placeholder="Latitude"
+                                  value={pt[0]}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    setTrenchMiddlePoints(trenchMiddlePoints.map((x, i) => i === idx ? [val, pt[1]] : x));
+                                  }}
+                                  style={{ height: 28, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 6px", color: "var(--text)", fontSize: 11, fontFamily: "monospace" }}
+                                />
+                                <input
+                                  type="number"
+                                  step="any"
+                                  placeholder="Longitude"
+                                  value={pt[1]}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    setTrenchMiddlePoints(trenchMiddlePoints.map((x, i) => i === idx ? [pt[0], val] : x));
+                                  }}
+                                  style={{ height: 28, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, padding: "0 6px", color: "var(--text)", fontSize: 11, fontFamily: "monospace" }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setTrenchMiddlePoints(trenchMiddlePoints.filter((_, i) => i !== idx));
+                                  }}
+                                  style={{ height: 28, background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: 6, color: "#dc2626", cursor: "pointer", fontSize: 10, fontWeight: 700 }}
+                                >
+                                  Del
+                                </button>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   {/* Submit Action Buttons */}
                   <div style={{ display: "flex", gap: 12, borderTop: "1px solid var(--border)", paddingTop: 14, marginTop: 6 }}>
