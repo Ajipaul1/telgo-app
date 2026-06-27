@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { readMobileSession, setMobileSession } from "@/lib/server/mobile-session";
 import { getMobileAccessClient, toMobileAccessUser } from "@/lib/server/mobile-access";
+import { notifyAdmins } from "@/lib/server/mobile-notifications";
 
 export async function POST(request: NextRequest) {
   const session = await readMobileSession(request);
@@ -65,6 +66,23 @@ export async function POST(request: NextRequest) {
     }
   } catch (err) {
     console.error("Profile sync to files table failed:", err);
+  }
+
+  // Trigger notification for profile updates
+  try {
+    const actorName = session.fullName || "User";
+    const roleLabel = session.role ? session.role.toUpperCase() : "USER";
+    const isPhotoUpdate = avatarUrl !== undefined && avatarUrl !== session.avatarUrl;
+    const actionDesc = isPhotoUpdate ? "profile picture" : "profile details";
+
+    await notifyAdmins(
+      supabase,
+      "👤 Profile Updated",
+      `${actorName} (${roleLabel}) updated their ${actionDesc}.`,
+      { actorUserId: session.userId }
+    );
+  } catch (err) {
+    console.error("Failed to trigger profile update notification:", err);
   }
 
   // 3. Re-issue session cookie with updated name
