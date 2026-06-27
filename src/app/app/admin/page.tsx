@@ -3399,6 +3399,7 @@ export default function AdminDashboard() {
                 <div className="glass" style={{ padding: 0, border: "1px solid var(--border)", borderRadius: 20, overflow: "hidden", background: "var(--bg)", marginBottom: 20 }}>
                   <div style={{ position: "relative", height: 260, width: "100%" }}>
                     <iframe
+                      key={`${selectedProjectItem.id}-${selectedProjectItem.startCoords.join(",")}-${selectedProjectItem.endCoords.join(",")}-${(selectedProjectItem.utilityPath || []).length}`}
                       title="Project Corridor Map"
                       style={{ width: "100%", height: "100%", border: "none" }}
                       srcDoc={`
@@ -3707,7 +3708,7 @@ export default function AdminDashboard() {
                   <div className="glass" style={{ padding: 0, border: "1px solid var(--border)", borderRadius: 20, overflow: "hidden", background: "var(--bg)" }}>
                     <div style={{ position: "relative", height: 260, width: "100%" }}>
                       <iframe
-                        key={p.id} // forces reload on switching projects
+                        key={`${p.id}-${p.startCoords.join(",")}-${p.endCoords.join(",")}-${(p.utilityPath || []).length}`} // forces reload on switching projects or saving edits
                         title="Project Corridor Progress Map"
                         style={{ width: "100%", height: "100%", border: "none" }}
                         srcDoc={`
@@ -5741,6 +5742,7 @@ export default function AdminDashboard() {
                   <div className="glass" style={{ padding: 0, border: "1px solid var(--border)", borderRadius: 20, overflow: "hidden", background: "var(--bg)" }}>
                     <div style={{ position: "relative", height: "350px", width: "100%" }}>
                       <iframe
+                        key={editingProjectItem.id}
                         id="gis-editor-iframe"
                         title="Interactive GIS Corridor Editor"
                         style={{ width: "100%", height: "100%", border: "none" }}
@@ -5774,10 +5776,10 @@ export default function AdminDashboard() {
                           <body>
                             <div id="map"></div>
                             <script>
-                              const startLat = parseFloat("${projStartLat}");
-                              const startLng = parseFloat("${projStartLng}");
-                              const endLat = parseFloat("${projEndLat}");
-                              const endLng = parseFloat("${projEndLng}");
+                              const startLat = parseFloat("${editingProjectItem.startCoords[0]}");
+                              const startLng = parseFloat("${editingProjectItem.startCoords[1]}");
+                              const endLat = parseFloat("${editingProjectItem.endCoords[0]}");
+                              const endLng = parseFloat("${editingProjectItem.endCoords[1]}");
 
                               const hasStart = !isNaN(startLat) && !isNaN(startLng);
                               const hasEnd = !isNaN(endLat) && !isNaN(endLng);
@@ -5901,14 +5903,14 @@ export default function AdminDashboard() {
                               }
 
                               // Plot initial path
-                              if (hasStart && hasEnd) {
-                                fetchOSRMRoute(startLat, startLng, endLat, endLng);
-                              } else {
-                                const customUtilityPath = ${JSON.stringify(utilityPath)};
-                                if (customUtilityPath && customUtilityPath.length >= 2) {
-                                  utilityPolyline = L.polyline(customUtilityPath, { color: '#a855f7', weight: 4.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                                if (hasStart && hasEnd) {
+                                  fetchOSRMRoute(startLat, startLng, endLat, endLng);
+                                } else {
+                                  const customUtilityPath = ${JSON.stringify(editingProjectItem.utilityPath ?? [])};
+                                  if (customUtilityPath && customUtilityPath.length >= 2) {
+                                    utilityPolyline = L.polyline(customUtilityPath, { color: '#a855f7', weight: 4.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                                  }
                                 }
-                              }
 
                               // Message handler for updates and geocoding zooms
                               window.addEventListener('message', function(e) {
@@ -5976,7 +5978,7 @@ export default function AdminDashboard() {
                               const bounds = [];
                               if (hasStart) bounds.push([startLat, startLng]);
                               if (hasEnd) bounds.push([endLat, endLng]);
-                              const customUtilityPath = ${JSON.stringify(utilityPath)};
+                               const customUtilityPath = ${JSON.stringify(editingProjectItem.utilityPath ?? [])};
                               if (customUtilityPath && customUtilityPath.length > 0) customUtilityPath.forEach(pt => bounds.push(pt));
                               
                               if (bounds.length > 1) {

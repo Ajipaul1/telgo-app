@@ -63,7 +63,15 @@ export async function updateRealProject(
   projectId: string,
   updates: Partial<Project>
 ) {
-  const payload = toProjectTablePayload(updates, { allowPartial: true });
+  const { data: existing } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("id", projectId)
+    .maybeSingle();
+
+  const baseProject = existing ? toMobileProject(existing as ProjectRow) : null;
+  const payload = toProjectTablePayload(updates, { allowPartial: true, baseProject });
+
   const { data, error } = await supabase
     .from("projects")
     .update(payload)
@@ -202,11 +210,13 @@ export function toMobileProject(row: ProjectRow): Project {
 
 function toProjectTablePayload(
   input: Partial<Project> & { id?: string },
-  options: { allowPartial?: boolean } = {}
+  options: { allowPartial?: boolean; baseProject?: Project | null } = {}
 ) {
   const allowPartial = options.allowPartial ?? false;
   const baseProject =
-    (input.id ? demoProjects.find((project) => project.id === input.id) : null) ?? FALLBACK_PROJECT;
+    options.baseProject ??
+    (input.id ? demoProjects.find((project) => project.id === input.id) : null) ??
+    FALLBACK_PROJECT;
   const effective = {
     ...baseProject,
     ...input
@@ -221,30 +231,26 @@ function toProjectTablePayload(
     payload[key] = value ?? null;
   };
 
-  // Compile detailed GIS properties directly into corridor_data JSONB if present
-  let corridorData = effective.corridor;
-  if (!corridorData || Object.keys(corridorData).length === 0) {
-    corridorData = {
-      startLabel: effective.startLabel ?? baseProject.startLabel ?? "Start Position",
-      endLabel: effective.endLabel ?? baseProject.endLabel ?? "End Position",
-      startCoordinates: effective.startCoords || baseProject.startCoords || [effective.coordinates?.[1] || 10.0, effective.coordinates?.[0] || 76.3],
-      endCoordinates: effective.endCoords || baseProject.endCoords || [effective.coordinates?.[1] || 10.0, effective.coordinates?.[0] || 76.3],
-      startCoords: effective.startCoords || baseProject.startCoords || [effective.coordinates?.[1] || 10.0, effective.coordinates?.[0] || 76.3],
-      endCoords: effective.endCoords || baseProject.endCoords || [effective.coordinates?.[1] || 10.0, effective.coordinates?.[0] || 76.3],
-      totalMeters: Math.round(parseFloat(effective.distance || "0") * 1000) || 1000,
-      completedMeters: Math.round((effective.completedKm ?? 0) * 1000),
-      geofenceMeters: 150,
-      progressUpdates: [],
-      distance: effective.distance,
-      hddPoints: effective.hddPoints || [],
-      terminationPoints: effective.terminationPoints || [],
-      trenchingLine: effective.trenchingLine || [],
-      utilityPath: effective.utilityPath || [],
-      roadChangeSegments: effective.roadChangeSegments || [],
-      hddSegments: effective.hddSegments || [],
-      trenchingSegments: effective.trenchingSegments || []
-    } as any;
-  }
+  const corridorData = {
+    startLabel: effective.startLabel ?? "Start Position",
+    endLabel: effective.endLabel ?? "End Position",
+    startCoordinates: effective.startCoords || [effective.coordinates?.[1] || 10.0, effective.coordinates?.[0] || 76.3],
+    endCoordinates: effective.endCoords || [effective.coordinates?.[1] || 10.0, effective.coordinates?.[0] || 76.3],
+    startCoords: effective.startCoords || [effective.coordinates?.[1] || 10.0, effective.coordinates?.[0] || 76.3],
+    endCoords: effective.endCoords || [effective.coordinates?.[1] || 10.0, effective.coordinates?.[0] || 76.3],
+    totalMeters: Math.round(parseFloat(effective.distance || "0") * 1000) || 1000,
+    completedMeters: Math.round((effective.completedKm ?? 0) * 1000),
+    geofenceMeters: 150,
+    progressUpdates: (effective.corridor as any)?.progressUpdates || [],
+    distance: effective.distance,
+    hddPoints: effective.hddPoints || [],
+    terminationPoints: effective.terminationPoints || [],
+    trenchingLine: effective.trenchingLine || [],
+    utilityPath: effective.utilityPath || [],
+    roadChangeSegments: effective.roadChangeSegments || [],
+    hddSegments: effective.hddSegments || [],
+    trenchingSegments: effective.trenchingSegments || []
+  };
 
   setField("id", effective.id ?? buildProjectSlug(effective.name ?? baseProject.name));
   setField("code", effective.code ?? buildProjectCode(effective.name ?? baseProject.name));
