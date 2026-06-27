@@ -66,6 +66,11 @@ export type Project = {
   // GIS properties mapping for editor and maps
   description?: string;
   distance?: string;
+  manualDistance?: string | null;
+  middlePoints?: [number, number][];
+  cableLayingCoords?: any;
+  hddDrillingCoords?: any;
+  openTrenchCoords?: any;
   startLabel?: string;
   startCoords?: [number, number];
   endLabel?: string;
