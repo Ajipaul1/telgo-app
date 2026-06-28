@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 type RodLog = {
@@ -48,7 +48,7 @@ type ProjectData = {
   utilityPath?: [number, number][];
 };
 
-export default function PrintHddLogSheet() {
+function PrintHddLogSheetContent() {
   const searchParams = useSearchParams();
   const reportId = searchParams.get("reportId") || "";
 
@@ -267,7 +267,6 @@ export default function PrintHddLogSheet() {
 
   // Split logs for left and right columns
   const logsList = report.hddDrillingLogs || [];
-  const rodLength = Number(report.hddMetadata?.hddRodLengthM || project?.hddDefaultRodLengthM || 3.0);
   const midPoint = Math.ceil(logsList.length / 2);
   const leftLogs = logsList.slice(0, 15);
   const rightLogs = logsList.slice(15, 30);
@@ -539,5 +538,21 @@ export default function PrintHddLogSheet() {
       </table>
 
     </div>
+  );
+}
+
+export default function PrintHddLogSheet() {
+  return (
+    <Suspense fallback={
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#f8fafc", fontFamily: "system-ui" }}>
+        <div style={{ border: "4px solid #e2e8f0", borderTop: "4px solid #2563eb", borderRadius: "50%", width: 36, height: 36, animation: "spin 1s linear infinite" }} />
+        <p style={{ marginTop: 12, fontSize: 14, color: "#64748b", fontWeight: 600 }}>Loading Log Sheet...</p>
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        `}} />
+      </div>
+    }>
+      <PrintHddLogSheetContent />
+    </Suspense>
   );
 }
