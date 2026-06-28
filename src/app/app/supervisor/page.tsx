@@ -3646,9 +3646,10 @@ export default function SupervisorDashboard() {
                         </div>
                       )}
                     </div>
-                  }})
-                </div>
-              )}
+                  );
+                })}
+              </div>
+            )}
 
               {/* STEP 3: STATUTORY CLEARANCES */}
               {reportStep === 3 && (

@@ -202,8 +202,8 @@ export default function AdminDashboard() {
       return { dist, depth, strata: log.strata, crossing: log.crossing, rodNo: index + 1 };
     });
 
-    const maxDist = Math.max(50, ...points.map(p => p.dist));
-    const maxDepth = Math.max(6, ...points.map(p => p.depth));
+    const maxDist = Math.max(50, ...points.map((p: any) => p.dist));
+    const maxDepth = Math.max(6, ...points.map((p: any) => p.depth));
 
     const axisMaxDist = Math.ceil(maxDist / 10) * 10;
     const axisMaxDepth = Math.ceil(maxDepth / 2) * 2;

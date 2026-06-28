@@ -168,8 +168,8 @@ export default function PrintHddLogSheet() {
       return { dist, depth, rodNo: index + 1, crossing: log.crossing };
     });
 
-    const maxDist = Math.max(50, ...points.map(p => p.dist));
-    const maxDepth = Math.max(6, ...points.map(p => p.depth));
+    const maxDist = Math.max(50, ...points.map((p: any) => p.dist));
+    const maxDepth = Math.max(6, ...points.map((p: any) => p.depth));
 
     const axisMaxDist = Math.ceil(maxDist / 10) * 10;
     const axisMaxDepth = Math.ceil(maxDepth / 2) * 2;
