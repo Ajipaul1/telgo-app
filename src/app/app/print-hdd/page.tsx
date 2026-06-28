@@ -44,6 +44,8 @@ type ProjectData = {
   hddDefaultOperatorName?: string;
   hddDefaultDuctsInfo?: string;
   hddDefaultRodLengthM?: number | string;
+  middlePoints?: [number, number][];
+  utilityPath?: [number, number][];
 };
 
 export default function PrintHddLogSheet() {
