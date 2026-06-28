@@ -88,6 +88,48 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 3. Dispatch system notification alert for daily report clarification messages
+    const { data: reportRow } = await supabase
+      .from("pending_daily_reports")
+      .select("supervisor_id, report_date")
+      .eq("id", reportId)
+      .single();
+
+    if (session.role === "admin") {
+      if (reportRow?.supervisor_id) {
+        await supabase.from("mobile_notifications").insert({
+          recipient_user_id: reportRow.supervisor_id,
+          actor_user_id: session.userId,
+          title: "Clarification Request",
+          body: `Admin requested clarification on report of ${reportRow.report_date}: "${message}"`,
+          notification_type: "clarification",
+          entity_type: "daily_report",
+          entity_id: reportId,
+          metadata: { reportId, date: reportRow.report_date }
+        });
+      }
+    } else {
+      const { data: admins } = await supabase
+        .from("mobile_app_users")
+        .select("id")
+        .eq("role", "admin")
+        .eq("access_status", "active");
+
+      if (admins && admins.length > 0) {
+        const adminNotifs = admins.map(admin => ({
+          recipient_user_id: admin.id,
+          actor_user_id: session.userId,
+          title: "Clarification Reply",
+          body: `${session.fullName} (${session.role}) sent a message for report of ${reportRow?.report_date || ""}: "${message}"`,
+          notification_type: "clarification",
+          entity_type: "daily_report",
+          entity_id: reportId,
+          metadata: { reportId, date: reportRow?.report_date }
+        }));
+        await supabase.from("mobile_notifications").insert(adminNotifs);
+      }
+    }
+
     return NextResponse.json({ ok: true, comment: insertedMsg });
   } catch (error: any) {
     return NextResponse.json({ ok: false, message: error.message || "Failed to send chat message." }, { status: 500 });

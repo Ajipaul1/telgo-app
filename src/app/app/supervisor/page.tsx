@@ -207,6 +207,9 @@ export default function SupervisorDashboard() {
 
   const [submittingReport, setSubmittingReport] = useState(false);
 
+  const [trenchingRoutePath, setTrenchingRoutePath] = useState<[number, number][] | null>(null);
+  const [cableLayingRoutePath, setCableLayingRoutePath] = useState<[number, number][] | null>(null);
+
   // Listen for pin drops from Trenching & Cable Laying pinpoint maps
   useEffect(() => {
     const handleMapMessage = (event: MessageEvent) => {
@@ -220,6 +223,8 @@ export default function SupervisorDashboard() {
         } else if (data.type === "end") {
           setTrenchingEndLat(String(data.lat));
           setTrenchingEndLng(String(data.lng));
+        } else if (data.type === "route_path") {
+          setTrenchingRoutePath(data.path);
         }
       } else if (data.source === "cable-laying-pinpoint") {
         if (data.type === "start") {
@@ -228,6 +233,8 @@ export default function SupervisorDashboard() {
         } else if (data.type === "end") {
           setCableLayingEndLat(String(data.lat));
           setCableLayingEndLng(String(data.lng));
+        } else if (data.type === "route_path") {
+          setCableLayingRoutePath(data.path);
         }
       }
     };
@@ -515,20 +522,22 @@ export default function SupervisorDashboard() {
         value: Number(d.wipTrenchingValue || 0), 
         narration: d.wipTrenchingNarration || "", 
         photo: d.wipTrenchingPhoto || "",
-        startLat: d.trenchingStartLat || null,
-        startLng: d.trenchingStartLng || null,
-        endLat: d.trenchingEndLat || null,
-        endLng: d.trenchingEndLng || null
+        startLat: (d.trenchingStartLat && d.trenchingStartLat !== "") ? Number(d.trenchingStartLat) : null,
+        startLng: (d.trenchingStartLng && d.trenchingStartLng !== "") ? Number(d.trenchingStartLng) : null,
+        endLat: (d.trenchingEndLat && d.trenchingEndLat !== "") ? Number(d.trenchingEndLat) : null,
+        endLng: (d.trenchingEndLng && d.trenchingEndLng !== "") ? Number(d.trenchingEndLng) : null,
+        path: d.trenchingRoutePath || null
       },
       hdd: { value: Number(d.wipHddValue || 0), narration: d.wipHddNarration || "", photo: d.wipHddPhoto || "" },
       cableLaying: { 
         value: Number(d.wipCableLayingValue || 0), 
         narration: d.wipCableLayingNarration || "", 
         photo: d.wipCableLayingPhoto || "",
-        startLat: d.cableLayingStartLat || null,
-        startLng: d.cableLayingStartLng || null,
-        endLat: d.cableLayingEndLat || null,
-        endLng: d.cableLayingEndLng || null
+        startLat: (d.cableLayingStartLat && d.cableLayingStartLat !== "") ? Number(d.cableLayingStartLat) : null,
+        startLng: (d.cableLayingStartLng && d.cableLayingStartLng !== "") ? Number(d.cableLayingStartLng) : null,
+        endLat: (d.cableLayingEndLat && d.cableLayingEndLat !== "") ? Number(d.cableLayingEndLat) : null,
+        endLng: (d.cableLayingEndLng && d.cableLayingEndLng !== "") ? Number(d.cableLayingEndLng) : null,
+        path: d.cableLayingRoutePath || null
       },
       cableMounding: { value: Number(d.wipCableMoundingValue || 0), narration: d.wipCableMoundingNarration || "", photo: d.wipCableMoundingPhoto || "" },
       joining: { value: Number(d.wipJoiningValue || 0), narration: d.wipJoiningNarration || "", photo: d.wipJoiningPhoto || "" },
@@ -564,10 +573,10 @@ export default function SupervisorDashboard() {
       wipProgressList,
       requestsAndNotes,
       terminationEndpoints: Number(d.wipTerminationsValue || 0),
-      terminationGpsLat: d.terminationGpsLat ? Number(d.terminationGpsLat) : undefined,
-      terminationGpsLng: d.terminationGpsLng ? Number(d.terminationGpsLng) : undefined,
-      startGpsLat: d.startGpsLat ? Number(d.startGpsLat) : undefined,
-      startGpsLng: d.startGpsLng ? Number(d.startGpsLng) : undefined,
+      terminationGpsLat: (d.trenchingEndLat && d.trenchingEndLat !== "") ? Number(d.trenchingEndLat) : ((d.cableLayingEndLat && d.cableLayingEndLat !== "") ? Number(d.cableLayingEndLat) : (d.terminationGpsLat ? Number(d.terminationGpsLat) : undefined)),
+      terminationGpsLng: (d.trenchingEndLng && d.trenchingEndLng !== "") ? Number(d.trenchingEndLng) : ((d.cableLayingEndLng && d.cableLayingEndLng !== "") ? Number(d.cableLayingEndLng) : (d.terminationGpsLng ? Number(d.terminationGpsLng) : undefined)),
+      startGpsLat: (d.trenchingStartLat && d.trenchingStartLat !== "") ? Number(d.trenchingStartLat) : ((d.cableLayingStartLat && d.cableLayingStartLat !== "") ? Number(d.cableLayingStartLat) : (d.startGpsLat ? Number(d.startGpsLat) : undefined)),
+      startGpsLng: (d.trenchingStartLng && d.trenchingStartLng !== "") ? Number(d.trenchingStartLng) : ((d.cableLayingStartLng && d.cableLayingStartLng !== "") ? Number(d.cableLayingStartLng) : (d.startGpsLng ? Number(d.startGpsLng) : undefined)),
       clearances: {
         PWD: { status: d.pwdClearance || "None", receipt: d.pwdReceipt || "" },
         KSEB: { status: d.ksebClearance || "None", receipt: d.ksebReceipt || "" },
@@ -729,6 +738,7 @@ export default function SupervisorDashboard() {
         setTrenchingStartLng(d.trenchingStartLng || "");
         setTrenchingEndLat(d.trenchingEndLat || "");
         setTrenchingEndLng(d.trenchingEndLng || "");
+        setTrenchingRoutePath(d.trenchingRoutePath || null);
         
         setWipHddValue(d.wipHddValue || "");
         setWipHddNarration(d.wipHddNarration || "");
@@ -741,6 +751,7 @@ export default function SupervisorDashboard() {
         setCableLayingStartLng(d.cableLayingStartLng || "");
         setCableLayingEndLat(d.cableLayingEndLat || "");
         setCableLayingEndLng(d.cableLayingEndLng || "");
+        setCableLayingRoutePath(d.cableLayingRoutePath || null);
         
         setWipCableMoundingValue(d.wipCableMoundingValue || "");
         setWipCableMoundingNarration(d.wipCableMoundingNarration || "");
@@ -804,6 +815,7 @@ export default function SupervisorDashboard() {
       setTrenchingStartLng("");
       setTrenchingEndLat("");
       setTrenchingEndLng("");
+      setTrenchingRoutePath(null);
       
       setWipHddValue("");
       setWipHddNarration("");
@@ -816,6 +828,7 @@ export default function SupervisorDashboard() {
       setCableLayingStartLng("");
       setCableLayingEndLat("");
       setCableLayingEndLng("");
+      setCableLayingRoutePath(null);
       
       setWipCableMoundingValue("");
       setWipCableMoundingNarration("");
@@ -880,6 +893,7 @@ export default function SupervisorDashboard() {
       trenchingStartLng,
       trenchingEndLat,
       trenchingEndLng,
+      trenchingRoutePath,
       wipHddValue,
       wipHddNarration,
       wipHddPhoto,
@@ -890,6 +904,7 @@ export default function SupervisorDashboard() {
       cableLayingStartLng,
       cableLayingEndLat,
       cableLayingEndLng,
+      cableLayingRoutePath,
       wipCableMoundingValue,
       wipCableMoundingNarration,
       wipCableMoundingPhoto,
@@ -939,10 +954,10 @@ export default function SupervisorDashboard() {
     toolRentList,
     otherExpensesList,
     wipTrenchingValue, wipTrenchingNarration, wipTrenchingPhoto,
-    trenchingStartLat, trenchingStartLng, trenchingEndLat, trenchingEndLng,
+    trenchingStartLat, trenchingStartLng, trenchingEndLat, trenchingEndLng, trenchingRoutePath,
     wipHddValue, wipHddNarration, wipHddPhoto,
     wipCableLayingValue, wipCableLayingNarration, wipCableLayingPhoto,
-    cableLayingStartLat, cableLayingStartLng, cableLayingEndLat, cableLayingEndLng,
+    cableLayingStartLat, cableLayingStartLng, cableLayingEndLat, cableLayingEndLng, cableLayingRoutePath,
     wipCableMoundingValue, wipCableMoundingNarration, wipCableMoundingPhoto,
     wipJoiningValue, wipJoiningNarration, wipJoiningPhoto,
     wipRmuValue, wipRmuNarration, wipRmuPhoto,
@@ -2954,7 +2969,6 @@ export default function SupervisorDashboard() {
                       </div>
 
                       {m.pic && (typeof window !== 'undefined') && (window as any).renderAttachmentPreview && (window as any).renderAttachmentPreview(m.pic)}
-
                       <input
                         type="text"
                         placeholder="Progress narration details..."
@@ -2967,7 +2981,7 @@ export default function SupervisorDashboard() {
                       {(m.key === "trenching" || m.key === "cable_laying") && selectedProjectItem && (
                         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
                           <span style={{ fontSize: 10, fontWeight: 800, color: "#0284c7", textTransform: "uppercase" }}>
-                            🗺️ Progress Mapping (Drag pins to set today's start/end locations)
+                            🗺️ Progress Mapping (Click map to set Start/End, drag pins to adjust)
                           </span>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                             
@@ -3001,11 +3015,27 @@ export default function SupervisorDashboard() {
                                       const middlePoints = ${JSON.stringify(selectedProjectItem.middlePoints || [])};
                                       const path = [start, ...middlePoints, end];
                                       
-                                      L.polyline(path, { color: '#7c3aed', weight: 4, opacity: 0.8 }).addTo(map);
+                                      const customUtility = ${JSON.stringify(selectedProjectItem.utilityPath ?? [])};
+                                      if (customUtility && customUtility.length >= 2) {
+                                        L.polyline(customUtility, { color: '#a855f7', weight: 4, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                                      } else {
+                                        L.polyline(path, { color: '#a855f7', weight: 4, opacity: 0.95 }).addTo(map);
+                                      }
+
                                       L.circleMarker(start, { color: '#16a34a', radius: 6, fillOpacity: 0.9 }).addTo(map);
                                       L.circleMarker(end, { color: '#dc2626', radius: 6, fillOpacity: 0.9 }).addTo(map);
                                       
-                                      map.fitBounds(path);
+                                      middlePoints.forEach(function(pt, idx) {
+                                        L.circleMarker(pt, { color: '#fbbf24', radius: 5, fillOpacity: 0.9 }).addTo(map);
+                                      });
+                                      
+                                      try {
+                                        if (customUtility && customUtility.length > 0) {
+                                          map.fitBounds(customUtility);
+                                        } else {
+                                          map.fitBounds(path);
+                                        }
+                                      } catch(e) {}
                                     </script>
                                   </body>
                                   </html>
@@ -3036,16 +3066,16 @@ export default function SupervisorDashboard() {
                                     <script>
                                       const projStart = [${selectedProjectItem.startCoords[0]}, ${selectedProjectItem.startCoords[1]}];
                                       
-                                      // Get active coords or fallback to project start
-                                      let startLat = ${m.key === "trenching" ? (trenchingStartLat || null) : (cableLayingStartLat || null)};
-                                      let startLng = ${m.key === "trenching" ? (trenchingStartLng || null) : (cableLayingStartLng || null)};
-                                      let endLat = ${m.key === "trenching" ? (trenchingEndLat || null) : (cableLayingEndLat || null)};
-                                      let endLng = ${m.key === "trenching" ? (trenchingEndLng || null) : (cableLayingEndLng || null)};
+                                      // Get active coords (null initially if not marked)
+                                      let startLat = ${m.key === "trenching" ? (trenchingStartLat ? Number(trenchingStartLat) : "null") : (cableLayingStartLat ? Number(cableLayingStartLat) : "null")};
+                                      let startLng = ${m.key === "trenching" ? (trenchingStartLng ? Number(trenchingStartLng) : "null") : (cableLayingStartLng ? Number(cableLayingStartLng) : "null")};
+                                      let endLat = ${m.key === "trenching" ? (trenchingEndLat ? Number(trenchingEndLat) : "null") : (cableLayingEndLat ? Number(cableLayingEndLat) : "null")};
+                                      let endLng = ${m.key === "trenching" ? (trenchingEndLng ? Number(trenchingEndLng) : "null") : (cableLayingEndLng ? Number(cableLayingEndLng) : "null")};
                                       
-                                      if (!startLat) { startLat = projStart[0]; startLng = projStart[1]; }
-                                      if (!endLat) { endLat = projStart[0] + 0.0005; endLng = projStart[1] + 0.0005; }
+                                      const centerLat = startLat || projStart[0];
+                                      const centerLng = startLng || projStart[1];
 
-                                      const map = L.map('map', { zoomControl: false }).setView([startLat, startLng], 15);
+                                      const map = L.map('map', { zoomControl: false }).setView([centerLat, centerLng], 15);
                                       L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
 
                                       // Green marker for Start
@@ -3064,43 +3094,115 @@ export default function SupervisorDashboard() {
                                         iconAnchor: [6, 6]
                                       });
 
-                                      const startMarker = L.marker([startLat, startLng], { icon: startIcon, draggable: true }).addTo(map);
-                                      const endMarker = L.marker([endLat, endLng], { icon: endIcon, draggable: true }).addTo(map);
+                                      let startMarker = null;
+                                      let endMarker = null;
+                                      let routedLine = null;
 
-                                      const line = L.polyline([[startLat, startLng], [endLat, endLng]], { color: '#0284c7', weight: 4, dashArray: '5, 5' }).addTo(map);
+                                      if (startLat && startLng) {
+                                        startMarker = L.marker([startLat, startLng], { icon: startIcon, draggable: true }).addTo(map);
+                                        startMarker.on('dragend', updateRoute);
+                                      }
+                                      if (endLat && endLng) {
+                                        endMarker = L.marker([endLat, endLng], { icon: endIcon, draggable: true }).addTo(map);
+                                        endMarker.on('dragend', updateRoute);
+                                      }
 
-                                      function updatePath() {
+                                      if (startMarker && endMarker) {
+                                        updateRoute();
+                                      }
+
+                                      function updateRoute() {
+                                        if (!startMarker || !endMarker) return;
                                         const s = startMarker.getLatLng();
                                         const e = endMarker.getLatLng();
-                                        line.setLatLngs([s, e]);
                                         
-                                        // Send message back
+                                        // 1. Post back to parent React view
                                         window.parent.postMessage({
                                           source: '${m.key === "trenching" ? "trenching-pinpoint" : "cable-laying-pinpoint"}',
                                           type: 'start',
                                           lat: s.lat,
                                           lng: s.lng
                                         }, '*');
-
                                         window.parent.postMessage({
                                           source: '${m.key === "trenching" ? "trenching-pinpoint" : "cable-laying-pinpoint"}',
                                           type: 'end',
                                           lat: e.lat,
                                           lng: e.lng
                                         }, '*');
+
+                                        // 2. Fetch OSRM route to follow the road
+                                        const url = "https://router.project-osrm.org/route/v1/driving/" + s.lng + "," + s.lat + ";" + e.lng + "," + e.lat + "?overview=full&geometries=geojson";
+                                        fetch(url)
+                                          .then(function(r) { return r.json(); })
+                                          .then(function(data) {
+                                            if (data.routes && data.routes.length > 0) {
+                                              const coords = data.routes[0].geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
+                                              if (routedLine) {
+                                                map.removeLayer(routedLine);
+                                              }
+                                              routedLine = L.polyline(coords, { color: '#0284c7', weight: 4, opacity: 0.9 }).addTo(map);
+                                              
+                                              window.parent.postMessage({
+                                                source: '${m.key === "trenching" ? "trenching-pinpoint" : "cable-laying-pinpoint"}',
+                                                type: 'route_path',
+                                                path: coords
+                                              }, '*');
+                                            } else {
+                                              throw new Error("No route");
+                                            }
+                                          })
+                                          .catch(function(err) {
+                                            if (routedLine) {
+                                              map.removeLayer(routedLine);
+                                            }
+                                            routedLine = L.polyline([s, e], { color: '#0284c7', weight: 4, dashArray: '5, 5' }).addTo(map);
+                                          });
                                       }
 
-                                      startMarker.on('dragend', updatePath);
-                                      endMarker.on('dragend', updatePath);
-                                      
                                       map.on('click', function(e) {
-                                        // Click updates end marker position
-                                        endMarker.setLatLng(e.latlng);
-                                        updatePath();
+                                        const lat = e.latlng.lat;
+                                        const lng = e.latlng.lng;
+                                        
+                                        if (!startMarker) {
+                                          startMarker = L.marker([lat, lng], { icon: startIcon, draggable: true }).addTo(map);
+                                          startMarker.on('dragend', updateRoute);
+                                          
+                                          window.parent.postMessage({
+                                            source: '${m.key === "trenching" ? "trenching-pinpoint" : "cable-laying-pinpoint"}',
+                                            type: 'start',
+                                            lat: lat,
+                                            lng: lng
+                                          }, '*');
+                                        } else if (!endMarker) {
+                                          endMarker = L.marker([lat, lng], { icon: endIcon, draggable: true }).addTo(map);
+                                          endMarker.on('dragend', updateRoute);
+                                          updateRoute();
+                                        } else {
+                                          // Reset and start over
+                                          map.removeLayer(startMarker);
+                                          map.removeLayer(endMarker);
+                                          if (routedLine) map.removeLayer(routedLine);
+                                          
+                                          startMarker = L.marker([lat, lng], { icon: startIcon, draggable: true }).addTo(map);
+                                          startMarker.on('dragend', updateRoute);
+                                          endMarker = null;
+                                          routedLine = null;
+                                          
+                                          window.parent.postMessage({
+                                            source: '${m.key === "trenching" ? "trenching-pinpoint" : "cable-laying-pinpoint"}',
+                                            type: 'start',
+                                            lat: lat,
+                                            lng: lng
+                                          }, '*');
+                                        }
                                       });
 
                                       try {
-                                        map.fitBounds([startMarker.getLatLng(), endMarker.getLatLng()], { padding: [20, 20] });
+                                        if (startMarker && endMarker) {
+                                          map.fitBounds([startMarker.getLatLng(), endMarker.getLatLng()], { padding: [20, 20] });
+                                        } else {
+                                          map.fitBounds([projStart]);
+                                        }
                                       } catch(err) {}
                                     </script>
                                   </body>
@@ -3111,146 +3213,40 @@ export default function SupervisorDashboard() {
                           </div>
                           
                           {/* Coordinates Text Inputs */}
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 10, background: "#ffffff", padding: 8, border: "1px solid #cbd5e1", borderRadius: 10 }}>
-                            <div>
-                              <strong style={{ color: "#16a34a" }}>Start Position</strong>
-                              <p style={{ margin: "2px 0 0", fontFamily: "monospace" }}>
-                                {m.key === "trenching" 
-                                  ? `${Number(trenchingStartLat || selectedProjectItem.startCoords[0]).toFixed(6)}, ${Number(trenchingStartLng || selectedProjectItem.startCoords[1]).toFixed(6)}` 
-                                  : `${Number(cableLayingStartLat || selectedProjectItem.startCoords[0]).toFixed(6)}, ${Number(cableLayingStartLng || selectedProjectItem.startCoords[1]).toFixed(6)}`
-                                }
-                              </p>
-                            </div>
-                            <div>
-                              <strong style={{ color: "#dc2626" }}>End Position</strong>
-                              <p style={{ margin: "2px 0 0", fontFamily: "monospace" }}>
-                                {m.key === "trenching"
-                                  ? `${Number(trenchingEndLat || selectedProjectItem.startCoords[0]).toFixed(6)}, ${Number(trenchingEndLng || selectedProjectItem.startCoords[1]).toFixed(6)}`
-                                  : `${Number(cableLayingEndLat || selectedProjectItem.startCoords[0]).toFixed(6)}, ${Number(cableLayingEndLng || selectedProjectItem.startCoords[1]).toFixed(6)}`
-                                }
-                              </p>
-                            </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10, fontSize: 10, background: "#ffffff", padding: 10, border: "1px solid #cbd5e1", borderRadius: 10, textAlign: "center" }}>
+                            {((m.key === "trenching" && trenchingStartLat) || (m.key === "cable_laying" && cableLayingStartLat)) ? (
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                                <div>
+                                  <strong style={{ color: "#16a34a", display: "block" }}>Start Position</strong>
+                                  <span style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 700 }}>
+                                    {m.key === "trenching" 
+                                      ? `${Number(trenchingStartLat).toFixed(6)}, ${Number(trenchingStartLng).toFixed(6)}` 
+                                      : `${Number(cableLayingStartLat).toFixed(6)}, ${Number(cableLayingStartLng).toFixed(6)}`
+                                    }
+                                  </span>
+                                </div>
+                                <div>
+                                  <strong style={{ color: "#dc2626", display: "block" }}>End Position</strong>
+                                  <span style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 700 }}>
+                                    {m.key === "trenching" && trenchingEndLat
+                                      ? `${Number(trenchingEndLat).toFixed(6)}, ${Number(trenchingEndLng).toFixed(6)}`
+                                      : (m.key === "cable_laying" && cableLayingEndLat 
+                                        ? `${Number(cableLayingEndLat).toFixed(6)}, ${Number(cableLayingEndLng).toFixed(6)}`
+                                        : "Not set")
+                                    }
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <span style={{ color: "#64748b", fontStyle: "italic", fontSize: 11 }}>
+                                📍 Map is currently empty. Click on the map to pinpoint Start and End points.
+                              </span>
+                            )}
                           </div>
                         </div>
                       )}
                     </div>
                   ))}
-
-                  {/* GPS snaps coordinates */}
-                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: 16, borderRadius: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.05em" }}>Accurate Terminal Geolocation Coordinates</span>
-                    </div>
-
-                    <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", padding: 12, borderRadius: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 8, alignItems: "center" }}>
-                        <span style={{ fontSize: 10, color: "#64748b", fontWeight: 800 }}>Outdoor/Indoor Terminations</span>
-                        <input
-                          type="number"
-                          placeholder="Endpoints count"
-                          value={wipTerminationsValue}
-                          onChange={(e) => setWipTerminationsValue(e.target.value)}
-                          style={{ width: "100%", height: 34, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 12, outline: "none", fontWeight: 700 }}
-                        />
-                      </div>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, borderTop: "1px solid #e2e8f0", paddingTop: 10 }}>
-                        {/* Start GPS */}
-                        <div>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                            <span style={{ fontSize: 9, color: "#475569", fontWeight: 800 }}>START GPS</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (navigator.geolocation) {
-                                  showToast("⏳ Fetching start coordinates...");
-                                  navigator.geolocation.getCurrentPosition(
-                                    (p) => {
-                                      setStartGpsLat(p.coords.latitude.toFixed(6));
-                                      setStartGpsLng(p.coords.longitude.toFixed(6));
-                                      showToast("✓ Start GPS fetched!");
-                                    },
-                                    (err) => showToast(`❌ GPS error: ${err.message}`),
-                                    { enableHighAccuracy: true, timeout: 8000 }
-                                  );
-                                } else {
-                                  showToast("❌ Geolocation unavailable.");
-                                }
-                              }}
-                              style={{ fontSize: 8, fontWeight: 800, color: "#0284c7", background: "rgba(2, 132, 199, 0.06)", border: "1px solid rgba(2, 132, 199, 0.2)", borderRadius: 4, padding: "2px 6px", cursor: "pointer" }}
-                            >
-                              ⚡ Snag
-                            </button>
-                          </div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                            <input
-                              type="number"
-                              step="0.000001"
-                              placeholder="Start Lat"
-                              value={startGpsLat}
-                              onChange={(e) => setStartGpsLat(e.target.value)}
-                              style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none", fontWeight: 700 }}
-                            />
-                            <input
-                              type="number"
-                              step="0.000001"
-                              placeholder="Start Lng"
-                              value={startGpsLng}
-                              onChange={(e) => setStartGpsLng(e.target.value)}
-                              style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none", fontWeight: 700 }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* End GPS */}
-                        <div>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                            <span style={{ fontSize: 9, color: "#475569", fontWeight: 800 }}>END GPS</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (navigator.geolocation) {
-                                  showToast("⏳ Fetching end coordinates...");
-                                  navigator.geolocation.getCurrentPosition(
-                                    (p) => {
-                                      setTerminationGpsLat(p.coords.latitude.toFixed(6));
-                                      setTerminationGpsLng(p.coords.longitude.toFixed(6));
-                                      showToast("✓ End GPS fetched!");
-                                    },
-                                    (err) => showToast(`❌ GPS error: ${err.message}`),
-                                    { enableHighAccuracy: true, timeout: 8000 }
-                                  );
-                                } else {
-                                  showToast("❌ Geolocation unavailable.");
-                                }
-                              }}
-                              style={{ fontSize: 8, fontWeight: 800, color: "#0284c7", background: "rgba(2, 132, 199, 0.06)", border: "1px solid rgba(2, 132, 199, 0.2)", borderRadius: 4, padding: "2px 6px", cursor: "pointer" }}
-                            >
-                              ⚡ Snag
-                            </button>
-                          </div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                            <input
-                              type="number"
-                              step="0.000001"
-                              placeholder="End Lat"
-                              value={terminationGpsLat}
-                              onChange={(e) => setTerminationGpsLat(e.target.value)}
-                              style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none", fontWeight: 700 }}
-                            />
-                            <input
-                              type="number"
-                              step="0.000001"
-                              placeholder="End Lng"
-                              value={terminationGpsLng}
-                              onChange={(e) => setTerminationGpsLng(e.target.value)}
-                              style={{ width: "100%", height: 32, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "0 8px", color: "#0f172a", fontSize: 11, outline: "none", fontWeight: 700 }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
 

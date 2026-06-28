@@ -185,6 +185,24 @@ export async function POST(request: NextRequest) {
 
 
 
+  // Notify all administrators in real-time
+  const { data: admins } = await supabase
+    .from("mobile_app_users")
+    .select("id")
+    .eq("role", "admin")
+    .eq("access_status", "active");
+
+  if (admins && admins.length > 0) {
+    const adminNotifs = admins.map(admin => ({
+      recipient_user_id: admin.id,
+      title: "Access Requested",
+      body: `${fullName} has requested access as a ${role}.`,
+      notification_type: "system",
+      metadata: { loginId: savedLoginId, email: targetEmail, role }
+    }));
+    await supabase.from("mobile_notifications").insert(adminNotifs);
+  }
+
   return NextResponse.json({
     ok: true,
     loginId: savedLoginId,

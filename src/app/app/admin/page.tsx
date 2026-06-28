@@ -227,7 +227,7 @@ export default function AdminDashboard() {
   const [trenchDesc, setTrenchDesc] = useState("");
 
   // Upgraded GIS Marks & Drawing State parameters
-  const [activePinMode, setActivePinMode] = useState<"start" | "end" | "project_start" | "project_end" | "road_segment" | "hdd" | "hdd_segment" | "trench" | "trench_segment" | "termination" | "utility">("start");
+  const [activePinMode, setActivePinMode] = useState<"start" | "end" | "middle" | "project_start" | "project_end" | "road_segment" | "hdd" | "hdd_segment" | "trench" | "trench_segment" | "termination" | "utility">("start");
   const [hddPoints, setHddPoints] = useState<[number, number][]>([]);
   const [terminationPoints, setTerminationPoints] = useState<[number, number][]>([]);
   const [trenchingLine, setTrenchingLine] = useState<[number, number][]>([]);
@@ -1087,6 +1087,25 @@ export default function AdminDashboard() {
         const { lat, lng } = e.data;
         const latStr = lat.toFixed(6);
         const lngStr = lng.toFixed(6);
+        const latNum = parseFloat(latStr);
+        const lngNum = parseFloat(lngStr);
+
+        if (activePinMode === "middle") {
+          if (gisEditLayer === "corridor") {
+            setProjMiddlePoints(prev => [...prev, [latNum, lngNum]]);
+            showToast(`🟡 Added Corridor Middle Point: [${latStr}, ${lngStr}]`);
+          } else if (gisEditLayer === "cable") {
+            setCableMiddlePoints(prev => [...prev, [latNum, lngNum]]);
+            showToast(`🟡 Added Cable Middle Point: [${latStr}, ${lngStr}]`);
+          } else if (gisEditLayer === "hdd") {
+            setHddMiddlePoints(prev => [...prev, [latNum, lngNum]]);
+            showToast(`🟡 Added HDD Middle Point: [${latStr}, ${lngStr}]`);
+          } else if (gisEditLayer === "trench") {
+            setTrenchMiddlePoints(prev => [...prev, [latNum, lngNum]]);
+            showToast(`🟡 Added Trench Middle Point: [${latStr}, ${lngStr}]`);
+          }
+          return;
+        }
 
         if (gisEditLayer === "corridor") {
           if (activePinMode === "start" || activePinMode === "project_start") {
@@ -1128,6 +1147,19 @@ export default function AdminDashboard() {
             setTrenchEndLng(lngStr);
             showToast(`🔴 Trench End Position set: [${latStr}, ${lngStr}]`);
           }
+        }
+      } else if (e.data.type === "MIDDLE_POINT_DRAG") {
+        const { index, lat, lng } = e.data;
+        const latNum = parseFloat(lat.toFixed(6));
+        const lngNum = parseFloat(lng.toFixed(6));
+        if (gisEditLayer === "corridor") {
+          setProjMiddlePoints(prev => prev.map((pt, idx) => idx === index ? [latNum, lngNum] : pt));
+        } else if (gisEditLayer === "cable") {
+          setCableMiddlePoints(prev => prev.map((pt, idx) => idx === index ? [latNum, lngNum] : pt));
+        } else if (gisEditLayer === "hdd") {
+          setHddMiddlePoints(prev => prev.map((pt, idx) => idx === index ? [latNum, lngNum] : pt));
+        } else if (gisEditLayer === "trench") {
+          setTrenchMiddlePoints(prev => prev.map((pt, idx) => idx === index ? [latNum, lngNum] : pt));
         }
       } else if (e.data.type === "MARKER_DRAG") {
         const { target, lat, lng } = e.data;
@@ -1177,22 +1209,46 @@ export default function AdminDashboard() {
         }
       } else if (e.data.type === "ROUTE_CALCULATED") {
         const { distance, utilityPath } = e.data;
-        setProjDistance(distance);
-        setUtilityPath(utilityPath);
+        if (gisEditLayer === "corridor") {
+          setProjDistance(distance);
+          setUtilityPath(utilityPath);
+        }
       }
     };
 
     window.addEventListener("message", handleMapMessage);
     return () => window.removeEventListener("message", handleMapMessage);
-  }, [activePinMode, projStartLat, projStartLng, projEndLat, projEndLng, utilityPath]);
+  }, [activePinMode, gisEditLayer, projStartLat, projStartLng, projEndLat, projEndLng, utilityPath]);
 
   // Bi-directional state transmitter to iframe map frame
   useEffect(() => {
     if (!editingProjectItem) return;
-    const sLat = parseFloat(projStartLat);
-    const sLng = parseFloat(projStartLng);
-    const eLat = parseFloat(projEndLat);
-    const eLng = parseFloat(projEndLng);
+
+    let sLat = parseFloat(projStartLat);
+    let sLng = parseFloat(projStartLng);
+    let eLat = parseFloat(projEndLat);
+    let eLng = parseFloat(projEndLng);
+    let middles = projMiddlePoints;
+
+    if (gisEditLayer === "cable") {
+      sLat = parseFloat(cableStartLat);
+      sLng = parseFloat(cableStartLng);
+      eLat = parseFloat(cableEndLat);
+      eLng = parseFloat(cableEndLng);
+      middles = cableMiddlePoints;
+    } else if (gisEditLayer === "hdd") {
+      sLat = parseFloat(hddStartLat);
+      sLng = parseFloat(hddStartLng);
+      eLat = parseFloat(hddEndLat);
+      eLng = parseFloat(hddEndLng);
+      middles = hddMiddlePoints;
+    } else if (gisEditLayer === "trench") {
+      sLat = parseFloat(trenchStartLat);
+      sLng = parseFloat(trenchStartLng);
+      eLat = parseFloat(trenchEndLat);
+      eLng = parseFloat(trenchEndLng);
+      middles = trenchMiddlePoints;
+    }
     
     const timer = setTimeout(() => {
       const iframe = document.getElementById("gis-editor-iframe") as HTMLIFrameElement | null;
@@ -1203,6 +1259,8 @@ export default function AdminDashboard() {
           startLng: isNaN(sLng) ? null : sLng,
           endLat: isNaN(eLat) ? null : eLat,
           endLng: isNaN(eLng) ? null : eLng,
+          middlePoints: middles,
+          gisEditLayer,
           hddPoints,
           terminationPoints,
           trenchingLine,
@@ -1218,7 +1276,15 @@ export default function AdminDashboard() {
     }, 50); // slight debounce for fluent text typing and dragging updates
 
     return () => clearTimeout(timer);
-  }, [projStartLat, projStartLng, projEndLat, projEndLng, hddPoints, terminationPoints, trenchingLine, utilityPath, roadChangeSegments, hddSegments, trenchingSegments, tempRoadStart, tempHddStart, tempTrenchStart, editingProjectItem]);
+  }, [
+    projStartLat, projStartLng, projEndLat, projEndLng, JSON.stringify(projMiddlePoints),
+    cableStartLat, cableStartLng, cableEndLat, cableEndLng, JSON.stringify(cableMiddlePoints),
+    hddStartLat, hddStartLng, hddEndLat, hddEndLng, JSON.stringify(hddMiddlePoints),
+    trenchStartLat, trenchStartLng, trenchEndLat, trenchEndLng, JSON.stringify(trenchMiddlePoints),
+    gisEditLayer, hddPoints, terminationPoints, trenchingLine, utilityPath,
+    roadChangeSegments, hddSegments, trenchingSegments, tempRoadStart, tempHddStart, tempTrenchStart,
+    editingProjectItem
+  ]);
 
   // OSM Location Nominatim Geocoder
   const handleSearchMap = async (e: React.FormEvent) => {
@@ -2022,7 +2088,7 @@ export default function AdminDashboard() {
                     </div>
                   ) : (
                     adminNotifications.map(n => {
-                      const timeStr = new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                      const timeStr = new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + " " + new Date(n.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' });
                       return (
                         <div 
                           key={n.id}
@@ -3793,6 +3859,25 @@ export default function AdminDashboard() {
                   <div className="glass glow-cyan" style={{ border: "1px solid var(--border)", borderRadius: 16, padding: 16, background: "var(--surface)", display: "flex", flexDirection: "column", gap: 10 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 12, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase" }}>🔌 Cable Laying Map</span>
+                      <button
+                        onClick={() => {
+                          setEditingProjectItem(selectedProjectItem);
+                          setGisEditLayer("cable");
+                        }}
+                        style={{
+                          background: "rgba(6, 182, 212, 0.12)",
+                          border: "1px solid rgba(6, 182, 212, 0.3)",
+                          borderRadius: 8,
+                          padding: "4px 10px",
+                          fontSize: 10,
+                          fontWeight: 750,
+                          color: "#c4b5fd",
+                          cursor: "pointer",
+                          fontFamily: "Outfit, sans-serif"
+                        }}
+                      >
+                        ✏️ Edit Map
+                      </button>
                     </div>
                     {selectedProjectItem.cableLayingCoords?.startCoords ? (
                       <>
@@ -3845,6 +3930,25 @@ export default function AdminDashboard() {
                   <div className="glass glow-cyan" style={{ border: "1px solid var(--border)", borderRadius: 16, padding: 16, background: "var(--surface)", display: "flex", flexDirection: "column", gap: 10 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 12, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase" }}>🕳️ HDD Drilling Map</span>
+                      <button
+                        onClick={() => {
+                          setEditingProjectItem(selectedProjectItem);
+                          setGisEditLayer("hdd");
+                        }}
+                        style={{
+                          background: "rgba(16, 185, 129, 0.12)",
+                          border: "1px solid rgba(16, 185, 129, 0.3)",
+                          borderRadius: 8,
+                          padding: "4px 10px",
+                          fontSize: 10,
+                          fontWeight: 750,
+                          color: "#c4b5fd",
+                          cursor: "pointer",
+                          fontFamily: "Outfit, sans-serif"
+                        }}
+                      >
+                        ✏️ Edit Map
+                      </button>
                     </div>
                     {selectedProjectItem.hddDrillingCoords?.startCoords ? (
                       <>
@@ -3897,6 +4001,25 @@ export default function AdminDashboard() {
                   <div className="glass glow-cyan" style={{ border: "1px solid var(--border)", borderRadius: 16, padding: 16, background: "var(--surface)", display: "flex", flexDirection: "column", gap: 10 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 12, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase" }}>🚜 Open Trench Map</span>
+                      <button
+                        onClick={() => {
+                          setEditingProjectItem(selectedProjectItem);
+                          setGisEditLayer("trench");
+                        }}
+                        style={{
+                          background: "rgba(249, 115, 22, 0.12)",
+                          border: "1px solid rgba(249, 115, 22, 0.3)",
+                          borderRadius: 8,
+                          padding: "4px 10px",
+                          fontSize: 10,
+                          fontWeight: 750,
+                          color: "#c4b5fd",
+                          cursor: "pointer",
+                          fontFamily: "Outfit, sans-serif"
+                        }}
+                      >
+                        ✏️ Edit Map
+                      </button>
                     </div>
                     {selectedProjectItem.openTrenchCoords?.startCoords ? (
                       <>
@@ -5686,49 +5809,91 @@ export default function AdminDashboard() {
                         ].map((m: any) => {
                           const log = wip[m.key] || {};
                           return (
-                            <div key={m.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--surface)", border: "1px solid var(--surface)", borderRadius: 12, padding: "10px 14px", gap: 12 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
-                                {log.photo ? (
-                                  <div 
-                                    onClick={() => setAdminActiveImagePreview(log.photo)}
-                                    style={{ width: 44, height: 44, borderRadius: 8, background: "var(--surface)", border: "1px solid var(--border)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-in", flexShrink: 0 }}
-                                  >
-                                    <img src={log.photo} alt="Progress log thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            <div key={m.key} style={{ display: "flex", flexDirection: "column", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "12px 16px", gap: 10 }}>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+                                  {log.photo ? (
+                                    <div 
+                                      onClick={() => setAdminActiveImagePreview(log.photo)}
+                                      style={{ width: 44, height: 44, borderRadius: 8, background: "var(--surface)", border: "1px solid var(--border)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-in", flexShrink: 0 }}
+                                    >
+                                      <img src={log.photo} alt="Progress log thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                    </div>
+                                  ) : (
+                                    <div style={{ width: 44, height: 44, borderRadius: 8, background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", fontSize: 13, flexShrink: 0 }}>
+                                      📷
+                                    </div>
+                                  )}
+                                  <div style={{ minWidth: 0 }}>
+                                    <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 800 }}>{m.name}</span>
+                                    <p style={{ margin: "2px 0 0", fontSize: 10, color: "var(--dim)", fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                      {log.narration || "No narration details added."}
+                                    </p>
                                   </div>
-                                ) : (
-                                  <div style={{ width: 44, height: 44, borderRadius: 8, background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", fontSize: 13, flexShrink: 0 }}>
-                                    📷
-                                  </div>
-                                )}
-                                <div style={{ minWidth: 0 }}>
-                                  <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 800 }}>{m.name}</span>
-                                  <p style={{ margin: "2px 0 0", fontSize: 10, color: "var(--dim)", fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                    {log.narration || "No narration details added."}
-                                  </p>
+                                </div>
+                                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                                  <span style={{ fontSize: 12, fontWeight: 800, color: "#d97706", display: "block" }}>{m.val}</span>
+                                  {m.key === "terminations" && selectedReport.terminationGpsLat && (
+                                    <span style={{ fontSize: 8, color: "var(--dim)", fontFamily: "monospace" }}>
+                                      🎯 [{selectedReport.terminationGpsLat.toFixed(4)}, {selectedReport.terminationGpsLng.toFixed(4)}]
+                                    </span>
+                                  )}
+                                  {(m.key === "trenching" || m.key === "cableLaying") && log.startLat && (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "flex-end", marginTop: 2 }}>
+                                      <span style={{ fontSize: 8, color: "var(--dim)", fontFamily: "monospace" }}>
+                                        🏁 Start: [{Number(log.startLat).toFixed(4)}, {Number(log.startLng).toFixed(4)}]
+                                      </span>
+                                      <span style={{ fontSize: 8, color: "var(--dim)", fontFamily: "monospace" }}>
+                                        🎯 End: [{Number(log.endLat).toFixed(4)}, {Number(log.endLng).toFixed(4)}]
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
-                              <div style={{ textAlign: "right", flexShrink: 0 }}>
-                                <span style={{ fontSize: 12, fontWeight: 800, color: "#d97706", display: "block" }}>{m.val}</span>
-                                {m.key === "terminations" && selectedReport.terminationGpsLat && (
-                                  <span style={{ fontSize: 8, color: "var(--dim)", fontFamily: "monospace" }}>
-                                    🎯 [{selectedReport.terminationGpsLat.toFixed(4)}, {selectedReport.terminationGpsLng.toFixed(4)}]
-                                  </span>
-                                )}
-                                {m.key === "trenching" && (
-                                  <div style={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "flex-end", marginTop: 2 }}>
-                                    {rich.startGpsLat && (
-                                      <span style={{ fontSize: 8, color: "var(--dim)", fontFamily: "monospace" }}>
-                                        🏁 Start: [{Number(rich.startGpsLat).toFixed(4)}, {Number(rich.startGpsLng).toFixed(4)}]
-                                      </span>
-                                    )}
-                                    {selectedReport.terminationGpsLat && (
-                                      <span style={{ fontSize: 8, color: "var(--dim)", fontFamily: "monospace" }}>
-                                        🎯 End: [{selectedReport.terminationGpsLat.toFixed(4)}, {selectedReport.terminationGpsLng.toFixed(4)}]
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
+
+                              {/* Map segment preview */}
+                              {(m.key === "trenching" || m.key === "cableLaying") && log.startLat && log.endLat && (
+                                <div style={{ border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden", height: 160, width: "100%", background: "#f1f5f9" }}>
+                                  <iframe
+                                    title={`${m.name} Route Map`}
+                                    style={{ width: "100%", height: "100%", border: "none" }}
+                                    srcDoc={`
+                                      <!DOCTYPE html>
+                                      <html>
+                                      <head>
+                                        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                                        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                                        <style>
+                                          body, html, #map { margin: 0; padding: 0; width: 100%; height: 100%; }
+                                        </style>
+                                      </head>
+                                      <body>
+                                        <div id="map"></div>
+                                        <script>
+                                          const start = [${log.startLat}, ${log.startLng}];
+                                          const end = [${log.endLat}, ${log.endLng}];
+                                          const map = L.map('map', { zoomControl: false, dragging: true }).setView(start, 15);
+                                          L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+                                          
+                                          // Green start, red end
+                                          L.circleMarker(start, { color: '#16a34a', radius: 5, fillOpacity: 0.9 }).addTo(map);
+                                          L.circleMarker(end, { color: '#dc2626', radius: 5, fillOpacity: 0.9 }).addTo(map);
+                                          
+                                          const pathCoords = ${JSON.stringify(log.path || [])};
+                                          if (pathCoords && pathCoords.length >= 2) {
+                                            L.polyline(pathCoords, { color: '${m.key === "trenching" ? "#f97316" : "#06b6d4"}', weight: 4.5, opacity: 0.95 }).addTo(map);
+                                            try { map.fitBounds(pathCoords, { padding: [10, 10] }); } catch(e){}
+                                          } else {
+                                            L.polyline([start, end], { color: '${m.key === "trenching" ? "#f97316" : "#06b6d4"}', weight: 4, dashArray: '5, 5' }).addTo(map);
+                                            try { map.fitBounds([start, end], { padding: [10, 10] }); } catch(e){}
+                                          }
+                                        </script>
+                                      </body>
+                                      </html>
+                                    `}
+                                  />
+                                </div>
+                              )}
                             </div>
                           );
                         })}
@@ -5968,6 +6133,7 @@ export default function AdminDashboard() {
           switch (activePinMode) {
             case "start": return { border: "1px solid rgba(34, 197, 94, 0.3)", background: "rgba(22, 163, 74, 0.08)", color: "#15803d" };
             case "end": return { border: "1px solid rgba(239, 68, 68, 0.3)", background: "rgba(220, 38, 38, 0.08)", color: "#dc2626" };
+            case "middle": return { border: "1px solid rgba(217, 119, 6, 0.3)", background: "rgba(217, 119, 6, 0.08)", color: "#fbbf24" };
             case "road_segment": return { border: "1px solid rgba(139, 92, 246, 0.3)", background: "rgba(139, 92, 246, 0.08)", color: "#8b5cf6" };
             case "hdd":
             case "hdd_segment": return { border: "1px solid rgba(251, 191, 36, 0.3)", background: "rgba(217, 119, 6, 0.08)", color: "#fcd34d" };
@@ -5983,6 +6149,7 @@ export default function AdminDashboard() {
           switch (activePinMode) {
             case "start": return "🟢 Pin Start: Click any location on the map to set the Start Junction. You can also drag the green marker directly.";
             case "end": return "🔴 Pin End: Click any location on the map to set the End Junction. You can also drag the red marker directly.";
+            case "middle": return "🟡 Pin Middle: Click any location on the map to add an intermediate connection point (Junction). Whichever route the person is drawing on, the line will strictly follow it through these points in sequence.";
             case "road_segment": return "🛣️ Road Changes Segment: Click start point and end point on map to mark road change segment. Its distance adds to project length!";
             case "hdd_segment": return "🟡 HDD Crossing Segment: Click start point and end point on map to clearly mark a horizontal directional drilling crossing segment.";
             case "trench_segment": return "🟠 Trenching Segment Planning: Click start point and end point on map to mark planned trenching segments.";
@@ -6058,7 +6225,7 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Grid of operational drawing tools */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
                     <button
                       type="button"
                       onClick={() => setActivePinMode("start")}
@@ -6070,6 +6237,18 @@ export default function AdminDashboard() {
                       }}
                     >
                       🟢 Pin Start
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActivePinMode("middle")}
+                      className="tool-btn"
+                      style={{
+                        borderColor: activePinMode === "middle" ? "#d97706" : "var(--border)",
+                        background: activePinMode === "middle" ? "rgba(217,119,6,0.12)" : "var(--surface)",
+                        color: activePinMode === "middle" ? "#fbbf24" : "#94a3b8"
+                      }}
+                    >
+                      🟡 Pin Middle
                     </button>
                     <button
                       type="button"
@@ -6127,7 +6306,7 @@ export default function AdminDashboard() {
                               const startLng = parseFloat("${editingProjectItem.startCoords[1]}");
                               const endLat = parseFloat("${editingProjectItem.endCoords[0]}");
                               const endLng = parseFloat("${editingProjectItem.endCoords[1]}");
-                              const middlePoints = ${JSON.stringify(projMiddlePoints)};
+                              let middlePoints = ${JSON.stringify(projMiddlePoints)};
 
                               const hasStart = !isNaN(startLat) && !isNaN(startLng);
                               const hasEnd = !isNaN(endLat) && !isNaN(endLng);
@@ -6166,20 +6345,38 @@ export default function AdminDashboard() {
                               // Render intermediate connection points
                               const middleIcon = L.divIcon({
                                 className: 'middle-marker',
-                                html: "<div style='background-color:#c084fc;width:10px;height:10px;border:1.5px solid white;border-radius:50%;box-shadow:0 0 8px rgba(192,132,252,0.8)'></div>",
+                                html: "<div style='background-color:#fbbf24;width:10px;height:10px;border:1.5px solid white;border-radius:50%;box-shadow:0 0 8px rgba(251,191,36,0.8)'></div>",
                                 iconSize: [10, 10],
                                 iconAnchor: [5, 5]
                               });
                               
-                              middlePoints.forEach(function(pt, idx) {
-                                L.marker([pt[0], pt[1]], { icon: middleIcon })
-                                 .addTo(map)
-                                 .bindTooltip("<b>Junction " + (idx + 1) + "</b>", { permanent: true, direction: "top", className: "junction-tooltip" });
-                              });
+                              let middleMarkers = [];
+                              function redrawMiddleMarkers() {
+                                middleMarkers.forEach(function(m) { map.removeLayer(m); });
+                                middleMarkers = [];
+                                middlePoints.forEach(function(pt, idx) {
+                                  const m = L.marker([pt[0], pt[1]], { icon: middleIcon, draggable: true })
+                                   .addTo(map)
+                                   .bindTooltip("<b>Junction " + (idx + 1) + "</b>", { permanent: true, direction: "top", className: "junction-tooltip" });
+                                  
+                                  m.on('dragend', function() {
+                                    const pos = m.getLatLng();
+                                    window.parent.postMessage({
+                                      type: 'MIDDLE_POINT_DRAG',
+                                      index: idx,
+                                      lat: pos.lat,
+                                      lng: pos.lng
+                                    }, '*');
+                                  });
+                                  middleMarkers.push(m);
+                                });
+                              }
+                              redrawMiddleMarkers();
 
                               let startMarker = null;
                               let endMarker = null;
                               let utilityPolyline = null;
+                              let currentEditLayer = 'corridor';
 
                               // Plot Start Coordinates
                               if (hasStart) {
@@ -6213,7 +6410,7 @@ export default function AdminDashboard() {
                               let lastRoutedStart = null;
                               let lastRoutedEnd = null;
 
-                              function fetchOSRMRoute(sLat, sLng, eLat, eLng) {
+                               function fetchOSRMRoute(sLat, sLng, eLat, eLng) {
                                 const startKey = sLat + "," + sLng;
                                 const endKey = eLat + "," + eLng;
                                 const middleKey = JSON.stringify(middlePoints);
@@ -6229,6 +6426,17 @@ export default function AdminDashboard() {
                                 }
                                 queryPoints += ";" + eLng + "," + eLat;
 
+                                let polylineColor = '#a855f7';
+                                let isDash = false;
+                                if (currentEditLayer === "cable") {
+                                  polylineColor = '#06b6d4';
+                                } else if (currentEditLayer === "hdd") {
+                                  polylineColor = '#eab308';
+                                  isDash = true;
+                                } else if (currentEditLayer === "trench") {
+                                  polylineColor = '#f97316';
+                                }
+
                                 const url = "https://router.project-osrm.org/route/v1/driving/" + queryPoints + "?overview=full&geometries=geojson";
                                 fetch(url)
                                   .then(function(r) { return r.json(); })
@@ -6241,7 +6449,13 @@ export default function AdminDashboard() {
                                       if (utilityPolyline) {
                                         map.removeLayer(utilityPolyline);
                                       }
-                                      utilityPolyline = L.polyline(coords, { color: "#a855f7", weight: 4.5, opacity: 0.95, lineJoin: "round" }).addTo(map);
+                                      utilityPolyline = L.polyline(coords, { 
+                                        color: polylineColor, 
+                                        weight: 4.5, 
+                                        opacity: 0.95, 
+                                        lineJoin: "round",
+                                        dashArray: isDash ? '5, 5' : null
+                                      }).addTo(map);
 
                                       window.parent.postMessage({
                                         type: "ROUTE_CALCULATED",
@@ -6256,12 +6470,20 @@ export default function AdminDashboard() {
                                     console.error("OSRM failed, using Haversine straight line:", err);
                                     const distanceVal = calculateHaversineDistance(sLat, sLng, eLat, eLng);
                                     const distanceKm = distanceVal.toFixed(2) + " km";
-                                    const coords = [[sLat, sLng], [eLat, eLng]];
+                                    const coords = [[sLat, sLng]];
+                                    middlePoints.forEach(function(pt) { coords.push([pt[0], pt[1]]); });
+                                    coords.push([eLat, eLng]);
 
                                     if (utilityPolyline) {
                                       map.removeLayer(utilityPolyline);
                                     }
-                                    utilityPolyline = L.polyline(coords, { color: "#a855f7", weight: 4.5, opacity: 0.8, lineJoin: "round" }).addTo(map);
+                                    utilityPolyline = L.polyline(coords, { 
+                                      color: polylineColor, 
+                                      weight: 4.5, 
+                                      opacity: 0.8, 
+                                      lineJoin: "round",
+                                      dashArray: isDash ? '5, 5' : null
+                                    }).addTo(map);
 
                                     window.parent.postMessage({
                                       type: "ROUTE_CALCULATED",
@@ -6272,21 +6494,29 @@ export default function AdminDashboard() {
                               }
 
                               // Plot initial path
-                                if (hasStart && hasEnd) {
-                                  fetchOSRMRoute(startLat, startLng, endLat, endLng);
-                                } else {
-                                  const customUtilityPath = ${JSON.stringify(editingProjectItem.utilityPath ?? [])};
-                                  if (customUtilityPath && customUtilityPath.length >= 2) {
-                                    utilityPolyline = L.polyline(customUtilityPath, { color: '#a855f7', weight: 4.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
-                                  }
+                              if (hasStart && hasEnd) {
+                                fetchOSRMRoute(startLat, startLng, endLat, endLng);
+                              } else {
+                                const customUtilityPath = ${JSON.stringify(editingProjectItem.utilityPath ?? [])};
+                                if (customUtilityPath && customUtilityPath.length >= 2) {
+                                  utilityPolyline = L.polyline(customUtilityPath, { color: '#a855f7', weight: 4.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
                                 }
+                              }
 
                               // Message handler for updates and geocoding zooms
                               window.addEventListener('message', function(e) {
                                 if (!e.data) return;
                                 
                                 if (e.data.type === 'UPDATE_MARKERS') {
-                                  const { startLat, startLng, endLat, endLng, utilityPath } = e.data;
+                                  const { startLat, startLng, endLat, endLng, utilityPath, gisEditLayer } = e.data;
+                                  
+                                  if (gisEditLayer) {
+                                    currentEditLayer = gisEditLayer;
+                                  }
+                                  if (e.data.middlePoints) {
+                                    middlePoints = e.data.middlePoints;
+                                    redrawMiddleMarkers();
+                                  }
                                   
                                   // 1. Start marker
                                   if (startLat && startLng) {
@@ -6324,6 +6554,8 @@ export default function AdminDashboard() {
 
                                   // 3. Routing update
                                   if (startLat && startLng && endLat && endLng) {
+                                    // Reset cache key to force redraw
+                                    window.lastRouteKey = null;
                                     fetchOSRMRoute(startLat, startLng, endLat, endLng);
                                   } else {
                                     if (utilityPolyline) {
@@ -6331,7 +6563,23 @@ export default function AdminDashboard() {
                                       utilityPolyline = null;
                                     }
                                     if (utilityPath && utilityPath.length >= 2) {
-                                      utilityPolyline = L.polyline(utilityPath, { color: '#a855f7', weight: 4.5, opacity: 0.95, lineJoin: 'round' }).addTo(map);
+                                      let polylineColor = '#a855f7';
+                                      let isDash = false;
+                                      if (currentEditLayer === "cable") {
+                                        polylineColor = '#06b6d4';
+                                      } else if (currentEditLayer === "hdd") {
+                                        polylineColor = '#eab308';
+                                        isDash = true;
+                                      } else if (currentEditLayer === "trench") {
+                                        polylineColor = '#f97316';
+                                      }
+                                      utilityPolyline = L.polyline(utilityPath, { 
+                                        color: polylineColor, 
+                                        weight: 4.5, 
+                                        opacity: 0.95, 
+                                        lineJoin: 'round',
+                                        dashArray: isDash ? '5, 5' : null
+                                      }).addTo(map);
                                     }
                                   }
 
