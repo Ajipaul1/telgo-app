@@ -272,6 +272,7 @@ function PrintHddLogSheetContent() {
   const rightLogs = logsList.slice(15, 30);
 
   const hddMeta = report.hddMetadata || {};
+  const rodLength = Number(report.hddMetadata?.hddRodLengthM || project?.hddDefaultRodLengthM || 3.0);
 
   return (
     <div className="a4-sheet" style={{ width: "210mm", minHeight: "297mm", padding: "12mm 10mm", background: "#ffffff", color: "#000000", margin: "0 auto", boxSizing: "border-box", fontSize: "11px", position: "relative" }}>
