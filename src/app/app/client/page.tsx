@@ -26,6 +26,12 @@ export default function ClientDashboard() {
   const [loadingRadar, setLoadingRadar] = useState(false);
   const [mapAnimateProgress, setMapAnimateProgress] = useState(0);
 
+  // Project & Daily Report inspection sheet states for client review
+  const [projectsList, setProjectsList] = useState<any[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [reportsList, setReportsList] = useState<any[]>([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+
   const animationRef = useRef<number | null>(null);
 
   // Fetch client details
@@ -36,7 +42,40 @@ export default function ClientDashboard() {
         if (d.ok) setUser(d.user);
         else window.location.href = "/login";
       });
+
+    // Fetch projects list for dropdown selection
+    fetch("/api/mobile/projects")
+      .then(res => res.json())
+      .then(d => {
+        if (d.ok && d.projects && d.projects.length > 0) {
+          setProjectsList(d.projects);
+          setSelectedProjectId(d.projects[0].id);
+        }
+      })
+      .catch(err => console.error("Error fetching projects:", err));
   }, []);
+
+  // Fetch reports when selectedProjectId changes
+  useEffect(() => {
+    if (!selectedProjectId) return;
+    setLoadingReports(true);
+    fetch(`/api/mobile/daily-reports?projectId=${selectedProjectId}`)
+      .then(res => res.json())
+      .then(d => {
+        if (d.ok && d.reports) {
+          setReportsList(d.reports);
+        } else {
+          setReportsList([]);
+        }
+      })
+      .catch(err => {
+        console.error("Error fetching project reports:", err);
+        setReportsList([]);
+      })
+      .finally(() => {
+        setLoadingReports(false);
+      });
+  }, [selectedProjectId]);
 
   // Poll live coordinates from api
   const fetchLiveTelemetry = async () => {
@@ -277,6 +316,85 @@ export default function ClientDashboard() {
             >
               🚪 Secure Sign Out
             </button>
+          </div>
+        </div>
+
+        {/* Progress & Inspection Sheets Panel */}
+        <div className="glass fade-in" style={{ width: "100%", maxWidth: 420, padding: "24px", borderRadius: 20, border: "1px solid var(--border)", background: "var(--surface)", marginTop: 20 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 900, color: "var(--text)", margin: "0 0 12px", display: "flex", alignItems: "center", gap: 6 }}>
+            <span>🗂️ Progress Inspection Sheets</span>
+          </h3>
+
+          {/* Project Selector Dropdown */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: "var(--dim)", marginBottom: 6, textTransform: "uppercase" }}>Select Project Route</label>
+            <select
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              style={{ width: "100%", height: 38, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 10px", color: "var(--text)", fontSize: 13, outline: "none", cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+            >
+              {projectsList.map(p => (
+                <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Submitted Reports List */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: "var(--dim)", textTransform: "uppercase" }}>Submitted Progress Reports</span>
+            
+            {loadingReports ? (
+              <div style={{ textAlign: "center", padding: "16px 0", color: "var(--dim)", fontSize: 12 }}>Loading project logs...</div>
+            ) : reportsList.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "20px 10px", background: "var(--bg)", borderRadius: 12, border: "1px solid var(--border)", fontSize: 11, color: "var(--muted)" }}>
+                No submitted daily reports found for this project route.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 200, overflowY: "auto" }}>
+                {reportsList.map((r) => (
+                  <div
+                    key={r.id}
+                    style={{
+                      padding: 12,
+                      borderRadius: 12,
+                      background: "var(--bg)",
+                      border: "1px solid var(--border)",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center"
+                    }}
+                  >
+                    <div style={{ minWidth: 0, paddingRight: 8 }}>
+                      <span style={{ fontSize: 9, color: "var(--dim)", fontWeight: 700 }}>Date: {r.reportDate}</span>
+                      <h4 style={{ fontSize: 11, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Report by {r.supervisorName}</h4>
+                      <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                        {r.hddLength > 0 && <span style={{ fontSize: 8, background: "rgba(234, 179, 8, 0.1)", color: "#d97706", borderRadius: 4, padding: "1px 4px", fontWeight: 700 }}>🕳️ HDD: {r.hddLength}m</span>}
+                        {r.excavationLength > 0 && <span style={{ fontSize: 8, background: "rgba(249, 115, 22, 0.1)", color: "#ea580c", borderRadius: 4, padding: "1px 4px", fontWeight: 700 }}>⛏️ Trench: {r.excavationLength}m</span>}
+                      </div>
+                    </div>
+                    {r.hddLength > 0 && (
+                      <button
+                        onClick={() => window.open(`/app/print-hdd?reportId=${r.id}`, '_blank')}
+                        style={{
+                          fontSize: 9,
+                          fontWeight: 750,
+                          color: "#ffffff",
+                          background: "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+                          border: "none",
+                          borderRadius: 6,
+                          padding: "4px 8px",
+                          cursor: "pointer",
+                          fontFamily: "Outfit, sans-serif",
+                          flexShrink: 0
+                        }}
+                      >
+                        🖨️ PDF Sheet
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>

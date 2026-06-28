@@ -186,6 +186,8 @@ export async function POST(request: NextRequest) {
       terminationGpsLng: body.terminationGpsLng ? Number(body.terminationGpsLng) : undefined,
       stockAvailable,
       clearances: body.clearances || {},
+      hddDrillingLogs: body.hddDrillingLogs || [],
+      hddMetadata: body.hddMetadata || {},
     };
 
     const savedReport = await createDailyReport(reportData);

@@ -116,6 +116,167 @@ export default function AdminDashboard() {
     return () => clearInterval(interval);
   }, [lastNotificationId]);
 
+  // Dynamically draw the bore path grid graph on HTML5 Canvas in Admin daily report preview
+  useEffect(() => {
+    if (!selectedReport || activeView !== "reports") return;
+    const canvas = document.getElementById("adminHddBoreCanvas") as HTMLCanvasElement;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const width = canvas.width;
+    const height = canvas.height;
+
+    ctx.clearRect(0, 0, width, height);
+
+    const marginLeft = 45;
+    const marginRight = 20;
+    const marginTop = 30;
+    const marginBottom = 30;
+
+    const plotWidth = width - marginLeft - marginRight;
+    const plotHeight = height - marginTop - marginBottom;
+
+    // Draw white background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, height);
+
+    // Draw grid background matching paper
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 0.5;
+    
+    // Vertical grid lines
+    const gridCols = 20;
+    for (let i = 0; i <= gridCols; i++) {
+      const x = marginLeft + (i * plotWidth) / gridCols;
+      ctx.beginPath();
+      ctx.moveTo(x, marginTop);
+      ctx.lineTo(x, marginTop + plotHeight);
+      ctx.stroke();
+    }
+
+    // Horizontal grid lines
+    const gridRows = 10;
+    for (let i = 0; i <= gridRows; i++) {
+      const y = marginTop + (i * plotHeight) / gridRows;
+      ctx.beginPath();
+      ctx.moveTo(marginLeft, y);
+      ctx.lineTo(marginLeft + plotWidth, y);
+      ctx.stroke();
+    }
+
+    // Draw solid axes
+    ctx.strokeStyle = "#475569";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(marginLeft, marginTop);
+    ctx.lineTo(marginLeft + plotWidth, marginTop);
+    ctx.moveTo(marginLeft, marginTop);
+    ctx.lineTo(marginLeft, marginTop + plotHeight);
+    ctx.stroke();
+
+    // Title / Header Labels
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "bold 9px Outfit, sans-serif";
+    ctx.fillText("Bore Path Elevation Profile", marginLeft, marginTop - 15);
+    ctx.fillStyle = "#64748b";
+    ctx.font = "8px Outfit, sans-serif";
+    ctx.fillText("X-Axis: Distance (m)  |  Y-Axis: Depth (m) (Downward)", marginLeft, marginTop - 5);
+
+    const logs = selectedReport.hddDrillingLogs || [];
+    const rodLength = Number(selectedReport.hddMetadata?.hddRodLengthM || 3.0);
+
+    if (logs.length === 0) {
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "italic 11px Outfit, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("No rod logs entered.", width / 2 + 10, height / 2 + 10);
+      ctx.textAlign = "left";
+      return;
+    }
+
+    // Process logs to get coordinates
+    const points = logs.map((log: any, index: number) => {
+      const dist = (index + 1) * rodLength;
+      const depth = Number(log.depth || 0);
+      return { dist, depth, strata: log.strata, crossing: log.crossing, rodNo: index + 1 };
+    });
+
+    const maxDist = Math.max(50, ...points.map(p => p.dist));
+    const maxDepth = Math.max(6, ...points.map(p => p.depth));
+
+    const axisMaxDist = Math.ceil(maxDist / 10) * 10;
+    const axisMaxDepth = Math.ceil(maxDepth / 2) * 2;
+
+    // Draw X-axis ticks (Distance)
+    ctx.fillStyle = "#475569";
+    ctx.font = "8px Outfit, sans-serif";
+    ctx.textAlign = "center";
+    for (let i = 0; i <= 5; i++) {
+      const distVal = (axisMaxDist * i) / 5;
+      const x = marginLeft + (distVal / axisMaxDist) * plotWidth;
+      ctx.fillText(distVal.toFixed(0) + "m", x, marginTop + plotHeight + 12);
+    }
+
+    // Draw Y-axis ticks (Depth - Downward)
+    ctx.textAlign = "right";
+    for (let i = 0; i <= 4; i++) {
+      const depthVal = (axisMaxDepth * i) / 4;
+      const y = marginTop + (depthVal / axisMaxDepth) * plotHeight;
+      ctx.fillText(depthVal.toFixed(1) + "m", marginLeft - 6, y + 3);
+    }
+    ctx.textAlign = "left";
+
+    // Plot Bore Path Line
+    ctx.strokeStyle = "#0284c7";
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(marginLeft, marginTop);
+
+    points.forEach(p => {
+      const x = marginLeft + (p.dist / axisMaxDist) * plotWidth;
+      const y = marginTop + (p.depth / axisMaxDepth) * plotHeight;
+      ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Plot node points
+    points.forEach(p => {
+      const x = marginLeft + (p.dist / axisMaxDist) * plotWidth;
+      const y = marginTop + (p.depth / axisMaxDepth) * plotHeight;
+
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = "#0284c7";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Label rod number
+      ctx.fillStyle = "#475569";
+      ctx.font = "bold 7px Outfit, sans-serif";
+      ctx.fillText(p.rodNo.toString(), x - 2, y - 6);
+
+      if (p.crossing && p.crossing.trim() !== "") {
+        ctx.fillStyle = "#dc2626";
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#dc2626";
+        ctx.font = "bold 7px Outfit, sans-serif";
+        ctx.fillText(p.crossing.trim(), x + 8, y + 3);
+      }
+    });
+
+  }, [selectedReport, activeView]);
+
   const dismissNotification = (id: string) => {
     setAdminNotifications(prev => prev.filter(n => n.id !== id));
     fetch(`/api/mobile/notifications?id=${id}`, {
@@ -203,6 +364,14 @@ export default function AdminDashboard() {
   const [projEndLabel, setProjEndLabel] = useState("");
   const [projEndLat, setProjEndLat] = useState("");
   const [projEndLng, setProjEndLng] = useState("");
+
+  // HDD Defaults Configuration Editor States
+  const [projHddDefaultMachineName, setProjHddDefaultMachineName] = useState("");
+  const [projHddDefaultVendorName, setProjHddDefaultVendorName] = useState("");
+  const [projHddDefaultTrackerName, setProjHddDefaultTrackerName] = useState("");
+  const [projHddDefaultOperatorName, setProjHddDefaultOperatorName] = useState("");
+  const [projHddDefaultDuctsInfo, setProjHddDefaultDuctsInfo] = useState("");
+  const [projHddDefaultRodLengthM, setProjHddDefaultRodLengthM] = useState("3.0");
 
   // Sub-maps editing parameters
   const [cableStartLat, setCableStartLat] = useState("");
@@ -1336,6 +1505,13 @@ export default function AdminDashboard() {
       setProjEndLat(String(editingProjectItem.endCoords[0]));
       setProjEndLng(String(editingProjectItem.endCoords[1]));
 
+      setProjHddDefaultMachineName(editingProjectItem.hddDefaultMachineName || "");
+      setProjHddDefaultVendorName(editingProjectItem.hddDefaultVendorName || "");
+      setProjHddDefaultTrackerName(editingProjectItem.hddDefaultTrackerName || "");
+      setProjHddDefaultOperatorName(editingProjectItem.hddDefaultOperatorName || "");
+      setProjHddDefaultDuctsInfo(editingProjectItem.hddDefaultDuctsInfo || "");
+      setProjHddDefaultRodLengthM(String(editingProjectItem.hddDefaultRodLengthM ?? "3.0"));
+
       // Load additional dynamic GIS markings
       setHddPoints(editingProjectItem.hddPoints ?? []);
       setTerminationPoints(editingProjectItem.terminationPoints ?? []);
@@ -1432,7 +1608,13 @@ export default function AdminDashboard() {
         endCoords: trenchEndLat && trenchEndLng ? [parseFloat(trenchEndLat), parseFloat(trenchEndLng)] : null,
         middlePoints: trenchMiddlePoints,
         description: trenchDesc
-      }
+      },
+      hddDefaultMachineName: projHddDefaultMachineName,
+      hddDefaultVendorName: projHddDefaultVendorName,
+      hddDefaultTrackerName: projHddDefaultTrackerName,
+      hddDefaultOperatorName: projHddDefaultOperatorName,
+      hddDefaultDuctsInfo: projHddDefaultDuctsInfo,
+      hddDefaultRodLengthM: parseFloat(projHddDefaultRodLengthM) || 3.0
     };
 
     const isNew = !projectsList.some(p => p.id === editingProjectItem.id);
@@ -5808,6 +5990,81 @@ export default function AdminDashboard() {
                           { key: "terminations", name: "Outdoor / Indoor Terminations", val: `${selectedReport.terminationEndpoints} points` }
                         ].map((m: any) => {
                           const log = wip[m.key] || {};
+                          if (m.key === "hdd") {
+                            const metadata = selectedReport.hddMetadata || {};
+                            const logsList = selectedReport.hddDrillingLogs || [];
+                            const rodLenVal = metadata.hddRodLengthM || 3.0;
+
+                            return (
+                              <div key={m.key} style={{ display: "flex", flexDirection: "column", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "14px 16px", gap: 12 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 800 }}>🕳️ HDD Drilling Inspection Report</span>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.open(`/app/print-hdd?reportId=${selectedReport.id}`, '_blank');
+                                      }}
+                                      style={{
+                                        fontSize: 9,
+                                        fontWeight: 750,
+                                        color: "#ffffff",
+                                        background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+                                        border: "none",
+                                        borderRadius: 6,
+                                        padding: "4px 8px",
+                                        cursor: "pointer",
+                                        boxShadow: "0 2px 6px rgba(2, 132, 199, 0.2)",
+                                        fontFamily: "Outfit, sans-serif"
+                                      }}
+                                    >
+                                      🖨️ Export Paper Log Sheet
+                                    </button>
+                                    <span style={{ fontSize: 12, fontWeight: 900, color: "#d97706" }}>{selectedReport.hddLength} meters</span>
+                                  </div>
+                                </div>
+
+                                {/* Metadata Info Grid */}
+                                <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, fontSize: 11 }}>
+                                  <div>👤 <b>Operator:</b> {metadata.hddOperatorName || "--"}</div>
+                                  <div>🚜 <b>Machine:</b> {metadata.hddMachineName || "--"}</div>
+                                  <div>🏢 <b>Vendor:</b> {metadata.hddVendorName || "--"}</div>
+                                  <div>🔍 <b>Tracker:</b> {metadata.hddTrackerName || "--"}</div>
+                                  <div>🌈 <b>Duct Specs:</b> {metadata.hddDuctsInfo || "--"}</div>
+                                  <div>📏 <b>Rod Length:</b> {rodLenVal} m</div>
+                                </div>
+
+                                {/* Bore Path Graph Canvas */}
+                                <div style={{ background: "#ffffff", border: "1px solid var(--border)", borderRadius: 12, padding: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                                  <span style={{ fontSize: 9, fontWeight: 800, color: "var(--cyan)", textTransform: "uppercase" }}>📈 Bore Path Profile Graph (Auto-plotted)</span>
+                                  <div style={{ width: "100%", overflow: "hidden", display: "flex", justifyContent: "center" }}>
+                                    <canvas id="adminHddBoreCanvas" width="550" height="240" style={{ width: "100%", maxWidth: "550px", height: "auto", border: "1px solid #f1f5f9" }} />
+                                  </div>
+                                </div>
+
+                                {/* Rod Log Details Dropdown/Table */}
+                                <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 10, padding: 10 }}>
+                                  <span style={{ fontSize: 9, fontWeight: 800, color: "var(--muted)", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Logged Rod Logs ({logsList.length})</span>
+                                  {logsList.length === 0 ? (
+                                    <span style={{ fontSize: 11, color: "var(--dim)", fontStyle: "italic" }}>No rod logs registered.</span>
+                                  ) : (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 180, overflowY: "auto" }}>
+                                      {logsList.map((log: any, idx: number) => (
+                                        <div key={idx} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, padding: 8, display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1.2fr", gap: 6, fontSize: 10, alignItems: "center" }}>
+                                          <div><b>Rod #{log.rodNo}</b> ({((idx + 1) * rodLenVal).toFixed(1)}m)</div>
+                                          <div>📈 Pitch: <b>{log.pitch}%</b></div>
+                                          <div>🕳️ Depth: <b>{log.depth}m</b></div>
+                                          <div>🪨 {log.strata} {log.crossing ? `• ⚠️ ${log.crossing}` : ""}</div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          }
+
                           return (
                             <div key={m.key} style={{ display: "flex", flexDirection: "column", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "12px 16px", gap: 10 }}>
                               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -6893,6 +7150,74 @@ export default function AdminDashboard() {
                               onChange={(e) => setProjEndLng(e.target.value)}
                               required
                               style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* HDD Drilling Default Parameter Settings */}
+                      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "#eab308", textTransform: "uppercase" }}>🕳️ HDD Machine & Sheet Defaults</span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Default Machine Name/Model</label>
+                            <input
+                              type="text"
+                              value={projHddDefaultMachineName}
+                              onChange={(e) => setProjHddDefaultMachineName(e.target.value)}
+                              placeholder="e.g. HDD-150 / Ditch Witch"
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, outline: "none" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Default Vendor Name</label>
+                            <input
+                              type="text"
+                              value={projHddDefaultVendorName}
+                              onChange={(e) => setProjHddDefaultVendorName(e.target.value)}
+                              placeholder="e.g. Safe Bore Logistics"
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, outline: "none" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Default Tracker / Surveyor</label>
+                            <input
+                              type="text"
+                              value={projHddDefaultTrackerName}
+                              onChange={(e) => setProjHddDefaultTrackerName(e.target.value)}
+                              placeholder="e.g. Arun Kumar"
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, outline: "none" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Default Operator Name</label>
+                            <input
+                              type="text"
+                              value={projHddDefaultOperatorName}
+                              onChange={(e) => setProjHddDefaultOperatorName(e.target.value)}
+                              placeholder="e.g. Rajesh K."
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, outline: "none" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>No. of Ducts & Color Specs</label>
+                            <input
+                              type="text"
+                              value={projHddDefaultDuctsInfo}
+                              onChange={(e) => setProjHddDefaultDuctsInfo(e.target.value)}
+                              placeholder="e.g. 4 ducts (Black/Orange)"
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, outline: "none" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, color: "var(--dim)", marginBottom: 4, fontWeight: 700 }}>Standard Single Rod Length (m)</label>
+                            <input
+                              type="number"
+                              step="0.1"
+                              value={projHddDefaultRodLengthM}
+                              onChange={(e) => setProjHddDefaultRodLengthM(e.target.value)}
+                              placeholder="3.0"
+                              style={{ width: "100%", height: 36, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 12px", color: "var(--text)", fontSize: 12, outline: "none" }}
                             />
                           </div>
                         </div>

@@ -214,7 +214,13 @@ export function toMobileProject(row: ProjectRow): Project {
     roadChangeSegments,
     hddSegments,
     trenchingSegments,
-    storageMaterials
+    storageMaterials,
+    hddDefaultMachineName: row.hdd_default_machine_name ? String(row.hdd_default_machine_name) : (demoProject as any)?.hddDefaultMachineName || "",
+    hddDefaultVendorName: row.hdd_default_vendor_name ? String(row.hdd_default_vendor_name) : (demoProject as any)?.hddDefaultVendorName || "",
+    hddDefaultTrackerName: row.hdd_default_tracker_name ? String(row.hdd_default_tracker_name) : (demoProject as any)?.hddDefaultTrackerName || "",
+    hddDefaultOperatorName: row.hdd_default_operator_name ? String(row.hdd_default_operator_name) : (demoProject as any)?.hddDefaultOperatorName || "",
+    hddDefaultDuctsInfo: row.hdd_default_ducts_info ? String(row.hdd_default_ducts_info) : (demoProject as any)?.hddDefaultDuctsInfo || "",
+    hddDefaultRodLengthM: row.hdd_default_rod_length_m != null ? Number(row.hdd_default_rod_length_m) : (demoProject as any)?.hddDefaultRodLengthM || 3.0
   };
 }
 
@@ -296,6 +302,12 @@ function toProjectTablePayload(
   setField("description", effective.description);
   setField("corridor_data", corridorData);
   setField("storage_materials", effective.storageMaterials || []);
+  setField("hdd_default_machine_name", effective.hddDefaultMachineName);
+  setField("hdd_default_vendor_name", effective.hddDefaultVendorName);
+  setField("hdd_default_tracker_name", effective.hddDefaultTrackerName);
+  setField("hdd_default_operator_name", effective.hddDefaultOperatorName);
+  setField("hdd_default_ducts_info", effective.hddDefaultDuctsInfo);
+  setField("hdd_default_rod_length_m", effective.hddDefaultRodLengthM);
 
   return payload;
 }

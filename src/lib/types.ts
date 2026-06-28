@@ -83,6 +83,12 @@ export type Project = {
   hddSegments?: any[];
   trenchingSegments?: any[];
   storageMaterials?: StorageMaterial[];
+  hddDefaultMachineName?: string;
+  hddDefaultVendorName?: string;
+  hddDefaultTrackerName?: string;
+  hddDefaultOperatorName?: string;
+  hddDefaultDuctsInfo?: string;
+  hddDefaultRodLengthM?: number;
 };
 
 export type Engineer = {

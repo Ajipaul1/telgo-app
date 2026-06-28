@@ -26,6 +26,8 @@ export interface DailyReport {
   terminationGpsLng?: number;
   stockAvailable: Record<string, any>;
   clearances: Record<string, { status: string; receipt?: string }>;
+  hddDrillingLogs?: any[];
+  hddMetadata?: Record<string, any>;
   createdAt: string;
   status: "pending" | "approved";
 }
@@ -81,6 +83,8 @@ export async function createDailyReport(input: Omit<DailyReport, "id" | "created
       termination_gps_lng: input.terminationGpsLng || null,
       stock_available: input.stockAvailable,
       clearances: input.clearances,
+      hdd_drilling_logs: input.hddDrillingLogs || [],
+      hdd_metadata: input.hddMetadata || {},
       status: "pending"
     })
     .select("*")
@@ -325,6 +329,8 @@ function mapDbRowToReport(row: any): DailyReport {
     terminationGpsLng: row.termination_gps_lng ? Number(row.termination_gps_lng) : undefined,
     stockAvailable: typeof row.stock_available === "string" ? JSON.parse(row.stock_available) : row.stock_available || {},
     clearances: typeof row.clearances === "string" ? JSON.parse(row.clearances) : row.clearances || {},
+    hddDrillingLogs: typeof row.hdd_drilling_logs === "string" ? JSON.parse(row.hdd_drilling_logs) : row.hdd_drilling_logs || [],
+    hddMetadata: typeof row.hdd_metadata === "string" ? JSON.parse(row.hdd_metadata) : row.hdd_metadata || {},
     createdAt: row.created_at,
     status: row.status || "pending",
   };
