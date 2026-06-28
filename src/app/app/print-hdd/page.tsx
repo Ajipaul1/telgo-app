@@ -201,7 +201,7 @@ export default function PrintHddLogSheet() {
     ctx.beginPath();
     ctx.moveTo(marginLeft, marginTop);
 
-    points.forEach(p => {
+    points.forEach((p: any) => {
       const x = marginLeft + (p.dist / axisMaxDist) * plotWidth;
       const y = marginTop + (p.depth / axisMaxDepth) * plotHeight;
       ctx.lineTo(x, y);
@@ -209,7 +209,7 @@ export default function PrintHddLogSheet() {
     ctx.stroke();
 
     // Draw markers
-    points.forEach(p => {
+    points.forEach((p: any) => {
       const x = marginLeft + (p.dist / axisMaxDist) * plotWidth;
       const y = marginTop + (p.depth / axisMaxDepth) * plotHeight;
 
