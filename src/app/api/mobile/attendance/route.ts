@@ -102,23 +102,6 @@ export async function POST(request: NextRequest) {
   const status = typeof body?.status === "string" ? body.status : null;
   const isCheckout = status === "checked_out";
 
-  if (!isCheckout) {
-    if (
-      gpsAccuracyM == null ||
-      !Number.isFinite(gpsAccuracyM) ||
-      gpsAccuracyM > MAX_ATTENDANCE_ACCURACY_M
-    ) {
-      return NextResponse.json(
-        {
-          ok: false,
-          message: `Location accuracy is too weak for live attendance tracking. Current device accuracy is about ${Math.round(
-            Number.isFinite(gpsAccuracyM ?? NaN) ? gpsAccuracyM ?? 0 : 0
-          )} m. Move outdoors, enable precise location, or use the phone APK and try again.`,
-        },
-        { status: 400 }
-      );
-    }
-  }
 
   try {
     const result = await markMobileAttendance(supabase, session, {

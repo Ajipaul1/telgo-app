@@ -1504,7 +1504,7 @@ export default function SupervisorDashboard() {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
             gpsAccuracyM: position.coords.accuracy,
-            projectId: "vadakkekotta-sn-cable"
+            projectId: projectsList[0]?.id || "cial-33kv"
           })
         });
         const data = await res.json();
@@ -1567,7 +1567,7 @@ export default function SupervisorDashboard() {
               latitude: position ? position.coords.latitude : 9.9538,
               longitude: position ? position.coords.longitude : 76.3428,
               gpsAccuracyM: position ? position.coords.accuracy : null,
-              projectId: "vadakkekotta-sn-cable",
+              projectId: projectsList[0]?.id || "cial-33kv",
               status: "checked_out"
             })
           });
