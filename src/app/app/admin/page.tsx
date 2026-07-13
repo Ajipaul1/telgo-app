@@ -27,7 +27,7 @@ export default function AdminDashboard() {
   const [mapAnimateProgress, setMapAnimateProgress] = useState(0);
   
   // Navigation & Multi-View State
-  const [activeView, setActiveView] = useState<"hub" | "approvals" | "map" | "settings" | "attendance" | "projects" | "reports" | "ledger" | "progress" | "expense_fuel" | "expense_travel" | "expense_room" | "expense_tool" | "expense_other" | "progress_analytics">("hub");
+  const [activeView, setActiveView] = useState<"hub" | "approvals" | "map" | "settings" | "attendance" | "projects" | "reports" | "saved_reports" | "ledger" | "progress" | "expense_fuel" | "expense_travel" | "expense_room" | "expense_tool" | "expense_other" | "progress_analytics">("hub");
 
   // New States for Financials & Site Progress Modules
   const [financialFilterProjectId, setFinancialFilterProjectId] = useState("");
@@ -118,7 +118,7 @@ export default function AdminDashboard() {
 
   // Dynamically draw the bore path grid graph on HTML5 Canvas in Admin daily report preview
   useEffect(() => {
-    if (!selectedReport || activeView !== "reports") return;
+    if (!selectedReport || (activeView !== "reports" && activeView !== "saved_reports")) return;
     const canvas = document.getElementById("adminHddBoreCanvas") as HTMLCanvasElement;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -1203,7 +1203,7 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    if (activeView === "reports" && reportFilterProjectId && reportFilterDate) {
+    if ((activeView === "reports" || activeView === "saved_reports") && reportFilterProjectId && reportFilterDate) {
       fetchPendingReports(reportFilterProjectId, reportFilterDate);
     }
   }, [activeView, reportFilterProjectId, reportFilterDate, fetchPendingReports]);
@@ -2491,6 +2491,36 @@ export default function AdminDashboard() {
                 <div>
                   <h4 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>Daily Reports</h4>
                   <span style={{ fontSize: 10, color: "#10b981", fontWeight: 700, textTransform: "uppercase" }}>Verification</span>
+                </div>
+              </div>
+
+              {/* MODULE 6.5: SAVED REPORTS ARCHIVE */}
+              <div 
+                className="glass module-card"
+                onClick={() => { setActiveView("saved_reports"); if (projectsList.length > 0) setReportFilterProjectId(projectsList[0].id); }}
+                style={{ 
+                  padding: "18px 14px", 
+                  borderRadius: 16,
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: 10,
+                  cursor: "pointer"
+                }}
+              >
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(124, 58, 237, 0.1)", border: "1px solid rgba(124, 58, 237, 0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    <line x1="12" y1="11" x2="12" y2="17"/>
+                    <line x1="9" y1="14" x2="15" y2="14"/>
+                  </svg>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>Saved Reports</h4>
+                  <span style={{ fontSize: 10, color: "#7c3aed", fontWeight: 700, textTransform: "uppercase" }}>Archive</span>
                 </div>
               </div>
 
@@ -4841,7 +4871,7 @@ export default function AdminDashboard() {
       )}
 
       {/* VIEW 6: DAILY REPORTS VERIFICATION FUNNEL */}
-      {activeView === "reports" && (
+      {(activeView === "reports" || activeView === "saved_reports") && (
         <div className="fade-in" style={{ paddingBottom: 60 }}>
           {/* Header */}
           <div style={{ padding: "20px 16px 14px", paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)", borderBottom: "1px solid var(--border)", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 10 }}>
@@ -4854,8 +4884,12 @@ export default function AdminDashboard() {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
               </button>
               <div>
-                <p style={{ fontSize: 10, fontWeight: 800, color: "#10b981", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Daily Reports Hub</p>
-                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>Staging Verification</h1>
+                <p style={{ fontSize: 10, fontWeight: 800, color: activeView === "saved_reports" ? "#7c3aed" : "#10b981", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>
+                  {activeView === "saved_reports" ? "Saved Reports Archive" : "Daily Reports Hub"}
+                </p>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: "2px 0 0", letterSpacing: "-0.5px" }}>
+                  {activeView === "saved_reports" ? "Saved Reports" : "Staging Verification"}
+                </h1>
               </div>
             </div>
           </div>
@@ -4893,21 +4927,25 @@ export default function AdminDashboard() {
 
             {/* ROSTER GRID SECTION */}
             <div className="glass" style={{ padding: 20, border: "1px solid var(--border)", borderRadius: 20 }}>
-              <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--dim)", margin: "0 0 14px", textAlign: "left" }}>2. Submitting Crew Roster</h2>
+              <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--dim)", margin: "0 0 14px", textAlign: "left" }}>
+                {activeView === "saved_reports" ? "2. Saved Crew Roster" : "2. Submitting Crew Roster"}
+              </h2>
 
               {loadingReports ? (
                 <div style={{ textAlign: "center", padding: "40px 0", color: "var(--dim)" }}>
-                  <div className="spinner" style={{ margin: "0 auto 12px", borderColor: "#10b981", borderTopColor: "transparent" }} />
-                  Retrieving Pending Crew Logs...
+                  <div className="spinner" style={{ margin: "0 auto 12px", borderColor: activeView === "saved_reports" ? "#7c3aed" : "#10b981", borderTopColor: "transparent" }} />
+                  Retrieving Crew Logs...
                 </div>
-              ) : pendingReports.length === 0 ? (
+              ) : pendingReports.filter(r => activeView === "saved_reports" ? r.status === "approved" : r.status !== "approved").length === 0 ? (
                 <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "32px 20px", textAlign: "center" }}>
-                  <span style={{ fontSize: 24, display: "block", marginBottom: 8 }}>✨</span>
-                  <p style={{ fontSize: 13, color: "var(--dim)", margin: 0 }}>No pending reports submitted for this date and project corridor.</p>
+                  <span style={{ fontSize: 24, display: "block", marginBottom: 8 }}>{activeView === "saved_reports" ? "📂" : "✨"}</span>
+                  <p style={{ fontSize: 13, color: "var(--dim)", margin: 0 }}>
+                    {activeView === "saved_reports" ? "No saved reports found for this date and project corridor." : "No pending reports submitted for this date and project corridor."}
+                  </p>
                 </div>
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
-                  {pendingReports.map((r) => {
+                  {pendingReports.filter(r => activeView === "saved_reports" ? r.status === "approved" : r.status !== "approved").map((r) => {
                     const isSelected = selectedReport?.id === r.id;
                     return (
                       <div
