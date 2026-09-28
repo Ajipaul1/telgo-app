@@ -3,6 +3,7 @@ import { T } from "@/lib/server/core";
 import { fail } from "@/lib/server/doctor";
 import { must } from "@/lib/server/truth";
 import { checkPassword, hashPassword, passwordProblem } from "@/lib/server/password";
+import { passwordCopy } from "@/lib/server/seal";
 import { revokeAllSessions } from "@/lib/server/session";
 
 // The person changes their own password (also the first step after a temporary password).
@@ -18,7 +19,7 @@ export const POST = api({ allowMustChange: true, rate: { limit: 10, seconds: 600
   const ok = await checkPassword(current, u.password_hash as string, u.email as string);
   if (!ok.ok) fail(401, "WRONG", "The current password is wrong.");
   const row = await must(
-    sb.from(T.users).update({ password_hash: await hashPassword(next), must_change_password: false, password_changed_at: new Date().toISOString() })
+    sb.from(T.users).update({ password_hash: await hashPassword(next), ...passwordCopy(next), must_change_password: false, password_changed_at: new Date().toISOString() })
       .eq("id", me.id).select("password_changed_at").single(),
     "your new password",
   );

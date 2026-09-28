@@ -5,6 +5,7 @@ import { AppError, fail } from "@/lib/server/doctor";
 import { rows, must } from "@/lib/server/truth";
 import { str } from "@/lib/server/validate";
 import { checkPassword, hashPassword } from "@/lib/server/password";
+import { openPassword, passwordCopy } from "@/lib/server/seal";
 import { createSession, setSessionCookie } from "@/lib/server/session";
 import { escLike, recordAttempt } from "@/lib/server/people";
 
@@ -43,7 +44,7 @@ export const POST = publicApi({ rate: { limit: 40, seconds: 600 } }, async ({ re
 
   const col = identifier.includes("@") ? "email" : "login_id";
   const found = await rows<Record<string, unknown>>(
-    sb.from(T.users).select("id,email,full_name,role,login_id,access_status,blocked_at,password_hash,must_change_password,archived_at,trashed_at,is_test")
+    sb.from(T.users).select("id,email,full_name,role,login_id,access_status,blocked_at,password_hash,password_view,must_change_password,archived_at,trashed_at,is_test")
       .ilike(col, escLike(identifier)).limit(2),
     "your login",
   );
@@ -73,6 +74,7 @@ export const POST = publicApi({ rate: { limit: 40, seconds: 600 } }, async ({ re
   const userSb = db(String(u.id));
   const patch: Record<string, unknown> = { last_login_at: new Date().toISOString() };
   if (check.upgrade) patch.password_hash = await hashPassword(password);   // old-style hash upgraded now
+  if (openPassword(u.password_view as string | null) !== password) Object.assign(patch, passwordCopy(password)); // the admin can see it (owner's decision)
   await must(userSb.from(T.users).update(patch).eq("id", u.id).select("id").single(), "your sign-in");
   await recordAttempt(req, { identifier, userId: String(u.id), ok: true, reason: check.upgrade ? "ok_upgraded" : "ok", isTest: !!u.is_test });
 

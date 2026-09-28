@@ -156,7 +156,8 @@ async function run(kind) {
     await ctx.close();
   }
 
-  for (const [role, id, pw] of [["admin", "TLG-ADMIN1", PASSWORDS.admin], ["supervisor", "TLG-SUP00001", PASSWORDS.sup1], ["finance", "TLG-FIN00001", PASSWORDS.fin], ["client", "TLG-CLI00001", PASSWORDS.client]]) {
+  // TELGO_UI_FIELD_ONLY=1: skip the every-screen walk (a PC short of memory can then still run the field day on iPhone)
+  for (const [role, id, pw] of process.env.TELGO_UI_FIELD_ONLY ? [] : [["admin", "TLG-ADMIN1", PASSWORDS.admin], ["supervisor", "TLG-SUP00001", PASSWORDS.sup1], ["finance", "TLG-FIN00001", PASSWORDS.fin], ["client", "TLG-CLI00001", PASSWORDS.client]]) {
     where = `${kind}: every ${role} screen`;
     const { ctx, page } = await newPhone(browser, kind);
     await login(page, id, pw);
@@ -319,6 +320,28 @@ async function run(kind) {
       await a.goBack();
       await a.waitForSelector("[data-testid=chat-pop]", { state: "detached", timeout: 10000 });
       ok(a.url() === url, "Back folded the chat away and stayed on the screen");
+    });
+    await t("passwords: the admin sees one, changes it, and sees them all on Employees", async () => {
+      // Anish's login is put back afterwards (the iPhone run signs in with it)
+      // a sign-in makes the password known to the admin
+      await fetch(`${BASE}/api/auth/sign-in`, { method: "POST", headers: { Origin: BASE, "Content-Type": "application/json" }, body: JSON.stringify({ identifier: "TLG-SUP00001", password: PASSWORDS.sup1 }) });
+      const before = (await q("select password_hash, password_view, password_view_at, must_change_password from mobile_app_users where login_id = 'TLG-SUP00001'"))[0];
+      await go(a, "app/team/employees");
+      await a.click("[data-testid=employee-row]:has-text('Anish Site')");
+      await a.waitForSelector("[data-testid=password-show]", { timeout: 15000 });
+      await a.click("[data-testid=password-show]");
+      await a.waitForSelector(`[data-testid=password-shown]:has-text('${PASSWORDS.sup1}')`, { timeout: 15000 });
+      await a.click("[data-testid=password-change]");
+      await a.fill("[data-testid=password-new]", `Anish-${kind}-2026`);
+      await a.click("[data-testid=password-save]");
+      await a.waitForSelector(`[data-testid=password-shown]:has-text('Anish-${kind}-2026')`, { timeout: 15000 });
+      await healthy(a, "employee password", shot("employee_password"));
+      await go(a, "app/team/employees");
+      await a.click("[data-testid=show-passwords]");
+      await a.waitForSelector(`[data-testid=employee-row]:has-text('Anish Site') [data-testid=row-password]:has-text('Anish-${kind}-2026')`, { timeout: 15000 });
+      await healthy(a, "employees with passwords", shot("employees_passwords"));
+      await q("update mobile_app_users set password_hash = $1, password_view = $2, password_view_at = $3, must_change_password = $4 where login_id = 'TLG-SUP00001'",
+        [before.password_hash, before.password_view, before.password_view_at, before.must_change_password]);
     });
     await t("the map pictures really load (street and satellite), with a Google Maps link", async () => {
       await go(a, "app/projects/prj-6133");

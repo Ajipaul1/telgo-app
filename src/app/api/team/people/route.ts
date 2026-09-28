@@ -5,6 +5,7 @@ import { must, rows } from "@/lib/server/truth";
 import { email as emailOf, oneOf, phone as phoneOf, str } from "@/lib/server/validate";
 import { escLike, newLoginId, personView, PERSON_COLS, type PersonRow } from "@/lib/server/people";
 import { hashPassword, tempPassword } from "@/lib/server/password";
+import { passwordCopy } from "@/lib/server/seal";
 import { sendLoginEmail } from "@/lib/server/email";
 import { ROLES } from "@/lib/shared/roles";
 
@@ -34,7 +35,7 @@ export const POST = api({ roles: ["admin"], rate: { limit: 30, seconds: 600 } },
   const row = await must(
     sb.from(T.users).insert({
       full_name: fullName, email, phone, role, login_id: loginId, access_status: "active", activated_at: new Date().toISOString(),
-      password_hash: await hashPassword(password), must_change_password: true, is_test: me.isTest,
+      password_hash: await hashPassword(password), ...passwordCopy(password), must_change_password: true, is_test: me.isTest,
     }).select(PERSON_COLS).single(),
     "the new login",
   );

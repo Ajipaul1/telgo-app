@@ -17,8 +17,8 @@ const WHAT: Record<string, string> = {
   inventory_changes: "Inventory request",
   project_access: "Project sharing",
 };
-const DID: Record<string, string> = { insert: "added", update: "changed", delete: "deleted" };
-const TONE: Record<string, "ok" | "info" | "bad"> = { insert: "ok", update: "info", delete: "bad" };
+const DID: Record<string, string> = { insert: "added", update: "changed", delete: "deleted", view_password: "password looked at", view_passwords: "all passwords looked at", clear_mine: "chat cleared for themselves" };
+const TONE: Record<string, "ok" | "info" | "bad"> = { insert: "ok", update: "info", delete: "bad", view_password: "bad", view_passwords: "bad" };
 
 const field = (k: string) => k.replace(/_/g, " ");
 function val(v: unknown) {

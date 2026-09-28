@@ -710,9 +710,49 @@ await t("every change is in the change log with who did it", async () => {
   const rows = await q("select actor from audit_log where table_name = 'projects' and row_id = $1 and action = 'update'", [proj.id]);
   ok(rows.length && rows.every((r) => r.actor === IDS.admin), JSON.stringify(rows));
 });
-await t("server replies never carry the password hash", async () => {
-  const r = await admin.get(`/api/team/people/${IDS.sup1}`);
-  ok(!JSON.stringify(r.json).includes("scrypt$"), "hash leaked");
+await t("server replies never carry the password hash or its locked copy", async () => {
+  for (const path of [`/api/team/people/${IDS.sup1}`, "/api/team/people?status=all", "/api/me"]) {
+    const s = JSON.stringify((await admin.get(path)).json);
+    ok(!s.includes("scrypt$") && !s.includes("password_view") && !s.includes('"v1:'), `${path} leaked`);
+  }
+});
+
+group = "10. Passwords the admin can see (owner's decision)";
+await t("a login shows its password after a sign-in; one never signed in since shows 'not known'", async () => {
+  const r = await admin.get(`/api/team/people/${IDS.legacy}/password`);
+  eq(r.status, 200); eq(r.json.password, PASSWORDS.legacy, "seen after the old-style sign-in");
+  await q("update mobile_app_users set password_view = null where id = $1", [IDS.admin2]);
+  eq((await admin.get(`/api/team/people/${IDS.admin2}/password`)).json.password, null, "not known");
+});
+await t("the admin sets a password: it works at once, stays visible, no forced change unless asked", async () => {
+  const s = await admin.post(`/api/team/people/${IDS.sup2}/action`, { action: "set_password", password: "Site-pass-2026" });
+  eq(s.status, 200); eq(s.json.password, "Site-pass-2026"); eq(s.json.person.mustChangePassword, false, "no forced change");
+  eq((await admin.get(`/api/team/people/${IDS.sup2}/password`)).json.password, "Site-pass-2026");
+  ok((await signIn("TLG-SUP00002", "Site-pass-2026")).cookie, "signs in with it");
+  const made = await admin.post(`/api/team/people/${IDS.sup2}/action`, { action: "set_password", password: "", mustChange: true });
+  ok(made.json.password?.length === 10 && made.json.person.mustChangePassword === true, "made one, change asked");
+  eq((await admin.post(`/api/team/people/${IDS.sup2}/action`, { action: "set_password", password: "short" })).status, 400, "too short");
+  eq((await admin.post(`/api/team/people/${IDS.admin}/action`, { action: "set_password", password: "Another-2026" })).status, 400, "not your own here");
+  await admin.post(`/api/team/people/${IDS.sup2}/action`, { action: "set_password", password: PASSWORDS.sup2 });
+});
+await t("a reset's temporary password and a person's own new password are visible too", async () => {
+  const r = await admin.post(`/api/team/people/${IDS.eng}/action`, { action: "reset_password" });
+  eq((await admin.get(`/api/team/people/${IDS.eng}/password`)).json.password, r.json.tempPassword, "temporary one");
+  const eng = await signIn("TLG-ENG00001", r.json.tempPassword);
+  eq((await eng.post("/api/auth/change-password", { current: r.json.tempPassword, next: PASSWORDS.eng })).status, 200);
+  eq((await admin.get(`/api/team/people/${IDS.eng}/password`)).json.password, PASSWORDS.eng, "their own new one");
+});
+await t("only the admin sees passwords; every look is in the change log, which never holds a password", async () => {
+  eq((await sup1.get(`/api/team/people/${IDS.sup2}/password`)).status, 403);
+  eq((await sup1.get("/api/team/passwords")).status, 403);
+  const all = await admin.get("/api/team/passwords");
+  ok(all.json.passwords.some((x) => x.id === IDS.sup2 && x.password === PASSWORDS.sup2), "all at once");
+  const looks = (await q("select action from audit_log where action in ('view_password', 'view_passwords') and actor = $1", [IDS.admin])).map((x) => x.action);
+  ok(looks.includes("view_password") && looks.includes("view_passwords"), JSON.stringify(looks));
+  const log = await q("select changes::text c from audit_log where table_name = 'mobile_app_users' and row_id = $1", [IDS.sup2]);
+  ok(log.length && log.every((x) => !x.c.includes("v1:") && !x.c.includes("Site-pass-2026") && !x.c.includes(PASSWORDS.sup2)), "no password in the log");
+  const row = await q("select password_view from mobile_app_users where id = $1", [IDS.sup2]);
+  ok(row[0].password_view.startsWith("v1:") && !row[0].password_view.includes(PASSWORDS.sup2), "the database holds only the locked copy");
 });
 await t("security headers on every page", async () => {
   const r = await fetch(BASE + "/login");

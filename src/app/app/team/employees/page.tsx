@@ -1,5 +1,8 @@
 "use client";
 import { useState } from "react";
+import { ErrorNote } from "@/components/ui";
+import { ApiError } from "@/lib/client/api";
+import { loadAllPasswords, PasswordLine, type Shown } from "../_parts/password";
 import { Screen } from "@/components/Screen";
 import { Avatar, Button, Empty, Loaded, TextInput } from "@/components/ui";
 import { useLoad } from "@/lib/client/hooks";
@@ -28,6 +31,13 @@ const digits = (s: string | null | undefined) => String(s ?? "").replace(/\D/g, 
 export default function Employees() {
   const [tab, setTab] = useState<Tab>("active");
   const [q, setQ] = useState("");
+  const [pw, setPw] = useState<Shown | null>(null);
+  const [pwErr, setPwErr] = useState<ApiError | null>(null);
+  const togglePw = async () => {
+    setPwErr(null);
+    if (pw) { setPw(null); return; }
+    try { setPw(await loadAllPasswords()); } catch (e) { setPwErr(e as ApiError); }
+  };
   const load = useLoad<{ people: Person[] }>(`/api/team/people?status=${tab}`, { every: 20 });
 
   const match = (p: Person) => {
@@ -42,6 +52,8 @@ export default function Employees() {
       <Button block href="/app/team/employees/new" testId="add-person">Add a person</Button>
       <FitTabs value={tab} onChange={setTab} tabs={TABS} testId="employees-tabs" />
       <TextInput label="Search" value={q} onChange={setQ} placeholder="Name, login ID, email or phone" testId="employees-search" maxLength={80} />
+      <Button kind="ghost" block onClick={togglePw} busyText="Opening…" testId="show-passwords">{pw ? "Hide passwords" : "Show passwords"}</Button>
+      {pwErr && <ErrorNote error={pwErr} />}
       <Loaded load={load} isEmpty={(d) => !d.people.length} empty={<Empty title={EMPTY[tab]}>{tab === "active" ? "Add a person, or approve an access request." : null}</Empty>}>
         {(d) => {
           const list = d.people.filter(match);
@@ -57,6 +69,7 @@ export default function Employees() {
                       <div className="title ellipsis">{p.fullName || "Name not recorded"}</div>
                       <div className="sub">{roleLabel(p.role)} · <span style={{ whiteSpace: "nowrap" }}>{p.loginId || "no login ID"}</span></div>
                       <div className="sub tiny">{p.lastSignIn ? `Last sign-in ${fmtWhen(p.lastSignIn)}` : "Never signed in"}</div>
+                      {pw && <PasswordLine pw={pw[p.id]} />}
                     </div>
                     <div className="end"><StatusPill status={p.status} /></div>
                   </a>

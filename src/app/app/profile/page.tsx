@@ -239,7 +239,7 @@ function PasswordCard() {
   return (
     <div className="card" data-testid="profile-password" data-vm-editing={typing ? "1" : undefined}>
       <h2>Password</h2>
-      <p className="small muted">Changing it signs out every other phone that uses your login. This phone stays signed in.</p>
+      <p className="small muted">Changing it signs out every other phone that uses your login. This phone stays signed in. The admin can see your password.</p>
       <TextInput label="Current password" type="password" value={current} onChange={setCurrent} autoComplete="current-password" maxLength={128} testId="pw-current" />
       <TextInput label="New password" type="password" value={next} onChange={setNext} autoComplete="new-password" maxLength={128} testId="pw-new"
         hint="At least 8 characters." error={tooShort ? "At least 8 characters." : null} />

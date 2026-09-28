@@ -12,6 +12,7 @@ import { ago, fmtTime, fmtWhen } from "@/lib/shared/format";
 const dayYear = (iso: string) => new Date(iso).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric" });
 import { ROLES, ROLE_LABEL, signsIn, type Role } from "@/lib/shared/roles";
 import { Check, reasonWords, roleLabel, shortDevice, StatusPill, TempPasswordCard, type Person, type TempResult } from "../../_parts/parts";
+import { PasswordBox } from "../../_parts/password";
 
 type Session = { id: string; since: string | null; lastSeen: string | null; device: string | null; ip: string | null };
 type Attempt = { at: string; ok: boolean; reason: string | null; ip: string | null };
@@ -138,6 +139,8 @@ export default function PersonPage({ params }: { params: Promise<{ id: string }>
                 )}
                 {!d.hasPassword && st === "active" && <div className="notice info"><b>No password yet</b><span>They can&apos;t sign in until you give them one with Reset password.</span></div>}
               </div>
+
+              {d.hasPassword || st === "active" ? <PasswordBox person={p} self={self} onChanged={putPerson} /> : null}
 
               <div className="section-title">Actions</div>
               <div className="stack" data-testid="person-actions">
