@@ -53,7 +53,7 @@ export const GET = api({ roles: ["admin"] }, async ({ me, sb, req }) => {
     kind, tab,
     items: list.map((r) => ({
       id: String(r.id),
-      row: kind === "chats" ? { ...r, title: r.kind === "team" ? "Team chat" : String(r.direct_key ?? "").split(":").map((x) => names.get(x) ?? "?").join(" and ") } :
+      row: kind === "chats" ? { ...r, title: r.kind === "team" ? "Team chat" : r.kind === "topic" ? `Group: ${String(r.title ?? "")}` : String(r.direct_key ?? "").split(":").map((x) => names.get(x) ?? "?").join(" and ") } :
         kind === "files" ? { ...r, owner: names.get(String(r.owner_id)) ?? "" } :
         kind === "reports" || kind === "inventory" ? { ...r, project_name: pnames.get(String(r.project_id)) ?? null } : r,
       archivedAt: (r.archived_at as string) ?? null,

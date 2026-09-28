@@ -284,6 +284,42 @@ async function run(kind) {
       await a.waitForSelector(`text=Hello from the ${kind} test`, { timeout: 15000 });
       await healthy(a, "chat thread", shot("chat_thread"));
     });
+    await t("pop-up chat: Team chat on top, send, minimise, the same chat comes back, sticker, new group, phone Back", async () => {
+      await go(a, "app");
+      await a.click("[data-testid=chat-button]");
+      await a.waitForSelector("[data-testid=chat-pop] [data-testid=chat-team]", { timeout: 15000 });
+      const first = await a.$eval("[data-testid=chat-pop] [data-testid=chats]", (el) => el.querySelector("[data-testid=chat-team], .list .item")?.getAttribute("data-testid"));
+      ok(first === "chat-team", "the Team chat is the first chat");
+      await a.screenshot({ path: path.join(OUT, `${shot("chat_popup_list")}.png`), animations: "disabled", timeout: 60000 }).catch(() => {});
+      await a.click("[data-testid=chat-pop] [data-testid=chat-team]");
+      await a.waitForSelector("[data-testid=chat-pop] [data-testid=chat-text]", { timeout: 15000 });
+      await a.fill("[data-testid=chat-pop] [data-testid=chat-text]", `Team hello from the ${kind} pop-up`);
+      await a.click("[data-testid=chat-pop] [data-testid=chat-send]");
+      await a.waitForSelector(`[data-testid=chat-pop] >> text=Team hello from the ${kind} pop-up`, { timeout: 15000 });
+      await a.screenshot({ path: path.join(OUT, `${shot("chat_popup")}.png`), animations: "disabled", timeout: 60000 }).catch(() => {});
+      // every button in the pop-up is big enough to tap
+      const small = await a.$$eval("[data-testid=chat-pop] button", (els) => els.filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.height < 40; }).map((e) => e.textContent.trim().slice(0, 20)));
+      ok(!small.length, `too small to tap in the pop-up: ${small.join(" | ")}`);
+      await a.click("[data-testid=chat-minimise]");
+      await a.waitForSelector("[data-testid=chat-pop]", { state: "detached", timeout: 10000 });
+      ok((await a.textContent("[data-testid=chat-button]")).includes("Team chat"), "the bubble carries the chat's name");
+      await a.click("[data-testid=chat-button]");
+      await a.waitForSelector(`[data-testid=chat-pop] >> text=Team hello from the ${kind} pop-up`, { timeout: 15000 });
+      await a.click("[data-testid=chat-pop] [data-testid=chat-stickers]");
+      await a.click("[data-testid=chat-pop] [data-testid=sticker-reached]");
+      await a.waitForSelector("[data-testid=chat-pop] .bubble.plain .sticker", { timeout: 15000 });
+      await a.click("[data-testid=chat-pop] [data-testid=chat-back]");
+      await a.click("[data-testid=chat-pop] [data-testid=chat-new]");
+      await a.fill("[data-testid=group-name]", `Site group ${kind}`);
+      await a.click("[data-testid=group-people] .chip >> nth=0");
+      await a.click("[data-testid=group-make]");
+      await a.waitForSelector(`[data-testid=chat-pop] .chat-head-title >> text=Site group ${kind}`, { timeout: 15000 });
+      ok((await q("select count(*)::int n from chat_threads where kind = 'topic' and title = $1", [`Site group ${kind}`]))[0].n === 1, "the group is in the database");
+      const url = a.url();
+      await a.goBack();
+      await a.waitForSelector("[data-testid=chat-pop]", { state: "detached", timeout: 10000 });
+      ok(a.url() === url, "Back folded the chat away and stayed on the screen");
+    });
     await t("the map pictures really load (street and satellite), with a Google Maps link", async () => {
       await go(a, "app/projects/prj-6133");
       await a.waitForSelector("[data-testid=project-map] .leaflet-tile-loaded", { timeout: 20000 });

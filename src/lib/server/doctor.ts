@@ -24,7 +24,7 @@ type PgLike = { message?: string; code?: string; details?: string | null; hint?:
 const OWN_HINTS: Record<string, number> = {
   NOT_FOUND: 404, CHANGED: 409, ALREADY_APPROVED: 409, REPORT_LOCKED: 409, REPORT_DATE: 400, NO_DELETE: 409,
   AUDIT_LOCKED: 409, ALREADY_IN: 409, PROJECT_IN_USE: 409, PEOPLE_NO_TRASH: 400, SELF: 400, NO_CHANGE: 409,
-  IN_TRASH: 409, MESSAGE: 400, REASON: 400, KIND: 400, ACTION: 400,
+  IN_TRASH: 409, MESSAGE: 400, REASON: 400, KIND: 400, ACTION: 400, ROLE: 403, INVALID: 400,
 };
 
 export function fromDb(e: PgLike, what: string): AppError {

@@ -304,3 +304,64 @@ a.link-btn { display: inline-flex; align-items: center; text-decoration: underli
 .drawer nav::-webkit-scrollbar { width: 6px; }
 .drawer nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .28); border-radius: 3px; }
 .drawer nav::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- the pop-up chat (owner's ask) and the TechAuditPros chat options ---------- */
+.main.fill { padding: 0; gap: 0; height: calc(100dvh - var(--top)); display: flex; flex-direction: column; overflow: hidden; }
+.fab-words { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1; }
+.fab-words small { font-size: 11.5px; font-weight: 700; opacity: .88; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-pop-scrim { position: fixed; inset: 0; z-index: 50; background: rgba(16, 10, 50, .45); animation: fade .15s; }
+.chat-pop {
+  position: absolute; left: 0; right: 0; margin: 0 auto; max-width: 480px; top: calc(env(safe-area-inset-top) + 10px); bottom: 0;
+  display: flex; flex-direction: column; overflow: hidden; border-radius: 22px 22px 0 0; background: var(--bg); box-shadow: var(--shadow-lg);
+  animation: up .22s cubic-bezier(.22, 1, .36, 1);
+}
+.chat-room { position: relative; display: flex; flex-direction: column; flex: 1; min-height: 0; background: var(--bg); }
+.chat-head { display: flex; align-items: center; gap: 6px; flex: none; min-height: 60px; padding: 6px 8px; background: var(--grad-menu); color: #fff; }
+.chat-head-btn { flex: none; min-height: 44px; padding: 0 12px; border: 0; border-radius: 12px; background: rgba(255, 255, 255, .15); color: #fff; font-weight: 800; font-size: 14.5px; cursor: pointer; }
+.chat-head-btn:active { background: rgba(255, 255, 255, .26); }
+.chat-head-title { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 4px 6px; border: 0; background: none; color: #fff; text-align: left; cursor: pointer; }
+.chat-head-title.static { cursor: default; }
+.chat-head-title b { font-family: var(--font-head); font-size: 16.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-head-title span { font-size: 12.5px; color: #c9c3ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.chat-scroll.pad { padding: 14px 12px calc(20px + env(safe-area-inset-bottom)); }
+.chat-room .composer { position: static; flex: none; }
+textarea.input.chat-input { min-height: 48px; max-height: 140px; resize: none; }
+.chat-jump { position: absolute; left: 50%; bottom: 150px; z-index: 5; transform: translateX(-50%); min-height: 40px; padding: 0 16px; border: 0; border-radius: 20px; background: var(--brand); color: #fff; font-weight: 800; box-shadow: var(--shadow-lg); cursor: pointer; }
+.msg-row { display: flex; align-items: flex-end; gap: 6px; }
+.msg-row.mine { justify-content: flex-end; }
+.msg-row.start { margin-top: 6px; }
+.msg-row .bubble { max-width: 80%; align-self: auto; }
+.avatar-gap { width: 34px; flex: none; }
+.bubble .text { white-space: pre-wrap; }
+.bubble.plain { background: none; box-shadow: none; padding: 2px 0; }
+.bubble.plain .when { text-align: left; }
+.msg-row.mine .bubble.plain .when { text-align: right; }
+.emoji-big { font-size: 46px; line-height: 1.15; animation: pop .5s ease-out; }
+@keyframes pop { 0% { transform: scale(.4); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+.sticker { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 18px; color: #fff; font-weight: 800; font-size: 16px; box-shadow: 0 6px 16px rgba(22, 18, 58, .18); text-shadow: 0 1px 2px rgba(0, 0, 0, .22); }
+.sticker .e { font-size: 26px; text-shadow: none; }
+.bubble.plain .sticker { animation: pop .45s ease-out; }
+.tray { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; border-radius: 14px; background: var(--card); box-shadow: var(--shadow); }
+.tray.stickers { flex-direction: column; flex-wrap: nowrap; max-height: 42dvh; overflow-y: auto; }
+.sticker-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.sticker-grid button { padding: 0; border: 0; background: none; text-align: left; cursor: pointer; }
+.sticker-grid .sticker { width: 100%; padding: 10px 12px; font-size: 14.5px; }
+.emoji-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.emoji-grid button { min-height: 48px; border: 0; border-radius: 10px; background: none; font-size: 28px; cursor: pointer; }
+.emoji-grid button:active { background: var(--soft); }
+.mention-list { display: flex; flex-direction: column; overflow: hidden; border-radius: 14px; background: var(--card); box-shadow: var(--shadow-lg); }
+.mention-list button { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 12px; border: 0; border-bottom: 1px solid var(--line); background: none; text-align: left; font-weight: 700; cursor: pointer; }
+.mention { color: var(--info); font-weight: 800; }
+.mention.me { padding: 0 3px; border-radius: 6px; background: var(--warn-bg); color: var(--warn); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; max-height: 40dvh; overflow-y: auto; }
+.chip { min-height: 44px; padding: 0 14px; border: 1.5px solid var(--line); border-radius: 22px; background: var(--card); color: var(--brand); font-weight: 700; cursor: pointer; }
+.chip.on { border-color: var(--violet); background: #ece8ff; color: #3a1fc0; }
+.chat-new { min-height: 44px; padding: 0 16px; border: 0; border-radius: 22px; background: var(--grad-btn); color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; box-shadow: 0 6px 18px rgba(75, 63, 230, .3); }
+.chat-pinned { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px; border: 0; border-radius: var(--r); background: linear-gradient(135deg, #effcff, #efeaff); box-shadow: inset 0 0 0 2px #b9a8ff, var(--shadow); text-align: left; cursor: pointer; }
+.chat-pinned .title { font-weight: 800; font-size: 16.5px; color: var(--brand); }
+.chat-pinned .sub { font-size: 13.5px; color: var(--muted); }
+.pin-word { margin-left: 6px; padding: 1px 8px; border-radius: 10px; background: var(--brand); color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; vertical-align: 2px; }
+.avatar.team { background: var(--grad-menu); }
+.avatar.group { background: linear-gradient(135deg, #f5b400, #7a5cff); }
+@media print { .chat-pop-scrim { display: none !important; } }

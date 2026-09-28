@@ -10,6 +10,10 @@ Read RULES.md first.
 - `app.telgopowerprojects.com` shows only a GitHub Pages README (the `CNAME` file). To make it open the app, point its DNS at Vercel and add the domain in the Vercel project.
 - Tests at the push: static 14/14, API 93/93, Android 89/89, iPhone (WebKit) 89/89.
 
+## Waiting (28 Sep 2026, late)
+- Live main = 9d13cb5: map pictures fixed (OpenStreetMap; Google Maps when `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is set in Vercel), "Open in Google Maps" links, white menu words.
+- Built and tested on the local copy, NOT yet on main: the pop-up chat (Chat bubble, Team chat pinned on top, Minimise keeps your chat, + New group, stickers and emoji, @mentions, voice note preview, change / send again / copy / remove, message info, clear chat for me / for everyone, add people, show earlier messages). It needs `supabase/rebuild/LIVE-APPLY-0006.sql` run on the live database FIRST (Supabase > SQL Editor > paste > Run), then push `rebuild` to `main`. Pushing without it would break the live chat.
+
 ## Built (all on the local test database)
 - Database migrations `supabase/rebuild/0001`–`0005` (`0000` recreates today's live tables for local tests only; it is never run on live):
   - 0001 lockdown: the public key loses every right on every table, view, function and file.

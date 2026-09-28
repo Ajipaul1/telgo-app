@@ -15,6 +15,7 @@ import { Ctx, type Counts, type MeView } from "./AppContext";
 import { Icon } from "./Icon";
 import { Avatar, Button, TextInput, ErrorNote } from "./ui";
 import { SignInCard } from "./SignInOut";
+import { ChatDock, useChatDock } from "./chat/ChatDock";
 
 const BUILD = process.env.NEXT_PUBLIC_BUILD_ID ?? "dev";
 
@@ -31,6 +32,7 @@ export function Shell({ initialMe, children }: { initialMe: MeView; children: Re
   const [open, setOpen] = useState<Shift | null>(null);
   const [shiftKnown, setShiftKnown] = useState(!signsIn(initialMe.role));
   const lastUnread = useRef<number | null>(null);
+  const chat = useChatDock();
 
   const toast = useCallback((text: string, bad = false) => {
     setToastMsg({ text, bad });
@@ -212,13 +214,14 @@ export function Shell({ initialMe, children }: { initialMe: MeView; children: Re
 
         {me.mustChangePassword ? <ChangeFirstPassword onDone={(m) => setMe(m)} /> : gated ? <Gate onSignOut={signOutApp} /> : !shiftKnown ? <main className="main"><div className="skeleton" /></main> : children}
 
-        {!hideChat && (
-          <a className="chat-fab" href="/app/chat" data-testid="chat-button" onClick={(e) => { e.preventDefault(); router.push("/app/chat"); }}>
-            Chat{counts.chats > 0 && <span className="n">{counts.chats > 99 ? "99+" : counts.chats}</span>}
-          </a>
-        )}
+        <ChatDock unread={counts.chats ?? 0} hidden={hideChat} state={chat} />
         {banner && (
-          <a className="banner" href={banner.link ?? "/app/notifications"} onClick={() => setBanner(null)} role="status">
+          <a className="banner" href={banner.link ?? "/app/notifications"} role="status" onClick={(e) => {
+            setBanner(null);
+            // a chat's banner opens that chat in the pop-up, over this screen
+            const m = /^\/app\/chat\/([0-9a-f-]{36})$/.exec(banner.link ?? "");
+            if (m && !hideChat) { e.preventDefault(); chat.openChat(m[1], banner.title); }
+          }}>
             <div className="grow"><b>{banner.title}</b><div className="small muted">{banner.body}</div></div>
           </a>
         )}

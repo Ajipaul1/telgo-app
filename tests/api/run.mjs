@@ -578,6 +578,88 @@ await t("a client has no team chat; someone outside a chat can't read it", async
   ok(!l.json.chats.some((c) => c.kind === "team"), "no team chat for clients");
   eq((await sup2.get(`/api/chat/${thread}`)).status, 403);
 });
+let group1, team;
+await t("the Team chat is pinned first in the list, whatever is newer", async () => {
+  const l = await admin.get("/api/chat");
+  eq(l.json.chats[0].kind, "team", "first chat");
+  team = l.json.chats[0].threadId;
+  ok(l.json.canMakeGroups === true, "the admin can make groups");
+});
+await t("the admin makes a group chat (the + button); the people added are told", async () => {
+  const r = await admin.post("/api/chat", { title: "Aluva HDD site", members: [IDS.sup1] });
+  eq(r.status, 200); group1 = r.json.threadId;
+  const n = (await notes(IDS.sup1)).filter((x) => x.link === `/app/chat/${group1}`);
+  ok(n.length === 1 && n[0].body.includes("added you") && n[0].body.includes("Aluva HDD site"), JSON.stringify(n));
+  const l = await sup1.get("/api/chat");
+  const g = l.json.chats.find((c) => c.threadId === group1);
+  ok(g && g.kind === "topic" && g.title === "Aluva HDD site" && g.people === 3, JSON.stringify(g)); // both admins + the supervisor
+  eq(l.json.chats[0].kind, "team", "the Team chat still first");
+  eq((await sup2.get(`/api/chat/${group1}`)).status, 403, "someone not added");
+  eq((await admin.post("/api/chat", { title: "  ", members: [IDS.sup1] })).status, 400, "no name");
+});
+await t("a supervisor's group chat is with the admin (people they pick are not added)", async () => {
+  const r = await sup1.post("/api/chat", { title: "Diesel for the rig", members: [IDS.sup2] });
+  eq(r.status, 200);
+  const members = await q("select user_id::text from chat_members where thread_id = $1 order by user_id", [r.json.threadId]);
+  const ids = members.map((m) => m.user_id);
+  ok(ids.includes(IDS.sup1) && ids.includes(IDS.admin) && !ids.includes(IDS.sup2), JSON.stringify(ids));
+  eq((await client.post("/api/chat", { title: "Client group" })).status, 403, "clients make no groups");
+});
+await t("stickers: one from the list sends, an unknown one is refused", async () => {
+  eq((await sup1.post(`/api/chat/${group1}`, { kind: "sticker", body: "reached", ref: ref() })).status, 200);
+  eq((await sup1.post(`/api/chat/${group1}`, { kind: "sticker", body: "not-a-sticker", ref: ref() })).status, 400);
+});
+await t("@mention: the person gets a 'mentioned you' card (never the text), others the usual one", async () => {
+  await q("update mobile_notifications set is_read = true where recipient_user_id = $1", [IDS.admin]);
+  const r = await sup1.post(`/api/chat/${group1}`, { kind: "text", body: "@Admin Local please check the pit depth", mentions: [IDS.admin, IDS.sup2], ref: ref() });
+  eq(r.status, 200);
+  eq(r.json.message.mentions, [IDS.admin], "only people in the chat count");
+  const n = (await notes(IDS.admin)).filter((x) => x.link === `/app/chat/${group1}` && x.notification_type === "mention");
+  ok(n.length === 1 && n[0].body.includes("mentioned you") && !n[0].body.includes("pit depth"), JSON.stringify(n));
+  const l = await admin.get("/api/chat");
+  ok(l.json.chats.find((c) => c.threadId === group1).mentioned === true, "the list says mentioned");
+});
+await t("change a message: only the sender, only text; everyone sees 'edited'", async () => {
+  const v = await sup1.get(`/api/chat/${group1}`);
+  const m = v.json.messages.find((x) => x.kind === "text");
+  eq((await admin.post(`/api/chat/message/${m.id}`, { action: "edit", body: "changed by someone else" })).status, 403);
+  const e = await sup1.post(`/api/chat/message/${m.id}`, { action: "edit", body: "@Admin Local please check the pit depth (1.6 m)" });
+  eq(e.status, 200); eq(e.json.message.edited, true, "edited");
+  const s = v.json.messages.find((x) => x.kind === "sticker");
+  eq((await sup1.post(`/api/chat/message/${s.id}`, { action: "edit", body: "x" })).status, 400, "a sticker can't be changed");
+});
+await t("earlier messages come 50 at a time (Show earlier messages)", async () => {
+  await q(`insert into chat_messages (thread_id, sender_id, kind, body, created_at, is_test)
+           select $1, $2, 'text', 'old ' || g, now() - interval '2 days' + (g || ' seconds')::interval, false from generate_series(1, 70) g`, [group1, IDS.admin]);
+  const first = await sup1.get(`/api/chat/${group1}`);
+  eq(first.json.messages.length, 60, "the newest 60"); eq(first.json.more, true, "more");
+  const older = await sup1.get(`/api/chat/${group1}?before=${encodeURIComponent(first.json.messages[0].at)}`);
+  ok(older.json.messages.length > 0 && older.json.messages.at(-1).at < first.json.messages[0].at, "older ones");
+});
+await t("clear chat for me: gone for me only; the others keep every message", async () => {
+  const r = await sup1.post(`/api/chat/${group1}/clear`, { for: "me" });
+  eq(r.status, 200);
+  eq((await sup1.get(`/api/chat/${group1}`)).json.messages.length, 0, "cleared for me");
+  ok((await admin.get(`/api/chat/${group1}`)).json.messages.length > 0, "the admin still sees them");
+  eq((await sup1.post(`/api/chat/${group1}/clear`, { for: "everyone" })).status, 403, "only the admin clears for everyone");
+});
+await t("the admin adds people later; the admin clears for everyone (to the Trash, 90 days)", async () => {
+  eq((await sup1.post(`/api/chat/${group1}/people`, { members: [IDS.sup2] })).status, 403, "only the admin adds");
+  const a = await admin.post(`/api/chat/${group1}/people`, { members: [IDS.sup2] });
+  eq(a.status, 200); eq(a.json.added, 1);
+  ok((await notes(IDS.sup2)).some((x) => x.link === `/app/chat/${group1}` && x.body.includes("added you")), "sup2 told");
+  eq((await sup2.get(`/api/chat/${group1}`)).status, 200, "sup2 can read it now");
+  const c = await admin.post(`/api/chat/${group1}/clear`, { for: "everyone" });
+  eq(c.status, 200);
+  eq((await admin.get(`/api/chat/${group1}`)).json.messages.length, 0, "gone for everyone");
+  const trashed = await q("select count(*)::int n from chat_messages where thread_id = $1 and trashed_at is not null", [group1]);
+  ok(trashed[0].n >= 70, "kept in the Trash");
+  ok((await q("select 1 from audit_log where table_name = 'chat_threads' and row_id = $1 and changes ? 'cleared_at'", [group1])).length === 1, "in the change log");
+});
+await t("the File manager lists group chats by their name", async () => {
+  const f = await admin.get("/api/file-manager?kind=chats&tab=active");
+  ok(f.json.items.some((i) => i.row.title === "Group: Aluva HDD site"), JSON.stringify(f.json.items.map((i) => i.row.title)));
+});
 
 group = "9. Notifications, push, Error Doctor, test data";
 await t("notifications can be read and cleared (cleared ones leave the list)", async () => {
