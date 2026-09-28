@@ -3,7 +3,7 @@ import { use, useState } from "react";
 import { Screen } from "@/components/Screen";
 import { useApp } from "@/components/AppContext";
 import { Loaded, Pill, Button, Empty, ErrorNote } from "@/components/ui";
-import { MapView } from "@/components/Map";
+import { MapView, OpenInGoogleMaps } from "@/components/Map";
 import { projectMap } from "@/components/projectMap";
 import { useLoad } from "@/lib/client/hooks";
 import { call, ApiError } from "@/lib/client/api";
@@ -44,7 +44,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
               </div>
 
               {p.route.length ? (
-                <MapView pins={m.pins} lines={m.lines} circles={p.route.length === 1 ? [{ at: p.route[0], radiusM: p.siteRadiusM }] : []} testId="project-map" />
+                <MapView pins={m.pins} lines={m.lines} circles={p.route.length === 1 ? [{ at: p.route[0], radiusM: p.siteRadiusM }] : []} testId="project-map"><OpenInGoogleMaps at={p.route[0]} label={p.route.length > 1 ? "Start in Google Maps" : "Open in Google Maps"} /></MapView>
               ) : <Empty title="No route on the map yet">{me?.role === "admin" ? "Draw it in Edit projects." : "The admin draws the route."}</Empty>}
               {p.routeFromOldApp && <p className="tiny muted">This route was drawn in the old app.</p>}
 

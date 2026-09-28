@@ -168,6 +168,13 @@ async function run(kind) {
       const groups = await page.locator(".nav-group").allTextContents();
       ok(groups.length >= 2, `groups: ${groups.join(",")}`);
       if (role === "admin") ok(["Team", "Projects", "Inventory", "Reports", "Files", "You", "System"].every((g) => groups.map((x) => x.toLowerCase()).includes(g.toLowerCase())), `admin groups: ${groups.join(",")}`);
+      // every menu word is white on the dark blue (a form-label style once turned them dark)
+      const dark = await page.$$eval(".drawer .nav-item", (els) => els.map((e) => {
+        const label = e.querySelector(".nav-label") ?? e;
+        const [r, g, b] = getComputedStyle(label).color.match(/\d+/g).map(Number);
+        return { t: label.textContent, light: r > 220 && g > 220 && b > 220 };
+      }).filter((x) => !x.light).map((x) => x.t));
+      ok(!dark.length, `menu words not white: ${dark.join(", ")}`);
       await page.screenshot({ path: path.join(OUT, `${shot(role + "_menu")}.png`), animations: "disabled", timeout: 60000 }).catch(() => {});
       await page.mouse.click(400, 400);
     });
@@ -276,6 +283,17 @@ async function run(kind) {
       await a.click("text=Ebin Site");
       await a.waitForSelector(`text=Hello from the ${kind} test`, { timeout: 15000 });
       await healthy(a, "chat thread", shot("chat_thread"));
+    });
+    await t("the map pictures really load (street and satellite), with a Google Maps link", async () => {
+      await go(a, "app/projects/prj-6133");
+      await a.waitForSelector("[data-testid=project-map] .leaflet-tile-loaded", { timeout: 20000 });
+      const tiles = async () => a.$$eval("[data-testid=project-map] img.leaflet-tile-loaded", (els) => els.filter((e) => e.naturalWidth > 0).map((e) => new URL(e.src).host));
+      const street = await tiles();
+      ok(street.length > 0 && street.every((h) => h === "tile.openstreetmap.org"), `street tiles: ${[...new Set(street)].join(",")}`);
+      await a.click("[data-testid=project-map] ~ .map-tools >> text=Satellite");
+      await a.waitForFunction(() => [...document.querySelectorAll("[data-testid=project-map] img.leaflet-tile-loaded")].some((e) => e.naturalWidth > 0 && e.src.includes("arcgisonline")), null, { timeout: 20000 });
+      const link = await a.getAttribute("a:has-text('in Google Maps')", "href");
+      ok(/^https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=-?\d+\.\d+,-?\d+\.\d+$/.test(link ?? ""), `link ${link}`);
     });
     await t("the admin draws a new project's route on the map and saves it", async () => {
       await go(a, "app/projects/edit/new");

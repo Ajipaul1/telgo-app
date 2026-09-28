@@ -3,7 +3,7 @@ import { Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Screen } from "@/components/Screen";
 import { Loaded, Pill, Empty, Button } from "@/components/ui";
-import { MapView, type MapCircle, type MapLine, type MapPin } from "@/components/Map";
+import { MapView, OpenInGoogleMaps, type MapCircle, type MapLine, type MapPin } from "@/components/Map";
 import { useLoad, useNow } from "@/lib/client/hooks";
 import { addDays, ago, distanceWords, fmtDay, fmtTime, initials, istToday } from "@/lib/shared/format";
 import type { Shift } from "@/lib/shared/attendance";
@@ -55,7 +55,9 @@ function LiveBody() {
         const withLoc = d.people.filter((p) => p.last).length;
         return (
           <>
-            <MapView size="tall" pins={pins} lines={lines} circles={siteCircles} fitKey={sel ? `trail-${sel.id}-${day}-${trail.data?.points.length ?? 0}` : `all-${withLoc}`} testId="live-map" />
+            <MapView size="tall" pins={pins} lines={lines} circles={siteCircles} fitKey={sel ? `trail-${sel.id}-${day}-${trail.data?.points.length ?? 0}` : `all-${withLoc}`} testId="live-map">
+              {sel?.last && <OpenInGoogleMaps at={[sel.last.lat, sel.last.lng]} label={`${sel.fullName.split(" ")[0]} in Google Maps`} />}
+            </MapView>
             {sel ? (
               <div className="card" data-testid="trail-card">
                 <div className="row between"><h2>{sel.fullName}</h2><Button kind="ghost" small onClick={() => go(null)}>Everyone</Button></div>

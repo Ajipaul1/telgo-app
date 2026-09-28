@@ -3,7 +3,7 @@ import { use, useState } from "react";
 import { Screen } from "@/components/Screen";
 import { useApp } from "@/components/AppContext";
 import { Button, ErrorNote, Loaded, NumberInput, PhotoPicker, Pill, PicThumb, Sheet, TextArea, Empty } from "@/components/ui";
-import { MapView } from "@/components/Map";
+import { MapView, OpenInGoogleMaps } from "@/components/Map";
 import { useLoad } from "@/lib/client/hooks";
 import { call, newRef, ApiError } from "@/lib/client/api";
 import { getPosition } from "@/lib/client/device";
@@ -35,7 +35,7 @@ export default function ItemPage({ params }: { params: Promise<{ id: string }> }
               </dl>
               {d.item.description && <p className="small">{d.item.description}</p>}
             </div>
-            {d.item.lat !== null && d.item.lng !== null && <MapView size="short" pins={[{ at: [d.item.lat, d.item.lng], text: "", kind: "brand", title: d.item.location ?? d.item.material }]} />}
+            {d.item.lat !== null && d.item.lng !== null && <MapView size="short" pins={[{ at: [d.item.lat, d.item.lng], text: "", kind: "brand", title: d.item.location ?? d.item.material }]}><OpenInGoogleMaps at={[d.item.lat, d.item.lng]} /></MapView>}
             {d.canRequest ? <Requests item={d.item} onSent={load.reload} /> : d.history.some((c) => c.status === "pending") ? (
               <div className="notice warn">A change is waiting for the admin. The item changes only when it is approved.</div>
             ) : null}

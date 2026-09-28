@@ -198,7 +198,7 @@ export function Shell({ initialMe, children }: { initialMe: MeView; children: Re
                   return (
                     <a key={i.href} className="nav-item" href={i.href} aria-current={current ? "page" : undefined}
                       onClick={(e) => { e.preventDefault(); setMenuOpen(false); router.push(i.href); }}>
-                      <Icon name={i.icon} /><span className="label">{i.label}</span>{n > 0 && <span className="nav-count">{n > 99 ? "99+" : n}</span>}
+                      <Icon name={i.icon} /><span className="nav-label">{i.label}</span>{n > 0 && <span className="nav-count">{n > 99 ? "99+" : n}</span>}
                     </a>
                   );
                 })}
@@ -206,7 +206,7 @@ export function Shell({ initialMe, children }: { initialMe: MeView; children: Re
             ))}
           </nav>
           <div className="drawer-foot">
-            <button className="nav-item" onClick={signOutApp} data-testid="app-sign-out"><Icon name="logout" /><span className="label">Sign out of the app</span></button>
+            <button className="nav-item" onClick={signOutApp} data-testid="app-sign-out"><Icon name="logout" /><span className="nav-label">Sign out of the app</span></button>
           </div>
         </aside>
 

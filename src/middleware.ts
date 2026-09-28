@@ -3,7 +3,9 @@
 // /app pages need a sign-in ticket (the page itself then checks it with the database).
 import { NextResponse, type NextRequest } from "next/server";
 
-const TILES = "https://*.basemaps.cartocdn.com https://server.arcgisonline.com";
+// map pictures: OpenStreetMap and Esri (no key), and Google Maps when its key is set
+const TILES = "https://tile.openstreetmap.org https://server.arcgisonline.com https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googleusercontent.com";
+const GOOGLE = "https://*.googleapis.com https://*.gstatic.com https://*.google.com";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -19,14 +21,14 @@ export function middleware(req: NextRequest) {
   const csp = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${dev ? " 'unsafe-eval'" : ""}`,
-    "style-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     `img-src 'self' data: blob: ${TILES}`,
-    "font-src 'self'",
-    `connect-src 'self'${dev ? " ws:" : ""}`,
+    "font-src 'self' https://fonts.gstatic.com",
+    `connect-src 'self' ${GOOGLE} data: blob:${dev ? " ws:" : ""}`,
     "media-src 'self' blob:",
-    "worker-src 'self'",
+    "worker-src 'self' blob:",
     "manifest-src 'self'",
-    "frame-src 'self'",
+    `frame-src 'self' https://*.google.com`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
