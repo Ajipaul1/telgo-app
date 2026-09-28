@@ -203,6 +203,18 @@ async function run(kind) {
       await s.click("[data-testid=send-report-shortcut]");
       await s.waitForSelector("[data-testid=report-project]");
       await s.selectOption("[data-testid=report-project]", "prj-6133");
+      // 2. Work done today (drop-down)
+      await s.click("[data-testid=report-next]");
+      await s.selectOption("[data-testid=work-type]", "cable_laying");
+      await s.fill("[data-testid=work-value-cable_laying]", "120");
+      await s.locator("[data-testid=work-photos-cable_laying] input[type=file]").nth(1).setInputFiles(PHOTO);
+      await s.waitForSelector("[data-testid=work-photos-cable_laying] .thumb img", { timeout: 20000 });
+      await s.selectOption("[data-testid=work-type]", "hdd");
+      await s.fill("[data-testid=hdd-rod-length]", "3");
+      await s.click("[data-testid=rod-add]"); await s.fill("[data-testid=rod-depth-0]", "1.2");
+      await s.click("[data-testid=rod-add]"); await s.fill("[data-testid=rod-depth-1]", "1.6");
+      await s.fill("[data-testid=note-work]", "Cable laid from the junction");
+      // 3. Workers and wages
       await s.click("[data-testid=report-next]");
       await s.fill("[data-testid=crew-workers]", "5");
       await s.fill("[data-testid=crew-rate]", "950");
@@ -210,24 +222,13 @@ async function run(kind) {
       await s.fill("[data-testid=ot-hours-0]", "2");
       await s.fill("[data-testid=ot-rate-0]", "120");
       await s.waitForSelector("[data-testid=wages-total]:has-text('4,990')", { timeout: 5000 }); // 5 × 950 + 1 × 2 × 120
+      // 4. Expenses (drop-down), then send
       await s.click("[data-testid=report-next]");
-      await s.click("[data-testid=expense-add-fuel]");
+      await s.selectOption("[data-testid=expense-type]", "fuel");
       await s.fill("[data-testid=expense-amount-0]", "640");
       await s.locator("[data-testid=expense-bill-0] input[type=file]").nth(1).setInputFiles(PHOTO);
       await s.waitForSelector("[data-testid=expense-bill-0] .thumb img", { timeout: 20000 });
-      await s.click("[data-testid=report-next]");
-      await s.click("[data-testid=work-cable_laying]");
-      await s.fill("[data-testid=work-value-cable_laying]", "120");
-      await s.locator("[data-testid=work-photos-cable_laying] input[type=file]").nth(1).setInputFiles(PHOTO);
-      await s.waitForSelector("[data-testid=work-photos-cable_laying] .thumb img", { timeout: 20000 });
-      await s.click("[data-testid=work-hdd]");
-      await s.fill("[data-testid=hdd-rod-length]", "3");
-      await s.click("[data-testid=rod-add]"); await s.fill("[data-testid=rod-depth-0]", "1.2");
-      await s.click("[data-testid=rod-add]"); await s.fill("[data-testid=rod-depth-1]", "1.6");
-      await s.click("[data-testid=report-next]");
-      await s.click("[data-testid=report-next]");
-      await s.fill("[data-testid=note-work]", "Cable laid from the junction");
-      await s.click("[data-testid=report-next]");
+      await s.waitForSelector("[data-testid=report-total]:has-text('5,630')", { timeout: 5000 }); // wages 4,990 + fuel 640
       await s.waitForSelector("[data-testid=report-check]");
       await healthy(s, "check step", shot("report_check"));
       await s.click("[data-testid=report-send]");

@@ -54,34 +54,15 @@ function Body({ data, onChange, reload }: { data: Data; onChange: (r: ReportView
       {me?.role === "admin" && r.status === "approved" && <AdminEdit report={r} onChange={onChange} />}
 
       {!client && (
-        <div className="card" data-testid="section-crew">
-          <h2>Crew and wages</h2>
-          <dl className="kv">
-            <dt>Workers</dt><dd>{b.crew.workers}</dd>
-            <dt>Daily wage per worker</dt><dd>{b.crew.wageRate === null ? "not recorded" : money(b.crew.wageRate)}</dd>
-            {b.crew.ot.map((g, i) => <Fragment key={i}><dt>Overtime {i + 1}</dt><dd>{g.workers} × {numIN(g.hours)} h × {money(g.rate)}</dd></Fragment>)}
-            <dt><b>Wages</b></dt><dd>{money(s.wages)}</dd>
-          </dl>
-          {b.crew.wagesNote && <p className="small">{b.crew.wagesNote}</p>}
-        </div>
-      )}
-      {client && <div className="card"><h2>Crew</h2><p>{b.crew.workers} workers at site</p></div>}
-
-      {!client && (
-        <div className="card" data-testid="section-expenses">
-          <div className="card-title"><h2>Expenses</h2><b>{money(s.expenses)}</b></div>
-          {b.expenses.length ? b.expenses.map((e) => (
-            <div key={e.id} className="row" style={{ alignItems: "flex-start" }}>
-              {e.bill ? <PicThumb pic={e.bill} label={`${EXPENSE_LABEL[e.category]} bill`} /> : <span className="thumb pdf" style={{ fontWeight: 600, color: "var(--faint)" }}>No bill</span>}
-              <div className="grow"><b>{EXPENSE_LABEL[e.category]}{e.name ? `: ${e.name}` : ""}</b><div>{money(e.amount)}</div>{e.note && <div className="small muted">{e.note}</div>}</div>
-            </div>
-          )) : <p className="small muted">No expenses.</p>}
-          {b.expenses.length > 0 && <p className="tiny muted">{EXPENSE_CATEGORIES.filter((c) => s[c] > 0).map((c) => `${EXPENSE_LABEL[c]} ${money(s[c])}`).join(" · ")}</p>}
+        <div className="card hero" data-testid="report-summary">
+          <span className="muted">Total cost this day</span>
+          <h1>{money(s.wages + s.expenses)}</h1>
+          <span className="muted small">Wages {money(s.wages)} ({b.crew.workers} workers) · Expenses {money(s.expenses)}</span>
         </div>
       )}
 
       <div className="card" data-testid="section-work">
-        <h2>Work done</h2>
+        <h2>Work done today</h2>
         {b.work.length ? b.work.map((w) => {
           const def = WORK.find((x) => x.key === w.key)!;
           const v = w.key === "hdd" ? s.hdd : w.value;
@@ -114,6 +95,33 @@ function Body({ data, onChange, reload }: { data: Data; onChange: (r: ReportView
         </div>
       )}
 
+      {!client && (
+        <div className="card" data-testid="section-crew">
+          <h2>Workers and wages</h2>
+          <dl className="kv">
+            <dt>Workers</dt><dd>{b.crew.workers}</dd>
+            <dt>Daily wage per worker</dt><dd>{b.crew.wageRate === null ? "not recorded" : money(b.crew.wageRate)}</dd>
+            {b.crew.ot.map((g, i) => <Fragment key={i}><dt>Overtime {i + 1}</dt><dd>{g.workers} × {numIN(g.hours)} h × {money(g.rate)}</dd></Fragment>)}
+            <dt><b>Wages</b></dt><dd>{money(s.wages)}</dd>
+          </dl>
+          {b.crew.wagesNote && <p className="small">{b.crew.wagesNote}</p>}
+        </div>
+      )}
+      {client && <div className="card"><h2>Crew</h2><p>{b.crew.workers} workers at site</p></div>}
+
+      {!client && (
+        <div className="card" data-testid="section-expenses">
+          <div className="card-title"><h2>Expenses</h2><b>{money(s.expenses)}</b></div>
+          {b.expenses.length ? b.expenses.map((e) => (
+            <div key={e.id} className="row" style={{ alignItems: "flex-start" }}>
+              {e.bill ? <PicThumb pic={e.bill} label={`${EXPENSE_LABEL[e.category]} bill`} /> : <span className="thumb pdf" style={{ fontWeight: 600, color: "var(--faint)" }}>No bill</span>}
+              <div className="grow"><b>{EXPENSE_LABEL[e.category]}{e.name ? `: ${e.name}` : ""}</b><div>{money(e.amount)}</div>{e.note && <div className="small muted">{e.note}</div>}</div>
+            </div>
+          )) : <p className="small muted">No expenses.</p>}
+          {b.expenses.length > 0 && <p className="tiny muted">{EXPENSE_CATEGORIES.filter((c) => s[c] > 0).map((c) => `${EXPENSE_LABEL[c]} ${money(s[c])}`).join(" · ")}</p>}
+        </div>
+      )}
+
       {b.clearances.length > 0 && (
         <div className="card" data-testid="section-permissions">
           <h2>Permissions</h2>
@@ -129,7 +137,7 @@ function Body({ data, onChange, reload }: { data: Data; onChange: (r: ReportView
       {(b.notes.workDone || b.notes.problems || b.notes.plans || b.notes.toAdmin || b.notes.moneyNeeded) && (
         <div className="card" data-testid="section-notes">
           <h2>Notes</h2>
-          {([["Work done today", b.notes.workDone], ["Problems at site", b.notes.problems], ["Plan for tomorrow", b.notes.plans], ["Message to the admin", b.notes.toAdmin]] as const).filter(([, t]) => t).map(([l, t]) => (
+          {([["Work done today", b.notes.workDone], ["Problems at site", b.notes.problems], ["Plan for tomorrow", b.notes.plans], ["Message to the director", b.notes.toAdmin]] as const).filter(([, t]) => t).map(([l, t]) => (
             <div key={l}><div className="row between"><b className="small">{l}</b><Listen text={t} /></div><p>{t}</p></div>
           ))}
           {!client && b.notes.moneyNeeded ? (

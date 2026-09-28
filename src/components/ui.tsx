@@ -248,7 +248,7 @@ export function PicThumb({ pic, onRemove, label = "Photo" }: { pic: Pic; onRemov
       <span className={"thumb" + (isPdf ? " pdf" : "")}>
         {isPdf ? <a href={src} target="_blank" rel="noopener" className="thumb pdf" style={{ width: "100%", height: "100%" }}>PDF</a>
           : <button type="button" className="thumb" style={{ width: "100%", height: "100%" }} onClick={() => setOpen(true)} aria-label={`Open ${label}`}><img src={src} alt={label} loading="lazy" /></button>}
-        {onRemove && <button type="button" className="x" aria-label={`Remove ${label}`} onClick={onRemove}>×</button>}
+        {onRemove && <button type="button" className="x" aria-label={`Remove ${label}`} onClick={onRemove}><span aria-hidden="true">×</span></button>}
       </span>
       {open && typeof document !== "undefined" && createPortal(
         <div className="viewer" role="dialog" aria-label={label} onClick={() => setOpen(false)}>

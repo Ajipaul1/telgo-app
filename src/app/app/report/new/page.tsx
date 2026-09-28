@@ -3,16 +3,17 @@ import { Fragment, Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Screen } from "@/components/Screen";
 import { useApp } from "@/components/AppContext";
-import { Button, Choice, ErrorNote, Loaded, Select, Empty } from "@/components/ui";
+import { Button, ErrorNote, Loaded, Select, Empty } from "@/components/ui";
 import { useDraft, useLoad } from "@/lib/client/hooks";
 import { call, newRef, ApiError } from "@/lib/client/api";
 import { addDays, fmtDay, fmtTime, istToday, money, metres, numIN } from "@/lib/shared/format";
 import { emptyBody, fileIdsOf, summarize, EXPENSE_CATEGORIES, EXPENSE_LABEL, type ReportBody, type ReportView } from "@/lib/shared/report";
 import type { ProjectView } from "@/lib/shared/project";
-import { CrewStep, ExpensesStep, NotesStep, PermissionsStep, WorkStep } from "./_parts/steps";
+import { CrewStep, ExpensesStep, MoreStep, WorkStep } from "./_parts/steps";
 
 type Draft = { projectId: string; reportDate: string; body: ReportBody; ref: string; step: number };
-const STEPS = ["Site and date", "Crew and wages", "Expenses", "Work done", "Permissions", "Notes", "Check and send"];
+// the order the day is done (owner's ask, 28 Sep 2026); the director sees the report in the same order
+const STEPS = ["Site and day", "Work done today", "Workers and wages", "Expenses, then send"];
 
 function Wizard() {
   const q = useSearchParams();
@@ -92,7 +93,7 @@ function Form({ projects, fix, draftKey }: { projects: ProjectView[]; fix?: Repo
         <div className="card hero pad-lg">
           <span className="eyebrow" style={{ color: "#8fe8f2" }}>{fix ? "Sent back for review" : "Report sent"}</span>
           <h1>Sent at {fmtTime(sent.createdAt === sent.updatedAt ? sent.createdAt : sent.updatedAt)}</h1>
-          <p className="muted">The server saved it for {sent.projectName}, {fmtDay(sent.reportDate)}. It waits for the admin&apos;s review; you get a notification when it is approved or needs fixing.</p>
+          <p className="muted">The server saved it for {sent.projectName}, {fmtDay(sent.reportDate)}. The director reviews it; you get a notification when it is approved or needs fixing.</p>
         </div>
         <Button big block href={`/app/my-reports/${sent.id}`}>Open the report</Button>
         <Button kind="ghost" block href="/app">Home</Button>
@@ -119,29 +120,24 @@ function Form({ projects, fix, draftKey }: { projects: ProjectView[]; fix?: Repo
             <>
               <Select label="Site" value={d.projectId} onChange={(v) => setD((x) => ({ ...x, projectId: v }))} placeholder="Choose the site" testId="report-project"
                 options={projects.filter((p) => p.status !== "completed").map((p) => ({ value: p.id, label: p.name + (p.district ? ` · ${p.district}` : "") }))} />
-              <Choice label="Day" value={d.reportDate} onChange={(v) => setD((x) => ({ ...x, reportDate: v }))} testId="report-day"
-                options={dates.map((x, i) => ({ value: x, label: i === 0 ? "Today" : i === 1 ? "Yesterday" : fmtDay(x) }))} />
+              <Select label="Day" value={d.reportDate} onChange={(v) => setD((x) => ({ ...x, reportDate: v }))} testId="report-day"
+                options={dates.map((x, i) => ({ value: x, label: i === 0 ? `Today, ${fmtDay(x)}` : i === 1 ? `Yesterday, ${fmtDay(x)}` : fmtDay(x) }))} />
               <p className="tiny muted">A report can be sent for today or the 3 days before.</p>
               {sameDay && <div className="notice warn"><b>You already sent a report for this site on this day</b><span>Open it to see or fix it, or carry on to send another one.</span><div><Button small kind="ghost" href={`/app/my-reports/${sameDay.id}`}>Open it</Button></div></div>}
             </>
           )}
         </div>
       )}
-      {d.step === 1 && <CrewStep body={d.body} set={set} project={project} />}
-      {d.step === 2 && <ExpensesStep body={d.body} set={set} />}
-      {d.step === 3 && <WorkStep body={d.body} set={set} project={project} />}
-      {d.step === 4 && <PermissionsStep body={d.body} set={set} />}
-      {d.step === 5 && <NotesStep body={d.body} set={set} />}
+      {d.step === 1 && <WorkStep body={d.body} set={set} project={project} />}
+      {d.step === 2 && <CrewStep body={d.body} set={set} project={project} />}
       {d.step === last && (
         <div className="stack loose" data-testid="report-check">
+          <ExpensesStep body={d.body} set={set} />
+          <MoreStep body={d.body} set={set} />
+          <div className="section-title">What the director will see</div>
           <div className="card">
             <h2>{project?.name ?? fix?.projectName ?? "Site"} · {fmtDay(d.reportDate)}</h2>
             <dl className="kv">
-              <dt>Workers</dt><dd>{s.workers}</dd>
-              <dt>Wages</dt><dd>{money(s.wages)}</dd>
-              {s.otHours > 0 && <><dt>Overtime</dt><dd>{numIN(s.otHours)} worker-hours</dd></>}
-              {EXPENSE_CATEGORIES.filter((c) => s[c] > 0).map((c) => <Fragment key={c}><dt>{EXPENSE_LABEL[c]}</dt><dd>{money(s[c])}</dd></Fragment>)}
-              <dt><b>Expenses</b></dt><dd>{money(s.expenses)}</dd>
               {s.trenching > 0 && <><dt>Trenching</dt><dd>{metres(s.trenching)}</dd></>}
               {s.hdd > 0 && <><dt>HDD</dt><dd>{metres(s.hdd)}</dd></>}
               {s.cableLaying > 0 && <><dt>Cable laying</dt><dd>{metres(s.cableLaying)}</dd></>}
@@ -149,20 +145,27 @@ function Form({ projects, fix, draftKey }: { projects: ProjectView[]; fix?: Repo
               {s.joints > 0 && <><dt>Joints</dt><dd>{s.joints}</dd></>}
               {s.rmu > 0 && <><dt>RMU foundations</dt><dd>{s.rmu}</dd></>}
               {s.terminations > 0 && <><dt>Terminations</dt><dd>{s.terminations}</dd></>}
+              {!d.body.work.length && <><dt>Work</dt><dd>none entered</dd></>}
+              <dt>Workers</dt><dd>{s.workers}</dd>
+              <dt>Wages</dt><dd>{money(s.wages)}</dd>
+              {s.otHours > 0 && <><dt>Overtime</dt><dd>{numIN(s.otHours)} worker-hours</dd></>}
+              {EXPENSE_CATEGORIES.filter((c) => s[c] > 0).map((c) => <Fragment key={c}><dt>{EXPENSE_LABEL[c]}</dt><dd>{money(s[c])}</dd></Fragment>)}
+              <dt>Expenses</dt><dd>{money(s.expenses)}</dd>
+              <dt><b>Total cost today</b></dt><dd><b data-testid="report-total">{money(s.wages + s.expenses)}</b></dd>
               <dt>Photos and bills</dt><dd>{fileIdsOf(d.body).length}</dd>
-              <dt>Permissions</dt><dd>{d.body.clearances.length || "none"}</dd>
+              {d.body.clearances.length > 0 && <><dt>Permissions</dt><dd>{d.body.clearances.length}</dd></>}
             </dl>
           </div>
           {warnings.length > 0 && <div className="notice warn"><b>Check before sending</b>{warnings.map((w) => <span key={w}>{w}</span>)}</div>}
           {err && <ErrorNote error={err} title="The report was not sent" />}
           {err && <p className="small muted">Everything you entered is kept on this phone. Send again when it is fixed or you have signal.</p>}
-          <Button big block onClick={send} busyText="Sending…" testId="report-send">{fix ? "Send the fixed report" : "Send the report"}</Button>
+          <Button big block onClick={send} busyText="Sending…" testId="report-send">{fix ? "Send the fixed report to the director" : "Send to the director"}</Button>
         </div>
       )}
 
       <div className="wizard-foot">
         <Button kind="ghost" onClick={() => (d.step === 0 ? router.push("/app") : go(d.step - 1))}>{d.step === 0 ? "Cancel" : "Back"}</Button>
-        {d.step < last && <Button onClick={() => go(d.step + 1)} disabled={!canNext} testId="report-next">{d.step === last - 1 ? "Check" : "Next"}</Button>}
+        {d.step < last && <Button onClick={() => go(d.step + 1)} disabled={!canNext} testId="report-next">Next: {STEPS[d.step + 1].split(",")[0]}</Button>}
       </div>
     </div>
   );

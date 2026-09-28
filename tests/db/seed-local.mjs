@@ -80,10 +80,11 @@ export async function seed() {
     values ('f0000000-0000-4000-8000-000000000001', ($1::date - 20), 'PRV-EDP-001', $2, 'Anish Site', 6, 3, 5850, 1200, 80, $3, '{"PWD":{"status":"Demand Note Issued","receipt":""}}', 'approved', now() - interval '20 days')`,
     [today, IDS.sup1, JSON.stringify(rich)]);
   await c.query(`alter table public.pending_daily_reports enable trigger trg_report_rules`);
-  // old-app attendance marks: a sign-in row, a ping row, and a separate "checked_out" row, 3 days ago
+  // old-app attendance marks: a sign-in row, a ping row, and a separate "checked_out" row, 3 days ago from 8 am India time
+  // (so the day never crosses midnight, whatever time the tests run)
   for (const [status, mins] of [["checked_in", 0], ["checked_in", 90], ["checked_out", 540]]) {
     await c.query(`insert into public.mobile_attendance (mobile_user_id, user_name, user_login_id, user_role, project_id, project_name, check_in_at, latitude, longitude, distance_from_site_m, within_geofence, status)
-      values ($1, 'Anish Site', 'TLG-SUP00001', 'supervisor', 'vadakkekotta-sn-cable', 'Vadakkekotta Sn-Cable Corridor', (now() - interval '3 days') + make_interval(mins => $2), 9.98, 76.47, 12, true, $3)`,
+      values ($1, 'Anish Site', 'TLG-SUP00001', 'supervisor', 'vadakkekotta-sn-cable', 'Vadakkekotta Sn-Cable Corridor', ((date_trunc('day', now() at time zone 'Asia/Kolkata') - interval '3 days' + interval '8 hours') at time zone 'Asia/Kolkata') + make_interval(mins => $2), 9.98, 76.47, 12, true, $3)`,
       [IDS.sup1, mins, status]);
   }
   await c.query("commit");
