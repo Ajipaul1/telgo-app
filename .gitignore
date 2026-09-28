@@ -150,3 +150,9 @@ supabase/.temp/
 # Local diagnostics
 playwright-report/
 test-results/
+
+# Rebuild: test output and local-only files
+tests/.out/
+test-results/
+playwright-report/
+*.local.json

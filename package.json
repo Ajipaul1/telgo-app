@@ -1,39 +1,39 @@
 {
-  "name": "telgo-hub",
-  "version": "1.0.0",
+  "name": "telgo-app",
+  "version": "2.0.0",
   "private": true,
-  "description": "Telgo Power Projects internal operations platform.",
+  "description": "Telgo Power Projects field app: attendance, daily site reports, projects and team. Phone only.",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3000",
     "typecheck": "tsc --noEmit",
-    "screenshots:mobile": "node scripts/capture-mobile-screenshots.mjs",
-    "android:package": "node scripts/build-android-apk.mjs",
-    "android:check": "node scripts/check-android-download.mjs",
-    "smoke": "node scripts/smoke.mjs",
-    "visual": "node scripts/visual-check.mjs"
+    "db:local": "node tests/db/apply-local.mjs",
+    "test:static": "node tests/static/checks.mjs",
+    "test:api": "node tests/api/run.mjs",
+    "test:ui": "node tests/ui/run.mjs",
+    "test": "node tests/static/checks.mjs && node tests/api/run.mjs && node tests/ui/run.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
-    "@types/nodemailer": "^8.0.0",
-    "framer-motion": "^12.23.12",
-    "lucide-react": "^0.468.0",
-    "maplibre-gl": "^5.6.1",
+    "leaflet": "^1.9.4",
     "next": "^15.3.5",
     "nodemailer": "^8.0.7",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "zustand": "^5.0.3"
+    "server-only": "^0.0.1",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.12",
     "@types/node": "^22.10.2",
+    "@types/nodemailer": "^8.0.0",
+    "@types/pg": "^8.11.10",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
-    "autoprefixer": "^10.4.20",
-    "playwright-core": "^1.57.0",
-    "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.17",
+    "@types/web-push": "^3.6.4",
+    "pg": "^8.13.1",
+    "playwright-core": "^1.63.0",
     "typescript": "^5.7.2"
   }
 }
