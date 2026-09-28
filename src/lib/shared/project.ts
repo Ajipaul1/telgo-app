@@ -2,6 +2,7 @@
 // stored in corridor_data, so the 5 existing projects keep their routes. Nothing is invented: a value
 // that isn't stored stays empty.
 import { toLatLng, routeLengthM, type LatLng } from "./geo";
+import { BASE_TYPES, lineFrom, planFromJson, type ProjectPlan } from "./plan";
 
 export type ProjectStatus = "active" | "paused" | "completed";
 export type HddDefaults = { machine?: string; vendor?: string; tracker?: string; operator?: string; ducts?: string; rodLengthM?: number | null };
@@ -29,6 +30,8 @@ export type ProjectView = {
   startLabel: string | null;
   endLabel: string | null;
   layers: Layer[];
+  plan: ProjectPlan;
+  planSaved: boolean;           // false = made from the route and the old app's layers, not saved as a plan yet
   updatedAt: string;
   archivedAt: string | null;
   trashedAt: string | null;
@@ -99,6 +102,15 @@ export function projectFromRow(r: Record<string, unknown>): ProjectView {
     startLabel: (r.start_label as string) ?? (typeof c.startLabel === "string" && c.startLabel !== "Start Position" ? c.startLabel : null),
     endLabel: (r.end_label as string) ?? (typeof c.endLabel === "string" && c.endLabel !== "End Position" ? c.endLabel : null),
     layers,
+    ...(() => {
+      const saved = planFromJson(r.plan);
+      if (saved) return { plan: saved, planSaved: true };
+      const OLD: Record<string, string> = { cable: "Cable laying", hdd: "HDD", trench: "Open trench" };
+      return {
+        plan: { route: route.length ? lineFrom(route) : null, parts: layers.map((l, i) => ({ ...lineFrom(l.route), id: `old-${l.key}-${i}`, type: OLD[l.key] ?? l.label, name: "from the old app" })), types: [...BASE_TYPES] },
+        planSaved: false,
+      };
+    })(),
     updatedAt: String(r.updated_at ?? ""),
     archivedAt: (r.archived_at as string) ?? null,
     trashedAt: (r.trashed_at as string) ?? null,

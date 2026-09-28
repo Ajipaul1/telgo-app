@@ -7,7 +7,8 @@ import { str, optStr, optNum, num, oneOf, isoDate, list } from "./validate";
 import type { Me } from "./session";
 import { projectFromRow, type ProjectView, type Totals } from "@/lib/shared/project";
 export type { Totals };
-import { toLatLng, type LatLng } from "@/lib/shared/geo";
+import { routeLengthM, toLatLng, type LatLng } from "@/lib/shared/geo";
+import { BASE_TYPES } from "@/lib/shared/plan";
 
 
 const n = (v: unknown) => Number(v ?? 0) || 0;
@@ -57,6 +58,32 @@ function routeOf(v: unknown): LatLng[] {
   });
 }
 
+const pointsOf = (v: unknown, label: string, max: number) => list(v ?? [], label, max, (p) => {
+  const ll = toLatLng(p);
+  if (!ll) fail(400, "INVALID", `${label}: a point on the map is not valid.`);
+  return [Math.round(ll![0] * 1e6) / 1e6, Math.round(ll![1] * 1e6) / 1e6] as LatLng;
+});
+function lineOf(v: unknown, label: string) {
+  const o = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
+  const waypoints = pointsOf(o.waypoints, `${label} (points)`, 300);
+  const path = pointsOf(o.path, `${label} (line)`, 6000);
+  return { waypoints, path, follow: o.follow !== false, lengthM: Math.round(routeLengthM(path)) };
+}
+// the work plan on the map (owner's ask): the whole route and up to 100 parts; lengths measured here
+export function planOf(v: unknown) {
+  const o = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
+  const route = o.route ? lineOf(o.route, "Whole route") : null;
+  const parts = list(o.parts ?? [], "Work parts", 100, (x, i) => {
+    const r = (x && typeof x === "object" ? x : {}) as Record<string, unknown>;
+    const type = str(r.type, { label: `Work part ${i + 1}: type`, required: true, max: 40 });
+    return { id: str(r.id ?? `part-${i + 1}`, { label: "Work part", max: 40 }) || `part-${i + 1}`, type, name: optStr(r.name, { label: `Work part ${i + 1}: name`, max: 80 }) ?? "", ...lineOf(r, `${type} part`) };
+  });
+  const total = (route?.path.length ?? 0) + parts.reduce((s, p) => s + p.path.length, 0);
+  if (total > 40000) fail(400, "INVALID", "The plan has too many points on the map. Remove some parts or points.");
+  const types = [...new Set([...BASE_TYPES, ...list(o.types ?? [], "Types of work", 40, (t) => str(t, { label: "Type of work", max: 40 })), ...parts.map((p) => p.type)])].filter(Boolean);
+  return { route, parts, types };
+}
+
 // the columns an admin sets, checked
 export function projectPatch(b: Record<string, unknown>, creating: boolean) {
   const p: Record<string, unknown> = {};
@@ -76,7 +103,11 @@ export function projectPatch(b: Record<string, unknown>, creating: boolean) {
   if (has("standardWage")) p.standard_wage = optNum(b.standardWage, { label: "Standard daily wage (₹)", min: 0, max: 100000 });
   if (has("startLabel")) p.start_label = optStr(b.startLabel, { label: "Start point name", max: 120 });
   if (has("endLabel")) p.end_label = optStr(b.endLabel, { label: "End point name", max: 120 });
-  if (has("route")) p.route = routeOf(b.route ?? []);
+  if (b.plan !== undefined) {
+    const plan = planOf(b.plan);
+    p.plan = plan;
+    p.route = plan.route?.path ?? [];
+  } else if (has("route")) p.route = routeOf(b.route ?? []);
   if (has("hddDefaults")) {
     const h = (b.hddDefaults && typeof b.hddDefaults === "object" ? b.hddDefaults : {}) as Record<string, unknown>;
     p.hdd_defaults = {

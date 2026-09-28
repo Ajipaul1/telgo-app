@@ -2,17 +2,15 @@
 
 Read RULES.md first.
 
-## Where things are (28 Sep 2026, evening)
-- **Live:** https://telgo-app.vercel.app runs the rebuild (main = 4b24f2a; the Android APK opens it). The live database has migrations 0001-0005 (applied with the owner's OK; every row count was the same before and after; the public key is refused on every table).
-- The rebuild was made in a second working folder of the same repo (`D:\Projects\GitHub\telgo-app-rebuild`, branch `rebuild`); the owner's folder `D:\Projects\GitHub\telgo-app` needs a Pull in GitHub Desktop to show it.
+## Where things are (28 Sep 2026, night)
+- **Live:** https://telgo-app.vercel.app (the Android APK opens it). The live database has migrations 0001-0007, each applied with the owner's OK (row counts the same before and after; the public key is refused everywhere). 0008 (project plan) waits for the owner's OK, then the push.
+- Live now: maps (OpenStreetMap; Google when `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is in Vercel), the pop-up chat (0006), passwords the admin can see and change (0007, owner's decision), the 4-step daily report with drop-downs.
+- Next push (tested, needs 0008 first): the project work plan on the map (whole route + parts by type, lines along the roads, lengths measured by the server), a Back button on every screen, settings yes/no on `/api/version`.
+- Google map key "Telgo maps" (Kochirent project): works on telgo-app.vercel.app and app.telgopowerprojects.com, refused elsewhere. Routes API not allowed yet: lines follow the roads with the free OpenStreetMap router until it is.
+- The rebuild lives in a second working folder of the same repo (`D:\Projects\GitHub\telgo-app-rebuild`, branch `rebuild`); the owner's folder `D:\Projects\GitHub\telgo-app` needs a Pull in GitHub Desktop to show it.
 - The old app is kept, moved (not deleted) into `legacy/`. It is not built or served.
-- Everyone signs in once more (the old sessions ended). Old passwords still work and are upgraded at that sign-in.
 - `app.telgopowerprojects.com` shows only a GitHub Pages README (the `CNAME` file). To make it open the app, point its DNS at Vercel and add the domain in the Vercel project.
-- Tests at the push: static 14/14, API 93/93, Android 89/89, iPhone (WebKit) 89/89.
-
-## Waiting (28 Sep 2026, late)
-- Live main = 9d13cb5: map pictures fixed (OpenStreetMap; Google Maps when `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is set in Vercel), "Open in Google Maps" links, white menu words.
-- Built and tested on the local copy, NOT yet on main: the pop-up chat (Chat bubble, Team chat pinned on top, Minimise keeps your chat, + New group, stickers and emoji, @mentions, voice note preview, change / send again / copy / remove, message info, clear chat for me / for everyone, add people, show earlier messages). It needs `supabase/rebuild/LIVE-APPLY-0006.sql` run on the live database FIRST (Supabase > SQL Editor > paste > Run), then push `rebuild` to `main`. Pushing without it would break the live chat.
+- This PC is short of memory: run the iPhone suite as `TELGO_UI_FIELD_ONLY=1 node tests/ui/run.mjs --webkit-only`.
 
 ## Built (all on the local test database)
 - Database migrations `supabase/rebuild/0001`–`0005` (`0000` recreates today's live tables for local tests only; it is never run on live):

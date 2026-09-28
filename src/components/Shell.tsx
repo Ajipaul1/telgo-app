@@ -64,6 +64,18 @@ export function Shell({ initialMe, children }: { initialMe: MeView; children: Re
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", vis); window.removeEventListener("telgo:counts", refreshCounts); };
   }, [refreshCounts]);
   useEffect(() => { refreshCounts(); setMenuOpen(false); }, [path, refreshCounts]);
+  // Back (owner's ask: on every screen): the screen before, or Home when the app was opened on this one
+  // (the screens visited in this app: a screen that is the one before the last is a step back, the phone's
+  // own Back button included)
+  // kept for this tab, so a screen opened by a full page load still knows the one before)
+  const visited = () => { try { const v = JSON.parse(sessionStorage.getItem("telgo_visited") ?? "[]"); return Array.isArray(v) ? (v as string[]) : []; } catch { return [] as string[]; } };
+  useEffect(() => {
+    const v = visited();
+    if (v.length > 1 && v[v.length - 2] === path) v.pop();
+    else if (v[v.length - 1] !== path) v.push(path);
+    try { sessionStorage.setItem("telgo_visited", JSON.stringify(v.slice(-50))); } catch { /* private mode: Back goes Home */ }
+  }, [path]);
+  const goBack = () => { if (visited().length > 1) router.back(); else router.push("/app"); };
 
   // push arriving while the app is open, and taps on a phone notification
   useEffect(() => {
@@ -168,6 +180,7 @@ export function Shell({ initialMe, children }: { initialMe: MeView; children: Re
               {Object.entries(counts).some(([k, v]) => k !== "notifications" && k !== "chats" && v > 0) && <span className="dot" style={{ minWidth: 10, height: 10, padding: 0, top: 11, right: 11 }} />}
             </button>
           )}
+          {path !== "/app" && !gated && !me.mustChangePassword && <button type="button" className="bar-back" onClick={goBack} data-testid="back-button">Back</button>}
           <h1 data-testid="screen-title">{gated ? "Sign in" : me.mustChangePassword ? "Choose your password" : barTitle}</h1>
           {!gated && !me.mustChangePassword && (
             <a className="icon-btn" href="/app/notifications" aria-label={`Notifications${counts.notifications ? `: ${counts.notifications} new` : ""}`} data-testid="bell">

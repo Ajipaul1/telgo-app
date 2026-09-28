@@ -2,26 +2,26 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button, Choice, ErrorNote, NumberInput, Saved, Select, TextArea, TextInput } from "@/components/ui";
-import { RouteEditor } from "@/components/Map";
+import { PlanEditor } from "./PlanEditor";
 import { useApp } from "@/components/AppContext";
 import { useDraft } from "@/lib/client/hooks";
 import { call, ApiError } from "@/lib/client/api";
-import { routeLengthM, type LatLng } from "@/lib/shared/geo";
 import { metres } from "@/lib/shared/format";
 import type { HddDefaults, ProjectStatus, ProjectView } from "@/lib/shared/project";
+import { BASE_TYPES, type ProjectPlan } from "@/lib/shared/plan";
 
 export const DISTRICTS = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod", "Outside Kerala"];
 
 type Form = {
   name: string; code: string; client: string; location: string; district: string; description: string; status: ProjectStatus;
   startDate: string; endDate: string; totalLengthKm: number | null; budget: number | null; standardWage: number | null; siteRadiusM: number | null;
-  route: LatLng[]; startLabel: string; endLabel: string; hdd: HddDefaults;
+  plan: ProjectPlan; startLabel: string; endLabel: string; hdd: HddDefaults;
 };
 
 const fromProject = (p?: ProjectView): Form => ({
   name: p?.name ?? "", code: p?.code ?? "", client: p?.client ?? "", location: p?.location ?? "", district: p?.district ?? "", description: p?.description ?? "",
   status: p?.status ?? "active", startDate: p?.startDate ?? "", endDate: p?.endDate ?? "", totalLengthKm: p?.totalLengthKm ?? null, budget: p?.budget ?? null,
-  standardWage: p?.standardWage ?? null, siteRadiusM: p?.siteRadiusM ?? 300, route: p?.route ?? [], startLabel: p?.startLabel ?? "", endLabel: p?.endLabel ?? "",
+  standardWage: p?.standardWage ?? null, siteRadiusM: p?.siteRadiusM ?? 300, plan: p?.plan ?? { route: null, parts: [], types: [...BASE_TYPES] }, startLabel: p?.startLabel ?? "", endLabel: p?.endLabel ?? "",
   hdd: { machine: "", vendor: "", tracker: "", operator: "", ducts: "", rodLengthM: null, ...(p?.hddDefaults ?? {}) },
 });
 
@@ -41,7 +41,7 @@ export function ProjectForm({ project }: { project?: ProjectView }) {
     const body = {
       name: f.name, code: f.code, client: f.client, location: f.location || f.district, district: f.district, description: f.description, status: f.status,
       startDate: f.startDate || null, endDate: f.endDate || null, totalLengthKm: f.totalLengthKm, budget: f.budget, standardWage: f.standardWage,
-      siteRadiusM: f.siteRadiusM ?? 300, route: f.route, startLabel: f.startLabel, endLabel: f.endLabel, hddDefaults: f.hdd,
+      siteRadiusM: f.siteRadiusM ?? 300, plan: f.plan, startLabel: f.startLabel, endLabel: f.endLabel, hddDefaults: f.hdd,
     };
     try {
       if (project) {
@@ -83,15 +83,15 @@ export function ProjectForm({ project }: { project?: ProjectView }) {
         </div>
       </div>
 
+      <div className="section-title">The work on the map</div>
+      {project && !project.planSaved && (project.plan.route || project.plan.parts.length) ? <p className="small muted">This project&apos;s route{project.plan.parts.length ? " and planned parts" : ""} came from the old app, drawn in straight lines. Tap Straight lines to make them follow the roads, then save.</p> : null}
+      <PlanEditor plan={f.plan} onChange={(pl) => set("plan", pl)} />
       <div className="card">
-        <h2>Route on the map</h2>
-        {project?.routeFromOldApp && <p className="small muted">This route was drawn in the old app. Saving here keeps it as the project&apos;s route.</p>}
-        <RouteEditor points={f.route} onChange={(p) => set("route", p)} />
         <div className="grid2">
           <TextInput label="Start point name" value={f.startLabel} onChange={(v) => set("startLabel", v)} placeholder="e.g. Kolenchery junction" />
           <TextInput label="End point name" value={f.endLabel} onChange={(v) => set("endLabel", v)} placeholder="e.g. MOSC substation" />
         </div>
-        {f.route.length > 1 && f.totalLengthKm ? <p className="tiny muted">The route measures {metres(routeLengthM(f.route))}; the total length entered is {f.totalLengthKm} km.</p> : null}
+        {f.plan.route && f.plan.route.lengthM > 0 && f.totalLengthKm ? <p className="tiny muted">The whole route measures {metres(f.plan.route.lengthM)} on the map; the total length entered is {f.totalLengthKm} km.</p> : null}
       </div>
 
       <div className="card">

@@ -509,6 +509,30 @@ await t("the old app's route (corridor_data) is read, with start and end names",
   const r = await admin.get("/api/projects/prj-6133");
   const p = r.json.project;
   eq([p.route.length, p.routeFromOldApp, p.startLabel], [3, true, "Kolenchery junction"]);
+  ok(p.plan.route?.path.length === 3 && p.planSaved === false, "the plan starts from the old route, not saved yet");
+});
+await t("the work plan: the server measures every length; the route follows the plan's whole route", async () => {
+  const cur = (await admin.get(`/api/projects/${proj.id}`)).json.project;
+  const plan = {
+    route: { waypoints: [[10.1, 76.35], [10.11, 76.36]], path: [[10.1, 76.35], [10.105, 76.355], [10.11, 76.36]], follow: true, lengthM: 1 },
+    parts: [
+      { id: "a", type: "Open trench", name: "School road", waypoints: [[10.1, 76.35], [10.105, 76.355]], path: [[10.1, 76.35], [10.105, 76.355]], follow: true, lengthM: 999999 },
+      { id: "b", type: "Duct laying", name: "", waypoints: [[10.105, 76.355], [10.11, 76.36]], path: [[10.105, 76.355], [10.11, 76.36]], follow: false },
+    ],
+    types: ["Duct laying"],
+  };
+  const r = await admin.patch(`/api/projects/${proj.id}`, { expected: cur.updatedAt, plan });
+  eq(r.status, 200, JSON.stringify(r.json));
+  const p = r.json.project;
+  const a = p.plan.parts.find((x) => x.id === "a");
+  ok(a.lengthM > 700 && a.lengthM < 800, `measured by the server, not the phone's 999999: ${a.lengthM}`); // ~0.005° each way ≈ 780 m
+  eq(p.route.length, 3, "the route column is the plan's whole route");
+  ok(p.plan.types.includes("Duct laying") && p.planSaved === true, "a new type is kept");
+  const bad = await admin.patch(`/api/projects/${proj.id}`, { expected: p.updatedAt, plan: { parts: [{ type: "", path: [] }] } });
+  eq(bad.status, 400, "a part needs a type");
+  const junk = await admin.patch(`/api/projects/${proj.id}`, { expected: p.updatedAt, plan: { route: { path: [["x", 1], [2, 3]] } } });
+  eq(junk.status, 400, "a point must be a real place");
+  eq((await sup1.patch(`/api/projects/${proj.id}`, { expected: p.updatedAt, plan })).status, 403, "only the admin");
 });
 
 group = "7. File manager (Archive, Trash 90 days)";
@@ -723,6 +747,12 @@ await t("a login shows its password after a sign-in; one never signed in since s
   eq(r.status, 200); eq(r.json.password, PASSWORDS.legacy, "seen after the old-style sign-in");
   await q("update mobile_app_users set password_view = null where id = $1", [IDS.admin2]);
   eq((await admin.get(`/api/team/people/${IDS.admin2}/password`)).json.password, null, "not known");
+});
+await t("the version check tells which settings are on (yes / no), never their values", async () => {
+  const v = await (await fetch(BASE + "/api/version")).json();
+  const s = v.settings ?? {};
+  ok(["pushNotifications", "googleMaps", "trashCleanup"].every((k) => typeof s[k] === "boolean"), JSON.stringify(s));
+  ok(!/AIza|BEGIN|[A-Za-z0-9_-]{40,}/.test(JSON.stringify(v)), "no value shown");
 });
 await t("the admin sets a password: it works at once, stays visible, no forced change unless asked", async () => {
   const s = await admin.post(`/api/team/people/${IDS.sup2}/action`, { action: "set_password", password: "Site-pass-2026" });

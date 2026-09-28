@@ -11,14 +11,15 @@ import { metres } from "@/lib/shared/format";
 import { getPosition } from "@/lib/client/device";
 import { Button } from "./ui";
 
-export type MapPin = { at: LatLng; text: string; kind?: "in" | "away" | "old" | "start" | "end" | "pt" | "brand"; title?: string; lines?: string[]; onTap?: () => void };
+// draggable pins (the points of a line being drawn): moved with a finger, onDragEnd gets the new place
+export type MapPin = { at: LatLng; text: string; kind?: "in" | "away" | "old" | "start" | "end" | "pt" | "brand" | "way"; title?: string; lines?: string[]; onTap?: () => void; draggable?: boolean; onDragEnd?: (at: LatLng) => void; selected?: boolean };
 export type MapLine = { points: LatLng[]; color?: string; dashed?: boolean; weight?: number; title?: string };
 export type MapCircle = { at: LatLng; radiusM: number; color?: string };
 type Props = { pins?: MapPin[]; lines?: MapLine[]; circles?: MapCircle[]; size?: "" | "tall" | "short"; fitKey?: string; onTap?: (at: LatLng) => void; testId?: string; children?: React.ReactNode };
 
 const GOOGLE_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 const KERALA: LatLng = [10.3, 76.3];
-const PIN_COLOR: Record<string, string> = { in: "#0e8a5f", away: "#c6283f", old: "#8a8eab", start: "#0e8a5f", end: "#c6283f", pt: "#5b3fe6", brand: "#5b3fe6" };
+const PIN_COLOR: Record<string, string> = { in: "#0e8a5f", away: "#c6283f", old: "#8a8eab", start: "#0e8a5f", end: "#c6283f", pt: "#5b3fe6", brand: "#5b3fe6", way: "#5b3fe6" };
 
 // a link that opens a place in the Google Maps app or site (directions, street view); no key needed
 export const googleMapsLink = (at: LatLng) => `https://www.google.com/maps/search/?api=1&query=${at[0].toFixed(6)},${at[1].toFixed(6)}`;
@@ -114,11 +115,12 @@ function GoogleMapView({ pins = [], lines = [], circles = [], size = "", fitKey,
     for (const p of pins) {
       const small = p.kind === "pt";
       const mk = new google.maps.Marker({
-        map: m, position: { lat: p.at[0], lng: p.at[1] }, title: p.title ?? p.text,
+        map: m, position: { lat: p.at[0], lng: p.at[1] }, title: p.title ?? p.text, draggable: !!p.draggable,
         label: small || !p.text ? undefined : { text: p.text.slice(0, 3), color: "#ffffff", fontWeight: "800", fontSize: "12px" },
-        icon: { path: google.maps.SymbolPath.CIRCLE, scale: small ? 6 : p.kind === "start" || p.kind === "end" ? 11 : 15, fillColor: PIN_COLOR[p.kind ?? "brand"], fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 3 },
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale: small ? 6 : p.kind === "way" ? (p.selected ? 14 : 11) : p.kind === "start" || p.kind === "end" ? 11 : 15, fillColor: PIN_COLOR[p.kind ?? "brand"], fillOpacity: 1, strokeColor: p.selected ? "#16123a" : "#ffffff", strokeWeight: 3 },
       });
-      mk.addListener("click", () => { info.current.setContent(tipEl(p)); info.current.open({ map: m, anchor: mk }); p.onTap?.(); });
+      mk.addListener("click", () => { if (!p.draggable) { info.current.setContent(tipEl(p)); info.current.open({ map: m, anchor: mk }); } p.onTap?.(); });
+      if (p.draggable) mk.addListener("dragend", (e: G) => p.onDragEnd?.([e.latLng.lat(), e.latLng.lng()]));
       drawn.current.push(mk);
       add(p.at);
     }
@@ -150,7 +152,7 @@ const TILES = {
 
 function pinEl(p: MapPin) {
   const el = document.createElement("div");
-  el.className = "pin " + (p.kind ?? "brand");
+  el.className = "pin " + (p.kind ?? "brand") + (p.selected ? " sel" : "");
   el.textContent = p.kind === "pt" ? "" : p.text.slice(0, 3);
   if (p.title) el.title = p.title;
   return el;
@@ -206,10 +208,11 @@ function LeafletMapView({ pins = [], lines = [], circles = [], size = "", fitKey
       all.push(...l.points);
     }
     for (const p of pins) {
-      const size = p.kind === "pt" ? 16 : p.kind === "start" || p.kind === "end" ? 26 : 36;
-      const mk = Lf.marker(p.at, { icon: Lf.divIcon({ html: pinEl(p), className: "", iconSize: [size, size], iconAnchor: [size / 2, size / 2] }), keyboard: false });
-      mk.bindTooltip(tipEl(p), { direction: "top", offset: [0, -size / 2] });
+      const size = p.kind === "pt" ? 16 : p.kind === "way" ? (p.selected ? 34 : 28) : p.kind === "start" || p.kind === "end" ? 26 : 36;
+      const mk = Lf.marker(p.at, { icon: Lf.divIcon({ html: pinEl(p), className: "", iconSize: [size, size], iconAnchor: [size / 2, size / 2] }), keyboard: false, draggable: !!p.draggable });
+      if (!p.draggable) mk.bindTooltip(tipEl(p), { direction: "top", offset: [0, -size / 2] });
       if (p.onTap) mk.on("click", () => p.onTap?.());
+      if (p.draggable) mk.on("dragend", () => { const ll = mk.getLatLng(); p.onDragEnd?.([ll.lat, ll.lng]); });
       mk.addTo(g);
       all.push(p.at);
     }

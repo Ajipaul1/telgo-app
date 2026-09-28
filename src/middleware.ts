@@ -6,6 +6,8 @@ import { NextResponse, type NextRequest } from "next/server";
 // map pictures: OpenStreetMap and Esri (no key), and Google Maps when its key is set
 const TILES = "https://tile.openstreetmap.org https://server.arcgisonline.com https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googleusercontent.com";
 const GOOGLE = "https://*.googleapis.com https://*.gstatic.com https://*.google.com";
+// the free OpenStreetMap road router ("follow the roads" when Google's Routes service isn't allowed)
+const ROADS = "https://routing.openstreetmap.de";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -24,7 +26,7 @@ export function middleware(req: NextRequest) {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     `img-src 'self' data: blob: ${TILES}`,
     "font-src 'self' https://fonts.gstatic.com",
-    `connect-src 'self' ${GOOGLE} data: blob:${dev ? " ws:" : ""}`,
+    `connect-src 'self' ${GOOGLE} ${ROADS} data: blob:${dev ? " ws:" : ""}`,
     "media-src 'self' blob:",
     "worker-src 'self' blob:",
     "manifest-src 'self'",

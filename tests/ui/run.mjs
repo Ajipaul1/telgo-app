@@ -360,15 +360,56 @@ async function run(kind) {
       await a.fill("[data-testid=p-name]", `Map test ${kind}`);
       await a.fill("[data-testid=p-code]", `MAP-${kind.toUpperCase()}`);
       await a.fill("[data-testid=p-place]", "Aluva");
-      const m = a.locator("[data-testid=route-editor]");
+      await a.click("[data-testid=plan-route-follow]"); // straight lines here: the road-following is tested next
+      const m = a.locator("[data-testid=plan-route-map]");
       await m.scrollIntoViewIfNeeded();
       const box = await m.boundingBox();
       // the map centres on the first point, so the next taps go well away from the middle (a tap on a pin adds nothing)
       for (const [x, y] of [[0.3, 0.4], [0.8, 0.25], [0.2, 0.8]]) { await a.mouse.click(box.x + box.width * x, box.y + box.height * y); await a.waitForTimeout(250); }
+      await a.waitForSelector("[data-testid=plan-route-length]:has-text('3 points')", { timeout: 5000 });
       await a.click("[data-testid=p-save]");
       await a.waitForURL(/projects\/edit\/map-/, { timeout: 20000 });
-      const p = (await q("select jsonb_array_length(route) n from projects where code = $1", [`MAP-${kind.toUpperCase()}`]))[0];
-      ok(p && p.n === 3, JSON.stringify(p));
+      const p = (await q("select jsonb_array_length(route) n, jsonb_array_length(plan->'route'->'waypoints') w from projects where code = $1", [`MAP-${kind.toUpperCase()}`]))[0];
+      ok(p && p.n === 3 && p.w === 3, JSON.stringify(p));
+    });
+    await t("work parts: open trench along the roads, a new type from the pop-up, totals, then Back", async () => {
+      await go(a, "app/projects/edit/prj-6133");
+      await a.waitForSelector("[data-testid=plan-add-part]", { timeout: 20000 });
+      await a.click("[data-testid=plan-add-part]");
+      await a.selectOption("[data-testid=plan-part-type]", "Open trench");
+      await a.fill("[data-testid=plan-part-name]", "School road");
+      await a.click("[data-testid=plan-part-add]");
+      const m = a.locator("[data-testid=plan-part-map]");
+      await m.scrollIntoViewIfNeeded();
+      await a.waitForTimeout(800); // the map fits the route
+      const box = await m.boundingBox();
+      for (const [x, y] of [[0.35, 0.45], [0.65, 0.55]]) { await a.mouse.click(box.x + box.width * x, box.y + box.height * y); await a.waitForTimeout(300); }
+      await a.waitForSelector("[data-testid=plan-part-length]:has-text('along the road')", { timeout: 30000 });
+      await a.click("[data-testid=plan-done-part]");
+      await a.click("[data-testid=plan-add-part]");
+      await a.selectOption("[data-testid=plan-part-type]", "__new__");
+      await a.fill("[data-testid=plan-new-type]", "Duct laying");
+      await a.click("[data-testid=plan-new-type-keep]");
+      await a.click("[data-testid=plan-part-add]");
+      await a.waitForSelector("[data-testid=plan-part-map].leaflet-container", { timeout: 15000 });
+      await a.click("[data-testid=plan-part-follow]"); // straight
+      await a.waitForTimeout(800); // the new part's map fits the route
+      await a.locator("[data-testid=plan-part-map]").scrollIntoViewIfNeeded();
+      const box2 = await a.locator("[data-testid=plan-part-map]").boundingBox();
+      for (const [x, y] of [[0.3, 0.3], [0.6, 0.35]]) { await a.mouse.click(box2.x + box2.width * x, box2.y + box2.height * y); await a.waitForTimeout(300); }
+      await a.waitForSelector("[data-testid=plan-totals]:has-text('Duct laying')", { timeout: 5000 });
+      await healthy(a, "project plan", shot("project_plan"));
+      await a.click("[data-testid=p-save]");
+      await a.waitForSelector("text=Project saved", { timeout: 20000 });
+      const r = (await q("select plan from projects where id = 'prj-6133'"))[0].plan;
+      const trench = r.parts.find((x) => x.type === "Open trench"), duct = r.parts.find((x) => x.type === "Duct laying");
+      ok(trench && trench.path.length > 2 && trench.lengthM > 0, `open trench follows the road: ${trench?.path.length} points`);
+      ok(duct && duct.path.length === 2 && r.types.includes("Duct laying"), "the new type is kept");
+      await go(a, "app/projects");
+      await a.click("text=MOSC-KOLANCHERY");
+      await a.waitForSelector("[data-testid=project-plan]:has-text('Open trench')", { timeout: 20000 });
+      await a.click("[data-testid=back-button]");
+      await a.waitForURL(/\/app\/projects$/, { timeout: 10000 });
     });
     await t("profile: the name is changed and the server confirms it", async () => {
       await go(s, "app/profile");

@@ -1,5 +1,5 @@
 "use client";
-import { use, useState } from "react";
+import { Fragment, use, useState } from "react";
 import { Screen } from "@/components/Screen";
 import { useApp } from "@/components/AppContext";
 import { Loaded, Pill, Button, Empty, ErrorNote } from "@/components/ui";
@@ -9,6 +9,7 @@ import { useLoad } from "@/lib/client/hooks";
 import { call, ApiError } from "@/lib/client/api";
 import { fmtDay, fmtWhen, metres, money, numIN } from "@/lib/shared/format";
 import { STATUS_LABEL, pct, type ProjectView, type Totals } from "@/lib/shared/project";
+import { planTotals } from "@/lib/shared/plan";
 
 type Data = { project: ProjectView; totals: Totals; materials: { id: string; unloaded_on: string; material: string; quantity: number | null; unit: string | null; location: string | null; created_by_name: string }[] };
 
@@ -47,6 +48,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                 <MapView pins={m.pins} lines={m.lines} circles={p.route.length === 1 ? [{ at: p.route[0], radiusM: p.siteRadiusM }] : []} testId="project-map"><OpenInGoogleMaps at={p.route[0]} label={p.route.length > 1 ? "Start in Google Maps" : "Open in Google Maps"} /></MapView>
               ) : <Empty title="No route on the map yet">{me?.role === "admin" ? "Draw it in Edit projects." : "The admin draws the route."}</Empty>}
               {p.routeFromOldApp && <p className="tiny muted">This route was drawn in the old app.</p>}
+
+              <PlanCard p={p} t={t} />
 
               <div className="section-title">Work done (approved reports)</div>
               <div className="grid2">
@@ -122,6 +125,33 @@ function ClientAccess({ projectId }: { projectId: string }) {
         )}
       </Loaded>
       {err && <ErrorNote error={err} />}
+    </div>
+  );
+}
+
+// planned on the map, against done in the approved reports (open trench = trenching, HDD, cable laying)
+function PlanCard({ p, t }: { p: ProjectView; t: Totals }) {
+  const pt = planTotals(p.plan);
+  if (!pt.types.length) return null;
+  const done: Record<string, number> = { "Open trench": t.trenchingM, HDD: t.hddM, "Cable laying": t.cableLayingM };
+  return (
+    <div className="card" data-testid="project-plan">
+      <h2>Work plan on the map</h2>
+      <dl className="kv">
+        <dt><b>Whole route</b></dt><dd><b>{metres(pt.routeM)}</b></dd>
+        {pt.types.map((x) => {
+          const d = done[x.type];
+          const share = d !== undefined && x.lengthM > 0 ? Math.min(100, Math.round((d / x.lengthM) * 100)) : null;
+          return (
+            <Fragment key={x.type}>
+              <dt><span aria-hidden="true" style={{ display: "inline-block", width: 10, height: 10, borderRadius: 5, background: x.color, marginRight: 6 }} />{x.type}</dt>
+              <dd>{metres(x.lengthM)} planned{d !== undefined ? ` · ${metres(d)} done${share !== null ? ` (${share}%)` : ""}` : ""}</dd>
+            </Fragment>
+          );
+        })}
+        {pt.routeM > 0 && <><dt>Not planned yet</dt><dd>{metres(pt.notPlannedM)}</dd></>}
+      </dl>
+      {!p.planSaved && <p className="tiny muted">From the old app&apos;s drawing. The admin can redraw it along the roads in Edit projects.</p>}
     </div>
   );
 }
