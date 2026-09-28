@@ -2,11 +2,13 @@
 
 Read RULES.md first.
 
-## Where things are (28 Sep 2026)
-- **This folder** (`D:\Projects\GitHub\telgo-app-rebuild`) is a second working folder of the same repo, on the branch **`rebuild`**. The owner's usual folder `D:\Projects\GitHub\telgo-app` (branch `main`) was not touched.
+## Where things are (28 Sep 2026, evening)
+- **Live:** https://telgo-app.vercel.app runs the rebuild (main = 4b24f2a; the Android APK opens it). The live database has migrations 0001-0005 (applied with the owner's OK; every row count was the same before and after; the public key is refused on every table).
+- The rebuild was made in a second working folder of the same repo (`D:\Projects\GitHub\telgo-app-rebuild`, branch `rebuild`); the owner's folder `D:\Projects\GitHub\telgo-app` needs a Pull in GitHub Desktop to show it.
 - The old app is kept, moved (not deleted) into `legacy/`. It is not built or served.
-- **Nothing is live yet.** The live app (https://telgo-app.vercel.app, the one the Android APK opens) still runs the old code on `main`. The live database has not been changed.
+- Everyone signs in once more (the old sessions ended). Old passwords still work and are upgraded at that sign-in.
 - `app.telgopowerprojects.com` shows only a GitHub Pages README (the `CNAME` file). To make it open the app, point its DNS at Vercel and add the domain in the Vercel project.
+- Tests at the push: static 14/14, API 93/93, Android 89/89, iPhone (WebKit) 89/89.
 
 ## Built (all on the local test database)
 - Database migrations `supabase/rebuild/0001`–`0005` (`0000` recreates today's live tables for local tests only; it is never run on live):
@@ -22,14 +24,14 @@ Read RULES.md first.
 2. `npm run dev` (uses `.env.local`, which points only at the local database).
 3. `npm run test:static`, `npm run test:api`, `npm run test:ui` (the last two reset the local database).
 
-## Before going live (the owner decides; nothing here is done without his OK)
-1. Apply `supabase/rebuild/0001`–`0005` to the live database (in order; they only add, never delete). 0001 alone already closes the public-key hole and does not affect the old app (it uses the secret key).
-2. In Vercel settings add: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (push), `CRON_SECRET` (the 90-day clean-up), and keep `SUPABASE_SECRET_KEY` / `SUPABASE_SERVICE_ROLE_KEY`. Optional: `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` to email login details.
-3. Merge `rebuild` into `main` (Vercel publishes it). Everyone signs in once more (old sessions end); the old app's saved passwords are wiped from phones on the first visit to the sign-in page.
+## Still to do (the owner)
+1. Done 28 Sep: the live database update (0001-0005).
+2. In Vercel settings add (values in `.env.vercel` on this PC, never uploaded): `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (push), `CRON_SECRET` (the 90-day clean-up), and keep `SUPABASE_SECRET_KEY` / `SUPABASE_SERVICE_ROLE_KEY`. Optional: `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` to email login details.
+3. Done 28 Sep: `rebuild` pushed to `main` (4b24f2a).
 4. Rotate the keys that were pasted in chat on 28 Sep 2026 (Supabase secret and service_role keys, the Supabase access token) and the old admin password that was written in the public code.
 5. Restrict the old Google Maps key (it is in the public repo's history) to your domains, or delete it: the new app doesn't use it.
 6. Check the 5 projects' budgets: they may be sample values from the old app.
 
 ## Next
-- Run all three suites green on Android Chrome and iPhone WebKit; fix what they find.
-- The owner's review of the trial on his phone.
+- The owner's review of the trial on his phone (real GPS, camera, push after the Vercel keys, voice in Malayalam).
+- Run all three suites before every push.
