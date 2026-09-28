@@ -1,17 +1,17 @@
-import fs from "node:fs";
-import { PHASE_PRODUCTION_BUILD } from "next/constants.js";
+import { execSync } from "node:child_process";
 
-// One version number for the whole build: the commit on Vercel; locally the build's own id, which
-// "next start" reads back from .next/BUILD_ID (so the phone and the server always agree).
-function versionFor(phase) {
+// One version number everyone agrees on: the git commit (Vercel gives it; locally it is read from git).
+// It must not change between the build, its worker processes and "next start", or the phone would
+// always think a new version is out.
+function version() {
   if (process.env.VERCEL_GIT_COMMIT_SHA) return process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 12);
-  if (phase !== PHASE_PRODUCTION_BUILD && fs.existsSync(".next/BUILD_ID")) return fs.readFileSync(".next/BUILD_ID", "utf8").trim();
-  return "local-" + Date.now().toString(36);
+  try { return execSync("git rev-parse --short=12 HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); }
+  catch { return "dev"; }
 }
 
-/** @type {(phase: string) => import('next').NextConfig} */
-export default function config(phase) {
-const buildId = versionFor(phase);
+/** @type {() => import('next').NextConfig} */
+export default function config() {
+const buildId = version();
 const nextConfig = {
   poweredByHeader: false,
   devIndicators: false,
